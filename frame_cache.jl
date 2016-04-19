@@ -76,3 +76,7 @@ transform_to_root{T}(cache::FrameCache{T}, frame::CartesianFrame3D) = get(cache.
 function relative_transform{T}(cache::FrameCache{T}, from::CartesianFrame3D, to::CartesianFrame3D)
     return inv(transform_to_root(cache, to)) * transform_to_root(cache, from)
 end
+
+function transform{T}(cache::FrameCache{T}, p::Point3D{T}, to::CartesianFrame3D)
+    return relative_transform(p.frame, to) * p
+end

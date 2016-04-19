@@ -55,7 +55,7 @@ function toposort{V, E}(tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
 end
 
 function insert!{V, E}(tree::Tree{V, E}, vertexData::V, edgeData::E, parentData::V)
-    parentVertex = findfirst(x -> x.vertexData == parentData, tree)
+    parentVertex = findfirst(tree, parentData)
     parentVertex == nothing && error("parent not found")
     vertex = TreeVertex{V, E}(vertexData, parentVertex, edgeData)
     push!(parentVertex.children, vertex)
