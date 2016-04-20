@@ -27,6 +27,7 @@ export
     QuaternionFloating,
     Revolute,
     Prismatic,
+    Twist,
     Mechanism,
     MechanismState,
     FrameCache,
