@@ -36,3 +36,5 @@ function transform{T}(inertia::SpatialInertia{T}, t::Transform3D{T})
 
     return SpatialInertia(t.to, Jnew, cnew, m)
 end
+
+rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) = SpatialInertia(frame, rand(Mat{3, 3, T}), rand(Vec{3, T}), rand(T))

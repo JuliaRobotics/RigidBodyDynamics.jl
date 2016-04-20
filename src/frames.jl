@@ -24,6 +24,7 @@ Point3D{T}(frame::CartesianFrame3D, v::Vec{3, T}) = Point3D{T}(frame, v)
 (/)(p::Point3D, s::Real) = Point3D(p.frame, p.v / s)
 (*)(p::Point3D, s::Real) = Point3D(p.frame, p.v * s)
 (*)(s::Real, p::Point3D) = Point3D(p.frame, s * p.v)
+rand{T}(::Type{Point3D{T}}, frame::CartesianFrame3D) = Point3D(frame, rand(Vec{3, T}))
 
 immutable FreeVector3D{T}
     frame::CartesianFrame3D
@@ -37,6 +38,7 @@ FreeVector3D{T}(frame::CartesianFrame3D, v::Vec{3, T}) = FreeVector3D{T}(frame, 
 (/)(v::FreeVector3D, s::Real) = FreeVector3D(v.frame, v.v / s)
 (*)(v::FreeVector3D, s::Real) = FreeVector3D(v.frame, v.v * s)
 (*)(s::Real, v::FreeVector3D) = FreeVector3D(v.frame, s * v.v)
+rand{T}(::Type{FreeVector3D{T}}, frame::CartesianFrame3D) = FreeVector3D(frame, rand(Vec{3, T}))
 
 # Mixed Point and FreeVector
 (+)(p1::Point3D, v2::FreeVector3D) = begin @assert p1.frame == v2.frame; return Point3D(p1.frame, p1.v + v2.v) end
@@ -67,6 +69,8 @@ function inv{T}(t::Transform3D{T})
     transinv = -rotate(t.trans, rotinv)
     return Transform3D(t.to, t.from, rotinv, transinv)
 end
+
+rand(::Type{Transform3D{Float64}}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D(from, to, nquatrand(), rand(Vec{3, Float64}))
 
 function *{T}(t::Transform3D{T}, point::Point3D{T})
     @assert t.from == point.frame

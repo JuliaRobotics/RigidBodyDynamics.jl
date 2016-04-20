@@ -2,7 +2,7 @@
 
 module RigidBodyDynamics
 
-import Base: convert, one, *, +, /, -, call, inv, get, findfirst
+import Base: convert, one, *, +, /, -, call, inv, get, findfirst, Random.rand
 using FixedSizeArrays
 using Quaternions
 using DataStructures
