@@ -1,7 +1,3 @@
-using FixedSizeArrays
-using Quaternions
-import Base: convert, one, *, +, call, inv, get
-
 function rotate{N, T}(x::Mat{3, N, T}, q::Quaternion{T})
     # TODO: efficiency?
     return Mat(rotationmatrix(q)) * x

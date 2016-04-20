@@ -39,8 +39,8 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     return m
 end
 
-joints{T}(m::Mechanism{T}) = keys(mechanism.jointToJointTransforms)
-bodies{T}(m::Mechanism{T}) = keys(mechanism.bodyFixedFrameDefinitions)
+joints{T}(m::Mechanism{T}) = keys(m.jointToJointTransforms)
+bodies{T}(m::Mechanism{T}) = keys(m.bodyFixedFrameDefinitions)
 
 num_positions{T}(m::Mechanism{T}) = reduce((val, joint) -> val + num_positions(joint), 0, joints(m))
 num_velocities{T}(m::Mechanism{T}) = reduce((val, joint) -> val + num_velocities(joint), 0, joints(m))
@@ -94,7 +94,7 @@ function FrameCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
             add_frame!(cache, transform)
         end
     end
-    
+
     setdirty!(cache)
     return cache
 end
