@@ -1,3 +1,7 @@
+# TODO: caches for twists, spatial inertias
+# idea: generalize to LocalGlobalCache, parameterized by cache element type and composition operator?
+# can keep setdirty functions,
+
 type FrameCache{T}
     root::CartesianFrame3D
     transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{T}}}
@@ -78,5 +82,5 @@ function relative_transform{T}(cache::FrameCache{T}, from::CartesianFrame3D, to:
 end
 
 function transform{T}(cache::FrameCache{T}, p::Point3D{T}, to::CartesianFrame3D)
-    return relative_transform(p.frame, to) * p
+    return relative_transform(cache, p.frame, to) * p
 end

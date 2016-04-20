@@ -39,9 +39,8 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     return m
 end
 
-function joints{T}(m::Mechanism{T})
-    return keys(mechanism.jointToJointTransforms)
-end
+joints{T}(m::Mechanism{T}) = keys(mechanism.jointToJointTransforms)
+bodies{T}(m::Mechanism{T}) = keys(mechanism.bodyFixedFrameDefinitions)
 
 num_positions{T}(m::Mechanism{T}) = reduce((val, joint) -> val + num_positions(joint), 0, joints(m))
 num_velocities{T}(m::Mechanism{T}) = reduce((val, joint) -> val + num_velocities(joint), 0, joints(m))
@@ -95,6 +94,36 @@ function FrameCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
             add_frame!(cache, transform)
         end
     end
-
+    
+    setdirty!(cache)
     return cache
 end
+
+function subtree_mass{M}(m::Mechanism{M}, base::Tree{RigidBody{M}, Joint})
+    if isroot(base)
+        result = 0
+    else
+        result = get(base.vertexData.inertia).mass
+    end
+    for child in base.children
+        result += subtree_mass(m, child)
+    end
+    return result
+end
+mass{M}(m::Mechanism{M}) = subtree_mass(m, m.tree)
+
+function center_of_mass{C}(itr, frame::CartesianFrame3D, cache::FrameCache{C})
+    com = Point3D(frame, zero(Vec{3, C}))
+    mass = zero(C)
+    for body in itr
+        if !isnull(body.inertia)
+            inertia = get(body.inertia)
+            com += inertia.mass * transform(cache, Point3D(inertia.frame, inertia.centerOfMass), frame)
+            mass += inertia.mass
+        end
+    end
+    com /= mass
+    return com
+end
+
+center_of_mass{M, C}(m::Mechanism{M}, cache::FrameCache{C}) = center_of_mass(bodies(m), root(m).frame, cache)

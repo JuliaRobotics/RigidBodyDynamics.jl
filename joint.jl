@@ -26,17 +26,27 @@ function zero_configuration!{T}(j::Joint, v::Vector{T}, jt::QuaternionFloating =
     v[2 : end] = zero(T)
     return v
 end
+function joint_twist{T}(j::Joint, q::Vector{T}, v::Vector{T}, jt::QuaternionFloating = j.jointType)
+    return Twist(joint.frameAfter, joint.frameBefore, joint.frameAfter, Vec(v(1 : 3)), Vec(v(4 : 6)))
+end
 
 immutable Prismatic{T} <: JointType
     translation_axis::Vec{3, T}
 end
+joint_transform{T1, T2}(j::Joint, q::Vector{T1}, jt::Prismatic{T2} = j.jointType) = Transform3D(j.frameAfter, j.frameBefore, q[1] * jt.translation_axis)
+function joint_twist{T}(j::Joint, q::Vector{T}, v::Vector{T}, jt::Prismatic = j.jointType)
+    return Twist(joint.frameAfter, joint.frameBefore, joint.frameAfter, zero(Vec{3, T}), jt.translation_axis * v[1])
+end
+
 immutable Revolute{T} <: JointType
     rotation_axis::Vec{3, T}
 end
-typealias OneDOF{T} Union{Prismatic{T}, Revolute{T}}
-
-joint_transform{T1, T2}(j::Joint, q::Vector{T1}, jt::Prismatic{T2} = j.jointType) = Transform3D(j.frameAfter, j.frameBefore, q[1] * jt.translation_axis)
 joint_transform{T1, T2}(j::Joint, q::Vector{T1}, jt::Revolute{T2} = j.jointType) = Transform3D(j.frameAfter, j.frameBefore, qrotation(Array(jt.rotation_axis), q[1]))
+function joint_twist{T}(j::Joint, q::Vector{T}, v::Vector{T}, jt::Revolute = j.jointType)
+    return Twist(joint.frameAfter, joint.frameBefore, joint.frameAfter, jt.rotation_axis * v[1], zero(Vec{3, T}))
+end
+
+typealias OneDOF{T} Union{Prismatic{T}, Revolute{T}}
 num_positions{T}(j::Joint, jt::OneDOF{T} = j.jointType) = 1
 num_velocities{T}(j::Joint, jt::OneDOF{T} = j.jointType) = 1
 function zero_configuration!{T1, T2}(j::Joint, v::Vector{T1}, jt::OneDOF{T2} = j.jointType)
