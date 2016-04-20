@@ -8,7 +8,6 @@ notifications:
   email: false
 before_install:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - pip install codecov
 script:
   - julia -e 'Pkg.clone(pwd()); Pkg.build("RigidBodyDynamics"); Pkg.test("RigidBodyDynamics"; coverage=true)'
 after_success:
