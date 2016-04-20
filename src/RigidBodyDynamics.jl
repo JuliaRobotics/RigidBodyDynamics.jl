@@ -1,3 +1,5 @@
+__precompile__()
+
 module RigidBodyDynamics
 
 import Base: convert, one, *, +, /, -, call, inv, get, findfirst
