@@ -4,6 +4,7 @@ using Quaternions
 using FixedSizeArrays
 import RigidBodyDynamics
 
+if ENV["JUPYTER"] = "" #
 import Conda
 condaDir = Conda.SCRIPTDIR
 for f in filter(x -> endswith(x, "ipynb"), readdir("../examples"))
