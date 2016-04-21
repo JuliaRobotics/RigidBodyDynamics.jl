@@ -31,11 +31,15 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     m.jointToJointTransforms[joint] = add_body_fixed_frame!(m, parentBody, jointToParent)
     @assert childToJoint.from == childBody.frame
     @assert childToJoint.to == joint.frameAfter
+    m.bodyFixedFrameDefinitions[childBody] = []
     if childToJoint.from != childToJoint.to
-        m.bodyFixedFrameDefinitions[childBody] = [childToJoint]
-    else
-        m.bodyFixedFrameDefinitions[childBody] = []
+        push!(m.bodyFixedFrameDefinitions[childBody], childToJoint)
     end
+    if childBody.inertia.frame != joint.frameAfter
+        @assert childToJoint.from == childBody.inertia.frame
+        transform!(childBody.inertia, childToJoint) # this will save on computing transforms later on
+    end
+
     return m
 end
 
