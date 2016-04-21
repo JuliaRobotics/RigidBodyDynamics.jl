@@ -2,7 +2,7 @@
 
 module RigidBodyDynamics
 
-import Base: convert, one, *, +, /, -, call, inv, get, findfirst, Random.rand
+import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!
 using FixedSizeArrays
 using Quaternions
 using DataStructures
@@ -13,9 +13,10 @@ include("rigid_body.jl")
 include("spatial_motion_force.jl")
 include("joint.jl")
 include("tree.jl")
-include("cache_element.jl")
-include("frame_cache.jl")
 include("mechanism.jl")
+include("cache_element.jl")
+include("mechanism_state_cache.jl")
+include("mechanism_algorithms.jl")
 
 export
     # types
@@ -33,7 +34,7 @@ export
     MotionSubspaceBasis,
     Mechanism,
     MechanismState,
-    FrameCache,
+    MechanismStateCache,
     # functions
     transform,
     root,
@@ -47,11 +48,14 @@ export
     configuration_vector,
     velocity_vector,
     zero_configuration!,
+    zero_velocity!,
+    zero!,
     add_frame!,
+    twist_wrt_world,
+    relative_twist,
     transform_to_parent,
     transform_to_root,
     relative_transform,
     mass,
     center_of_mass
-
 end

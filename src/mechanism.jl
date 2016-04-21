@@ -1,5 +1,6 @@
 type Mechanism{T}
     tree::Tree{RigidBody{T}, Joint}
+
     bodyFixedFrameDefinitions::Dict{RigidBody{T}, Vector{Transform3D{T}}}
     jointToJointTransforms::Dict{Joint, Transform3D{T}}
 
@@ -11,7 +12,7 @@ type Mechanism{T}
         new(tree, bodyFixedFrameDefinitions, jointToJointTransforms)
     end
 end
-root{T}(m::Mechanism{T}) = m.tree.vertexData
+root(m::Mechanism) = m.tree.vertexData
 
 function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T})
     bodyVertex = findfirst(m.tree, body)
@@ -34,10 +35,6 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     m.bodyFixedFrameDefinitions[childBody] = []
     if childToJoint.from != childToJoint.to
         push!(m.bodyFixedFrameDefinitions[childBody], childToJoint)
-    end
-    if childBody.inertia.frame != joint.frameAfter
-        @assert childToJoint.from == childBody.inertia.frame
-        transform!(childBody.inertia, childToJoint) # this will save on computing transforms later on
     end
 
     return m
@@ -70,64 +67,22 @@ end
 
 num_positions{T}(x::MechanismState{T}) = reduce((val, joint) -> val + num_positions(joint), 0, keys(x.q))
 num_velocities{T}(x::MechanismState{T}) = reduce((val, joint) -> val + num_velocities(joint), 0, keys(x.v))
+
 function zero_configuration!{T}(x::MechanismState{T})
-    for kv in x.q
-        zero_configuration!(first(kv), last(kv))
-    end
+    for joint in keys(x.q) x.q[joint] = zero_configuration(joint, T) end
 end
+function zero_velocity!(x::MechanismState)
+    for joint in keys(x.v) x.v[joint] = zero(x.v[joint]) end
+end
+zero!(x::MechanismState) = begin zero_configuration!(x); zero_velocity!(x) end
+
+function rand_configuration!{T}(x::MechanismState{T})
+    for joint in keys(x.q) x.q[joint] = rand_configuration(joint, T) end
+end
+function rand_velocity!(x::MechanismState)
+    for joint in keys(x.v) x.v[joint] = rand!(x.v[joint]) end
+end
+rand!(x::MechanismState) = begin rand_configuration!(x); rand_velocity!(x) end
+
 configuration_vector{T}(x::MechanismState{T}) = vcat(values(x.q)...)
 velocity_vector{T}(x::MechanismState{T}) = vcat(values(x.v)...)
-
-function FrameCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
-    cache = FrameCache{promote_type(M, X)}(root(m).frame)
-
-    # first march down the tree
-    vertices = toposort(m.tree)
-    for vertex in vertices
-        if !isroot(vertex)
-            joint = vertex.edgeToParentData
-            add_frame!(cache, m.jointToJointTransforms[joint])
-            qJoint = x.q[joint]
-            add_frame!(cache, () -> joint_transform(joint, qJoint))
-        end
-    end
-
-    # then add body fixed frames
-    for transforms in values(m.bodyFixedFrameDefinitions)
-        for transform in transforms
-            add_frame!(cache, transform)
-        end
-    end
-
-    setdirty!(cache)
-    return cache
-end
-
-function subtree_mass{M}(m::Mechanism{M}, base::Tree{RigidBody{M}, Joint})
-    if isroot(base)
-        result = 0
-    else
-        result = base.vertexData.inertia.mass
-    end
-    for child in base.children
-        result += subtree_mass(m, child)
-    end
-    return result
-end
-mass{M}(m::Mechanism{M}) = subtree_mass(m, m.tree)
-
-function center_of_mass{C}(itr, frame::CartesianFrame3D, cache::FrameCache{C})
-    com = Point3D(frame, zero(Vec{3, C}))
-    mass = zero(C)
-    for body in itr
-        if !isroot(body)
-            inertia = body.inertia
-            com += inertia.mass * transform(cache, Point3D(inertia.frame, inertia.centerOfMass), frame)
-            mass += inertia.mass
-        end
-    end
-    com /= mass
-    return com
-end
-
-center_of_mass{M, C}(m::Mechanism{M}, cache::FrameCache{C}) = center_of_mass(bodies(m), root(m).frame, cache)

@@ -7,23 +7,28 @@ immutable Twist{T}
     linear::Vec{3, T}
 end
 
-function (+){T}(t1::Twist{T}, t2::Twist{T})
-    @assert t1.body == t2.base
-    @assert t1.frame == t2.frame
-    return Twist(t2.body, t1.base, frame, t1.angular + t2.angular, t1.linear + t2.linear)
+function (+){T}(twist1::Twist{T}, twist2::Twist{T})
+    @assert twist1.body == twist2.base
+    @assert twist1.frame == twist2.frame
+    return Twist(twist2.body, twist1.base, twist1.frame, twist1.angular + twist2.angular, twist1.linear + twist2.linear)
 end
 
 function (-){T}(t::Twist{T})
-    return Twist(t.base, t.body, t.frame, -angular, -linear)
+    return Twist(t.base, t.body, t.frame, -t.angular, -t.linear)
 end
 
 function transform{T}(m::Twist{T}, transform::Transform3D{T})
     @assert m.frame == transform.from
-    R = rotationmatrix(transform.rot)
+    R = Mat(rotationmatrix(transform.rot))
     angular = R * m.angular
     linear = R * m.linear + cross(transform.trans, angular)
     return Twist(m.body, m.base, transform.to, angular, linear)
 end
+
+change_base_no_relative_motion(t::Twist, base::CartesianFrame3D) = Twist(t.body, base, t.frame, t.angular, t.linear)
+change_body_no_relative_motion(t::Twist, body::CartesianFrame3D) = Twist(body, t.base, t.frame, t.angular, t.linear)
+zero{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, zero(Vec{3, T}), zero(Vec{3, T}))
+rand{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, rand(Vec{3, T}), rand(Vec{3, T}))
 
 immutable MotionSubspaceBasis{N, T}
     body::CartesianFrame3D
@@ -35,7 +40,7 @@ end
 
 function transform{N, T}(m::MotionSubspaceBasis{N, T}, t::Transform3D{T})
     @assert m.frame == t.from
-    R = rotationmatrix(t.rot)
+    R = Mat(rotationmatrix(t.rot))
     angular = R * m.angular
     linear = R * m.linear + broadcast(cross, t.trans, angular)
     return MotionSubspaceBasis(m.body, m.base, t.to, angular, linear)

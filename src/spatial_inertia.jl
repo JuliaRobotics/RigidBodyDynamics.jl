@@ -1,11 +1,11 @@
-type SpatialInertia{T}
+immutable SpatialInertia{T}
     frame::CartesianFrame3D
     moment::Mat{3, 3, T}
     centerOfMass::Vec{3, T}
     mass::T
 end
 
-function transform!{T}(inertia::SpatialInertia{T}, t::Transform3D{T})
+function transform{T}(inertia::SpatialInertia{T}, t::Transform3D{T})
     @assert t.from == inertia.frame
 
     function vector_to_skew_symmetric_squared(a::Vec{3, T})
@@ -26,19 +26,15 @@ function transform!{T}(inertia::SpatialInertia{T}, t::Transform3D{T})
     R = Mat(rotationmatrix(t.rot))
     p = t.trans
 
-    inertia.centerOfMass = R * (inertia.centerOfMass * m)
-    Jnew = vector_to_skew_symmetric_squared(inertia.centerOfMass)
-    inertia.centerOfMass += m * p
-    Jnew -= vector_to_skew_symmetric_squared(inertia.centerOfMass)
+    cnew = R * (c * m)
+    Jnew = vector_to_skew_symmetric_squared(cnew)
+    cnew += m * p
+    Jnew -= vector_to_skew_symmetric_squared(cnew)
     Jnew /= m
     Jnew += R * J * R'
-    inertia.centerOfMass /= m
-    inertia.moment = Jnew
-    inertia.frame = t.to
-end
+    cnew /= m
 
-function transform{T}(inertia::SpatialInertia{T}, t::Transform3D{T})
-    return transform!(copy(inertia), t)
+    return SpatialInertia(frame, Jnew, cnew, m)
 end
 
 rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) = SpatialInertia(frame, rand(Mat{3, 3, T}), rand(Vec{3, T}), rand(T))
