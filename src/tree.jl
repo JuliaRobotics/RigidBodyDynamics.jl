@@ -1,15 +1,15 @@
 type TreeVertex{V, E}
     vertexData::V
-    parent::Nullable{TreeVertex{V, E}}
-    edgeToParentData::Nullable{E}
     children::Vector{TreeVertex{V, E}}
+    parent::TreeVertex{V, E}
+    edgeToParentData::E
 
-    TreeVertex{V}(vertexData::V) = new(vertexData, Nullable{TreeVertex{V, E}}(), Nullable{E}(), [])
-    TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = new(vertexData, parent, edgeData, [])
+    TreeVertex{V}(vertexData::V) = new(vertexData, [])
+    TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = new(vertexData, [], parent, edgeData)
 end
 typealias Tree{V, E} TreeVertex{V, E}
 
-isroot{V, E}(v::TreeVertex{V, E}) = isnull(v.parent)
+isroot{V, E}(v::TreeVertex{V, E}) = !isdefined(v, :parent)
 isleaf{V, E}(v::TreeVertex{V, E}) = isempty(v.children)
 
 function findfirst{V, E}(pred::Function, tree::Tree{V, E})
@@ -65,7 +65,7 @@ end
 function ancestors{V, E}(vertex::TreeVertex{V, E}, result = Vector{TreeVertex{V, E}}())
     # includes self
     push!(result, vertex)
-    !isroot(vertex) && ancestors(get(vertex.parent), result)
+    !isroot(vertex) && ancestors(vertex.parent, result)
     return result
 end
 

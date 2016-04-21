@@ -15,7 +15,7 @@ root{T}(m::Mechanism{T}) = m.tree.vertexData
 
 function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T})
     bodyVertex = findfirst(m.tree, body)
-    target = isroot(bodyVertex) ? body.frame : get(bodyVertex.edgeToParentData).frameAfter
+    target = isroot(bodyVertex) ? body.frame : bodyVertex.edgeToParentData.frameAfter
     fixedFrameDefinitions = m.bodyFixedFrameDefinitions[body]
     if transform.to != target
         index = findfirst(x -> x.from == transform.to && x.to == target, fixedFrameDefinitions)
@@ -55,7 +55,7 @@ immutable MechanismState{T}
         vertices = toposort(m.tree)
         for vertex in vertices
             if !isroot(vertex)
-                joint = get(vertex.edgeToParentData)
+                joint = vertex.edgeToParentData
                 q[joint] = Vector{T}(num_positions(joint))
                 v[joint] = Vector{T}(num_velocities(joint))
             end
@@ -81,7 +81,7 @@ function FrameCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
     vertices = toposort(m.tree)
     for vertex in vertices
         if !isroot(vertex)
-            joint = get(vertex.edgeToParentData)
+            joint = vertex.edgeToParentData
             add_frame!(cache, m.jointToJointTransforms[joint])
             qJoint = x.q[joint]
             add_frame!(cache, () -> joint_transform(joint, qJoint))
@@ -103,7 +103,7 @@ function subtree_mass{M}(m::Mechanism{M}, base::Tree{RigidBody{M}, Joint})
     if isroot(base)
         result = 0
     else
-        result = get(base.vertexData.inertia).mass
+        result = base.vertexData.inertia.mass
     end
     for child in base.children
         result += subtree_mass(m, child)
@@ -116,8 +116,8 @@ function center_of_mass{C}(itr, frame::CartesianFrame3D, cache::FrameCache{C})
     com = Point3D(frame, zero(Vec{3, C}))
     mass = zero(C)
     for body in itr
-        if !isnull(body.inertia)
-            inertia = get(body.inertia)
+        if !isroot(body)
+            inertia = body.inertia
             com += inertia.mass * transform(cache, Point3D(inertia.frame, inertia.centerOfMass), frame)
             mass += inertia.mass
         end
