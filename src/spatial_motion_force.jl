@@ -25,21 +25,21 @@ function transform{T}(m::Twist{T}, transform::Transform3D{T})
     return Twist(m.body, m.base, transform.to, angular, linear)
 end
 
-# immutable MotionSubspaceBasis{N, T}
-#     body::RigidBody
-#     base::RigidBody
-#     frame::CartesianFrame3D
-#     angular::Mat{3, N, T}
-#     linear::Mat{3, N, T}
-# end
-#
-# function transform{N, T}(m::MotionSubspaceBasis{N, T}, t::Transform3D{T})
-#     @assert m.frame == t.from
-#     R = rotationmatrix(t.rot)
-#     angular = R * m.angular
-#     linear = R * m.linear + broadcast(cross, t.trans, angular)
-#     return MotionSubspaceBasis(m.body, m.base, t.to, angular, linear)
-# end
+immutable MotionSubspaceBasis{N, T}
+    body::CartesianFrame3D
+    base::CartesianFrame3D
+    frame::CartesianFrame3D
+    angular::Mat{3, N, T}
+    linear::Mat{3, N, T}
+end
+
+function transform{N, T}(m::MotionSubspaceBasis{N, T}, t::Transform3D{T})
+    @assert m.frame == t.from
+    R = rotationmatrix(t.rot)
+    angular = R * m.angular
+    linear = R * m.linear + broadcast(cross, t.trans, angular)
+    return MotionSubspaceBasis(m.body, m.base, t.to, angular, linear)
+end
 
 # immutable SpatialForceMatrix{N, T}
 #     frame::CartesianFrame3D
