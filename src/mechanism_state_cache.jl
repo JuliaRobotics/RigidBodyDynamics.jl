@@ -86,8 +86,11 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
     for vertex in cache.toposortedTree
         body = vertex.vertexData
         if !isroot(vertex)
-            parentBody = vertex.parent.vertexData
+            parentVertex = vertex.parent
+            parentBody = parentVertex.vertexData
             joint = vertex.edgeToParentData
+            parentFrame = isroot(parentVertex) ? parentBody.frame : parentVertex.edgeToParentData.frameAfter
+            println(parentFrame)
 
             qJoint = x.q[joint]
             vJoint = x.v[joint]
@@ -108,7 +111,11 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
             cache.twistsWrtWorld[body] = MutableCacheElement(updateTwistWrtWorld)
 
             # motion subspaces
-            updateMotionSubspace = () -> transform(motion_subspace(joint, qJoint), get(transformToRootCache))
+            updateMotionSubspace = () -> begin
+                S = transform(motion_subspace(joint, qJoint), get(transformToRootCache))
+                S.base = parentFrame # to make frames line up
+                return S
+            end
             cache.motionSubspaces[joint] = MutableCacheElement(updateMotionSubspace)
         end
 

@@ -29,21 +29,9 @@ end
 center_of_mass(m::Mechanism, cache::MechanismStateCache) = center_of_mass(cache, bodies(m))
 
 function geometric_jacobian{C, M}(cache::MechanismStateCache{C}, path::Path{RigidBody{M}, Joint})
-    joints = path.edgeData
-    signs = path.directions
-    cols = num_velocities(joints)
-    mat = Array(C, 6, cols)
-    col_start = 1
-    for i = 1 : length(joints)
-        joint = joints[i]
-        motionSubspace = motion_subspace(cache, joint)
-        nv = num_velocities(joint)
-        mat[:, col_start : col_start + nv - 1] = copysign(motionSubspace.mat, signs[i])
-        col_start += nv
-    end
-    body = signs[end] == 1 ? joints[end].frameAfter : joints[end].frameBefore
-    base = signs[1] == 1 ? joints[1].frameBefore : joints[1].frameAfter
-    ret = GeometricJacobian(body, base, cache.rootFrame, mat)
+    flipIfNecessary = (sign::Int64, motionSubspace::GeometricJacobian{C}) -> sign == -1 ? -motionSubspace : motionSubspace
+    motionSubspaces = [flipIfNecessary(sign, motion_subspace(cache, joint))::GeometricJacobian{C} for (joint, sign) in zip(path.edgeData, path.directions)]
+    return hcat(motionSubspaces...)
 end
 
 function mass_matrix{C}(cache::MechanismStateCache{C})

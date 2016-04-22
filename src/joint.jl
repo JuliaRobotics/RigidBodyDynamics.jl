@@ -23,7 +23,7 @@ function joint_transform{T}(j::Joint, q::Vector{T}, jt::QuaternionFloating = j.j
 end
 
 function motion_subspace{T}(j::Joint, q::Vector{T}, jt::QuaternionFloating = j.jointType)
-    return GeometricJacobian(j.frameBefore, j.frameAfter, j.frameAfter, copy(jt.motionSubspace))
+    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, copy(jt.motionSubspace))
 end
 
 num_positions(j::Joint, jt::QuaternionFloating = j.jointType) = 7::Int64
@@ -55,7 +55,7 @@ function joint_twist{T}(j::Joint, q::Vector{T}, v::Vector{T}, jt::Prismatic = j.
 end
 
 function motion_subspace{T}(j::Joint, q::Vector{T}, jt::Prismatic = j.jointType)
-    return GeometricJacobian(j.frameBefore, j.frameAfter, j.frameAfter, copy(jt.motionSubspace))
+    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, copy(jt.motionSubspace))
 end
 
 immutable Revolute{T} <: JointType
@@ -72,7 +72,7 @@ function joint_twist{T}(j::Joint, q::Vector{T}, v::Vector{T}, jt::Revolute = j.j
 end
 
 function motion_subspace{T}(j::Joint, q::Vector{T}, jt::Revolute = j.jointType)
-    return GeometricJacobian(j.frameBefore, j.frameAfter, j.frameAfter, copy(jt.motionSubspace))
+    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, copy(jt.motionSubspace))
 end
 
 typealias OneDOF{T} Union{Prismatic{T}, Revolute{T}}
