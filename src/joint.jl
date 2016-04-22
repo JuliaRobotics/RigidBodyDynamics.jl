@@ -26,9 +26,8 @@ function motion_subspace{T}(j::Joint, q::Vector{T}, jt::QuaternionFloating = j.j
     return GeometricJacobian(j.frameBefore, j.frameAfter, j.frameAfter, copy(jt.motionSubspace))
 end
 
-num_positions(j::Joint, jt::QuaternionFloating = j.jointType) = 7
-
-num_velocities(j::Joint, jt::QuaternionFloating = j.jointType) = 6
+num_positions(j::Joint, jt::QuaternionFloating = j.jointType) = 7::Int64
+num_velocities(j::Joint, jt::QuaternionFloating = j.jointType) = 6::Int64
 
 function zero_configuration{T}(j::Joint, ::Type{T}, jt::QuaternionFloating = j.jointType)
     return [one(T); zeros(T, 6)]
@@ -77,8 +76,8 @@ function motion_subspace{T}(j::Joint, q::Vector{T}, jt::Revolute = j.jointType)
 end
 
 typealias OneDOF{T} Union{Prismatic{T}, Revolute{T}}
-num_positions{T}(j::Joint, jt::OneDOF{T} = j.jointType) = 1
-num_velocities{T}(j::Joint, jt::OneDOF{T} = j.jointType) = 1
+num_positions{T}(j::Joint, jt::OneDOF{T} = j.jointType) = 1::Int64
+num_velocities{T}(j::Joint, jt::OneDOF{T} = j.jointType) = 1::Int64
 function zero_configuration{T}(j::Joint, ::Type{T}, jt::OneDOF = j.jointType)
     return [0]
 end

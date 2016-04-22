@@ -13,6 +13,22 @@ function (+){T}(inertia1::SpatialInertia{T}, inertia2::SpatialInertia{T})
     return SpatialInertia(inertia1.frame, moment, centerOfMass, mass)
 end
 
+function vector_to_skew_symmetric(v::Vec{3})
+    return [
+    0 -v[3] v[2];
+    v[3] 0 -v[1];
+    -v[2] v[1] 0];
+end
+
+function to_matrix(inertia::SpatialInertia)
+    J = Array(inertia.moment)
+    m = inertia.mass
+    C = Array(vector_to_skew_symmetric(m * inertia.centerOfMass))
+    return [J  C;
+            C' m * eye(3)]
+end
+
+
 function transform{T}(inertia::SpatialInertia{T}, t::Transform3D{T})
     @assert t.from == inertia.frame
 

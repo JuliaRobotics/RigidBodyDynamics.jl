@@ -59,5 +59,6 @@ export
     relative_transform,
     mass,
     center_of_mass,
-    geometric_jacobian
+    geometric_jacobian,
+    mass_matrix
 end
