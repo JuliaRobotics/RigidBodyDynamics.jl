@@ -12,7 +12,7 @@ immutable CartesianFrame3D
     name::ASCIIString
 end
 
-immutable Point3D{T}
+immutable Point3D{T<:Real}
     frame::CartesianFrame3D
     v::Vec{3, T}
 
@@ -26,7 +26,7 @@ Point3D{T}(frame::CartesianFrame3D, v::Vec{3, T}) = Point3D{T}(frame, v)
 (*)(s::Real, p::Point3D) = Point3D(p.frame, s * p.v)
 rand{T}(::Type{Point3D{T}}, frame::CartesianFrame3D) = Point3D(frame, rand(Vec{3, T}))
 
-immutable FreeVector3D{T}
+immutable FreeVector3D{T<:Real}
     frame::CartesianFrame3D
     v::Vec{3, T}
 
@@ -44,7 +44,7 @@ rand{T}(::Type{FreeVector3D{T}}, frame::CartesianFrame3D) = FreeVector3D(frame, 
 (+)(p1::Point3D, v2::FreeVector3D) = begin @assert p1.frame == v2.frame; return Point3D(p1.frame, p1.v + v2.v) end
 (+)(v1::FreeVector3D, p2::Point3D) = p2 + v1
 
-immutable Transform3D{T}
+immutable Transform3D{T<:Real}
     from::CartesianFrame3D
     to::CartesianFrame3D
     rot::Quaternion{T}

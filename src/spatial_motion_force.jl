@@ -1,4 +1,4 @@
-immutable Twist{T}
+immutable Twist{T<:Real}
     # describes motion of body w.r.t. base, expressed in frame
     body::CartesianFrame3D
     base::CartesianFrame3D
@@ -6,7 +6,7 @@ immutable Twist{T}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
-Twist{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector{T}) = Twist(body, base, frame, vec[1 : 3], vec[4 : 6])
+Twist{T<:Real}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector{T}) = Twist(body, base, frame, vec[1 : 3], vec[4 : 6])
 
 function (+)(twist1::Twist, twist2::Twist)
     @assert twist1.body == twist2.base
@@ -28,7 +28,7 @@ change_body_no_relative_motion(t::Twist, body::CartesianFrame3D) = Twist(body, t
 zero{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, zero(Vec{3, T}), zero(Vec{3, T}))
 rand{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, rand(Vec{3, T}), rand(Vec{3, T}))
 
-type GeometricJacobian{T}
+type GeometricJacobian{T<:Real}
     body::CartesianFrame3D
     base::CartesianFrame3D
     frame::CartesianFrame3D
@@ -60,16 +60,16 @@ function transform(jac::GeometricJacobian, transform::Transform3D)
     return GeometricJacobian(jac.body, jac.base, transform.to, [angular; linear])
 end
 
-abstract ForceSpaceElement{T}
+abstract ForceSpaceElement{T<:Real}
 
-immutable Wrench{T} <: ForceSpaceElement{T}
+immutable Wrench{T<:Real} <: ForceSpaceElement{T}
     frame::CartesianFrame3D
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
 Wrench{T}(frame::CartesianFrame3D, vec::Vector{T}) = Wrench{T}(frame, vec[1 : 3], vec[4 : 6])
 
-immutable Momentum{T} <: ForceSpaceElement{T}
+immutable Momentum{T<:Real} <: ForceSpaceElement{T}
     frame::CartesianFrame3D
     angular::Vec{3, T}
     linear::Vec{3, T}
@@ -92,7 +92,7 @@ function (+){F<:ForceSpaceElement}(f1::F, f2::F)
 end
 (-){F<:ForceSpaceElement}(f::F) = F(f.frame, -f.angular, -f.linear)
 
-type MomentumMatrix{T}
+type MomentumMatrix{T<:Real}
     frame::CartesianFrame3D
     mat::Array{T}
 end
@@ -124,7 +124,7 @@ end
 
 (*){T, R<:Real}(mat::MomentumMatrix{T}, v::Vector{R}) = Momentum(mat.frame, mat.mat * v)
 
-immutable SpatialAcceleration{T}
+immutable SpatialAcceleration{T<:Real}
     body::CartesianFrame3D
     base::CartesianFrame3D
     frame::CartesianFrame3D

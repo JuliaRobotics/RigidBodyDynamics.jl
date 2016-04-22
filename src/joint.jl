@@ -41,7 +41,7 @@ function joint_twist{T}(j::Joint, q::Vector{T}, v::Vector{T}, jt::QuaternionFloa
     return Twist(j.frameAfter, j.frameBefore, j.frameAfter, Vec(v[1 : 3]), Vec(v[4 : 6]))
 end
 
-immutable Prismatic{T} <: JointType
+immutable Prismatic{T<:Real} <: JointType
     translation_axis::Vec{3, T}
     motionSubspace::Vector{Float64}
     Prismatic(translation_axis::Vec{3, T}) = new(translation_axis, [zeros(3); Array(translation_axis)])
@@ -58,7 +58,7 @@ function motion_subspace{T}(j::Joint, q::Vector{T}, jt::Prismatic = j.jointType)
     return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, copy(jt.motionSubspace))
 end
 
-immutable Revolute{T} <: JointType
+immutable Revolute{T<:Real} <: JointType
     rotation_axis::Vec{3, T}
     motionSubspace::Vector{Float64}
     Revolute(rotation_axis::Vec{3, T}) = new(rotation_axis, [Array(rotation_axis); zeros(3)])

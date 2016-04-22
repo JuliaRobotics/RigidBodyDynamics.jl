@@ -1,4 +1,4 @@
-type Mechanism{T}
+type Mechanism{T<:Real}
     tree::Tree{RigidBody{T}, Joint}
 
     bodyFixedFrameDefinitions::Dict{RigidBody{T}, Vector{Transform3D{T}}}
@@ -47,7 +47,7 @@ bodies{T}(m::Mechanism{T}) = keys(m.bodyFixedFrameDefinitions)
 num_positions{T}(m::Mechanism{T}) = num_positions(joints(m))
 num_velocities{T}(m::Mechanism{T}) = num_velocities(joints(m))
 
-immutable MechanismState{T}
+immutable MechanismState{T<:Real}
     q::OrderedDict{Joint, Vector{T}}
     v::OrderedDict{Joint, Vector{T}}
 

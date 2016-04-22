@@ -1,4 +1,4 @@
-type MechanismStateCache{C, M}
+type MechanismStateCache{C<:Real, M<:Real}
     rootFrame::CartesianFrame3D
     toposortedTree::Vector{TreeVertex{RigidBody{M}, Joint}}
     velocityVectorStartIndices::Dict{Joint, Int64}

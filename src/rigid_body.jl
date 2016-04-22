@@ -1,4 +1,4 @@
-immutable RigidBody{T}
+immutable RigidBody{T<:Real}
     frame::CartesianFrame3D
     inertia::SpatialInertia{T}
 

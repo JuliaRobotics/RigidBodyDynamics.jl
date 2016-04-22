@@ -1,4 +1,4 @@
-immutable SpatialInertia{T}
+immutable SpatialInertia{T<:Real}
     frame::CartesianFrame3D
     moment::Mat{3, 3, T}
     centerOfMass::Vec{3, T}
