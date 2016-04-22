@@ -38,33 +38,30 @@ function mass_matrix{C}(cache::MechanismStateCache{C})
     nv = num_velocities(keys(cache.motionSubspaces))
     H = Array(C, nv, nv)
 
-    for vertex_i in cache.toposortedTree
-        if !isroot(vertex_i)
-            # Hii
-            body_i = vertex_i.vertexData
-            joint_i = vertex_i.edgeToParentData
-            v_start_i = cache.velocityVectorStartIndices[joint_i]
-            i_range = v_start_i : v_start_i + num_velocities(joint_i) - 1
-            I_i = crb_inertia(cache, body_i)
-            S_i = motion_subspace(cache, joint_i)
-            @assert I_i.frame == S_i.frame
-            F = to_matrix(I_i) * S_i.mat
-            H[i_range, i_range] = S_i.mat' * F
+    for i = 2 : length(cache.toposortedTree)
+        vertex_i = cache.toposortedTree[i]
+        
+        # Hii
+        body_i = vertex_i.vertexData
+        joint_i = vertex_i.edgeToParentData
+        v_start_i = cache.velocityVectorStartIndices[joint_i]
+        i_range = v_start_i : v_start_i + num_velocities(joint_i) - 1
+        S_i = motion_subspace(cache, joint_i)
+        F = crb_inertia(cache, body_i) * S_i
+        H[i_range, i_range] = S_i.mat' * F.mat
 
-            # Hji, Hij
-            vertex_j = vertex_i.parent
-            while (!isroot(vertex_j))
-                body_j = vertex_j.vertexData
-                joint_j = vertex_j.edgeToParentData
-                v_start_j = cache.velocityVectorStartIndices[joint_j]
-                j_range = v_start_j : v_start_j + num_velocities(joint_j) - 1
-                S_j = motion_subspace(cache, joint_j)
-                @assert I_i.frame == S_j.frame
-                Hji = S_j.mat' * F
-                H[j_range, i_range] = Hji
-                H[i_range, j_range] = Hji'
-                vertex_j = vertex_j.parent
-            end
+        # Hji, Hij
+        vertex_j = vertex_i.parent
+        while (!isroot(vertex_j))
+            joint_j = vertex_j.edgeToParentData
+            v_start_j = cache.velocityVectorStartIndices[joint_j]
+            j_range = v_start_j : v_start_j + num_velocities(joint_j) - 1
+            S_j = motion_subspace(cache, joint_j)
+            @assert F.frame == S_j.frame
+            Hji = At_mul_B(S_j.mat, F.mat)
+            H[j_range, i_range] = Hji
+            H[i_range, j_range] = Hji'
+            vertex_j = vertex_j.parent
         end
     end
     return H
