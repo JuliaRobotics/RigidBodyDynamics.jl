@@ -5,6 +5,14 @@ immutable SpatialInertia{T}
     mass::T
 end
 
+function (+){T}(inertia1::SpatialInertia{T}, inertia2::SpatialInertia{T})
+    @assert inertia1.frame == inertia2.frame
+    moment = inertia1.moment + inertia2.moment
+    mass = inertia1.mass + inertia2.mass
+    centerOfMass = (inertia1.centerOfMass * inertia1.mass + inertia2.centerOfMass * inertia2.mass) / mass
+    return SpatialInertia(inertia1.frame, moment, centerOfMass, mass)
+end
+
 function transform{T}(inertia::SpatialInertia{T}, t::Transform3D{T})
     @assert t.from == inertia.frame
 
@@ -34,7 +42,7 @@ function transform{T}(inertia::SpatialInertia{T}, t::Transform3D{T})
     Jnew += R * J * R'
     cnew /= m
 
-    return SpatialInertia(frame, Jnew, cnew, m)
+    return SpatialInertia(t.to, Jnew, cnew, m)
 end
 
 rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) = SpatialInertia(frame, rand(Mat{3, 3, T}), rand(Vec{3, T}), rand(T))
