@@ -48,6 +48,7 @@ export
     attach!,
     configuration_vector,
     velocity_vector,
+    zero_configuration,
     zero_configuration!,
     zero_velocity!,
     zero!,
