@@ -30,24 +30,25 @@ change_body_no_relative_motion(t::Twist, body::CartesianFrame3D) = Twist(body, t
 zero{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, zero(Vec{3, T}), zero(Vec{3, T}))
 rand{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, rand(Vec{3, T}), rand(Vec{3, T}))
 
-immutable MotionSubspaceBasis{T}
+immutable GeometricJacobian{T}
     body::CartesianFrame3D
     base::CartesianFrame3D
     frame::CartesianFrame3D
-    angular::Array{T}
-    linear::Array{T}
+    mat::Array{T}
 end
+angularPart(jac::GeometricJacobian) = jac.mat[1 : 3, :]
+linearPart(jac::GeometricJacobian) = jac.mat[4 : 6, :]
 
-function transform{T}(m::MotionSubspaceBasis{T}, transform::Transform3D{T})
-    @assert m.frame == transform.from
+function transform{T}(jac::GeometricJacobian{T}, transform::Transform3D{T})
+    @assert jac.frame == transform.from
     R = rotationmatrix(transform.rot)
-    angular = R * m.angular
-    linear = R * m.linear
+    angular = R * angularPart(jac)
+    linear = R * linearPart(jac)
     transArray = Array(transform.trans)
     for i = 1 : size(angular, 2)
         linear[:, i] += cross(transArray, angular[:, i])
     end
-    return MotionSubspaceBasis(m.body, m.base, transform.to, angular, linear)
+    return GeometricJacobian(jac.body, jac.base, transform.to, [angular; linear])
 end
 
 # immutable SpatialForceMatrix{N, T}

@@ -31,7 +31,7 @@ export
     Revolute,
     Prismatic,
     Twist,
-    MotionSubspaceBasis,
+    GeometricJacobian,
     Mechanism,
     MechanismState,
     MechanismStateCache,
@@ -39,6 +39,7 @@ export
     transform,
     root,
     bodies,
+    path,
     joints,
     num_positions,
     num_velocities,
@@ -57,5 +58,6 @@ export
     transform_to_root,
     relative_transform,
     mass,
-    center_of_mass
+    center_of_mass,
+    geometric_jacobian
 end

@@ -13,6 +13,7 @@ type Mechanism{T}
     end
 end
 root(m::Mechanism) = m.tree.vertexData
+path(m::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(m.tree, from), findfirst(m.tree, to))
 
 function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T})
     bodyVertex = findfirst(m.tree, body)
@@ -43,8 +44,8 @@ end
 joints{T}(m::Mechanism{T}) = keys(m.jointToJointTransforms)
 bodies{T}(m::Mechanism{T}) = keys(m.bodyFixedFrameDefinitions)
 
-num_positions{T}(m::Mechanism{T}) = reduce((val, joint) -> val + num_positions(joint), 0, joints(m))
-num_velocities{T}(m::Mechanism{T}) = reduce((val, joint) -> val + num_velocities(joint), 0, joints(m))
+num_positions{T}(m::Mechanism{T}) = num_positions(joints(m))
+num_velocities{T}(m::Mechanism{T}) = num_velocities(joints(m))
 
 immutable MechanismState{T}
     q::OrderedDict{Joint, Vector{T}}
@@ -65,8 +66,8 @@ immutable MechanismState{T}
     end
 end
 
-num_positions{T}(x::MechanismState{T}) = reduce((val, joint) -> val + num_positions(joint), 0, keys(x.q))
-num_velocities{T}(x::MechanismState{T}) = reduce((val, joint) -> val + num_velocities(joint), 0, keys(x.v))
+num_positions{T}(x::MechanismState{T}) = num_positions(keys(x.q))
+num_velocities{T}(x::MechanismState{T}) = num_velocities(keys(x.v))
 
 function zero_configuration!{T}(x::MechanismState{T})
     for joint in keys(x.q) x.q[joint] = zero_configuration(joint, T) end

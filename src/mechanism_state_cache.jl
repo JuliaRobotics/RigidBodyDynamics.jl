@@ -1,15 +1,16 @@
 type MechanismStateCache{T}
+    rootFrame::CartesianFrame3D
     transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{T}}}
     transformsToRoot::Dict{CartesianFrame3D, CacheElement{Transform3D{T}}}
     twistsWrtWorld::Dict{RigidBody, CacheElement{Twist{T}}}
-    motionSubspaces::Dict{Joint, MutableCacheElement{MotionSubspaceBasis{T}}}
+    motionSubspaces::Dict{Joint, MutableCacheElement{GeometricJacobian{T}}}
 
-    function MechanismStateCache()
+    function MechanismStateCache(rootFrame::CartesianFrame3D)
         transformsToParent = Dict{CartesianFrame3D, CacheElement{Transform3D{T}}}()
         transformsToRoot = Dict{CartesianFrame3D, CacheElement{Transform3D{T}}}()
         twistsWrtWorld = Dict{RigidBody, CacheElement{Twist{T}}}()
-        motionSubspaces = Dict{Joint, MutableCacheElement{MotionSubspaceBasis}}()
-        new(transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces)
+        motionSubspaces = Dict{Joint, MutableCacheElement{GeometricJacobian}}()
+        new(rootFrame, transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces)
     end
 end
 
@@ -55,13 +56,15 @@ transform_to_root(cache::MechanismStateCache, frame::CartesianFrame3D) = get(cac
 relative_transform(cache::MechanismStateCache, from::CartesianFrame3D, to::CartesianFrame3D) = inv(transform_to_root(cache, to)) * transform_to_root(cache, from)
 twist_wrt_world(cache::MechanismStateCache, body::RigidBody) = get(cache.twistsWrtWorld[body])
 relative_twist(cache::MechanismStateCache, body::RigidBody, base::RigidBody) = -get(cache.twistsWrtWorld[base]) + get(cache.twistsWrtWorld[body])
+motion_subspace(cache::MechanismStateCache, joint::Joint) = get(cache.motionSubspaces[joint])
+
 transform{T}(cache::MechanismStateCache{T}, point::Point3D{T}, to::CartesianFrame3D) = relative_transform(cache, point.frame, to) * point
 transform{T}(cache::MechanismStateCache{T}, twist::Twist{T}, to::CartesianFrame3D) = transform(twist, relative_transform(cache, t.frame, to))
 
 function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
     typealias T promote_type(M, X)
-    cache = MechanismStateCache{T}()
     rootBody = root(m)
+    cache = MechanismStateCache{T}(rootBody.frame)
 
     rootTransform = ImmutableCacheElement(Transform3D{T}(rootBody.frame, rootBody.frame))
     cache.transformsToRoot[rootBody.frame] = rootTransform
@@ -95,9 +98,7 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
             cache.twistsWrtWorld[body] = MutableCacheElement(updateTwistWrtWorld)
 
             # motion subspaces
-            updateMotionSubspace = () -> begin
-                return transform(motion_subspace(joint, qJoint), get(transformToRootCache))
-            end
+            updateMotionSubspace = () -> transform(motion_subspace(joint, qJoint), get(transformToRootCache))
             cache.motionSubspaces[joint] = MutableCacheElement(updateMotionSubspace)
 
         end
