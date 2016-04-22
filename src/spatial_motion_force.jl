@@ -36,7 +36,7 @@ type GeometricJacobian{T}
 end
 angularPart(jac::GeometricJacobian) = jac.mat[1 : 3, :]
 linearPart(jac::GeometricJacobian) = jac.mat[4 : 6, :]
-(*)(jac::GeometricJacobian, v::Vector{Real}) = Twist(jac.body, jac.base, jac.frame, jac.mat * v)
+(*){R<:Real}(jac::GeometricJacobian, v::Vector{R}) = Twist(jac.body, jac.base, jac.frame, jac.mat * v)
 (-)(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.mat)
 
 function hcat{T}(jacobians::GeometricJacobian{T}...)
@@ -60,26 +60,37 @@ function transform(jac::GeometricJacobian, transform::Transform3D)
     return GeometricJacobian(jac.body, jac.base, transform.to, [angular; linear])
 end
 
-immutable Wrench{T}
+abstract ForceSpaceElement{T}
+
+immutable Wrench{T} <: ForceSpaceElement{T}
     frame::CartesianFrame3D
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
-zero{T}(::Type{Wrench{T}}, frame::CartesianFrame3D) = Wrench(frame, zero(Vec{3, T}), zero(Vec{3, T}))
+Wrench{T}(frame::CartesianFrame3D, vec::Vector{T}) = Wrench{T}(frame, vec[1 : 3], vec[4 : 6])
 
-function transform(wrench::Wrench, transform::Transform3D)
-    @assert wrench.frame == transform.from
+immutable Momentum{T} <: ForceSpaceElement{T}
+    frame::CartesianFrame3D
+    angular::Vec{3, T}
+    linear::Vec{3, T}
+end
+Momentum{T}(frame::CartesianFrame3D, vec::Vector{T}) = Momentum{T}(frame, vec[1 : 3], vec[4 : 6])
+
+zero{F<:ForceSpaceElement}(::Type{F}, frame::CartesianFrame3D) = F(frame, zero(Vec{3, T}), zero(Vec{3, T}))
+
+function transform{F<:ForceSpaceElement}(f::F, transform::Transform3D)
+    @assert f.frame == transform.from
     R = Mat(rotationmatrix(transform.rot))
-    linear = R * wrench.linear
-    angular = R * wrench.angular + cross(transform.trans, linear)
-    return Wrench(transform.to, angular, linear)
+    linear = R * f.linear
+    angular = R * f.angular + cross(transform.trans, linear)
+    return F(transform.to, angular, linear)
 end
 
-function (+)(wrench1::Wrench, wrench2::Wrench)
-    @assert wrench1.frame == wrench2.frame
-    return Wrench(wrench1.frame, wrench1.angular + wrench2.angular, wrench1.linear + wrench2.linear)
+function (+){F<:ForceSpaceElement}(f1::F, f2::F)
+    @assert f1.frame == f2.frame
+    return F(f1.frame, f1.angular + f2.angular, f1.linear + f2.linear)
 end
-(-)(w::Wrench) = Wrench(w.frame, -w.angular, -w.linear)
+(-){F<:ForceSpaceElement}(f::F) = F(f.frame, -f.angular, -f.linear)
 
 type MomentumMatrix{T}
     frame::CartesianFrame3D
@@ -110,3 +121,20 @@ function hcat{T}(mats::MomentumMatrix{T}...)
     end
     return MomentumMatrix(frame, hcat([m.mat for m in mats]...))
 end
+
+(*){T, R<:Real}(mat::MomentumMatrix{T}, v::Vector{R}) = Momentum(mat.frame, mat.mat * v)
+
+immutable SpatialAcceleration{T}
+    body::CartesianFrame3D
+    base::CartesianFrame3D
+    frame::CartesianFrame3D
+    angular::Vec{3, T}
+    linear::Vec{3, T}
+end
+
+function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
+    @assert accel1.body == accel2.base
+    @assert accel1.frame == accel2.frame
+    return SpatialAcceleration(accel2.body, accel1.base, accel1.frame, accel1.angular + accel2.angular, accel1.linear + accel2.linear)
+end
+(-)(accel::SpatialAcceleration) = SpatialAcceleration(accel.base, accel.body, accel.frame, -accel.angular, -accel.linear)
