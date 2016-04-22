@@ -45,6 +45,8 @@ export
     num_velocities,
     joint_transform,
     motion_subspace,
+    spatial_inertia,
+    crb_inertia,
     attach!,
     configuration_vector,
     velocity_vector,
@@ -61,5 +63,6 @@ export
     mass,
     center_of_mass,
     geometric_jacobian,
-    mass_matrix
+    mass_matrix,
+    momentum_matrix
 end

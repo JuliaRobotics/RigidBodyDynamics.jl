@@ -65,6 +65,7 @@ immutable Wrench{T}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
+zero{T}(::Type{Wrench{T}}, frame::CartesianFrame3D) = Wrench(frame, zero(Vec{3, T}), zero(Vec{3, T}))
 
 function transform(wrench::Wrench, transform::Transform3D)
     @assert wrench.frame == transform.from
@@ -75,8 +76,37 @@ function transform(wrench::Wrench, transform::Transform3D)
 end
 
 function (+)(wrench1::Wrench, wrench2::Wrench)
-    @assert twist1.body == twist2.base
-    @assert twist1.frame == twist2.frame
-    return Twist(twist2.body, twist1.base, twist1.frame, twist1.angular + twist2.angular, twist1.linear + twist2.linear)
+    @assert wrench1.frame == wrench2.frame
+    return Wrench(wrench1.frame, wrench1.angular + wrench2.angular, wrench1.linear + wrench2.linear)
 end
-(-)(t::Twist) = Twist(t.base, t.body, t.frame, -t.angular, -t.linear)
+(-)(w::Wrench) = Wrench(w.frame, -w.angular, -w.linear)
+
+type MomentumMatrix{T}
+    frame::CartesianFrame3D
+    mat::Array{T}
+end
+function (*){T}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T})
+    @assert inertia.frame == jac.frame
+
+    Jω = angularPart(jac)
+    Jv = linearPart(jac)
+    I = Array(inertia.moment)
+    c = Array(inertia.centerOfMass)
+    m = inertia.mass
+    angular = I * Jω
+    linear = m * Jv
+    for i = 1 : size(Jω, 2)
+        mc = m * c
+        angular[:, i] += cross(mc, Jv[:, i])
+        linear[:, i] -= cross(mc, Jω[:, i])
+    end
+    return MomentumMatrix(inertia.frame, [linear; angular])
+end
+
+function hcat{T}(mats::MomentumMatrix{T}...)
+    frame = mats[1].frame
+    for j = 2 : length(mats)
+        @assert mats[j].frame == frame
+    end
+    return MomentumMatrix(frame, hcat([m.mat for m in mats]...))
+end

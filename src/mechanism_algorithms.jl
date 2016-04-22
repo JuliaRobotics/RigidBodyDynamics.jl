@@ -69,3 +69,8 @@ function mass_matrix{C}(cache::MechanismStateCache{C})
     end
     return H
 end
+
+function momentum_matrix(cache::MechanismStateCache)
+    bodiesAndJoints = [(vertex.vertexData::RigidBody, vertex.edgeToParentData::Joint) for vertex in cache.toposortedTree[2 : end]]
+    return hcat([spatial_inertia(cache, body) * motion_subspace(cache, joint) for (body, joint) in bodiesAndJoints]...)
+end
