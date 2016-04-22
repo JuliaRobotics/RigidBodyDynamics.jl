@@ -30,20 +30,24 @@ change_body_no_relative_motion(t::Twist, body::CartesianFrame3D) = Twist(body, t
 zero{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, zero(Vec{3, T}), zero(Vec{3, T}))
 rand{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, rand(Vec{3, T}), rand(Vec{3, T}))
 
-immutable MotionSubspaceBasis{N, T}
+immutable MotionSubspaceBasis{T}
     body::CartesianFrame3D
     base::CartesianFrame3D
     frame::CartesianFrame3D
-    angular::Mat{3, N, T}
-    linear::Mat{3, N, T}
+    angular::Array{T}
+    linear::Array{T}
 end
 
-function transform{N, T}(m::MotionSubspaceBasis{N, T}, t::Transform3D{T})
-    @assert m.frame == t.from
-    R = Mat(rotationmatrix(t.rot))
+function transform{T}(m::MotionSubspaceBasis{T}, transform::Transform3D{T})
+    @assert m.frame == transform.from
+    R = rotationmatrix(transform.rot)
     angular = R * m.angular
-    linear = R * m.linear + broadcast(cross, t.trans, angular)
-    return MotionSubspaceBasis(m.body, m.base, t.to, angular, linear)
+    linear = R * m.linear
+    transArray = Array(transform.trans)
+    for i = 1 : size(angular, 2)
+        linear[:, i] += cross(transArray, angular[:, i])
+    end
+    return MotionSubspaceBasis(m.body, m.base, transform.to, angular, linear)
 end
 
 # immutable SpatialForceMatrix{N, T}

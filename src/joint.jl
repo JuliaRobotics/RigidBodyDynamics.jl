@@ -10,11 +10,11 @@ immutable Joint
 end
 
 immutable QuaternionFloating <: JointType
-    motionSubspaceAngular::Mat{3, 6, Float64}
-    motionSubspaceLinear::Mat{3, 6, Float64}
+    motionSubspaceAngular::Array{Float64, 2}
+    motionSubspaceLinear::Array{Float64, 2}
     function QuaternionFloating()
-        motionSubspaceAngular = Mat([eye(3) zeros(3, 3)])
-        motionSubspaceLinear = Mat([zeros(3, 3) eye(3)])
+        motionSubspaceAngular = [eye(3) zeros(3, 3)]
+        motionSubspaceLinear = [zeros(3, 3) eye(3)]
         new(motionSubspaceAngular, motionSubspaceLinear)
     end
 end
@@ -47,9 +47,9 @@ end
 
 immutable Prismatic{T} <: JointType
     translation_axis::Vec{3, T}
-    motionSubspaceAngular::Mat{3, 1, T}
-    motionSubspaceLinear::Mat{3, 1, T}
-    Prismatic(translation_axis::Vec{3, T}) = new(translation_axis, zero(Mat{3, 1, T}), Mat(translation_axis))
+    motionSubspaceAngular::Vector{Float64}
+    motionSubspaceLinear::Vector{Float64}
+    Prismatic(translation_axis::Vec{3, T}) = new(translation_axis, zeros(3), Array(translation_axis))
 end
 Prismatic{T}(rotation_axis::Vec{3, T}) = Prismatic{T}(rotation_axis)
 
@@ -65,9 +65,9 @@ end
 
 immutable Revolute{T} <: JointType
     rotation_axis::Vec{3, T}
-    motionSubspaceAngular::Mat{3, 1, T}
-    motionSubspaceLinear::Mat{3, 1, T}
-    Revolute(rotation_axis::Vec{3, T}) = new(rotation_axis, Mat(rotation_axis), zero(Mat{3, 1, T}))
+    motionSubspaceAngular::Vector{Float64}
+    motionSubspaceLinear::Vector{Float64}
+    Revolute(rotation_axis::Vec{3, T}) = new(rotation_axis, Array(rotation_axis), zeros(3))
 end
 Revolute{T}(rotation_axis::Vec{3, T}) = Revolute{T}(rotation_axis)
 

@@ -1,17 +1,15 @@
-# TODO: caches for twists, spatial inertias
-# idea: generalize to LocalGlobalCache, parameterized by cache element type and composition operator?
-# can keep setdirty functions,
-
 type MechanismStateCache{T}
     transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{T}}}
     transformsToRoot::Dict{CartesianFrame3D, CacheElement{Transform3D{T}}}
     twistsWrtWorld::Dict{RigidBody, CacheElement{Twist{T}}}
+    motionSubspaces::Dict{Joint, MutableCacheElement{MotionSubspaceBasis{T}}}
 
     function MechanismStateCache()
         transformsToParent = Dict{CartesianFrame3D, CacheElement{Transform3D{T}}}()
         transformsToRoot = Dict{CartesianFrame3D, CacheElement{Transform3D{T}}}()
         twistsWrtWorld = Dict{RigidBody, CacheElement{Twist{T}}}()
-        new(transformsToParent, transformsToRoot, twistsWrtWorld)
+        motionSubspaces = Dict{Joint, MutableCacheElement{MotionSubspaceBasis}}()
+        new(transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces)
     end
 end
 
@@ -95,6 +93,13 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
                 return parentTwist + transform(jointTwist, get(transformToRootCache))
             end
             cache.twistsWrtWorld[body] = MutableCacheElement(updateTwistWrtWorld)
+
+            # motion subspaces
+            updateMotionSubspace = () -> begin
+                return transform(motion_subspace(joint, qJoint), get(transformToRootCache))
+            end
+            cache.motionSubspaces[joint] = MutableCacheElement(updateMotionSubspace)
+
         end
 
         # additional body fixed frames
