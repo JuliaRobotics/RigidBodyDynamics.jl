@@ -9,6 +9,12 @@ type TreeVertex{V, E}
 end
 typealias Tree{V, E} TreeVertex{V, E}
 
+immutable Path{V, E}
+    vertexData::Vector{V}
+    edgeData::Vector{E}
+    directions::Vector{Int64}
+end
+
 isroot{V, E}(v::TreeVertex{V, E}) = !isdefined(v, :parent)
 isleaf{V, E}(v::TreeVertex{V, E}) = isempty(v.children)
 
@@ -62,20 +68,52 @@ function insert!{V, E}(tree::Tree{V, E}, vertexData::V, edgeData::E, parentData:
     return vertex
 end
 
-function ancestors{V, E}(vertex::TreeVertex{V, E}, result = Vector{TreeVertex{V, E}}())
-    # includes self
-    push!(result, vertex)
-    !isroot(vertex) && ancestors(vertex.parent, result)
+function ancestors{V, E}(vertex::TreeVertex{V, E})
+    current = vertex
+    result = Vector{TreeVertex{V, E}}()
+    while !isroot(current)
+        push!(result, current.parent)
+        current = current.parent
+    end
     return result
 end
 
-function least_common_ancestor{V, E}(v1::TreeVertex{V, E}, v2::TreeVertex{V, E})
-    ancestors1 = ancestors(v1);
-    ancestors2 = ancestors(v2);
-    for i = min(length(ancestors1), length(ancestors2)) : -1 : 2
-        ancestors1[i] != ancestors2[i] && return ancestors1[i + 1]
+function path{V, E}(from::TreeVertex{V, E}, to::TreeVertex{V, E})
+    ancestorsFrom = [from; ancestors(from)]
+    ancestorsTo = [to; ancestors(to)]
+
+    # find least common ancestor
+    common_size = min(length(ancestorsFrom), length(ancestorsTo))
+    lca_found = false
+    fromIndex = length(ancestorsFrom) - common_size + 1
+    toIndex = length(ancestorsTo) - common_size + 1
+    i = 1
+    while i <= common_size
+        if ancestorsFrom[fromIndex] == ancestorsTo[toIndex]
+            lca_found = true
+            break
+        end
+        i += 1
+        fromIndex += 1
+        toIndex += 1
     end
-    return ancestors1[1]
+    !lca_found && error("no path between vertices")
+
+    vertexData = Vector{V}()
+    edgeData = Vector{E}()
+    directions = Vector{Int64}()
+    for j = 1 : fromIndex - 1
+        push!(vertexData, ancestorsFrom[j].vertexData)
+        push!(edgeData, ancestorsFrom[j].edgeToParentData)
+        push!(directions, -1)
+    end
+    push!(vertexData, ancestorsFrom[fromIndex].vertexData)
+    for j = toIndex - 1 : -1 : 1
+        push!(vertexData, ancestorsTo[j].vertexData)
+        push!(edgeData, ancestorsTo[j].edgeToParentData)
+        push!(directions, 1)
+    end
+    return Path(vertexData, edgeData, directions)
 end
 
 function leaves{V, E}(tree::Tree{V, E})
