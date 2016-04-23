@@ -1,4 +1,4 @@
-function subtree_mass{M}(base::Tree{RigidBody{M}, Joint})
+function subtree_mass{T}(base::Tree{RigidBody{T}, Joint})
     if isroot(base)
         result = 0
     else
@@ -9,10 +9,11 @@ function subtree_mass{M}(base::Tree{RigidBody{M}, Joint})
     end
     return result
 end
-mass{M}(m::Mechanism{M}) = subtree_mass(m.tree)
+mass(m::Mechanism) = subtree_mass(tree(m))
+mass(cache::MechanismStateCache) = subtree_mass(cache.mechanism)
 
 function center_of_mass{C}(cache::MechanismStateCache{C}, itr)
-    frame = cache.rootFrame
+    frame = root_body(cache.mechanism).frame
     com = Point3D(frame, zero(Vec{3, C}))
     mass = zero(C)
     for body in itr
@@ -26,7 +27,7 @@ function center_of_mass{C}(cache::MechanismStateCache{C}, itr)
     return com
 end
 
-center_of_mass(m::Mechanism, cache::MechanismStateCache) = center_of_mass(cache, bodies(m))
+center_of_mass(cache::MechanismStateCache) = center_of_mass(cache, bodies(cache.mechanism))
 
 function geometric_jacobian{C, M}(cache::MechanismStateCache{C}, path::Path{RigidBody{M}, Joint})
     flipIfNecessary = (sign::Int64, motionSubspace::GeometricJacobian{C}) -> sign == -1 ? -motionSubspace : motionSubspace
@@ -38,9 +39,9 @@ function mass_matrix{C}(cache::MechanismStateCache{C})
     nv = num_velocities(keys(cache.motionSubspaces))
     H = Array(C, nv, nv)
 
-    for i = 2 : length(cache.toposortedTree)
-        vertex_i = cache.toposortedTree[i]
-        
+    for i = 2 : length(cache.mechanism.toposortedTree)
+        vertex_i = cache.mechanism.toposortedTree[i]
+
         # Hii
         body_i = vertex_i.vertexData
         joint_i = vertex_i.edgeToParentData
@@ -68,6 +69,6 @@ function mass_matrix{C}(cache::MechanismStateCache{C})
 end
 
 function momentum_matrix(cache::MechanismStateCache)
-    bodiesAndJoints = [(vertex.vertexData::RigidBody, vertex.edgeToParentData::Joint) for vertex in cache.toposortedTree[2 : end]]
+    bodiesAndJoints = [(vertex.vertexData::RigidBody, vertex.edgeToParentData::Joint) for vertex in cache.mechanism.toposortedTree[2 : end]]
     return hcat([spatial_inertia(cache, body) * motion_subspace(cache, joint) for (body, joint) in bodiesAndJoints]...)
 end

@@ -15,11 +15,17 @@ function (+)(twist1::Twist, twist2::Twist)
 end
 (-)(t::Twist) = Twist(t.base, t.body, t.frame, -t.angular, -t.linear)
 
+function transformSpatialMotion(angular::Vec{3}, linear::Vec{3}, R::Mat{3, 3}, p::Vec{3}) # TODO: version that works directly with quaternion rotation parameterization
+    angular = R * angular
+    linear = R * linear + cross(p, angular)
+    return angular, linear
+end
+
 function transform(twist::Twist, transform::Transform3D)
     @assert twist.frame == transform.from
     R = Mat(rotationmatrix(transform.rot))
-    angular = R * twist.angular
-    linear = R * twist.linear + cross(transform.trans, angular)
+    p = transform.trans
+    angular, linear = transformSpatialMotion(twist.angular, twist.linear, R, p)
     return Twist(twist.body, twist.base, transform.to, angular, linear)
 end
 
@@ -138,3 +144,33 @@ function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
     return SpatialAcceleration(accel2.body, accel1.base, accel1.frame, accel1.angular + accel2.angular, accel1.linear + accel2.linear)
 end
 (-)(accel::SpatialAcceleration) = SpatialAcceleration(accel.base, accel.body, accel.frame, -accel.angular, -accel.linear)
+
+function transform{T}(accel::SpatialAcceleration{T}, oldToNew::Transform3D{T}, twistOfCurrentWrtNew::Twist{T}, twistOfBodyWrtBase::Twist{T})
+    # trivial case
+    accel.frame == oldToNew.to && return accel
+
+    # frame checks
+    @assert oldToNew.from == accel.frame
+    @assert twistOfCurrentWrtNew.frame == accel.frame
+    @assert twistOfCurrentWrtNew.body == accel.frame
+    @assert twistOfCurrentWrtNew.base == oldToNew.to
+    @assert twistOfBodyWrtBase.frame == accel.frame
+    @assert twistOfBodyWrtBase.body == accel.body
+    @assert twistOfBodyWrtBase.base == accel.base
+
+    # spatial motion cross product:
+    angular = cross(twistOfCurrentWrtNew.angular, twistOfBodyWrtBase.angular)
+    linear = cross(twistOfCurrentWrtNew.linear, twistOfBodyWrtBase.angular)
+    linear += cross(twistOfCurrentWrtNew.angular, twistOfBodyWrtBase.linear)
+
+    # add current acceleration:
+    angular += accel.angular
+    linear += accel.linear
+
+    # transform to new frame
+    R = Mat(rotationmatrix(oldToNew.rot))
+    p = oldToNew.trans
+    (angular, linear) = transformSpatialMotion(angular, linear, R, p)
+
+    return SpatialAcceleration(accel.body, accel.base, oldToNew.to, angular, linear)
+end

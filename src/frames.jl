@@ -58,6 +58,7 @@ end
 Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Quaternion{T}, trans::Vec{3, T}) = Transform3D{T}(from, to, rot, trans)
 Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Quaternion{T}) = Transform3D{T}(from, to, rot, zero(Vec{3, T}))
 Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, trans::Vec{3, T}) = Transform3D{T}(from, to, one(Quaternion{T}), trans)
+Transform3D{T}(::Type{T}, frame::CartesianFrame3D) = Transform3D{T}(frame, frame, one(Quaternion{T}), zero(Vec{3, T}))
 
 function *(t1::Transform3D, t2::Transform3D)
     @assert t1.from == t2.to

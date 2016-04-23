@@ -1,6 +1,5 @@
 type MechanismStateCache{C<:Real, M<:Real}
-    rootFrame::CartesianFrame3D
-    toposortedTree::Vector{TreeVertex{RigidBody{M}, Joint}}
+    mechanism::Mechanism{M}
     velocityVectorStartIndices::Dict{Joint, Int64}
     transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}
     transformsToRoot::Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}
@@ -10,9 +9,7 @@ type MechanismStateCache{C<:Real, M<:Real}
     crbInertias::Dict{RigidBody{M}, MutableCacheElement{SpatialInertia{C}}}
 
     function MechanismStateCache(m::Mechanism{M})
-        rootFrame = root(m).frame
-        toposortedTree = toposort(m.tree)
-        sortedjoints = [x.edgeToParentData for x in toposortedTree[2 : end]] # TODO: just get from state vector data once they're merged
+        sortedjoints = [x.edgeToParentData for x in m.toposortedTree[2 : end]] # TODO: just get from state vector data once they're merged
         velocityVectorStartIndices = Dict{Joint, Int64}()
         startIndex = 1
         for joint in sortedjoints
@@ -25,7 +22,7 @@ type MechanismStateCache{C<:Real, M<:Real}
         motionSubspaces = Dict{Joint, MutableCacheElement{GeometricJacobian}}()
         spatialInertias = Dict{RigidBody{M}, MutableCacheElement{SpatialInertia{C}}}()
         crbInertias = Dict{RigidBody{M}, MutableCacheElement{SpatialInertia{C}}}()
-        new(rootFrame, toposortedTree, velocityVectorStartIndices, transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces, spatialInertias, crbInertias)
+        new(m, velocityVectorStartIndices, transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces, spatialInertias, crbInertias)
     end
 end
 
@@ -65,25 +62,43 @@ transform_to_root(cache::MechanismStateCache, frame::CartesianFrame3D) = get(cac
 relative_transform(cache::MechanismStateCache, from::CartesianFrame3D, to::CartesianFrame3D) = inv(transform_to_root(cache, to)) * transform_to_root(cache, from)
 twist_wrt_world(cache::MechanismStateCache, body::RigidBody) = get(cache.twistsWrtWorld[body])
 relative_twist(cache::MechanismStateCache, body::RigidBody, base::RigidBody) = -get(cache.twistsWrtWorld[base]) + get(cache.twistsWrtWorld[body])
+relative_twist(cache::MechanismStateCache, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D) = relative_twist(cache, cache.mechanism.bodyFixedFrameToBody[bodyFrame],  cache.mechanism.bodyFixedFrameToBody[baseFrame])
 motion_subspace(cache::MechanismStateCache, joint::Joint) = get(cache.motionSubspaces[joint])
 spatial_inertia(cache::MechanismStateCache, body::RigidBody) = get(cache.spatialInertias[body])
 crb_inertia(cache::MechanismStateCache, body::RigidBody) = get(cache.crbInertias[body])
 
-transform{C}(cache::MechanismStateCache{C}, point::Point3D{C}, to::CartesianFrame3D) = relative_transform(cache, point.frame, to) * point
-transform{C}(cache::MechanismStateCache{C}, twist::Twist{C}, to::CartesianFrame3D) = transform(twist, relative_transform(cache, t.frame, to))
+function transform{C}(cache::MechanismStateCache{C}, point::Point3D{C}, to::CartesianFrame3D)
+    point.frame == to && return point # nothing to be done
+    relative_transform(cache, point.frame, to) * point
+end
+
+function transform{C}(cache::MechanismStateCache{C}, twist::Twist{C}, to::CartesianFrame3D)
+    twist.frame == to && return twist # nothing to be done
+    transform(twist, relative_transform(cache, t.frame, to))
+end
+
+function transform{C}(cache::MechanismStateCache{C}, accel::SpatialAcceleration{C}, to::CartesianFrame3D)
+    accel.frame == to && return accel # nothing to be done
+    oldToRoot = transform_to_root(cache, accel.frame)
+    rootToOld = inv(oldToRoot)
+    twistOfBodyWrtBase = transform(relative_twist(cache, accel.body, accel.base), rootToOld)
+    twistOfOldWrtNew = transform(relative_twist(cache, accel.frame, to), rootToOld)
+    oldToNew = inv(transform_to_root(cache, to)) * oldToRoot
+    return transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
+end
 
 function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
     typealias C promote_type(M, X)
-    rootBody = root(m)
+    root = root_body(m)
     cache = MechanismStateCache{C, M}(m)
 
-    rootTransform = ImmutableCacheElement(Transform3D{C}(rootBody.frame, rootBody.frame))
-    cache.transformsToRoot[rootBody.frame] = rootTransform
+    rootTransform = ImmutableCacheElement(Transform3D{C}(root.frame, root.frame))
+    cache.transformsToRoot[root.frame] = rootTransform
 
-    rootTwist = zero(Twist{C}, rootBody.frame, rootBody.frame, rootBody.frame)
-    cache.twistsWrtWorld[rootBody] = ImmutableCacheElement(rootTwist)
+    rootTwist = zero(Twist{C}, root.frame, root.frame, root.frame)
+    cache.twistsWrtWorld[root] = ImmutableCacheElement(rootTwist)
 
-    for vertex in cache.toposortedTree
+    for vertex in m.toposortedTree
         body = vertex.vertexData
         if !isroot(vertex)
             parentVertex = vertex.parent
@@ -121,7 +136,9 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
 
         # additional body fixed frames
         for transform in m.bodyFixedFrameDefinitions[body]
-            add_frame!(cache, transform)
+            if transform.from != transform.to
+                add_frame!(cache, transform)
+            end
         end
 
         if !isroot(vertex)
