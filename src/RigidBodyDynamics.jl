@@ -8,9 +8,8 @@ using Quaternions
 using DataStructures
 
 include("frames.jl")
-include("spatial_inertia.jl")
-include("rigid_body.jl")
 include("spatial_motion_force.jl")
+include("rigid_body.jl")
 include("joint.jl")
 include("tree.jl")
 include("mechanism.jl")

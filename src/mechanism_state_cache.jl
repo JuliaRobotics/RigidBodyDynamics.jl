@@ -105,7 +105,6 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
             parentBody = parentVertex.vertexData
             joint = vertex.edgeToParentData
             parentFrame = isroot(parentVertex) ? parentBody.frame : parentVertex.edgeToParentData.frameAfter
-            println(parentFrame)
 
             qJoint = x.q[joint]
             vJoint = x.v[joint]
