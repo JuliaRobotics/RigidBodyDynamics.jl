@@ -174,3 +174,6 @@ function transform{T}(accel::SpatialAcceleration{T}, oldToNew::Transform3D{T}, t
 
     return SpatialAcceleration(accel.body, accel.base, oldToNew.to, angular, linear)
 end
+
+zero{T}(::Type{SpatialAcceleration{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = SpatialAcceleration(body, base, frame, zero(Vec{3, T}), zero(Vec{3, T}))
+rand{T}(::Type{SpatialAcceleration{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = SpatialAcceleration(body, base, frame, rand(Vec{3, T}), rand(Vec{3, T}))

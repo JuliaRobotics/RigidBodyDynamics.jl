@@ -50,6 +50,8 @@ export
     num_velocities,
     joint_transform,
     motion_subspace,
+    has_fixed_motion_subspace,
+    bias_acceleration,
     spatial_inertia,
     crb_inertia,
     attach!,
