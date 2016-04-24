@@ -18,6 +18,7 @@ tree(m::Mechanism) = m.toposortedTree[1]
 root_body(m::Mechanism) = root_vertex(m).vertexData
 root_frame(m::Mechanism) = root_body(m).frame
 path(m::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(tree(m), from), findfirst(tree(m), to))
+show(io::IO, m::Mechanism) = print(io, m.toposortedTree[1])
 
 function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T})
     fixedFrameDefinitions = m.bodyFixedFrameDefinitions[body]

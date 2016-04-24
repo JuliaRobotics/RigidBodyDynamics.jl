@@ -11,3 +11,5 @@ end
 RigidBody{T}(inertia::SpatialInertia{T}) = RigidBody{T}(inertia)
 name(b::RigidBody) = b.frame.name
 isroot(b::RigidBody) = !isdefined(b, :inertia)
+show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(name(b))\"")
+showcompact(io::IO, b::RigidBody) = print(io, "$(name(b))")

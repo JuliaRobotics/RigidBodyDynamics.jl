@@ -2,7 +2,7 @@
 
 module RigidBodyDynamics
 
-import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat
+import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat, show, showcompact
 using FixedSizeArrays
 using Quaternions
 using DataStructures
@@ -57,6 +57,7 @@ export
     configuration_vector,
     velocity_vector,
     zero_configuration,
+    rand_configuration,
     zero_configuration!,
     zero_velocity!,
     zero!,

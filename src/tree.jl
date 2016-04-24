@@ -9,14 +9,29 @@ type TreeVertex{V, E}
 end
 typealias Tree{V, E} TreeVertex{V, E}
 
-immutable Path{V, E}
-    vertexData::Vector{V}
-    edgeData::Vector{E}
-    directions::Vector{Int64}
-end
-
 isroot{V, E}(v::TreeVertex{V, E}) = !isdefined(v, :parent)
 isleaf{V, E}(v::TreeVertex{V, E}) = isempty(v.children)
+
+function showcompact(io::IO, vertex::TreeVertex)
+    print(io, "Vertex: ")
+    showcompact(io, vertex.vertexData)
+    if isroot(vertex)
+        print(io, " (root)")
+    else
+        print(io, ", ")
+        print(io, "Edge: ")
+        showcompact(io, vertex.edgeToParentData)
+    end
+end
+
+function show(io::IO, vertex::TreeVertex, level = 0)
+    for i = 1 : level print(io, "  ") end
+    showcompact(io, vertex)
+    for child in vertex.children
+        print(io, "\n")
+        show(io, child, level + 1)
+    end
+end
 
 function findfirst{V, E}(pred::Function, tree::Tree{V, E})
     # depth first search
@@ -78,6 +93,32 @@ function ancestors{V, E}(vertex::TreeVertex{V, E})
     return result
 end
 
+function leaves{V, E}(tree::Tree{V, E})
+    return find(x -> isleaf(x), tree)
+end
+
+function map!{F, V, E}(f::F, tree::Tree{V, E})
+    root = tree
+    f(root)
+    for child in root.children
+        map!(f, child)
+    end
+    return tree
+end
+
+immutable Path{V, E}
+    vertexData::Vector{V}
+    edgeData::Vector{E}
+    directions::Vector{Int64}
+end
+
+function show(io::IO, p::Path)
+    println(io, "Path:")
+    println(io, "Vertices: $(p.vertexData)")
+    println(io, "Edges: $(p.edgeData)")
+    print(io, "Directions: $(p.directions)")
+end
+
 function path{V, E}(from::TreeVertex{V, E}, to::TreeVertex{V, E})
     ancestorsFrom = [from; ancestors(from)]
     ancestorsTo = [to; ancestors(to)]
@@ -114,17 +155,4 @@ function path{V, E}(from::TreeVertex{V, E}, to::TreeVertex{V, E})
         push!(directions, 1)
     end
     return Path(vertexData, edgeData, directions)
-end
-
-function leaves{V, E}(tree::Tree{V, E})
-    return find(x -> isleaf(x), tree)
-end
-
-function map!{F, V, E}(f::F, tree::Tree{V, E})
-    root = tree
-    f(root)
-    for child in root.children
-        map!(f, child)
-    end
-    return tree
 end

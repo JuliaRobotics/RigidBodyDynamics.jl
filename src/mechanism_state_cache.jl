@@ -112,9 +112,6 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
             parentBody = parentVertex.vertexData
             joint = vertex.edgeToParentData
             parentFrame = default_frame(m, parentBody)
-            println(body)
-            println(parentFrame)
-            println()
 
             qJoint = x.q[joint]
             vJoint = x.v[joint]
@@ -152,7 +149,7 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
                 cache.biasAccelerations[body] = MutableCacheElement(joint_bias)
             else
                 parentBiasAccelerationCache = cache.biasAccelerations[parentBody]
-                cache.biasAccelerations[body] = MutableCacheElement(() -> (get(parentBiasAccelerationCache) + joint_bias()))
+                cache.biasAccelerations[body] = MutableCacheElement(() -> get(parentBiasAccelerationCache) + joint_bias())
             end
         end
 

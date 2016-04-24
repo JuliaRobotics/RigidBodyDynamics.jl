@@ -8,6 +8,8 @@ immutable Joint
 
     Joint(name::ASCIIString, jointType::JointType) = new(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
 end
+show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
+showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
 
 immutable QuaternionFloating <: JointType
     motionSubspace::Array{Float64, 2}
@@ -15,6 +17,7 @@ immutable QuaternionFloating <: JointType
         new(eye(6))
     end
 end
+show(io::IO, jt::QuaternionFloating) = print(io, "Quaternion floating joint")
 
 function joint_transform{T<:Real}(j::Joint, q::Vector{T}, jt::QuaternionFloating = j.jointType)
     rot = Quaternion(q[1], q[2 : 4])
@@ -51,6 +54,7 @@ immutable Prismatic{T<:Real} <: OneDegreeOfFreedomFixedAxis
     Prismatic(translation_axis::Vec{3, T}) = new(translation_axis, [zeros(3); Array(translation_axis)])
 end
 Prismatic{T}(rotation_axis::Vec{3, T}) = Prismatic{T}(rotation_axis)
+show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.translation_axis)")
 
 joint_transform{T1<:Real, T2}(j::Joint, q::Vector{T1}, jt::Prismatic{T2} = j.jointType) = Transform3D(j.frameAfter, j.frameBefore, q[1] * jt.translation_axis)
 
@@ -68,6 +72,7 @@ immutable Revolute{T<:Real} <: OneDegreeOfFreedomFixedAxis
     Revolute(rotation_axis::Vec{3, T}) = new(rotation_axis, [Array(rotation_axis); zeros(3)])
 end
 Revolute{T}(rotation_axis::Vec{3, T}) = Revolute{T}(rotation_axis)
+show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.rotation_axis)")
 
 joint_transform{T1, T2}(j::Joint, q::Vector{T1}, jt::Revolute{T2} = j.jointType) = Transform3D(j.frameAfter, j.frameBefore, qrotation(Array(jt.rotation_axis), q[1]))
 

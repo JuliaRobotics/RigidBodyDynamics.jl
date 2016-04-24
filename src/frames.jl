@@ -11,6 +11,7 @@ end
 immutable CartesianFrame3D
     name::ASCIIString
 end
+show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(frame.name)\"")
 
 immutable Point3D{T<:Real}
     frame::CartesianFrame3D
@@ -25,6 +26,7 @@ Point3D{T}(frame::CartesianFrame3D, v::Vec{3, T}) = Point3D{T}(frame, v)
 (*)(p::Point3D, s::Real) = Point3D(p.frame, p.v * s)
 (*)(s::Real, p::Point3D) = Point3D(p.frame, s * p.v)
 rand{T}(::Type{Point3D{T}}, frame::CartesianFrame3D) = Point3D(frame, rand(Vec{3, T}))
+show(io::IO, p::Point3D) = print(io, "Point3D in \"$(p.frame.name)\": $(p.v)")
 
 immutable FreeVector3D{T<:Real}
     frame::CartesianFrame3D
@@ -39,6 +41,7 @@ FreeVector3D{T}(frame::CartesianFrame3D, v::Vec{3, T}) = FreeVector3D{T}(frame, 
 (*)(v::FreeVector3D, s::Real) = FreeVector3D(v.frame, v.v * s)
 (*)(s::Real, v::FreeVector3D) = FreeVector3D(v.frame, s * v.v)
 rand{T}(::Type{FreeVector3D{T}}, frame::CartesianFrame3D) = FreeVector3D(frame, rand(Vec{3, T}))
+show(io::IO, v::FreeVector3D) = print(io, "FreeVector3D in \"$(v.frame.name)\": $(v.v)")
 
 # Mixed Point and FreeVector
 (+)(p1::Point3D, v2::FreeVector3D) = begin @assert p1.frame == v2.frame; return Point3D(p1.frame, p1.v + v2.v) end
@@ -59,6 +62,11 @@ Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Quaternion{T},
 Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Quaternion{T}) = Transform3D{T}(from, to, rot, zero(Vec{3, T}))
 Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, trans::Vec{3, T}) = Transform3D{T}(from, to, one(Quaternion{T}), trans)
 Transform3D{T}(::Type{T}, frame::CartesianFrame3D) = Transform3D{T}(frame, frame, one(Quaternion{T}), zero(Vec{3, T}))
+function show(io::IO, t::Transform3D)
+    println(io, "Transform3D from \"$(t.from.name)\" to \"$(t.to.name)\":")
+    angle, axis = angleaxis(t.rot)
+    println(io, "rotation: $(2 * angle) rad about $(axis), translation: $(t.trans)") # TODO: 2 * angle because Quaternions.jl is wrong... need to notify
+end
 
 function *(t1::Transform3D, t2::Transform3D)
     @assert t1.from == t2.to
