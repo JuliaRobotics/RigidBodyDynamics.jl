@@ -57,7 +57,7 @@ end
 
 joints{T}(m::Mechanism{T}) = keys(m.jointToJointTransforms)
 bodies{T}(m::Mechanism{T}) = keys(m.bodyFixedFrameDefinitions)
-default_frame(m::Mechanism, body::RigidBody) = first(bodyFixedFrameDefinitions[body]).to # allows standardization on a frame to reduce number of transformations required
+default_frame(m::Mechanism, body::RigidBody) = first(m.bodyFixedFrameDefinitions[body]).to # allows standardization on a frame to reduce number of transformations required
 
 num_positions{T}(m::Mechanism{T}) = num_positions(joints(m))
 num_velocities{T}(m::Mechanism{T}) = num_velocities(joints(m))
