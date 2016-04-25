@@ -89,7 +89,7 @@ function (+)(twist1::Twist, twist2::Twist)
 end
 (-)(t::Twist) = Twist(t.base, t.body, t.frame, -t.angular, -t.linear)
 
-function transformSpatialMotion(angular::Vec{3}, linear::Vec{3}, R::Mat{3, 3}, p::Vec{3}) # TODO: version that works directly with quaternion rotation parameterization
+function transform_spatial_motion(angular::Vec{3}, linear::Vec{3}, R::Mat{3, 3}, p::Vec{3}) # TODO: version that works directly with quaternion rotation parameterization
     angular = R * angular
     linear = R * linear + cross(p, angular)
     return angular, linear
@@ -99,7 +99,7 @@ function transform(twist::Twist, transform::Transform3D)
     @assert twist.frame == transform.from
     R = Mat(rotationmatrix(transform.rot))
     p = transform.trans
-    angular, linear = transformSpatialMotion(twist.angular, twist.linear, R, p)
+    angular, linear = transform_spatial_motion(twist.angular, twist.linear, R, p)
     return Twist(twist.body, twist.base, transform.to, angular, linear)
 end
 
@@ -150,7 +150,7 @@ immutable Wrench{T<:Real} <: ForceSpaceElement{T}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
-Wrench{T}(frame::CartesianFrame3D, vec::Vector{T}) = Wrench{T}(frame, vec[1 : 3], vec[4 : 6])
+Wrench{T}(frame::CartesianFrame3D, vec::Vector{T}) = Wrench{T}(frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
 show(io::IO, w::Wrench) = print(io, "Wrench expressed in \"$(w.frame.name)\":\nangular: $(w.angular), linear: $(w.linear)")
 
 immutable Momentum{T<:Real} <: ForceSpaceElement{T}
@@ -158,7 +158,7 @@ immutable Momentum{T<:Real} <: ForceSpaceElement{T}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
-Momentum{T}(frame::CartesianFrame3D, vec::Vector{T}) = Momentum{T}(frame, vec[1 : 3], vec[4 : 6])
+Momentum{T}(frame::CartesianFrame3D, vec::Vector{T}) = Momentum{T}(frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
 show(io::IO, m::Momentum) = print(io, "Momentum expressed in \"$(m.frame.name)\":\nangular: $(m.angular), linear: $(m.linear)")
 
 zero{F<:ForceSpaceElement}(::Type{F}, frame::CartesianFrame3D) = F(frame, zero(Vec{3, T}), zero(Vec{3, T}))
@@ -175,7 +175,21 @@ function (+){F<:ForceSpaceElement}(f1::F, f2::F)
     @assert f1.frame == f2.frame
     return F(f1.frame, f1.angular + f2.angular, f1.linear + f2.linear)
 end
+
 (-){F<:ForceSpaceElement}(f::F) = F(f.frame, -f.angular, -f.linear)
+
+function mul_inertia{T}(J::Mat{3, 3, T}, c::Vec{3, T}, m::T, ω::Vec{3, T}, v::Vec{3, T})
+    mc = m * c
+    angular = J * ω + cross(mc, v)
+    linear = m * v - cross(mc, ω)
+    return angular, linear
+end
+
+function (*){T}(inertia::SpatialInertia{T}, twist::Twist{T})
+    @assert inertia.frame == twist.frame
+    return Momentum(inertia.frame, mul_inertia(inertia.moment, inertia.centerOfMass, inertia.mass, twist.angular, twist.linear)...)
+end
+
 
 type MomentumMatrix{T<:Real}
     frame::CartesianFrame3D
@@ -188,17 +202,17 @@ function (*){T}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T})
 
     Jω = angularPart(jac)
     Jv = linearPart(jac)
-    I = Array(inertia.moment)
+    J = Array(inertia.moment)
     c = Array(inertia.centerOfMass)
     m = inertia.mass
-    angular = I * Jω
+    angular = J * Jω
     linear = m * Jv
     for i = 1 : size(Jω, 2)
         mc = m * c
         angular[:, i] += cross(mc, Jv[:, i])
         linear[:, i] -= cross(mc, Jω[:, i])
     end
-    return MomentumMatrix(inertia.frame, [linear; angular])
+    return MomentumMatrix(inertia.frame, [angular; linear])
 end
 
 function hcat{T}(mats::MomentumMatrix{T}...)
@@ -219,9 +233,13 @@ immutable SpatialAcceleration{T<:Real}
     linear::Vec{3, T}
 end
 
+function SpatialAcceleration{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector{T})
+    return SpatialAcceleration(body, base, frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
+end
+
 function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
-    @assert accel1.body == accel2.base
     @assert accel1.frame == accel2.frame
+    @assert accel1.body == accel2.base
     return SpatialAcceleration(accel2.body, accel1.base, accel1.frame, accel1.angular + accel2.angular, accel1.linear + accel2.linear)
 end
 
@@ -256,10 +274,32 @@ function transform{T}(accel::SpatialAcceleration{T}, oldToNew::Transform3D{T}, t
     # transform to new frame
     R = Mat(rotationmatrix(oldToNew.rot))
     p = oldToNew.trans
-    (angular, linear) = transformSpatialMotion(angular, linear, R, p)
+    angular, linear = transform_spatial_motion(angular, linear, R, p)
 
     return SpatialAcceleration(accel.body, accel.base, oldToNew.to, angular, linear)
 end
 
 zero{T}(::Type{SpatialAcceleration{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = SpatialAcceleration(body, base, frame, zero(Vec{3, T}), zero(Vec{3, T}))
 rand{T}(::Type{SpatialAcceleration{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = SpatialAcceleration(body, base, frame, rand(Vec{3, T}), rand(Vec{3, T}))
+
+function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
+    body = Ṫ.body
+    base = Ṫ.base # TODO: should assert that this is an inertial frame somehow
+    frame = Ṫ.frame
+
+    @assert I.frame == frame
+    @assert T.body == body
+    @assert T.base == base
+    @assert T.frame == frame
+
+    angular, linear = mul_inertia(I.moment, I.centerOfMass, I.mass, Ṫ.angular, Ṫ.linear)
+    angularMomentum, linearMomentum = mul_inertia(I.moment, I.centerOfMass, I.mass, T.angular, T.linear)
+    angular += cross(T.angular, angularMomentum) + cross(T.linear, linearMomentum)
+    linear += cross(T.angular, linearMomentum)
+    return Wrench(frame, angular, linear)
+end
+
+function joint_torque(jac::GeometricJacobian, wrench::Wrench)
+    @assert jac.frame == wrench.frame
+    return jac.mat' * [wrench.angular...; wrench.linear...]
+end

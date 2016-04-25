@@ -40,6 +40,7 @@ export
     MechanismStateCache,
     # functions
     transform,
+    newton_euler,
     root_body,
     root_frame,
     bodies,
@@ -71,5 +72,6 @@ export
     center_of_mass,
     geometric_jacobian,
     mass_matrix,
-    momentum_matrix
+    momentum_matrix,
+    inverse_dynamics
 end

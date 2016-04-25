@@ -3,14 +3,15 @@ type Mechanism{T<:Real}
     bodyFixedFrameDefinitions::Dict{RigidBody{T}, Set{Transform3D{T}}}
     bodyFixedFrameToBody::Dict{CartesianFrame3D, RigidBody{T}}
     jointToJointTransforms::Dict{Joint, Transform3D{T}}
+    gravity::Vec{3, T}
 
-    function Mechanism(rootname::ASCIIString)
+    function Mechanism(rootname::ASCIIString; gravity::Vec{3, T} = Vec(zero(T), zero(T), T(-9.81)))
         rootBody = RigidBody{T}(rootname)
         tree = Tree{RigidBody{T}, Joint}(rootBody)
         bodyFixedFrameDefinitions = Dict{RigidBody{T}, Set{Transform3D{T}}}(rootBody => Set([Transform3D(T, rootBody.frame)]))
         bodyFixedFrameToBody = Dict{CartesianFrame3D, RigidBody{T}}(rootBody.frame => rootBody)
         jointToJointTransforms = Dict{Joint, Transform3D{T}}()
-        new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody, jointToJointTransforms)
+        new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody, jointToJointTransforms, gravity)
     end
 end
 root_vertex(m::Mechanism) = m.toposortedTree[1]
@@ -19,6 +20,8 @@ root_body(m::Mechanism) = root_vertex(m).vertexData
 root_frame(m::Mechanism) = root_body(m).frame
 path(m::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(tree(m), from), findfirst(tree(m), to))
 show(io::IO, m::Mechanism) = print(io, m.toposortedTree[1])
+is_fixed_to_body{M}(m::Mechanism{M}, frame::CartesianFrame3D, body::RigidBody{M}) = body.frame == frame || any((t) -> t.from == frame, bodyFixedFrameDefinitions[body])
+isinertial(m::Mechanism, frame::CartesianFrame3D) = is_fixed_to_body(m, frame, root_body(m))
 
 function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T})
     fixedFrameDefinitions = m.bodyFixedFrameDefinitions[body]
@@ -56,12 +59,12 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     return m
 end
 
-joints{T}(m::Mechanism{T}) = keys(m.jointToJointTransforms)
-bodies{T}(m::Mechanism{T}) = keys(m.bodyFixedFrameDefinitions)
+joints(m::Mechanism) = keys(m.jointToJointTransforms)
+bodies(m::Mechanism) = keys(m.bodyFixedFrameDefinitions)
 default_frame(m::Mechanism, body::RigidBody) = first(m.bodyFixedFrameDefinitions[body]).to # allows standardization on a frame to reduce number of transformations required
 
-num_positions{T}(m::Mechanism{T}) = num_positions(joints(m))
-num_velocities{T}(m::Mechanism{T}) = num_velocities(joints(m))
+num_positions(m::Mechanism) = num_positions(joints(m))
+num_velocities(m::Mechanism) = num_velocities(joints(m))
 
 immutable MechanismState{T<:Real}
     q::OrderedDict{Joint, Vector{T}}
