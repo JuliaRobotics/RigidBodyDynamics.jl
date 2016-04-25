@@ -66,6 +66,24 @@ default_frame(m::Mechanism, body::RigidBody) = first(m.bodyFixedFrameDefinitions
 num_positions(m::Mechanism) = num_positions(joints(m))
 num_velocities(m::Mechanism) = num_velocities(joints(m))
 
+function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
+    m = Mechanism{T}("random chain")
+    parentBody = root_body(m)
+    for i = 1 : length(jointTypes)
+        @assert jointTypes[i] <: JointType
+        joint = Joint("joint$i", rand(jointTypes[i]))
+        jointToParentBody = rand(Transform3D{T}, joint.frameBefore, parentBody.frame)
+        body = RigidBody(rand(SpatialInertia{T}, CartesianFrame3D("body$i")))
+        bodyToJoint = rand(Transform3D{Float64}, body.frame, joint.frameAfter)
+        attach!(m, parentBody, joint, jointToParentBody, body, bodyToJoint)
+        parentBody = parentSelector(m)
+    end
+    return m
+end
+
+rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, (m::Mechanism{T}) -> m.toposortedTree[end].vertexData, jointTypes...)
+rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, (m::Mechanism{T}) -> rand(collect(bodies(m))), jointTypes...)
+
 immutable MechanismState{T<:Real}
     q::OrderedDict{Joint, Vector{T}}
     v::OrderedDict{Joint, Vector{T}}

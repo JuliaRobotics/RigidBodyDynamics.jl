@@ -18,6 +18,7 @@ immutable QuaternionFloating <: JointType
     end
 end
 show(io::IO, jt::QuaternionFloating) = print(io, "Quaternion floating joint")
+rand(::Type{QuaternionFloating}) = QuaternionFloating()
 
 function joint_transform{T<:Real}(j::Joint, q::Vector{T}, jt::QuaternionFloating = j.jointType)
     rot = Quaternion(q[1], q[2 : 4])
@@ -55,6 +56,7 @@ immutable Prismatic{T<:Real} <: OneDegreeOfFreedomFixedAxis
 end
 Prismatic{T}(rotation_axis::Vec{3, T}) = Prismatic{T}(rotation_axis)
 show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.translation_axis)")
+rand{T}(::Type{Prismatic{T}}) = Prismatic(FixedSizeArrays.normalize(rand(Vec{3, T})))
 
 joint_transform{T1<:Real, T2}(j::Joint, q::Vector{T1}, jt::Prismatic{T2} = j.jointType) = Transform3D(j.frameAfter, j.frameBefore, q[1] * jt.translation_axis)
 
@@ -73,6 +75,7 @@ immutable Revolute{T<:Real} <: OneDegreeOfFreedomFixedAxis
 end
 Revolute{T}(rotation_axis::Vec{3, T}) = Revolute{T}(rotation_axis)
 show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.rotation_axis)")
+rand{T}(::Type{Revolute{T}}) = Revolute(FixedSizeArrays.normalize(rand(Vec{3, T})))
 
 joint_transform{T1, T2}(j::Joint, q::Vector{T1}, jt::Revolute{T2} = j.jointType) = Transform3D(j.frameAfter, j.frameBefore, qrotation(Array(jt.rotation_axis), q[1]))
 
