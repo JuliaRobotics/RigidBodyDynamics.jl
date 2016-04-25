@@ -2,11 +2,12 @@
 
 module RigidBodyDynamics
 
-import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat, show, showcompact
+import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat, show, showcompact, isapprox, dot
 using FixedSizeArrays
 using Quaternions
 using DataStructures
 
+include("third_party_addendum.jl")
 include("frames.jl")
 include("spatial.jl")
 include("rigid_body.jl")
@@ -40,7 +41,9 @@ export
     MechanismStateCache,
     # functions
     transform,
+    to_array,
     newton_euler,
+    joint_torque,
     root_body,
     root_frame,
     bodies,
