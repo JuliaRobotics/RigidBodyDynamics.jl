@@ -32,8 +32,8 @@ function setdirty!(cache::MechanismStateCache)
     for element in values(cache.transformsToParent) setdirty!(element) end
     for element in values(cache.transformsToRoot) setdirty!(element) end
     for element in values(cache.twistsWrtWorld) setdirty!(element) end
-    for element in values(cache.biasAccelerations) setdirty!(element) end
     for element in values(cache.motionSubspaces) setdirty!(element) end
+    for element in values(cache.biasAccelerations) setdirty!(element) end
     for element in values(cache.spatialInertias) setdirty!(element) end
     for element in values(cache.crbInertias) setdirty!(element) end
 end
@@ -81,7 +81,12 @@ end
 
 function transform{C}(cache::MechanismStateCache{C}, twist::Twist{C}, to::CartesianFrame3D)
     twist.frame == to && return twist # nothing to be done
-    transform(twist, relative_transform(cache, t.frame, to))
+    transform(twist, relative_transform(cache, twist.frame, to))
+end
+
+function transform{C}(cache::MechanismStateCache{C}, wrench::Wrench{C}, to::CartesianFrame3D)
+    wrench.frame == to && return wrench # nothing to be done
+    transform(wrench, relative_transform(cache, wrench.frame, to))
 end
 
 function transform{C}(cache::MechanismStateCache{C}, accel::SpatialAcceleration{C}, to::CartesianFrame3D)
@@ -180,15 +185,15 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
             transformBodyToRootCache = cache.transformsToRoot[body.inertia.frame]
             spatialInertiaCache = MutableCacheElement(() -> transform(body.inertia, get(transformBodyToRootCache)))
             cache.spatialInertias[body] = spatialInertiaCache
-
-            # crb inertias
-            if isroot(parentBody)
-                cache.crbInertias[body] = MutableCacheElement(() -> get(spatialInertiaCache))
-            else
-                parentCRBInertia = cache.crbInertias[parentBody]
-                cache.crbInertias[body] = MutableCacheElement(() -> get(parentCRBInertia) + get(spatialInertiaCache))
-            end
         end
+    end
+
+    # crb inertias
+    for i = length(m.toposortedTree) : -1 : 2
+        vertex = m.toposortedTree[i]
+        body = vertex.vertexData
+        caches = [cache.spatialInertias[body]; [cache.crbInertias[v.vertexData] for v in vertex.children]...]
+        cache.crbInertias[body] = MutableCacheElement(() -> sum(get, caches))
     end
 
     setdirty!(cache)

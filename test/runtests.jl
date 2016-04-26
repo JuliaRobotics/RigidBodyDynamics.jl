@@ -10,6 +10,9 @@ test_frames()
 include("test_spatial.jl")
 test_spatial()
 
+include("test_mechanism.jl")
+test_mechanism()
+
 #run notebooks
 using IJulia
 jupyter = IJulia.jupyter

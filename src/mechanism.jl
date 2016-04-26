@@ -22,6 +22,7 @@ path(m::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(tree(m), fro
 show(io::IO, m::Mechanism) = print(io, m.toposortedTree[1])
 is_fixed_to_body{M}(m::Mechanism{M}, frame::CartesianFrame3D, body::RigidBody{M}) = body.frame == frame || any((t) -> t.from == frame, bodyFixedFrameDefinitions[body])
 isinertial(m::Mechanism, frame::CartesianFrame3D) = is_fixed_to_body(m, frame, root_body(m))
+isroot{T}(m::Mechanism{T}, b::RigidBody{T}) = b == root_body(m)
 
 function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T})
     fixedFrameDefinitions = m.bodyFixedFrameDefinitions[body]
@@ -67,7 +68,7 @@ num_positions(m::Mechanism) = num_positions(joints(m))
 num_velocities(m::Mechanism) = num_velocities(joints(m))
 
 function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
-    m = Mechanism{T}("random chain")
+    m = Mechanism{T}("world")
     parentBody = root_body(m)
     for i = 1 : length(jointTypes)
         @assert jointTypes[i] <: JointType
@@ -121,5 +122,20 @@ function rand_velocity!(x::MechanismState)
 end
 rand!(x::MechanismState) = begin rand_configuration!(x); rand_velocity!(x) end
 
-configuration_vector{T}(x::MechanismState{T}) = vcat(values(x.q)...)
-velocity_vector{T}(x::MechanismState{T}) = vcat(values(x.v)...)
+configuration_vector{T}(x::MechanismState{T}) = vcat([last(kv) for kv in x.q]...)
+velocity_vector{T}(x::MechanismState{T}) = vcat([last(kv) for kv in x.v]...)
+function set_configuration!{T}(x::MechanismState{T}, q::Vector{T})
+    start = 1
+    for joint in keys(x.q)
+        x.q[joint] = q[start, start + num_positions(joint) - 1]
+        start += num_positions(joint)
+    end
+end
+
+function set_velocity!{T}(x::MechanismState{T}, v::Vector{T})
+    start = 1
+    for joint in keys(x.q)
+        x.v[joint] = v[start : start + num_velocities(joint) - 1]
+        start += num_velocities(joint)
+    end
+end

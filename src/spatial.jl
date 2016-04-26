@@ -106,17 +106,15 @@ function (+)(twist1::Twist, twist2::Twist)
 end
 (-)(t::Twist) = Twist(t.base, t.body, t.frame, -t.angular, -t.linear)
 
-function transform_spatial_motion(angular::Vec{3}, linear::Vec{3}, R::Mat{3, 3}, p::Vec{3}) # TODO: version that works directly with quaternion rotation parameterization
-    angular = R * angular
-    linear = R * linear + cross(p, angular)
+function transform_spatial_motion(angular::Vec{3}, linear::Vec{3}, rot::Quaternion, p::Vec{3})
+    angular = rotate(angular, rot)
+    linear = rotate(linear, rot) + cross(p, angular)
     return angular, linear
 end
 
 function transform(twist::Twist, transform::Transform3D)
     @assert twist.frame == transform.from
-    R = Mat(rotationmatrix(transform.rot))
-    p = transform.trans
-    angular, linear = transform_spatial_motion(twist.angular, twist.linear, R, p)
+    angular, linear = transform_spatial_motion(twist.angular, twist.linear, transform.rot, transform.trans)
     return Twist(twist.body, twist.base, transform.to, angular, linear)
 end
 
@@ -188,9 +186,8 @@ rand{T}(::Type{Momentum{T}}, frame::CartesianFrame3D) = Momentum(frame, rand(Vec
 
 function transform{F<:ForceSpaceElement}(f::F, transform::Transform3D)
     @assert f.frame == transform.from
-    R = Mat(rotationmatrix(transform.rot))
-    linear = R * f.linear
-    angular = R * f.angular + cross(transform.trans, linear)
+    linear = rotate(f.linear, transform.rot)
+    angular = rotate(f.angular, transform.rot) + cross(transform.trans, linear)
     return F(transform.to, angular, linear)
 end
 
@@ -312,9 +309,7 @@ function transform{T}(accel::SpatialAcceleration{T}, oldToNew::Transform3D{T}, t
     linear += accel.linear
 
     # transform to new frame
-    R = Mat(rotationmatrix(oldToNew.rot))
-    p = oldToNew.trans
-    angular, linear = transform_spatial_motion(angular, linear, R, p)
+    angular, linear = transform_spatial_motion(angular, linear, oldToNew.rot, oldToNew.trans)
 
     return SpatialAcceleration(accel.body, accel.base, oldToNew.to, angular, linear)
 end
@@ -342,4 +337,15 @@ end
 function joint_torque(jac::GeometricJacobian, wrench::Wrench)
     @assert jac.frame == wrench.frame
     return jac.mat' * [wrench.angular...; wrench.linear...]
+end
+
+function kinetic_energy{T}(I::SpatialInertia{T}, twist::Twist{T})
+    @assert I.frame == twist.frame
+    # TODO: should assert that t.base is an inertial frame somehow
+    ω = twist.angular
+    v = twist.linear
+    J = I.moment
+    c = I.centerOfMass
+    m = I.mass
+    return 1/2 * (dot(ω, J * ω) + m * dot(v, v + 2 * cross(ω, c)))
 end

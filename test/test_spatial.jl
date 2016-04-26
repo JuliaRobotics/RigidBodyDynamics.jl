@@ -14,9 +14,11 @@ function test_spatial()
         I2 = rand(SpatialInertia{Float64}, f2)
         H21 = rand(Transform3D{Float64}, f2, f1)
         I1 = transform(I2, H21)
+        I3 = rand(SpatialInertia{Float64}, f2)
         @test I2.mass == I1.mass
         @test isapprox(Ad(inv(H21))' * to_array(I2) * Ad(inv(H21)), to_array(I1); atol = 1e-12)
         @test isapprox(transform(I1, inv(H21)), I2)
+        @test isapprox(to_array(I2 + I3), to_array(I2) + to_array(I3))
     end
 
     let # twist
@@ -87,4 +89,12 @@ function test_spatial()
         @test isapprox(W, transform(newton_euler(transform(I, H), transform(Ṫ, H, T, T), transform(T, H)), inv(H)))
     end
 
+    let # other functionality
+        I = rand(SpatialInertia{Float64}, f2)
+        T = rand(Twist{Float64}, f2, f1, f2)
+        H = rand(Transform3D{Float64}, f2, f1)
+        Ek = kinetic_energy(I, T)
+        @test isapprox(Ek, (1//2 * to_array(T)' * to_array(I) * to_array(T))[1]; atol = 1e-12)
+        @test isapprox(Ek, kinetic_energy(transform(I, H), transform(T, H)); atol = 1e-12)
+    end
 end

@@ -35,42 +35,47 @@ function geometric_jacobian{C, M}(cache::MechanismStateCache{C}, path::Path{Rigi
     return hcat(motionSubspaces...)
 end
 
+kinetic_energy{C, M}(cache::MechanismStateCache{C, M}, body::RigidBody{M}) = kinetic_energy(spatial_inertia(cache, body), twist_wrt_world(cache, body))
+function kinetic_energy{C, M}(cache::MechanismStateCache{C, M}, itr)
+    return sum(body::RigidBody{M} -> kinetic_energy(cache, body), itr)
+end
+kinetic_energy(cache::MechanismStateCache) = kinetic_energy(cache, filter(b -> !isroot(b), bodies(cache.mechanism)))
+
 function mass_matrix{C}(cache::MechanismStateCache{C})
     nv = num_velocities(keys(cache.motionSubspaces))
-    H = Array(C, nv, nv)
+    H = zeros(C, nv, nv)
 
     for i = 2 : length(cache.mechanism.toposortedTree)
-        vertex_i = cache.mechanism.toposortedTree[i]
+        vi = cache.mechanism.toposortedTree[i]
 
         # Hii
-        body_i = vertex_i.vertexData
-        joint_i = vertex_i.edgeToParentData
-        v_start_i = cache.velocityVectorStartIndices[joint_i]
-        i_range = v_start_i : v_start_i + num_velocities(joint_i) - 1
-        S_i = motion_subspace(cache, joint_i)
-        F = crb_inertia(cache, body_i) * S_i
-        H[i_range, i_range] = S_i.mat' * F.mat
+        bodyi = vi.vertexData
+        jointi = vi.edgeToParentData
+        vStarti = cache.velocityVectorStartIndices[jointi]
+        irange = vStarti : vStarti + num_velocities(jointi) - 1
+        Si = motion_subspace(cache, jointi)
+        F = crb_inertia(cache, bodyi) * Si
+        H[irange, irange] = At_mul_B(Si.mat, F.mat)
 
         # Hji, Hij
-        vertex_j = vertex_i.parent
-        while (!isroot(vertex_j))
-            joint_j = vertex_j.edgeToParentData
-            v_start_j = cache.velocityVectorStartIndices[joint_j]
-            j_range = v_start_j : v_start_j + num_velocities(joint_j) - 1
-            S_j = motion_subspace(cache, joint_j)
-            @assert F.frame == S_j.frame
-            Hji = At_mul_B(S_j.mat, F.mat)
-            H[j_range, i_range] = Hji
-            H[i_range, j_range] = Hji'
-            vertex_j = vertex_j.parent
+        vj = vi.parent
+        while (!isroot(vj))
+            jointj = vj.edgeToParentData
+            vStartj = cache.velocityVectorStartIndices[jointj]
+            jrange = vStartj : vStartj + num_velocities(jointj) - 1
+            Sj = motion_subspace(cache, jointj)
+            @assert F.frame == Sj.frame
+            Hji = At_mul_B(Sj.mat, F.mat)
+            H[jrange, irange] = Hji
+            H[irange, jrange] = Hji'
+            vj = vj.parent
         end
     end
     return H
 end
 
 function momentum_matrix(cache::MechanismStateCache)
-    bodiesAndJoints = [(vertex.vertexData::RigidBody, vertex.edgeToParentData::Joint) for vertex in cache.mechanism.toposortedTree[2 : end]]
-    return hcat([spatial_inertia(cache, body) * motion_subspace(cache, joint) for (body, joint) in bodiesAndJoints]...)
+    hcat([crb_inertia(cache, vertex.vertexData) * motion_subspace(cache, vertex.edgeToParentData) for vertex in cache.mechanism.toposortedTree[2 : end]]...)
 end
 
 function inverse_dynamics{C, M, V}(cache::MechanismStateCache{C, M}, v̇::Dict{Joint, Vector{V}}, externalWrenches::Dict{RigidBody{M}, Wrench{V}} = Dict{RigidBody{M}, Wrench{V}}())
@@ -89,7 +94,7 @@ function inverse_dynamics{C, M, V}(cache::MechanismStateCache{C, M}, v̇::Dict{J
         Tbody = twist_wrt_world(cache, body)
         wrench = newton_euler(I, Ṫbody, Tbody)
         if haskey(externalWrenches, body)
-            wrench = wrench + externalWrenches[body]
+            wrench = wrench + transform(cache, externalWrenches[body], wrench.frame)
         end
         jointWrenches[body] = wrench
     end
