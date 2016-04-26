@@ -1,11 +1,8 @@
 function test_mechanism()
-    # mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
-    mechanism = rand_chain_mechanism(Float64, Revolute{Float64}, Revolute{Float64})#, Revolute{Float64})
-    # mechanism = rand_chain_mechanism(Float64, Prismatic{Float64}, Prismatic{Float64})#, Revolute{Float64})
+    mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
 
     x = MechanismState{Float64}(mechanism)
     rand!(x)
-    # RigidBodyDynamics.set_velocity!(x, [0.; 1.])
     cache = MechanismStateCache(mechanism, x)
 
     # basic stuff
@@ -72,7 +69,6 @@ function test_mechanism()
         Ek = kinetic_energy(cache)
         M = mass_matrix(cache)
         v = velocity_vector(x)
-        println(Ek - 1/2 * dot(v, M * v))
         @test isapprox(Ek, 1/2 * dot(v, M * v); atol = 1e-12)
 
         q = configuration_vector(x)
@@ -84,20 +80,29 @@ function test_mechanism()
             return kinetic_energy(cache)
         end
         M2 = ForwardDiff.hessian(kinetic_energy_fun, velocity_vector(x))
-        println(M2)
         @test isapprox(M, M2; atol = 1e-12)
     end
 
     # inverse dynamics
     let
-        nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
-        v̇ = Dict([joint::Joint => zeros(num_velocities(joint))::Vector{Float64} for joint in joints(mechanism)])
-        externalWrenches = Dict{RigidBody{Float64}, Wrench{Float64}}()
-        C = inverse_dynamics(cache, v̇, externalWrenches)
+        v̇_to_τ = v̇ -> begin
+            v̇Dict = Dict{Joint, Vector{eltype(v̇)}}()
+            for joint in keys(x.v)
+                v̇Dict[joint] = v̇[cache.velocityVectorStartIndices[joint] : cache.velocityVectorStartIndices[joint] + num_velocities(joint) - 1]
+            end
+            return inverse_dynamics(cache, v̇Dict)
+        end
+        M = ForwardDiff.jacobian(v̇_to_τ, zeros(Float64, num_velocities(mechanism)))
+        @test isapprox(M, mass_matrix(cache); atol = 1e-12)
 
-        A = momentum_matrix(cache)
-        v = velocity_vector(x)
-        h = A * v
+        # nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
+        # v̇ = Dict([joint::Joint => zeros(num_velocities(joint))::Vector{Float64} for joint in joints(mechanism)])
+        # externalWrenches = Dict{RigidBody{Float64}, Wrench{Float64}}()
+        # c = inverse_dynamics(cache, v̇, externalWrenches)
+
+        # A = momentum_matrix(cache)
+        # v = velocity_vector(x)
+        # h = A * v
         # TODO
         # v̇ = Dict([joint::Joint => rand(num_velocities(joint))::Vector{Float64} for joint in joints(mechanism)])
         # externalWrenches = Dict(([body::RigidBody{Float64} => rand(Wrench{Float64}, body.frame)::Wrench{Float64} for body in nonRootBodies]))

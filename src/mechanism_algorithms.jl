@@ -84,7 +84,7 @@ function inverse_dynamics{C, M, V}(cache::MechanismStateCache{C, M}, v̇::Dict{J
 
     # compute spatial accelerations
     rootBody = root_body(cache.mechanism)
-    accels = Dict{RigidBody{M}, SpatialAcceleration{T}}(rootBody => SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zero(Vec{3, T}), cache.mechanism.gravity))
+    accels = Dict{RigidBody{M}, SpatialAcceleration{T}}(rootBody => SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zero(Vec{3, T}), convert(Vec{3, T}, cache.mechanism.gravity)))
     sizehint!(accels, length(vertices))
     for i = 2 : length(vertices)
         vertex = vertices[i]

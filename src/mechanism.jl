@@ -75,7 +75,7 @@ function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
         joint = Joint("joint$i", rand(jointTypes[i]))
         jointToParentBody = rand(Transform3D{T}, joint.frameBefore, parentBody.frame)
         body = RigidBody(rand(SpatialInertia{T}, CartesianFrame3D("body$i")))
-        bodyToJoint = rand(Transform3D{Float64}, body.frame, joint.frameAfter)
+        bodyToJoint = Transform3D{Float64}(body.frame, joint.frameAfter) #rand(Transform3D{Float64}, body.frame, joint.frameAfter)
         attach!(m, parentBody, joint, jointToParentBody, body, bodyToJoint)
         parentBody = parentSelector(m)
     end

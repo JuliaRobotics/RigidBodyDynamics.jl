@@ -18,7 +18,7 @@ function test_spatial()
         @test I2.mass == I1.mass
         @test isapprox(Ad(inv(H21))' * to_array(I2) * Ad(inv(H21)), to_array(I1); atol = 1e-12)
         @test isapprox(transform(I1, inv(H21)), I2)
-        @test isapprox(to_array(I2 + I3), to_array(I2) + to_array(I3))
+        @test isapprox(to_array(I2 + I3), to_array(I2) + to_array(I3); atol = 1e-12)
     end
 
     let # twist
