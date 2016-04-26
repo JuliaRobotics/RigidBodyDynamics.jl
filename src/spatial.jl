@@ -40,10 +40,10 @@ function to_array(inertia::SpatialInertia)
 end
 
 
-function transform{T}(inertia::SpatialInertia{T}, t::Transform3D{T})
+function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
     @assert t.from == inertia.frame
-
-    function vector_to_skew_symmetric_squared(a::Vec{3, T})
+    S = promote_type(I, T)
+    function vector_to_skew_symmetric_squared(a::Vec{3})
         aSq = a .* a
         b11 = -aSq[2] - aSq[3]
         b12 = a[1] * a[2]
@@ -54,12 +54,12 @@ function transform{T}(inertia::SpatialInertia{T}, t::Transform3D{T})
         return Mat((b11, b12, b13), (b12, b22, b23), (b13, b23, b33))
     end
 
-    J = inertia.moment
-    m = inertia.mass
-    c = inertia.centerOfMass
+    J = convert(Mat{3, 3, S}, inertia.moment)
+    m = convert(S, inertia.mass)
+    c = convert(Vec{3, S}, inertia.centerOfMass)
 
-    R = Mat(rotationmatrix(t.rot))
-    p = t.trans
+    R = convert(Mat{3, 3, S}, Mat(rotationmatrix(t.rot)))
+    p = convert(Vec{3, S}, t.trans)
 
     cnew = R * (c * m)
     Jnew = vector_to_skew_symmetric_squared(cnew)
@@ -286,7 +286,7 @@ function show(io::IO, a::SpatialAcceleration)
     print(io, "SpatialAcceleration of \"$(a.body.name)\" w.r.t \"$(a.base.name)\" in \"$(a.frame.name)\":\nangular: $(a.angular), linear: $(a.linear)")
 end
 
-function transform{T}(accel::SpatialAcceleration{T}, oldToNew::Transform3D{T}, twistOfCurrentWrtNew::Twist{T}, twistOfBodyWrtBase::Twist{T})
+function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCurrentWrtNew::Twist, twistOfBodyWrtBase::Twist)
     # trivial case
     accel.frame == oldToNew.to && return accel
 
@@ -339,7 +339,7 @@ function joint_torque(jac::GeometricJacobian, wrench::Wrench)
     return jac.mat' * [wrench.angular...; wrench.linear...]
 end
 
-function kinetic_energy{T}(I::SpatialInertia{T}, twist::Twist{T})
+function kinetic_energy(I::SpatialInertia, twist::Twist)
     @assert I.frame == twist.frame
     # TODO: should assert that t.base is an inertial frame somehow
     ω = twist.angular

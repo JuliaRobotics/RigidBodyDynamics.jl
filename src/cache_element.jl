@@ -1,30 +1,21 @@
-abstract CacheElement{T}
-
-immutable ImmutableCacheElement{T} <: CacheElement{T}
-    data::T
-end
-
-get{T}(element::ImmutableCacheElement{T}) = element.data
-function setdirty!{T}(element::ImmutableCacheElement{T})
-end
-
-type MutableCacheElement{T} <: CacheElement{T}
+type CacheElement{T}
     data::T
     updateFunction::Function
     dirty::Bool
 
-    MutableCacheElement(data::T, updateFunction::Function) = new(data, updateFunction, true)
+    CacheElement(t::T) = new(t, () -> t, false)
+    CacheElement(updateFunction::Function) = new(updateFunction(), updateFunction, true)
 end
-MutableCacheElement{T}(data::T, updateFunction::Function) = MutableCacheElement{T}(data, updateFunction)
-MutableCacheElement(updateFunction::Function) = MutableCacheElement(updateFunction(), updateFunction)
+CacheElement{T}(t::T) = CacheElement{T}(t)
+CacheElement{T}(::Type{T}, updateFunction::Function) = CacheElement{T}(updateFunction)
 
-function get{T}(element::MutableCacheElement{T})
+function get{T}(element::CacheElement{T})
     if element.dirty
         element.data = element.updateFunction()
         element.dirty = false
     end
     return element.data
 end
-function setdirty!{T}(element::MutableCacheElement{T})
+function setdirty!{T}(element::CacheElement{T})
     element.dirty = true
 end

@@ -1,9 +1,11 @@
 function test_mechanism()
     # mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
     mechanism = rand_chain_mechanism(Float64, Revolute{Float64}, Revolute{Float64})#, Revolute{Float64})
+    # mechanism = rand_chain_mechanism(Float64, Prismatic{Float64}, Prismatic{Float64})#, Revolute{Float64})
 
     x = MechanismState{Float64}(mechanism)
     rand!(x)
+    # RigidBodyDynamics.set_velocity!(x, [0.; 1.])
     cache = MechanismStateCache(mechanism, x)
 
     # basic stuff
@@ -71,14 +73,19 @@ function test_mechanism()
         M = mass_matrix(cache)
         v = velocity_vector(x)
         println(Ek - 1/2 * dot(v, M * v))
-        println()
-        bs = collect(bodies(mechanism))
-        # for b in bs
-        #     if !isroot(b)
-        #         println(kinetic_energy(cache, b))
-        #     end
-        # end
         @test isapprox(Ek, 1/2 * dot(v, M * v); atol = 1e-12)
+
+        q = configuration_vector(x)
+        kinetic_energy_fun = v -> begin
+            local x = MechanismState{eltype(v)}(mechanism)
+            set_configuration!(x, q)
+            set_velocity!(x, v)
+            local cache = MechanismStateCache(mechanism, x)
+            return kinetic_energy(cache)
+        end
+        M2 = ForwardDiff.hessian(kinetic_energy_fun, velocity_vector(x))
+        println(M2)
+        @test isapprox(M, M2; atol = 1e-12)
     end
 
     # inverse dynamics
@@ -91,6 +98,7 @@ function test_mechanism()
         A = momentum_matrix(cache)
         v = velocity_vector(x)
         h = A * v
+        # TODO
         # v̇ = Dict([joint::Joint => rand(num_velocities(joint))::Vector{Float64} for joint in joints(mechanism)])
         # externalWrenches = Dict(([body::RigidBody{Float64} => rand(Wrench{Float64}, body.frame)::Wrench{Float64} for body in nonRootBodies]))
         # power = sum(body -> dot(transform(cache, externalWrenches[body], root_frame(mechanism)), twist_wrt_world(cache, body)), nonRootBodies)

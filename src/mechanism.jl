@@ -45,7 +45,7 @@ function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform
     return transform
 end
 
-function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T}, childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(childBody.frame))
+function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T}, childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(childBody.frame, joint.frameAfter))
     insert!(tree(m), childBody, joint, parentBody)
     m.jointToJointTransforms[joint] = add_body_fixed_frame!(m, parentBody, jointToParent)
     @assert childToJoint.from == childBody.frame
@@ -103,8 +103,8 @@ immutable MechanismState{T<:Real}
     end
 end
 
-num_positions{T}(x::MechanismState{T}) = num_positions(keys(x.q))
-num_velocities{T}(x::MechanismState{T}) = num_velocities(keys(x.v))
+num_positions(x::MechanismState) = num_positions(keys(x.q))
+num_velocities(x::MechanismState) = num_velocities(keys(x.v))
 
 function zero_configuration!{T}(x::MechanismState{T})
     for joint in keys(x.q) x.q[joint] = zero_configuration(joint, T) end
@@ -124,15 +124,15 @@ rand!(x::MechanismState) = begin rand_configuration!(x); rand_velocity!(x) end
 
 configuration_vector{T}(x::MechanismState{T}) = vcat([last(kv) for kv in x.q]...)
 velocity_vector{T}(x::MechanismState{T}) = vcat([last(kv) for kv in x.v]...)
-function set_configuration!{T}(x::MechanismState{T}, q::Vector{T})
+function set_configuration!{T<:Real}(x::MechanismState, q::Vector{T})
     start = 1
     for joint in keys(x.q)
-        x.q[joint] = q[start, start + num_positions(joint) - 1]
+        x.q[joint] = q[start : start + num_positions(joint) - 1]
         start += num_positions(joint)
     end
 end
 
-function set_velocity!{T}(x::MechanismState{T}, v::Vector{T})
+function set_velocity!{T<:Real}(x::MechanismState, v::Vector{T})
     start = 1
     for joint in keys(x.q)
         x.v[joint] = v[start : start + num_velocities(joint) - 1]

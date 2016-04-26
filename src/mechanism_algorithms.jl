@@ -81,20 +81,43 @@ end
 function inverse_dynamics{C, M, V}(cache::MechanismStateCache{C, M}, v̇::Dict{Joint, Vector{V}}, externalWrenches::Dict{RigidBody{M}, Wrench{V}} = Dict{RigidBody{M}, Wrench{V}}())
     vertices = cache.mechanism.toposortedTree
     T = promote_type(C, V)
-    jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
-    sizehint!(jointWrenches, length(vertices) - 1)
 
-    # initialize joint wrenches = net wrenches
+    # compute spatial accelerations
+    rootBody = root_body(cache.mechanism)
+    accels = Dict{RigidBody{M}, SpatialAcceleration{T}}(rootBody => SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zero(Vec{3, T}), cache.mechanism.gravity))
+    sizehint!(accels, length(vertices))
     for i = 2 : length(vertices)
         vertex = vertices[i]
         body = vertex.vertexData
         joint = vertex.edgeToParentData
-        Ṫbody = acceleration_wrt_world(cache, vertex, v̇[joint])
+
+        bias = bias_acceleration(cache, body)
+        S = motion_subspace(cache, joint)
+        @assert bias.frame == S.frame
+
+        Sv̇ = S.mat * v̇[joint]
+        angular = bias.angular + Vec(Sv̇[1 : 3])
+        linear = bias.linear + Vec(Sv̇[4 : 6])
+
+        parentAccel = accels[vertex.parent.vertexData]
+        angular += parentAccel.angular
+        linear += parentAccel.linear
+        accels[body] = SpatialAcceleration(bias.body, bias.base, bias.frame, angular, linear)
+    end
+
+    # initialize joint wrenches = net wrenches
+    jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
+    sizehint!(jointWrenches, length(vertices) - 1)
+    for i = 2 : length(vertices)
+        vertex = vertices[i]
+        body = vertex.vertexData
+        joint = vertex.edgeToParentData
         I = spatial_inertia(cache, body)
+        Ṫbody = accels[body]
         Tbody = twist_wrt_world(cache, body)
         wrench = newton_euler(I, Ṫbody, Tbody)
         if haskey(externalWrenches, body)
-            wrench = wrench + transform(cache, externalWrenches[body], wrench.frame)
+            wrench = wrench - transform(cache, externalWrenches[body], wrench.frame)
         end
         jointWrenches[body] = wrench
     end
