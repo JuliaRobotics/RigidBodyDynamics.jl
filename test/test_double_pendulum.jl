@@ -1,4 +1,4 @@
-function test_double_pendulum()
+facts("double pendulum") do
     lc1 = rand()
     l1 = rand()
     m1 = rand()
@@ -61,8 +61,8 @@ function test_double_pendulum()
     v̇ = vcat([v̇[joint] for joint in (joint1, joint2)]...)
     v = velocity_vector(x)
 
-    @test isapprox(T1, kinetic_energy(cache, body1); atol = 1e-12)
-    @test isapprox(T2, kinetic_energy(cache, body2); atol = 1e-12)
-    @test isapprox(M, mass_matrix(cache); atol = 1e-12)
-    @test isapprox(M * v̇ + C * v + G, τ; atol = 1e-12)
+    @fact T1 --> roughly(kinetic_energy(cache, body1); atol = 1e-12)
+    @fact T2 --> roughly(kinetic_energy(cache, body2); atol = 1e-12)
+    @fact M --> roughly(mass_matrix(cache); atol = 1e-12)
+    @fact τ --> roughly(M * v̇ + C * v + G; atol = 1e-12)
 end

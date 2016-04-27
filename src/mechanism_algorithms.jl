@@ -1,9 +1,5 @@
 function subtree_mass{T}(base::Tree{RigidBody{T}, Joint})
-    if isroot(base)
-        result = 0
-    else
-        result = base.vertexData.inertia.mass
-    end
+    result = isroot(base) ? zero(T) : base.vertexData.inertia.mass
     for child in base.children
         result += subtree_mass(child)
     end
