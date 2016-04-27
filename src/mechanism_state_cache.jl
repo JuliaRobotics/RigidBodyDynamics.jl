@@ -74,22 +74,27 @@ motion_subspace(cache::MechanismStateCache, joint::Joint) = get(cache.motionSubs
 spatial_inertia{C, M}(cache::MechanismStateCache{C, M}, body::RigidBody{M}) = get(cache.spatialInertias[body])
 crb_inertia{C, M}(cache::MechanismStateCache{C, M}, body::RigidBody{M}) = get(cache.crbInertias[body])
 
-function transform{C}(cache::MechanismStateCache{C}, point::Point3D{C}, to::CartesianFrame3D)
+function transform(cache::MechanismStateCache, point::Point3D, to::CartesianFrame3D)
     point.frame == to && return point # nothing to be done
     relative_transform(cache, point.frame, to) * point
 end
 
-function transform{C}(cache::MechanismStateCache{C}, twist::Twist{C}, to::CartesianFrame3D)
+function transform(cache::MechanismStateCache, vector::FreeVector3D, to::CartesianFrame3D)
+    vector.frame == to && return vector # nothing to be done
+    relative_transform(cache, vector.frame, to) * vector
+end
+
+function transform(cache::MechanismStateCache, twist::Twist, to::CartesianFrame3D)
     twist.frame == to && return twist # nothing to be done
     transform(twist, relative_transform(cache, twist.frame, to))
 end
 
-function transform{C}(cache::MechanismStateCache{C}, wrench::Wrench{C}, to::CartesianFrame3D)
+function transform(cache::MechanismStateCache, wrench::Wrench, to::CartesianFrame3D)
     wrench.frame == to && return wrench # nothing to be done
     transform(wrench, relative_transform(cache, wrench.frame, to))
 end
 
-function transform{C}(cache::MechanismStateCache{C}, accel::SpatialAcceleration{C}, to::CartesianFrame3D)
+function transform(cache::MechanismStateCache, accel::SpatialAcceleration, to::CartesianFrame3D)
     accel.frame == to && return accel # nothing to be done
     oldToRoot = transform_to_root(cache, accel.frame)
     rootToOld = inv(oldToRoot)

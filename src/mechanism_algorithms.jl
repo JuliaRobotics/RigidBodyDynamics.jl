@@ -10,7 +10,7 @@ function subtree_mass{T}(base::Tree{RigidBody{T}, Joint})
     return result
 end
 mass(m::Mechanism) = subtree_mass(tree(m))
-mass(cache::MechanismStateCache) = subtree_mass(cache.mechanism)
+mass(cache::MechanismStateCache) = mass(cache.mechanism)
 
 function center_of_mass{C}(cache::MechanismStateCache{C}, itr)
     frame = root_body(cache.mechanism).frame
@@ -19,7 +19,7 @@ function center_of_mass{C}(cache::MechanismStateCache{C}, itr)
     for body in itr
         if !isroot(body)
             inertia = body.inertia
-            com += inertia.mass * transform(cache, Point3D(inertia.frame, inertia.centerOfMass), frame)
+            com += inertia.mass * transform(cache, Point3D(inertia.frame, convert(Vec{3, C}, inertia.centerOfMass)), frame)
             mass += inertia.mass
         end
     end
@@ -40,6 +40,8 @@ function kinetic_energy{C, M}(cache::MechanismStateCache{C, M}, itr)
     return sum(body::RigidBody{M} -> kinetic_energy(cache, body), itr)
 end
 kinetic_energy(cache::MechanismStateCache) = kinetic_energy(cache, filter(b -> !isroot(b), bodies(cache.mechanism)))
+
+potential_energy{C}(cache::MechanismStateCache{C}) = -mass(cache) * dot(convert(Vec{3, C}, cache.mechanism.gravity), transform(cache, center_of_mass(cache), root_frame(cache.mechanism)).v)
 
 function mass_matrix{C}(cache::MechanismStateCache{C})
     nv = num_velocities(keys(cache.motionSubspaces))

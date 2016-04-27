@@ -13,6 +13,16 @@ function test_mechanism()
         @test isapprox(q, configuration_vector(x))
     end
 
+    # q̇ <-> v
+    let
+        qdot = velocity_to_configuration_derivative(mechanism, x.q, x.v)
+        vCheck = configuration_derivative_to_velocity(mechanism, x.q, qdot)
+        for joint in joints(mechanism)
+            @test isapprox(x.v[joint], vCheck[joint]; atol = 1e-12)
+        end
+    end
+
+
     # geometric_jacobian / relative_twist
     let
         bs = Set(bodies(mechanism))
@@ -85,15 +95,73 @@ function test_mechanism()
 
     # inverse dynamics
     let
-        v̇_to_τ = v̇ -> begin
-            v̇Dict = Dict{Joint, Vector{eltype(v̇)}}()
-            for joint in keys(x.v)
-                v̇Dict[joint] = v̇[cache.velocityVectorStartIndices[joint] : cache.velocityVectorStartIndices[joint] + num_velocities(joint) - 1]
+        # test acceleration terms
+        let
+            v̇_to_τ = v̇ -> begin
+                v̇Dict = Dict{Joint, Vector{eltype(v̇)}}()
+                for joint in keys(x.v)
+                    v̇Dict[joint] = v̇[cache.velocityVectorStartIndices[joint] : cache.velocityVectorStartIndices[joint] + num_velocities(joint) - 1]
+                end
+                return inverse_dynamics(cache, v̇Dict)
             end
-            return inverse_dynamics(cache, v̇Dict)
+            M = ForwardDiff.jacobian(v̇_to_τ, zeros(Float64, num_velocities(mechanism)))
+            @test isapprox(M, mass_matrix(cache); atol = 1e-12)
         end
-        M = ForwardDiff.jacobian(v̇_to_τ, zeros(Float64, num_velocities(mechanism)))
-        @test isapprox(M, mass_matrix(cache); atol = 1e-12)
+
+        # test Coriolis terms
+        mechanism = rand_chain_mechanism(Float64, [[Revolute{Float64} for i = 1 : 4]; [Prismatic{Float64} for i = 1 : 4]]...) # skew symmetry property tested later on doesn't hold when q̇ ≠ v
+        x = MechanismState{Float64}(mechanism)
+        rand!(x)
+        q_to_M = q -> begin
+            local x = MechanismState{eltype(q)}(mechanism)
+            set_configuration!(x, q)
+            zero_velocity!(x)
+            local cache = MechanismStateCache(mechanism, x)
+            return vec(mass_matrix(cache))
+        end
+        dMdq = ForwardDiff.jacobian(q_to_M, configuration_vector(x))
+        q̇ = velocity_vector(x)
+        Ṁ = reshape(dMdq * q̇, num_velocities(mechanism), num_velocities(mechanism))
+
+        q = configuration_vector(x)
+        v̇ = Dict([j::Joint => zeros(num_velocities(j))::Vector{Float64} for j in joints(mechanism)])
+        v_to_c = v -> begin
+            local x = MechanismState{eltype(v)}(mechanism)
+            set_configuration!(x, q)
+            set_velocity!(x, v)
+            local cache = MechanismStateCache(mechanism, x)
+            return inverse_dynamics(cache, v̇)
+        end
+        C = 1/2 * ForwardDiff.jacobian(v_to_c, q̇)
+
+        skew = Ṁ - 2 * C;
+        # TODO
+        # println(Ṁ)
+        # println()
+        # println()
+        # println(2 * C)
+        # println()
+        # println()
+        # println(skew + skew')
+        # @test isapprox(skew + skew', zeros(size(skew)); atol = 1e-10)
+
+        # test gravitational term
+        v̇ = Dict([j::Joint => zeros(num_velocities(j))::Vector{Float64} for j in joints(mechanism)])
+        zero_velocity!(x)
+        cache = MechanismStateCache(mechanism, x)
+        g = inverse_dynamics(cache, v̇)
+        q_to_potential = q -> begin
+            local x = MechanismState{eltype(q)}(mechanism)
+            set_configuration!(x, q)
+            zero_velocity!(x)
+            local cache = MechanismStateCache(mechanism, x)
+            return [potential_energy(cache)]
+        end
+        @test isapprox(g, -ForwardDiff.jacobian(q_to_potential, configuration_vector(x))'; atol = 1e-12)
+
+        # TODO: test external wrenches
+        # println(dM)
+        # Ṁ =
 
         # nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
         # v̇ = Dict([joint::Joint => zeros(num_velocities(joint))::Vector{Float64} for joint in joints(mechanism)])

@@ -1,15 +1,15 @@
 type Mechanism{T<:Real}
     toposortedTree::Vector{TreeVertex{RigidBody{T}, Joint}}
-    bodyFixedFrameDefinitions::Dict{RigidBody{T}, Set{Transform3D{T}}}
-    bodyFixedFrameToBody::Dict{CartesianFrame3D, RigidBody{T}}
+    bodyFixedFrameDefinitions::OrderedDict{RigidBody{T}, Set{Transform3D{T}}}
+    bodyFixedFrameToBody::OrderedDict{CartesianFrame3D, RigidBody{T}}
     jointToJointTransforms::Dict{Joint, Transform3D{T}}
     gravity::Vec{3, T}
 
     function Mechanism(rootname::ASCIIString; gravity::Vec{3, T} = Vec(zero(T), zero(T), T(-9.81)))
         rootBody = RigidBody{T}(rootname)
         tree = Tree{RigidBody{T}, Joint}(rootBody)
-        bodyFixedFrameDefinitions = Dict{RigidBody{T}, Set{Transform3D{T}}}(rootBody => Set([Transform3D(T, rootBody.frame)]))
-        bodyFixedFrameToBody = Dict{CartesianFrame3D, RigidBody{T}}(rootBody.frame => rootBody)
+        bodyFixedFrameDefinitions = OrderedDict{RigidBody{T}, Set{Transform3D{T}}}(rootBody => Set([Transform3D(T, rootBody.frame)]))
+        bodyFixedFrameToBody = OrderedDict{CartesianFrame3D, RigidBody{T}}(rootBody.frame => rootBody)
         jointToJointTransforms = Dict{Joint, Transform3D{T}}()
         new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody, jointToJointTransforms, gravity)
     end
@@ -84,6 +84,16 @@ end
 
 rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, (m::Mechanism{T}) -> m.toposortedTree[end].vertexData, jointTypes...)
 rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, (m::Mechanism{T}) -> rand(collect(bodies(m))), jointTypes...)
+
+function configuration_derivative_to_velocity{M, Q, V}(m::Mechanism{M}, q::OrderedDict{Joint, Vector{Q}}, q̇::OrderedDict{Joint, Vector{V}})
+    T = promote_type(M, Q, V)
+    return OrderedDict([j::Joint => configuration_derivative_to_velocity(j, q[j], q̇[j])::Vector{T} for j in joints(m)])
+end
+
+function velocity_to_configuration_derivative{M, Q, V}(m::Mechanism{M}, q::OrderedDict{Joint, Vector{Q}}, v::OrderedDict{Joint, Vector{V}})
+    T = promote_type(M, Q, V)
+    return OrderedDict([j::Joint => velocity_to_configuration_derivative(j, q[j], v[j])::Vector{T} for j in joints(m)])
+end
 
 immutable MechanismState{T<:Real}
     q::OrderedDict{Joint, Vector{T}}
