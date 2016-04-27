@@ -92,22 +92,15 @@ function inverse_dynamics{C, M, V}(cache::MechanismStateCache{C, M}, v̇::Dict{J
         vertex = vertices[i]
         body = vertex.vertexData
         joint = vertex.edgeToParentData
-
         bias = bias_acceleration(cache, body)
         S = motion_subspace(cache, joint)
         @assert bias.frame == S.frame
-
         Sv̇ = S.mat * v̇[joint]
-        angular = bias.angular + Vec(Sv̇[1 : 3])
-        linear = bias.linear + Vec(Sv̇[4 : 6])
-
-        parentAccel = accels[vertex.parent.vertexData]
-        angular += parentAccel.angular
-        linear += parentAccel.linear
-        accels[body] = SpatialAcceleration(bias.body, rootBody.frame, bias.frame, angular, linear)
+        joint_accel = SpatialAcceleration(bias.body, bias.base, bias.frame, bias.angular + Vec(Sv̇[1 : 3]), bias.linear + Vec(Sv̇[4 : 6]))
+        accels[body] = accels[vertex.parent.vertexData] + joint_accel
     end
 
-    # initialize joint wrenches = net wrenches
+    # set joint wrenches equal to net wrenches
     jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
     sizehint!(jointWrenches, length(vertices) - 1)
     for i = 2 : length(vertices)
@@ -137,7 +130,7 @@ function inverse_dynamics{C, M, V}(cache::MechanismStateCache{C, M}, v̇::Dict{J
         vStart = cache.velocityVectorStartIndices[joint]
         ret[vStart : vStart + num_velocities(joint) - 1] = τ
         if !isroot(parentBody)
-            jointWrenches[parentBody] = jointWrenches[parentBody] + jointWrench
+            jointWrenches[parentBody] = jointWrenches[parentBody] + jointWrench # action = -reaction
         end
     end
     return ret
