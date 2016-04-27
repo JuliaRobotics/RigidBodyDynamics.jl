@@ -17,7 +17,7 @@ test_double_pendulum()
 include("test_mechanism.jl")
 test_mechanism()
 
-#run notebooks
+# run notebooks
 using IJulia
 jupyter = IJulia.jupyter
 for f in filter(x -> endswith(x, "ipynb"), readdir("../examples"))

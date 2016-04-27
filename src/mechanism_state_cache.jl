@@ -115,6 +115,9 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
     rootTwist = zero(Twist{C}, root.frame, root.frame, root.frame)
     cache.twistsWrtWorld[root] = CacheElement(rootTwist)
 
+    rootBiasAcceleration = SpatialAcceleration(root.frame, root.frame, root.frame, zero(Vec{3, C}), convert(Vec{3, C}, m.gravity))
+    cache.biasAccelerations[root] = CacheElement(rootBiasAcceleration)
+
     for vertex in m.toposortedTree
         body = vertex.vertexData
         if !isroot(vertex)
@@ -150,20 +153,20 @@ function MechanismStateCache{M, X}(m::Mechanism{M}, x::MechanismState{X})
             cache.motionSubspaces[joint] = CacheElement(GeometricJacobian{C}, update_motion_subspace)
 
             # bias accelerations
-            if isroot(parentBody)
-                update_bias_acceleration = () -> begin
-                    bias = bias_acceleration(joint, qJoint, vJoint)
-                    bias = SpatialAcceleration(bias.body, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
-                    return transform(cache, bias, root.frame)
-                end
-            else
-                parentBiasAccelerationCache = cache.biasAccelerations[parentBody]
-                update_bias_acceleration = () -> begin
-                    bias = bias_acceleration(joint, qJoint, vJoint)
-                    bias = SpatialAcceleration(bias.body, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
-                    return get(parentBiasAccelerationCache) + transform(cache, bias, root.frame)
-                end
+            # if isroot(parentBody)
+            #     update_bias_acceleration = () -> begin
+            #         bias = bias_acceleration(joint, qJoint, vJoint)
+            #         bias = SpatialAcceleration(bias.body, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
+            #         return transform(cache, bias, root.frame)
+            #     end
+            # else
+            parentBiasAccelerationCache = cache.biasAccelerations[parentBody]
+            update_bias_acceleration = () -> begin
+                bias = bias_acceleration(joint, qJoint, vJoint)
+                bias = SpatialAcceleration(bias.body, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
+                return transform(cache, bias, root.frame)
             end
+            # end
             cache.biasAccelerations[body] = CacheElement(SpatialAcceleration{C}, update_bias_acceleration)
         end
 

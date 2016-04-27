@@ -362,7 +362,7 @@ end
 
 function kinetic_energy(I::SpatialInertia, twist::Twist)
     @assert I.frame == twist.frame
-    # TODO: should assert that t.base is an inertial frame somehow
+    # TODO: should assert that twist.base is an inertial frame somehow
     ω = twist.angular
     v = twist.linear
     J = I.moment

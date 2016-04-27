@@ -86,7 +86,7 @@ function inverse_dynamics{C, M, V}(cache::MechanismStateCache{C, M}, v̇::Dict{J
 
     # compute spatial accelerations
     rootBody = root_body(cache.mechanism)
-    accels = Dict{RigidBody{M}, SpatialAcceleration{T}}(rootBody => SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zero(Vec{3, T}), convert(Vec{3, T}, cache.mechanism.gravity)))
+    accels = Dict{RigidBody{M}, SpatialAcceleration{T}}(rootBody => bias_acceleration(cache, rootBody))
     sizehint!(accels, length(vertices))
     for i = 2 : length(vertices)
         vertex = vertices[i]
@@ -104,7 +104,7 @@ function inverse_dynamics{C, M, V}(cache::MechanismStateCache{C, M}, v̇::Dict{J
         parentAccel = accels[vertex.parent.vertexData]
         angular += parentAccel.angular
         linear += parentAccel.linear
-        accels[body] = SpatialAcceleration(bias.body, bias.base, bias.frame, angular, linear)
+        accels[body] = SpatialAcceleration(bias.body, rootBody.frame, bias.frame, angular, linear)
     end
 
     # initialize joint wrenches = net wrenches

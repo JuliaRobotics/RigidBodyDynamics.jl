@@ -108,8 +108,8 @@ function test_mechanism()
             @test isapprox(M, mass_matrix(cache); atol = 1e-12)
         end
 
-        # test Coriolis terms
-        mechanism = rand_chain_mechanism(Float64, [[Revolute{Float64} for i = 1 : 4]; [Prismatic{Float64} for i = 1 : 4]]...) # skew symmetry property tested later on doesn't hold when q̇ ≠ v
+        # test Coriolis term
+        mechanism = rand_tree_mechanism(Float64, [[Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # skew symmetry property tested later on doesn't hold when q̇ ≠ v
         x = MechanismState{Float64}(mechanism)
         rand!(x)
         q_to_M = q -> begin
@@ -135,15 +135,7 @@ function test_mechanism()
         C = 1/2 * ForwardDiff.jacobian(v_to_c, q̇)
 
         skew = Ṁ - 2 * C;
-        # TODO
-        # println(Ṁ)
-        # println()
-        # println()
-        # println(2 * C)
-        # println()
-        # println()
-        # println(skew + skew')
-        # @test isapprox(skew + skew', zeros(size(skew)); atol = 1e-10)
+        @test isapprox(skew + skew', zeros(size(skew)); atol = 1e-10)
 
         # test gravitational term
         v̇ = Dict([j::Joint => zeros(num_velocities(j))::Vector{Float64} for j in joints(mechanism)])
@@ -158,6 +150,7 @@ function test_mechanism()
             return [potential_energy(cache)]
         end
         @test isapprox(g, -ForwardDiff.jacobian(q_to_potential, configuration_vector(x))'; atol = 1e-12)
+
 
         # TODO: test external wrenches
         # println(dM)
