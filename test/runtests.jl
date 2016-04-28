@@ -16,9 +16,9 @@ include("test_double_pendulum.jl")
 include("test_mechanism.jl")
 
 # run notebooks
-# using IJulia
-# jupyter = IJulia.jupyter
-# for f in filter(x -> endswith(x, "ipynb"), readdir("../examples"))
-#     notebook = "../examples/" * f
-#     run(`$jupyter nbconvert --to notebook --execute $notebook --output $notebook`)
-# end
+using IJulia
+jupyter = IJulia.jupyter
+for f in filter(x -> endswith(x, "ipynb"), readdir("../examples"))
+    notebook = "../examples/" * f
+    run(`$jupyter nbconvert --to notebook --execute $notebook --output $notebook`)
+end

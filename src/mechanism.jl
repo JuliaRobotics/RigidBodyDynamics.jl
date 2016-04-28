@@ -60,7 +60,7 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     return m
 end
 
-joints(m::Mechanism) = keys(m.jointToJointTransforms)
+joints(m::Mechanism) = keys(m.jointToJointTransforms) # note: unsorted
 bodies(m::Mechanism) = keys(m.bodyFixedFrameDefinitions)
 default_frame(m::Mechanism, body::RigidBody) = first(m.bodyFixedFrameDefinitions[body]).to # allows standardization on a frame to reduce number of transformations required
 
@@ -85,14 +85,14 @@ end
 rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, (m::Mechanism{T}) -> m.toposortedTree[end].vertexData, jointTypes...)
 rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, (m::Mechanism{T}) -> rand(collect(bodies(m))), jointTypes...)
 
-function configuration_derivative_to_velocity{M, Q, V}(m::Mechanism{M}, q::OrderedDict{Joint, Vector{Q}}, q̇::OrderedDict{Joint, Vector{V}})
-    T = promote_type(M, Q, V)
-    return OrderedDict([j::Joint => configuration_derivative_to_velocity(j, q[j], q̇[j])::Vector{T} for j in joints(m)])
+function configuration_derivative_to_velocity{Q, V}(q::OrderedDict{Joint, Vector{Q}}, q̇::OrderedDict{Joint, Vector{V}})
+    T = promote_type(Q, V)
+    return OrderedDict([j::Joint => configuration_derivative_to_velocity(j, q[j], q̇[j])::Vector{T} for j in keys(q)])
 end
 
-function velocity_to_configuration_derivative{M, Q, V}(m::Mechanism{M}, q::OrderedDict{Joint, Vector{Q}}, v::OrderedDict{Joint, Vector{V}})
-    T = promote_type(M, Q, V)
-    return OrderedDict([j::Joint => velocity_to_configuration_derivative(j, q[j], v[j])::Vector{T} for j in joints(m)])
+function velocity_to_configuration_derivative{Q, V}(q::OrderedDict{Joint, Vector{Q}}, v::OrderedDict{Joint, Vector{V}})
+    T = promote_type(Q, V)
+    return OrderedDict([j::Joint => velocity_to_configuration_derivative(j, q[j], v[j])::Vector{T} for j in keys(q)])
 end
 
 immutable MechanismState{T<:Real}

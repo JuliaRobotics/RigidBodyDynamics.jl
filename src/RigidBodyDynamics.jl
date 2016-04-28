@@ -2,7 +2,7 @@
 
 module RigidBodyDynamics
 
-import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat, show, showcompact, isapprox, dot
+import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat, show, showcompact, isapprox, dot, cross
 using FixedSizeArrays
 using Quaternions
 using DataStructures
@@ -47,6 +47,7 @@ export
     joint_torque,
     root_body,
     root_frame,
+    root_vertex,
     isroot,
     bodies,
     toposort,
@@ -69,9 +70,9 @@ export
     rand_tree_mechanism,
     configuration_vector,
     velocity_vector,
-    zero_configuration,
-    rand_configuration,
+    rand_configuration!,
     zero_configuration!,
+    rand_velocity!,
     zero_velocity!,
     set_configuration!,
     set_velocity!,

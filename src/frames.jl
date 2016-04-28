@@ -45,6 +45,7 @@ isapprox{T}(x::FreeVector3D{T}, y::FreeVector3D{T}; atol::Real = 1e-12) = x.fram
 (+)(v1::FreeVector3D, p2::Point3D) = p2 + v1
 (-)(p1::Point3D, v2::FreeVector3D) = begin @assert p1.frame == v2.frame; return Point3D(p1.frame, p1.v - v2.v) end
 (-)(p1::FreeVector3D, p2::Point3D) = begin @assert p1.frame == p2.frame; return FreeVector3D(p1.frame, p1.v - p2.v) end
+cross(p1::Point3D, v2::FreeVector3D) = begin @assert p1.frame == v2.frame; return FreeVector3D(p1.frame, cross(p1.v, v2.v)) end
 
 immutable Transform3D{T<:Real}
     from::CartesianFrame3D

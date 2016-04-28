@@ -210,7 +210,13 @@ function (+){F<:ForceSpaceElement}(f1::F, f2::F)
     return F(f1.frame, f1.angular + f2.angular, f1.linear + f2.linear)
 end
 
+function (-){F<:ForceSpaceElement}(f1::F, f2::F)
+    @assert f1.frame == f2.frame
+    return F(f1.frame, f1.angular - f2.angular, f1.linear - f2.linear)
+end
+
 (-){F<:ForceSpaceElement}(f::F) = F(f.frame, -f.angular, -f.linear)
+
 to_array{F<:ForceSpaceElement}(f::F) = [f.angular...; f.linear...]
 isapprox{F<:ForceSpaceElement}(x::F, y::F; atol = 1e-12) = x.frame == y.frame && isapprox_tol(x.angular, y.angular, atol = atol) && isapprox_tol(x.linear, y.linear, atol = atol)
 

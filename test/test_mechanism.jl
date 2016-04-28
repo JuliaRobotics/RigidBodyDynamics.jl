@@ -11,8 +11,8 @@ facts("basic stuff") do
 end
 
 facts("q̇ <-> v") do
-    qdot = velocity_to_configuration_derivative(mechanism, x.q, x.v)
-    vCheck = configuration_derivative_to_velocity(mechanism, x.q, qdot)
+    q̇ = velocity_to_configuration_derivative(x.q, x.v)
+    vCheck = configuration_derivative_to_velocity(x.q, q̇)
     for joint in joints(mechanism)
         @fact vCheck[joint] --> roughly(x.v[joint]; atol = 1e-12)
     end
@@ -142,25 +142,42 @@ facts("inverse dynamics / gravity term") do
     @fact -ForwardDiff.jacobian(q_to_potential, configuration_vector(x)) --> roughly(g'; atol = 1e-12)
 end
 
+facts("inverse dynamics / external wrenches") do
+    mechanism = rand_chain_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
+    x = MechanismState{Float64}(mechanism)
+    rand_configuration!(x)
+    rand_velocity!(x)
+    cache = MechanismStateCache(mechanism, x)
 
-# TODO: test external wrenches
-# println(dM)
-# Ṁ =
+    v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints(mechanism)])
+    nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
+    externalWrenches = Dict(([body::RigidBody{Float64} => rand(Wrench{Float64}, root_frame(mechanism))::Wrench{Float64} for body in nonRootBodies]))
+    τ = inverse_dynamics(cache, v̇, externalWrenches)
+    floatingBodyVertex = root_vertex(mechanism).children[1]
+    floatingJoint = floatingBodyVertex.edgeToParentData
+    start = cache.velocityVectorStartIndices[floatingJoint]
+    range = start : start + num_velocities(floatingJoint) - 1
+    floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[range])
+    floatingJointWrench = transform(cache, floatingJointWrench, root_frame(mechanism))
 
-# nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
-# v̇ = Dict([joint::Joint => zeros(num_velocities(joint))::Vector{Float64} for joint in joints(mechanism)])
-# externalWrenches = Dict{RigidBody{Float64}, Wrench{Float64}}()
-# c = inverse_dynamics(cache, v̇, externalWrenches)
+    A = momentum_matrix(cache)
+    q_to_A = q -> begin
+        local x = MechanismState{eltype(q)}(mechanism)
+        set_configuration!(x, q)
+        zero_velocity!(x)
+        local cache = MechanismStateCache(mechanism, x)
+        return vec(momentum_matrix(cache).mat)
+    end
+    dAdq = ForwardDiff.jacobian(q_to_A, configuration_vector(x))
+    q̇ = vcat([velocity_to_configuration_derivative(x.q, x.v)[joint] for joint in keys(x.v)]...)
+    Ȧ = reshape(dAdq * q̇, size(A.mat))
+    v̇ = vcat([v̇[joint] for joint in keys(x.v)]...)
+    v = velocity_vector(x)
+    ḣ = A.mat * v̇ + Ȧ * v # rate of change of momentum
 
-# A = momentum_matrix(cache)
-# v = velocity_vector(x)
-# h = A * v
-# TODO
-# v̇ = Dict([joint::Joint => rand(num_velocities(joint))::Vector{Float64} for joint in joints(mechanism)])
-# externalWrenches = Dict(([body::RigidBody{Float64} => rand(Wrench{Float64}, body.frame)::Wrench{Float64} for body in nonRootBodies]))
-# power = sum(body -> dot(transform(cache, externalWrenches[body], root_frame(mechanism)), twist_wrt_world(cache, body)), nonRootBodies)
-# τ = inverse_dynamics(cache, v̇, externalWrenches)
-# println(power)
-# println(dot(τ, v))
-# Δt = 1e-6
-# v =
+    gravitational_force = FreeVector3D(root_frame(mechanism), mass(mechanism) * mechanism.gravity)
+    com = center_of_mass(cache)
+    gravitational_wrench = Wrench(gravitational_force.frame, cross(com, gravitational_force).v, gravitational_force.v)
+    total_wrench = floatingJointWrench - gravitational_wrench + sum((w) -> transform(cache, w, root_frame(mechanism)), values(externalWrenches)) # TODO: minus for gravitational wrench?
+    @fact to_array(total_wrench) --> roughly(ḣ; atol = 1e-12)
+end
