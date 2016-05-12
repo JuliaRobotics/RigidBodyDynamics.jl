@@ -111,50 +111,6 @@ function add_frame!{X, M, C}(state::MechanismState{X, M, C}, updateTransformToPa
     return state
 end
 
-transform_to_parent(state::MechanismState, frame::CartesianFrame3D) = get(state.transformsToParent[frame])
-transform_to_root(state::MechanismState, frame::CartesianFrame3D) = get(state.transformsToRoot[frame])
-relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D) = inv(transform_to_root(state, to)) * transform_to_root(state, from)
-twist_wrt_world{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.twistsWrtWorld[body])
-relative_twist{X, M}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}) = -get(state.twistsWrtWorld[base]) + get(state.twistsWrtWorld[body])
-function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D)
-    twist = relative_twist(state, state.mechanism.bodyFixedFrameToBody[bodyFrame],  state.mechanism.bodyFixedFrameToBody[baseFrame])
-    return Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)
-end
-bias_acceleration{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.biasAccelerations[body])
-motion_subspace(state::MechanismState, joint::Joint) = get(state.motionSubspaces[joint])
-spatial_inertia{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.spatialInertias[body])
-crb_inertia{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.crbInertias[body])
-
-function transform(state::MechanismState, point::Point3D, to::CartesianFrame3D)
-    point.frame == to && return point # nothing to be done
-    relative_transform(state, point.frame, to) * point
-end
-
-function transform(state::MechanismState, vector::FreeVector3D, to::CartesianFrame3D)
-    vector.frame == to && return vector # nothing to be done
-    relative_transform(state, vector.frame, to) * vector
-end
-
-function transform(state::MechanismState, twist::Twist, to::CartesianFrame3D)
-    twist.frame == to && return twist # nothing to be done
-    transform(twist, relative_transform(state, twist.frame, to))
-end
-
-function transform(state::MechanismState, wrench::Wrench, to::CartesianFrame3D)
-    wrench.frame == to && return wrench # nothing to be done
-    transform(wrench, relative_transform(state, wrench.frame, to))
-end
-
-function transform(state::MechanismState, accel::SpatialAcceleration, to::CartesianFrame3D)
-    accel.frame == to && return accel # nothing to be done
-    oldToRoot = transform_to_root(state, accel.frame)
-    rootToOld = inv(oldToRoot)
-    twistOfBodyWrtBase = transform(relative_twist(state, accel.body, accel.base), rootToOld)
-    twistOfOldWrtNew = transform(relative_twist(state, accel.frame, to), rootToOld)
-    oldToNew = inv(transform_to_root(state, to)) * oldToRoot
-    return transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
-end
-
 function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
     typealias C promote_type(X, M)
     root = root_body(m)
