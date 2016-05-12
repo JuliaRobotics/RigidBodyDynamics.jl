@@ -1,6 +1,4 @@
-immutable MechanismState{X<:Real, M<:Real, C<:Real}
-    # immutable, but can change q and v and use the setdirty! method to have cache elements recomputed
-
+immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change q and v and use the setdirty! method to have cache elements recomputed
     mechanism::Mechanism{M}
     q::OrderedDict{Joint, Vector{X}}
     v::OrderedDict{Joint, Vector{X}}
@@ -71,6 +69,7 @@ rand!(state::MechanismState) = begin rand_configuration!(state); rand_velocity!(
 
 configuration_vector(state::MechanismState) = vcat([last(kv) for kv in state.q]...)
 velocity_vector(state::MechanismState) = vcat([last(kv) for kv in state.v]...)
+
 function set_configuration!(state::MechanismState, q::Vector)
     start = 1
     for joint in keys(state.q)
@@ -161,20 +160,12 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
             state.motionSubspaces[joint] = CacheElement(GeometricJacobian{C}, update_motion_subspace)
 
             # bias accelerations
-            # if isroot(parentBody)
-            #     update_bias_acceleration = () -> begin
-            #         bias = bias_acceleration(joint, qJoint, vJoint)
-            #         bias = SpatialAcceleration(bias.body, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
-            #         return transform(state, bias, root.frame)
-            #     end
-            # else
             parentBiasAccelerationCache = state.biasAccelerations[parentBody]
             update_bias_acceleration = () -> begin
                 bias = bias_acceleration(joint, qJoint, vJoint)
                 bias = SpatialAcceleration(bias.body, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
                 return transform(state, bias, root.frame)
             end
-            # end
             state.biasAccelerations[body] = CacheElement(SpatialAcceleration{C}, update_bias_acceleration)
         end
 
