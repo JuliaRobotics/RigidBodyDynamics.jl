@@ -15,7 +15,7 @@ include("joint.jl")
 include("tree.jl")
 include("mechanism.jl")
 include("cache_element.jl")
-include("mechanism_state_cache.jl")
+include("mechanism_state.jl")
 include("mechanism_algorithms.jl")
 
 export
@@ -39,7 +39,6 @@ export
     SpatialAcceleration,
     Mechanism,
     MechanismState,
-    MechanismStateCache,
     # functions
     transform,
     to_array,
