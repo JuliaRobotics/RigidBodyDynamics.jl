@@ -39,7 +39,6 @@ export
     SpatialAcceleration,
     Mechanism,
     MechanismState,
-    MechanismStateCache,
     # functions
     transform,
     to_array,

@@ -26,9 +26,8 @@ facts("double pendulum") do
     joint2ToBody1 = Transform3D(joint2.frameBefore, body1.frame, Vec(0, 0, l1))
     attach!(double_pendulum, body1, joint2, joint2ToBody1, body2)
 
-    x = MechanismState{Float64}(double_pendulum)
+    x = MechanismState(Float64, double_pendulum)
     rand!(x)
-    cache = MechanismStateCache(double_pendulum, x)
 
     # from http://underactuated.csail.mit.edu/underactuated.html?chapter=3
     q1 = x.q[joint1][1]
@@ -57,12 +56,12 @@ facts("double pendulum") do
     G = [m1 * g * lc1 * s1 + m2 * g * (l1 * s1 + lc2 * s12); m2 * g * lc2 * s12]
 
     v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints(double_pendulum)])
-    τ = inverse_dynamics(cache, v̇)
+    τ = inverse_dynamics(x, v̇)
     v̇ = vcat([v̇[joint] for joint in (joint1, joint2)]...)
     v = velocity_vector(x)
 
-    @fact T1 --> roughly(kinetic_energy(cache, body1); atol = 1e-12)
-    @fact T2 --> roughly(kinetic_energy(cache, body2); atol = 1e-12)
-    @fact M --> roughly(mass_matrix(cache); atol = 1e-12)
+    @fact T1 --> roughly(kinetic_energy(x, body1); atol = 1e-12)
+    @fact T2 --> roughly(kinetic_energy(x, body2); atol = 1e-12)
+    @fact M --> roughly(mass_matrix(x); atol = 1e-12)
     @fact τ --> roughly(M * v̇ + C * v + G; atol = 1e-12)
 end
