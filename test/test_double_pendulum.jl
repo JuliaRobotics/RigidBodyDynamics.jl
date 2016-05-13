@@ -7,11 +7,11 @@ facts("double pendulum") do
     l2 = rand()
     m2 = rand()
     I2 = rand()
-    g = 9.81
+    g = -9.81
 
     axis = Vec(0, 1, 0)
 
-    double_pendulum = Mechanism{Float64}("world"; gravity = Vec(0, 0, -g))
+    double_pendulum = Mechanism{Float64}("world"; gravity = Vec(0, 0, g))
     world = root_body(double_pendulum)
 
     inertia1 = SpatialInertia(CartesianFrame3D("body1"), I1 * (axis * axis'), Vec(0, 0, lc1), m1)

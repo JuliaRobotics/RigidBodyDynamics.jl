@@ -122,7 +122,7 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
     rootTwist = zero(Twist{C}, root.frame, root.frame, root.frame)
     state.twistsWrtWorld[root] = CacheElement(rootTwist)
 
-    rootBiasAcceleration = SpatialAcceleration(root.frame, root.frame, root.frame, zero(Vec{3, C}), convert(Vec{3, C}, m.gravity))
+    rootBiasAcceleration = SpatialAcceleration(root.frame, root.frame, root.frame, zero(Vec{3, C}), -convert(Vec{3, C}, m.gravity))
     state.biasAccelerations[root] = CacheElement(rootBiasAcceleration)
 
     for vertex in m.toposortedTree

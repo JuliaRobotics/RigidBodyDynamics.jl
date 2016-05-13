@@ -121,7 +121,7 @@ facts("inverse dynamics / Coriolis term") do
 end
 
 facts("inverse dynamics / gravity term") do
-    mechanism = rand_tree_mechanism(Float64, [[Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # skew symmetry property tested later on doesn't hold when q̇ ≠ v
+    mechanism = rand_tree_mechanism(Float64, [[Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
     x = MechanismState(Float64, mechanism)
     rand!(x)
     v̇ = Dict([j::Joint => zeros(num_velocities(j))::Vector{Float64} for j in joints(mechanism)])
@@ -133,7 +133,7 @@ facts("inverse dynamics / gravity term") do
         zero_velocity!(x)
         return [potential_energy(x)]
     end
-    @fact -ForwardDiff.jacobian(q_to_potential, configuration_vector(x)) --> roughly(g'; atol = 1e-12)
+    @fact ForwardDiff.jacobian(q_to_potential, configuration_vector(x)) --> roughly(g'; atol = 1e-12)
 end
 
 facts("inverse dynamics / external wrenches") do
@@ -170,6 +170,6 @@ facts("inverse dynamics / external wrenches") do
     gravitational_force = FreeVector3D(root_frame(mechanism), mass(mechanism) * mechanism.gravity)
     com = center_of_mass(x)
     gravitational_wrench = Wrench(gravitational_force.frame, cross(com, gravitational_force).v, gravitational_force.v)
-    total_wrench = floatingJointWrench - gravitational_wrench + sum((w) -> transform(x, w, root_frame(mechanism)), values(externalWrenches)) # TODO: minus for gravitational wrench?
+    total_wrench = floatingJointWrench + gravitational_wrench + sum((w) -> transform(x, w, root_frame(mechanism)), values(externalWrenches))
     @fact to_array(total_wrench) --> roughly(ḣ; atol = 1e-12)
 end
