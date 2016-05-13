@@ -132,7 +132,8 @@ function inverse_dynamics{X, M, V}(state::MechanismState{X, M}, v̇::Dict{Joint,
 
     # compute spatial accelerations
     rootBody = root_body(state.mechanism)
-    accels = Dict{RigidBody{M}, SpatialAcceleration{T}}(rootBody => bias_acceleration(state, rootBody))
+    gravitational_accel = SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zero(Vec{3, T}), -convert(Vec{3, T}, state.mechanism.gravity))
+    accels = Dict{RigidBody{M}, SpatialAcceleration{T}}(rootBody => gravitational_accel)
     sizehint!(accels, length(vertices))
     for i = 2 : length(vertices)
         vertex = vertices[i]
