@@ -116,14 +116,9 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
     state = MechanismState{X, M, C}(m)
     zero!(state)
 
-    rootTransform = CacheElement(Transform3D{C}(root.frame, root.frame))
-    state.transformsToRoot[root.frame] = rootTransform
-
-    rootTwist = zero(Twist{C}, root.frame, root.frame, root.frame)
-    state.twistsWrtWorld[root] = CacheElement(rootTwist)
-
-    rootBiasAcceleration = SpatialAcceleration(root.frame, root.frame, root.frame, zero(Vec{3, C}), -convert(Vec{3, C}, m.gravity))
-    state.biasAccelerations[root] = CacheElement(rootBiasAcceleration)
+    state.transformsToRoot[root.frame] = CacheElement(Transform3D{C}(root.frame, root.frame))
+    state.twistsWrtWorld[root] = CacheElement(zero(Twist{C}, root.frame, root.frame, root.frame))
+    state.biasAccelerations[root] = CacheElement(zero(SpatialAcceleration{C}, root.frame, root.frame, root.frame))
 
     for vertex in m.toposortedTree
         body = vertex.vertexData
