@@ -76,9 +76,17 @@ end
 center_of_mass(state::MechanismState) = center_of_mass(state, bodies(state.mechanism))
 
 function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{RigidBody{M}, Joint})
-    flipIfNecessary = (sign::Int64, motionSubspace::GeometricJacobian) -> sign == -1 ? -motionSubspace : motionSubspace
-    motionSubspaces = [flipIfNecessary(sign, motion_subspace(state, joint))::GeometricJacobian{C} for (joint, sign) in zip(path.edgeData, path.directions)]
+    copysign = (motionSubspace::GeometricJacobian, sign::Int64) -> sign < 0 ? -motionSubspace : motionSubspace
+    motionSubspaces = [copysign(motion_subspace(state, joint), sign)::GeometricJacobian{C} for (joint, sign) in zip(path.edgeData, path.directions)]
     return hcat(motionSubspaces...)
+end
+
+function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::Dict{Joint, Vector{V}})
+    p = path(state.mechanism, base, body)
+    J = geometric_jacobian(state, p)
+    v̇path = vcat([v̇[joint]::Vector{V} for joint in p.edgeData]...)
+    bias = -bias_acceleration(state, base) + bias_acceleration(state, body)
+    return SpatialAcceleration(J, v̇path) + bias
 end
 
 kinetic_energy{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = kinetic_energy(spatial_inertia(state, body), twist_wrt_world(state, body))

@@ -87,6 +87,7 @@ export
     mass,
     center_of_mass,
     geometric_jacobian,
+    relative_acceleration,
     kinetic_energy,
     potential_energy,
     mass_matrix,
