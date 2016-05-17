@@ -70,6 +70,9 @@ rand!(state::MechanismState) = begin rand_configuration!(state); rand_velocity!(
 configuration_vector(state::MechanismState) = vcat([last(kv) for kv in state.q]...)
 velocity_vector(state::MechanismState) = vcat([last(kv) for kv in state.v]...)
 
+configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.q[joint] for joint in path.edgeData]...)
+velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.v[joint] for joint in path.edgeData]...)
+
 function set_configuration!(state::MechanismState, q::Vector)
     start = 1
     for joint in keys(state.q)
@@ -159,7 +162,7 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
             update_bias_acceleration = () -> begin
                 bias = bias_acceleration(joint, qJoint, vJoint)
                 bias = SpatialAcceleration(bias.body, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
-                return transform(state, bias, root.frame)
+                return get(parentBiasAccelerationCache) + transform(state, bias, root.frame)
             end
             state.biasAccelerations[body] = CacheElement(SpatialAcceleration{C}, update_bias_acceleration)
         end

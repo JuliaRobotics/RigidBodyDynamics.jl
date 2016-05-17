@@ -130,7 +130,7 @@ function inverse_dynamics{X, M, V}(state::MechanismState{X, M}, v̇::Dict{Joint,
     vertices = state.mechanism.toposortedTree
     T = promote_type(X, M, V)
 
-    # compute spatial accelerations
+    # compute spatial accelerations minus bias
     rootBody = root_body(state.mechanism)
     gravitational_accel = SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zero(Vec{3, T}), -convert(Vec{3, T}, state.mechanism.gravity))
     accels = Dict{RigidBody{M}, SpatialAcceleration{T}}(rootBody => gravitational_accel)
@@ -139,23 +139,21 @@ function inverse_dynamics{X, M, V}(state::MechanismState{X, M}, v̇::Dict{Joint,
         vertex = vertices[i]
         body = vertex.vertexData
         joint = vertex.edgeToParentData
-        bias = bias_acceleration(state, body)
         S = motion_subspace(state, joint)
-        @assert bias.frame == S.frame
-        Sv̇ = S.mat * v̇[joint]
-        joint_accel = SpatialAcceleration(bias.body, bias.base, bias.frame, bias.angular + Vec(Sv̇[1 : 3]), bias.linear + Vec(Sv̇[4 : 6]))
+        joint_accel = SpatialAcceleration(S, v̇[joint])
         accels[body] = accels[vertex.parent.vertexData] + joint_accel
     end
 
-    # set joint wrenches equal to net wrenches
+    # add biases to accelerations and initialize joint wrenches with net wrenches computed using Newton Euler equations
     jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
     sizehint!(jointWrenches, length(vertices) - 1)
     for i = 2 : length(vertices)
         vertex = vertices[i]
         body = vertex.vertexData
         joint = vertex.edgeToParentData
+
+        Ṫbody = accels[body] + bias_acceleration(state, body)
         I = spatial_inertia(state, body)
-        Ṫbody = accels[body]
         Tbody = twist_wrt_world(state, body)
         wrench = newton_euler(I, Ṫbody, Tbody)
         if haskey(externalWrenches, body)
