@@ -317,6 +317,8 @@ end
 
 (-)(accel::SpatialAcceleration) = SpatialAcceleration(accel.base, accel.body, accel.frame, -accel.angular, -accel.linear)
 
+to_array(accel::SpatialAcceleration) = [accel.angular...; accel.linear...]
+
 function show(io::IO, a::SpatialAcceleration)
     print(io, "SpatialAcceleration of \"$(a.body.name)\" w.r.t \"$(a.base.name)\" in \"$(a.frame.name)\":\nangular: $(a.angular), linear: $(a.linear)")
 end

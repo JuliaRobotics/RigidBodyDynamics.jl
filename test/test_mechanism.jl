@@ -29,6 +29,32 @@ facts("geometric_jacobian / relative_twist") do
     @fact Twist(J, vpath) --> roughly(T; atol = 1e-12)
 end
 
+facts("relative_acceleration") do
+    bs = Set(bodies(mechanism))
+    body = rand([bs...])
+    delete!(bs, body)
+    base = rand([bs...])
+    joints = keys(x.q)
+    v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints])
+    Ṫ = relative_acceleration(x, body, base, v̇)
+
+    q = configuration_vector(x)
+    v = velocity_vector(x)
+    v̇ = vcat([v̇[joint] for joint in joints]...)
+    q̇ = velocity_to_configuration_derivative(x.q, x.v)
+    q̇ = vcat([q̇[joint] for joint in joints]...)
+    create_autodiff = (z, dz) -> [ForwardDiff.GradientNumber(z[i]::Float64, dz[i]::Float64) for i in 1 : length(z)]
+    q_autodiff = create_autodiff(q, q̇)
+    v_autodiff = create_autodiff(v, v̇)
+    x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
+    set_configuration!(x_autodiff, q_autodiff)
+    set_velocity!(x_autodiff, v_autodiff)
+    twist_autodiff = relative_twist(x_autodiff, body, base)
+    accel_vec = [ForwardDiff.grad(x)[1]::Float64 for x in (to_array(twist_autodiff))]
+
+    @fact to_array(Ṫ) --> roughly(accel_vec; atol = 1e-12)
+end
+
 facts("motion subspace / twist wrt world") do
     for vertex in mechanism.toposortedTree[2 : end]
         body = vertex.vertexData
