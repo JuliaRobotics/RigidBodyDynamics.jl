@@ -141,7 +141,9 @@ convert{T<:Real}(::Type{GeometricJacobian{T}}, jac::GeometricJacobian) = Geometr
 
 angular_part(jac::GeometricJacobian) = jac.mat[1 : 3, :]
 linear_part(jac::GeometricJacobian) = jac.mat[4 : 6, :]
-(*){J, R<:Real}(jac::GeometricJacobian{J}, v::Vector{R}) = Twist(jac.body, jac.base, jac.frame, jac.mat * v)
+
+Twist(jac::GeometricJacobian, v::Vector) = Twist(jac.body, jac.base, jac.frame, jac.mat * v)
+
 (-)(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.mat)
 function show(io::IO, jac::GeometricJacobian)
     print(io, "GeometricJacobian: body: \"$(jac.body.name)\", base: \"$(jac.base.name)\", expressed in \"$(jac.frame.name)\":\n$(jac.mat)")
@@ -273,7 +275,7 @@ function hcat{T}(mats::MomentumMatrix{T}...)
     return MomentumMatrix(frame, hcat([m.mat for m in mats]...))
 end
 
-(*){T, R<:Real}(mat::MomentumMatrix{T}, v::Vector{R}) = Momentum(mat.frame, mat.mat * v)
+Momentum(mat::MomentumMatrix, v::Vector) = Momentum(mat.frame, mat.mat * v)
 
 function transform(mat::MomentumMatrix, transform::Transform3D)
     @assert mat.frame == transform.from
@@ -297,14 +299,20 @@ immutable SpatialAcceleration{T<:Real}
 end
 convert{T<:Real}(::Type{SpatialAcceleration{T}}, accel::SpatialAcceleration) = SpatialAcceleration(accel.body, accel.base, accel.frame, convert(Vec{3, T}, accel.angular), convert(Vec{3, T}, accel.linear))
 
-function SpatialAcceleration{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector{T})
+function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector)
     return SpatialAcceleration(body, base, frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
 end
 
+SpatialAcceleration(jac::GeometricJacobian, v̇::Vector) = SpatialAcceleration(jac.body, jac.base, jac.frame, jac.mat * v̇)
+
 function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
     @assert accel1.frame == accel2.frame
-    @assert accel1.body == accel2.base
-    return SpatialAcceleration(accel2.body, accel1.base, accel1.frame, accel1.angular + accel2.angular, accel1.linear + accel2.linear)
+    if accel1.body == accel2.base
+        return SpatialAcceleration(accel2.body, accel1.base, accel1.frame, accel1.angular + accel2.angular, accel1.linear + accel2.linear)
+    elseif accel1.body == accel2.body && accel1.base == accel2.base
+        return SpatialAcceleration(accel1.body, accel1.base, accel1.frame, accel1.angular + accel2.angular, accel1.linear + accel2.linear)
+    end
+    @assert false
 end
 
 (-)(accel::SpatialAcceleration) = SpatialAcceleration(accel.base, accel.body, accel.frame, -accel.angular, -accel.linear)

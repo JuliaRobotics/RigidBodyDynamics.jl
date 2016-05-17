@@ -24,9 +24,9 @@ facts("geometric_jacobian / relative_twist") do
     base = rand([bs...])
     p = path(mechanism, base, body)
     J = geometric_jacobian(x, p)
-    vpath = vcat([x.v[joint] for joint in p.edgeData]...)
+    vpath = velocity_vector(x, p)
     T = relative_twist(x, body, base)
-    @fact J * vpath --> roughly(T; atol = 1e-12)
+    @fact Twist(J, vpath) --> roughly(T; atol = 1e-12)
 end
 
 facts("motion subspace / twist wrt world") do
@@ -34,7 +34,7 @@ facts("motion subspace / twist wrt world") do
         body = vertex.vertexData
         joint = vertex.edgeToParentData
         parentBody = vertex.parent.vertexData
-        @fact relative_twist(x, body, parentBody) --> roughly(motion_subspace(x, joint) * x.v[joint]; atol = 1e-12)
+        @fact relative_twist(x, body, parentBody) --> roughly(Twist(motion_subspace(x, joint), x.v[joint]); atol = 1e-12)
     end
 end
 
@@ -58,7 +58,7 @@ facts("momentum_matrix / summing momenta") do
     end
 
     v = velocity_vector(x)
-    h = A * v
+    h = Momentum(A, v)
     hSum = sum((b::RigidBody) -> isroot(b) ? zero(Momentum{Float64}, A.frame) : spatial_inertia(x, b) * twist_wrt_world(x, b), bodies(mechanism))
     @fact h --> roughly(hSum; atol = 1e-12)
 end

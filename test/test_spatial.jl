@@ -58,13 +58,13 @@ facts("geometric jacobian, power") do
     J = GeometricJacobian(f2, f1, f3, rand(6, 14))
     v = rand(size(J.mat, 2))
     W = rand(Wrench{Float64}, f3)
-    T = J * v
+    T = Twist(J, v)
     H = rand(Transform3D{Float64}, f3, f1)
     τ = joint_torque(J, W)
     @fact J.body --> T.body
     @fact J.base --> T.base
     @fact J.frame --> T.frame
-    @fact transform(J, H) * v --> roughly(transform(T, H))
+    @fact Twist(transform(J, H), v) --> roughly(transform(T, H))
     @fact dot(τ, v) --> roughly(dot(T, W); atol = 1e-12) # power equality
     @fact_throws AssertionError dot(transform(T, H), W)
     @fact_throws AssertionError joint_torque(transform(J, H), W)
@@ -73,10 +73,10 @@ end
 facts("momentum matrix") do
     A = MomentumMatrix(f3, rand(6, 13))
     v = rand(size(A.mat, 2))
-    h = A * v
+    h = Momentum(A, v)
     H = rand(Transform3D{Float64}, f3, f1)
     @fact h.frame --> A.frame
-    @fact transform(A, H) * v --> roughly(transform(h, H))
+    @fact Momentum(transform(A, H), v) --> roughly(transform(h, H))
 end
 
 facts("spatial acceleration") do
