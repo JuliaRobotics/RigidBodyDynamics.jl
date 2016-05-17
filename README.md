@@ -15,6 +15,7 @@ RigidBodyDynamics.jl is a small rigid body dynamics library for Julia. It was in
 ## Current functionality
 * kinematics/transforming points and free vectors from one coordinate system to another
 * transforming wrenches, momenta (spatial force vectors) and twists and their derivatives (spatial motion vectors) from one coordinate system to another
+* relative twists/spatial accelerations between bodies
 * kinetic/potential energy
 * center of mass
 * geometric/basic/spatial Jacobians
