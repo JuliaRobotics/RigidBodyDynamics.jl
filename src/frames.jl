@@ -66,8 +66,8 @@ convert{T}(::Type{Transform3D{T}}, t::Transform3D) = Transform3D(t.from, t.to, c
 
 function show(io::IO, t::Transform3D)
     println(io, "Transform3D from \"$(t.from.name)\" to \"$(t.to.name)\":")
-    angle, axis = angleaxis(t.rot)
-    println(io, "rotation: $(2 * angle) rad about $(axis), translation: $(t.trans)") # TODO: 2 * angle because Quaternions.jl is wrong... need to notify
+    angle, axis = angle_axis_proper(t.rot)
+    println(io, "rotation: $(angle) rad about $(axis), translation: $(t.trans)") # TODO: use fixed Quaternions.jl version once it's updated
 end
 
 function *(t1::Transform3D, t2::Transform3D)
