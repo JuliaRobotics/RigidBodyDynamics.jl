@@ -134,9 +134,9 @@ function momentum_matrix(state::MechanismState)
     hcat([crb_inertia(state, vertex.vertexData) * motion_subspace(state, vertex.edgeToParentData) for vertex in state.mechanism.toposortedTree[2 : end]]...)
 end
 
-function inverse_dynamics{X, M, V}(state::MechanismState{X, M}, v̇::Dict{Joint, Vector{V}}, externalWrenches::Dict{RigidBody{M}, Wrench{V}} = Dict{RigidBody{M}, Wrench{V}}())
+function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joint, Vector{V}} = Dict{Joint, Vector{X}}(), externalWrenches::Dict{RigidBody{M}, Wrench{W}} = Dict{RigidBody{M}, Wrench{X}}())
     vertices = state.mechanism.toposortedTree
-    T = promote_type(X, M, V)
+    T = promote_type(X, M, V, W)
 
     # compute spatial accelerations minus bias
     rootBody = root_body(state.mechanism)
@@ -148,7 +148,8 @@ function inverse_dynamics{X, M, V}(state::MechanismState{X, M}, v̇::Dict{Joint,
         body = vertex.vertexData
         joint = vertex.edgeToParentData
         S = motion_subspace(state, joint)
-        joint_accel = SpatialAcceleration(S, v̇[joint])
+        v̇joint = get(v̇, joint, zeros(T, num_velocities(joint)))
+        joint_accel = SpatialAcceleration(S, v̇joint)
         accels[body] = accels[vertex.parent.vertexData] + joint_accel
     end
 
