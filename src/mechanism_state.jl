@@ -73,6 +73,16 @@ velocity_vector(state::MechanismState) = vcat([last(kv) for kv in state.v]...)
 configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.q[joint] for joint in path.edgeData]...)
 velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.v[joint] for joint in path.edgeData]...)
 
+function set_configuration!(state::MechanismState, joint::Joint, q::Vector)
+    state.q[joint][:] = q
+    setdirty!(state)
+end
+
+function set_velocity!(state::MechanismState, joint::Joint, v::Vector)
+    state.v[joint][:] = v
+    setdirty!(state)
+end
+
 function set_configuration!(state::MechanismState, q::Vector)
     start = 1
     for joint in keys(state.q)

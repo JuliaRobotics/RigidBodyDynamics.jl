@@ -3,10 +3,33 @@ x = MechanismState(Float64, mechanism)
 rand!(x)
 
 facts("basic stuff") do
-    v = vcat([x.v[vertex.edgeToParentData] for vertex in mechanism.toposortedTree[2 : end]]...)
     q = vcat([x.q[vertex.edgeToParentData] for vertex in mechanism.toposortedTree[2 : end]]...)
-    @fact v --> velocity_vector(x)
+    v = vcat([x.v[vertex.edgeToParentData] for vertex in mechanism.toposortedTree[2 : end]]...)
+
     @fact q --> configuration_vector(x)
+    @fact v --> velocity_vector(x)
+
+    zero_configuration!(x)
+    set_configuration!(x, q)
+    @fact q --> configuration_vector(x)
+
+    zero_velocity!(x)
+    set_velocity!(x, v)
+    @fact v --> velocity_vector(x)
+
+    qcopy = Dict([joint => copy(qjoint) for (joint, qjoint) in x.q])
+    zero_configuration!(x)
+    for (joint, qjoint) in qcopy
+        set_configuration!(x, joint, qjoint)
+    end
+    @fact q --> configuration_vector(x)
+
+    vcopy = Dict([joint => copy(vjoint) for (joint, vjoint) in x.v])
+    zero_velocity!(x)
+    for (joint, vjoint) in vcopy
+        set_velocity!(x, joint, vjoint)
+    end
+    @fact v --> velocity_vector(x)
 end
 
 facts("q̇ <-> v") do
