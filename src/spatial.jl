@@ -61,7 +61,7 @@ function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
     m = convert(S, inertia.mass)
     c = convert(Vec{3, S}, inertia.centerOfMass)
 
-    R = convert(Mat{3, 3, S}, Mat(rotationmatrix(t.rot)))
+    R = rotationmatrix_normalized_fsa(Quaternion{S}(t.rot))
     p = convert(Vec{3, S}, t.trans)
 
     cnew = R * (c * m)

@@ -25,3 +25,10 @@ function axis_proper(q::Quaternion)
         [q.v1, q.v2, q.v3] / s :
         [1.0, 0.0, 0.0]
 end
+
+function rotationmatrix_normalized_fsa{T}(q::Quaternion{T})
+    sx, sy, sz = 2q.s*q.v1, 2q.s*q.v2, 2q.s*q.v3
+    xx, xy, xz = 2q.v1^2, 2q.v1*q.v2, 2q.v1*q.v3
+    yy, yz, zz = 2q.v2^2, 2q.v2*q.v3, 2q.v3^2
+    return Mat{3, 3, T}((1-(yy+zz), xy+sz, xz-sy), (xy-sz, 1-(xx+zz), yz+sx), (xz+sy, yz-sx, 1-(xx+yy)))
+end

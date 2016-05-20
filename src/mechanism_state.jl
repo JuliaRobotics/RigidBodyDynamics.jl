@@ -69,6 +69,7 @@ rand!(state::MechanismState) = begin rand_configuration!(state); rand_velocity!(
 
 configuration_vector(state::MechanismState) = vcat([last(kv) for kv in state.q]...)
 velocity_vector(state::MechanismState) = vcat([last(kv) for kv in state.v]...)
+state_vector(state::MechanismState) = [configuration_vector(state); velocity_vector(state)]
 
 configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.q[joint] for joint in path.edgeData]...)
 velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.v[joint] for joint in path.edgeData]...)
@@ -96,6 +97,19 @@ function set_velocity!(state::MechanismState, v::Vector)
     start = 1
     for joint in keys(state.q)
         state.v[joint][:] = v[start : start + num_velocities(joint) - 1]
+        start += num_velocities(joint)
+    end
+    setdirty!(state)
+end
+
+function set!(state::MechanismState, x::Vector)
+    start = 1
+    for joint in keys(state.q)
+        state.q[joint][:] = x[start : start + num_positions(joint) - 1]
+        start += num_positions(joint)
+    end
+    for joint in keys(state.v)
+        state.v[joint][:] = x[start : start + num_velocities(joint) - 1]
         start += num_velocities(joint)
     end
     setdirty!(state)

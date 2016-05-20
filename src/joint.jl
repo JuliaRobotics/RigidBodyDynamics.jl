@@ -22,6 +22,7 @@ rand(::Type{QuaternionFloating}) = QuaternionFloating()
 
 function joint_transform{T<:Real}(j::Joint, q::Vector{T}, jt::QuaternionFloating = j.jointType)
     rot = Quaternion(q[1], q[2 : 4])
+    Quaternions.normalize(rot)
     trans = Vec(q[5], q[6], q[7])
     return Transform3D{T}(j.frameAfter, j.frameBefore, rot, trans)
 end
@@ -37,6 +38,7 @@ bias_acceleration{T<:Real}(j::Joint, q::Vector{T}, v::Vector{T}, jt::QuaternionF
 
 function configuration_derivative_to_velocity(j::Joint, q::Vector, q̇::Vector, jt::QuaternionFloating = j.jointType)
     quat = Quaternion(q[1], q[2 : 4])
+    Quaternions.normalize(quat)
     quatdot = Quaternion(q̇[1], q̇[2 : 4])
     posdot = Vec(q̇[5], q̇[6], q̇[7])
     linear = rotate(posdot, inv(quat))
@@ -46,6 +48,7 @@ end
 
 function velocity_to_configuration_derivative(j::Joint, q::Vector, v::Vector, jt::QuaternionFloating = j.jointType)
     quat = Quaternion(q[1], q[2 : 4])
+    Quaternions.normalize(quat)
     ωQuat = Quaternion(0, v[1], v[2], v[3])
     linear = Vec(v[4], v[5], v[6])
     quatdot = 1/2 * quat * ωQuat
