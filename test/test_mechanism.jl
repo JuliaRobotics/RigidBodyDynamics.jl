@@ -30,6 +30,12 @@ facts("basic stuff") do
         set_velocity!(x, joint, vjoint)
     end
     @fact v --> velocity_vector(x)
+
+    zero!(x)
+    set!(x, [q; v])
+
+    @fact q --> configuration_vector(x)
+    @fact v --> velocity_vector(x)
 end
 
 facts("q̇ <-> v") do
