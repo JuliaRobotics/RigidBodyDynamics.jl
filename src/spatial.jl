@@ -76,8 +76,25 @@ function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
 end
 
 function rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
-    J = rand(Mat{3, 3, T})
-    J = J * J'
+    # Try to generate a random but physical moment of inertia
+    # by constructing it from its eigendecomposition
+    Q = rotationmatrix(qrotation(rand(T, 3) * 2*pi))
+    principal_moments = Vector{T}(3)
+
+    # Scale the inertias to make the length scale of the
+    # equivalent inertial ellipsoid roughly ~1 unit
+    principal_moments[1:2] = rand(2) / 10.
+
+    # Ensure that the principal moments of inertia obey the triangle
+    # inequalities:
+    # http://www.mathworks.com/help/physmod/sm/mech/vis/about-body-color-and-geometry.html
+    lb = abs(principal_moments[1] - principal_moments[2])
+    ub = principal_moments[1] + principal_moments[2]
+    principal_moments[3] = rand() * (ub - lb) + lb
+
+    # Construct the moment of inertia tensor
+    J = Mat{3, 3, T}(Q * diagm(principal_moments) * Q')
+
     SpatialInertia(frame, J, rand(Vec{3, T}), rand(T))
 end
 
