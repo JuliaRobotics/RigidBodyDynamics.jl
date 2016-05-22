@@ -191,12 +191,11 @@ function dynamics{X, M, T, W}(state::MechanismState{X, M};
     torques::Dict{Joint, Vector{T}} = Dict{Joint, Vector{T}}(),
     externalWrenches::Dict{RigidBody{M}, Wrench{W}} = Dict{RigidBody{M}, Wrench{X}}())
 
-    q̇dict = velocity_to_configuration_derivative(state.q, state.v)
     joints = keys(state.q)
-    q̇ = vcat([q̇dict[joint] for joint in joints]...)
+    q̇ = velocity_to_configuration_derivative(state.q, state.v)
     τ = torque_dict_to_vector(torques, joints)
     c = torque_dict_to_vector(inverse_dynamics(state; externalWrenches = externalWrenches), joints)
-    v̇ = mass_matrix(state) \ (τ - c)
+    v̇ = velocity_vector_to_dict(mass_matrix(state) \ (τ - c), joints)
     return q̇, v̇
 end
 
@@ -208,6 +207,7 @@ function dynamics{X, M, T, W}(stateVector::Vector{X}, preallocatedState::Mechani
     externalWrenches::Dict{RigidBody{M}, Wrench{W}} = Dict{RigidBody{M}, Wrench{X}}())
 
     set!(preallocatedState, stateVector)
+    joints = keys(preallocatedState.q)
     (q̇, v̇) = dynamics(preallocatedState; torques = torques, externalWrenches = externalWrenches)
-    return [q̇; v̇]
+    return [configuration_dict_to_vector(q̇, joints); velocity_dict_to_vector(v̇, joints)]
 end
