@@ -225,3 +225,20 @@ facts("inverse dynamics / external wrenches") do
     total_wrench = floatingJointWrench + gravitational_wrench + sum((w) -> transform(x, w, root_frame(mechanism)), values(externalWrenches))
     @fact to_array(total_wrench) --> roughly(ḣ; atol = 1e-12)
 end
+
+facts("dynamics / inverse dynamics") do
+    mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
+    x = MechanismState(Float64, mechanism)
+    rand!(x)
+
+    joints = keys(x.v)
+    τ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints])
+    externalWrenches = Dict(([body::RigidBody{Float64} => rand(Wrench{Float64}, root_frame(mechanism))::Wrench{Float64} for body in bodies(mechanism)]))
+    stateVector = state_vector(x)
+    ẋ = dynamics(stateVector, x; torques = τ, externalWrenches = externalWrenches)
+    v̇ = velocity_vector_to_dict(ẋ[num_positions(mechanism) + 1 : end], joints)
+    τcheck = inverse_dynamics(x, v̇; externalWrenches = externalWrenches)
+    for joint in joints
+        @fact τcheck[joint] --> roughly(τ[joint]; atol = 1e-12)
+    end
+end
