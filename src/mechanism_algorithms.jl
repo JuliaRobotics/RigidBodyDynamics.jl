@@ -132,7 +132,7 @@ function momentum_matrix(state::MechanismState)
     hcat([crb_inertia(state, vertex.vertexData) * motion_subspace(state, vertex.edgeToParentData) for vertex in state.mechanism.toposortedTree[2 : end]]...)
 end
 
-function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joint, Vector{V}} = Dict{Joint, Vector{X}}(), externalWrenches::Dict{RigidBody{M}, Wrench{W}} = Dict{RigidBody{M}, Wrench{X}}())
+function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joint, Vector{V}} = Dict{Joint, Vector{X}}(); externalWrenches::Dict{RigidBody{M}, Wrench{W}} = Dict{RigidBody{M}, Wrench{X}}())
     vertices = state.mechanism.toposortedTree
     T = promote_type(X, M, V, W)
 

@@ -199,7 +199,7 @@ facts("inverse dynamics / external wrenches") do
     v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints(mechanism)])
     nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
     externalWrenches = Dict(([body::RigidBody{Float64} => rand(Wrench{Float64}, root_frame(mechanism))::Wrench{Float64} for body in nonRootBodies]))
-    τ = inverse_dynamics(x, v̇, externalWrenches)
+    τ = inverse_dynamics(x, v̇; externalWrenches = externalWrenches)
     floatingBodyVertex = root_vertex(mechanism).children[1]
     floatingJoint = floatingBodyVertex.edgeToParentData
     floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[x.vRanges[floatingJoint]])
