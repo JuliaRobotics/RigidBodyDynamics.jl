@@ -40,6 +40,7 @@ export
     Mechanism,
     MechanismState,
     # functions
+    name,
     transform,
     to_array,
     newton_euler,
@@ -94,5 +95,6 @@ export
     potential_energy,
     mass_matrix,
     momentum_matrix,
-    inverse_dynamics
+    inverse_dynamics,
+    dynamics
 end
