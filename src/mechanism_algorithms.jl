@@ -107,8 +107,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
         # Hii
         bodyi = vi.vertexData
         jointi = vi.edgeToParentData
-        vStarti = state.velocityVectorStartIndices[jointi]
-        irange = vStarti : vStarti + num_velocities(jointi) - 1
+        irange = state.vRanges[jointi]
         Si = motion_subspace(state, jointi)
         F = crb_inertia(state, bodyi) * Si
         H[irange, irange] = At_mul_B(Si.mat, F.mat)
@@ -117,8 +116,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
         vj = vi.parent
         while (!isroot(vj))
             jointj = vj.edgeToParentData
-            vStartj = state.velocityVectorStartIndices[jointj]
-            jrange = vStartj : vStartj + num_velocities(jointj) - 1
+            jrange = state.vRanges[jointj]
             Sj = motion_subspace(state, jointj)
             @assert F.frame == Sj.frame
             Hji = At_mul_B(Sj.mat, F.mat)
@@ -181,8 +179,7 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joi
         jointWrench = jointWrenches[body]
         S = motion_subspace(state, joint)
         τ = joint_torque(S, jointWrench)
-        vStart = state.velocityVectorStartIndices[joint]
-        ret[vStart : vStart + num_velocities(joint) - 1] = τ
+        ret[state.vRanges[joint]] = τ
         if !isroot(parentBody)
             jointWrenches[parentBody] = jointWrenches[parentBody] + jointWrench # action = -reaction
         end

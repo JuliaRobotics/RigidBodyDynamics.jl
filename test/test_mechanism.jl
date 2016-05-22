@@ -107,8 +107,7 @@ facts("momentum_matrix / summing momenta") do
     for vertex in mechanism.toposortedTree[2 : end]
         body = vertex.vertexData
         joint = vertex.edgeToParentData
-        start = x.velocityVectorStartIndices[joint]
-        Ajoint = A.mat[:, start : start + num_velocities(joint) - 1]
+        Ajoint = A.mat[:, x.vRanges[joint]]
         @fact (crb_inertia(x, body) * motion_subspace(x, joint)).mat --> roughly(Ajoint; atol = 1e-12)
     end
 
@@ -139,7 +138,7 @@ facts("inverse dynamics / acceleration term") do
     v̇_to_τ = v̇ -> begin
         v̇Dict = Dict{Joint, Vector{eltype(v̇)}}()
         for joint in keys(x.v)
-            v̇Dict[joint] = v̇[x.velocityVectorStartIndices[joint] : x.velocityVectorStartIndices[joint] + num_velocities(joint) - 1]
+            v̇Dict[joint] = v̇[x.vRanges[joint]]
         end
         return inverse_dynamics(x, v̇Dict)
     end
@@ -203,9 +202,7 @@ facts("inverse dynamics / external wrenches") do
     τ = inverse_dynamics(x, v̇, externalWrenches)
     floatingBodyVertex = root_vertex(mechanism).children[1]
     floatingJoint = floatingBodyVertex.edgeToParentData
-    start = x.velocityVectorStartIndices[floatingJoint]
-    range = start : start + num_velocities(floatingJoint) - 1
-    floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[range])
+    floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[x.vRanges[floatingJoint]])
     floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
 
     A = momentum_matrix(x)
