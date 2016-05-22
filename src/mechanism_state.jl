@@ -75,12 +75,12 @@ function rand_velocity!(state::MechanismState)
 end
 rand!(state::MechanismState) = begin rand_configuration!(state); rand_velocity!(state) end
 
-configuration_vector(state::MechanismState) = vcat([last(kv) for kv in state.q]...)
-velocity_vector(state::MechanismState) = vcat([last(kv) for kv in state.v]...)
+configuration_vector(state::MechanismState) = configuration_dict_to_vector(state.q, keys(state.q))
+velocity_vector(state::MechanismState) = velocity_dict_to_vector(state.v, keys(state.v))
 state_vector(state::MechanismState) = [configuration_vector(state); velocity_vector(state)]
 
-configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.q[joint] for joint in path.edgeData]...)
-velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.v[joint] for joint in path.edgeData]...)
+configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = configuration_dict_to_vector(state.q, [j for j in path.edgeData])
+velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = velocity_dict_to_vector(state.v, [j for j in path.edgeData])
 
 function set_configuration!(state::MechanismState, joint::Joint, q::Vector)
     state.q[joint][:] = q
