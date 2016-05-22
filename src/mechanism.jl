@@ -60,8 +60,8 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     return m
 end
 
-joints(m::Mechanism) = keys(m.jointToJointTransforms) # note: unsorted
-bodies(m::Mechanism) = keys(m.bodyFixedFrameDefinitions)
+joints(m::Mechanism) = [vertex.edgeToParentData for vertex in m.toposortedTree[2 : end]] # TODO: make less expensive
+bodies(m::Mechanism) = [vertex.vertexData for vertex in m.toposortedTree[2 : end]] # TODO: make less expensive
 default_frame(m::Mechanism, body::RigidBody) = first(m.bodyFixedFrameDefinitions[body]).to # allows standardization on a frame to reduce number of transformations required
 
 num_positions(m::Mechanism) = num_positions(joints(m))

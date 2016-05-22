@@ -170,7 +170,8 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joi
     end
 
     # project joint wrench to find torques, update parent joint wrench
-    ret = zeros(T, num_velocities(state.mechanism))
+    τ = Dict{Joint, Vector{T}}()
+    sizehint!(τ, length(vertices) - 1)
     for i = length(vertices) : -1 : 2
         vertex = vertices[i]
         body = vertex.vertexData
@@ -178,11 +179,10 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joi
         joint = vertex.edgeToParentData
         jointWrench = jointWrenches[body]
         S = motion_subspace(state, joint)
-        τ = joint_torque(S, jointWrench)
-        ret[state.vRanges[joint]] = τ
+        τ[joint] = joint_torque(S, jointWrench)
         if !isroot(parentBody)
             jointWrenches[parentBody] = jointWrenches[parentBody] + jointWrench # action = -reaction
         end
     end
-    return ret
+    τ
 end

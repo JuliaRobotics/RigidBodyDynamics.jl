@@ -140,7 +140,7 @@ facts("inverse dynamics / acceleration term") do
         for joint in keys(x.v)
             v̇Dict[joint] = v̇[x.vRanges[joint]]
         end
-        return inverse_dynamics(x, v̇Dict)
+        return torque_dict_to_vector(inverse_dynamics(x, v̇Dict), joints(mechanism))
     end
     M = mass_matrix(x)
     @fact ForwardDiff.jacobian(v̇_to_τ, zeros(Float64, num_velocities(mechanism))) --> roughly(M; atol = 1e-12)
@@ -166,7 +166,7 @@ facts("inverse dynamics / Coriolis term") do
         local x = MechanismState(eltype(v), mechanism)
         set_configuration!(x, q)
         set_velocity!(x, v)
-        return inverse_dynamics(x, v̇)
+        return torque_dict_to_vector(inverse_dynamics(x, v̇), joints(mechanism))
     end
     C = 1/2 * ForwardDiff.jacobian(v_to_c, q̇)
 
@@ -180,7 +180,7 @@ facts("inverse dynamics / gravity term") do
     rand!(x)
     v̇ = Dict([j::Joint => zeros(num_velocities(j))::Vector{Float64} for j in joints(mechanism)])
     zero_velocity!(x)
-    g = inverse_dynamics(x, v̇)
+    g = torque_dict_to_vector(inverse_dynamics(x, v̇), joints(mechanism))
     q_to_potential = q -> begin
         local x = MechanismState(eltype(q), mechanism)
         set_configuration!(x, q)
@@ -202,7 +202,7 @@ facts("inverse dynamics / external wrenches") do
     τ = inverse_dynamics(x, v̇; externalWrenches = externalWrenches)
     floatingBodyVertex = root_vertex(mechanism).children[1]
     floatingJoint = floatingBodyVertex.edgeToParentData
-    floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[x.vRanges[floatingJoint]])
+    floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[floatingJoint])
     floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
 
     A = momentum_matrix(x)
