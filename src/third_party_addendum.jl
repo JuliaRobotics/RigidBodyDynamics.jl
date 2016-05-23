@@ -32,3 +32,14 @@ function rotationmatrix_normalized_fsa{T}(q::Quaternion{T})
     yy, yz, zz = 2q.v2^2, 2q.v2*q.v3, 2q.v3^2
     return Mat{3, 3, T}((1-(yy+zz), xy+sz, xz-sy), (xy-sz, 1-(xx+zz), yz+sx), (xz+sy, yz-sx, 1-(xx+yy)))
 end
+
+function rpy_to_quaternion(rpy::Vector)
+    rpy2 = rpy / 2
+    s = sin(rpy)
+    c = cos(rpy)
+    return Quaternion(
+        c[1]*c[2]*c[3] + s[1]*s[2]*s[3],
+        s[1]*c[2]*c[3] - c[1]*s[2]*s[3],
+        c[1]*s[2]*c[3] + s[1]*c[2]*s[3],
+        c[1]*c[2]*s[3] - s[1]*s[2]*c[3])
+end

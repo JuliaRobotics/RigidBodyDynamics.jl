@@ -6,6 +6,7 @@ import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.r
 using FixedSizeArrays
 using Quaternions
 using DataStructures
+using LightXML
 
 include("third_party_addendum.jl")
 include("util.jl")
@@ -18,6 +19,7 @@ include("mechanism.jl")
 include("cache_element.jl")
 include("mechanism_state.jl")
 include("mechanism_algorithms.jl")
+include("parse_urdf.jl")
 
 export
     # types
@@ -104,5 +106,6 @@ export
     mass_matrix,
     momentum_matrix,
     inverse_dynamics,
-    dynamics
+    dynamics,
+    parse_urdf
 end
