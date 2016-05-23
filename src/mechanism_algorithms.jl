@@ -188,26 +188,24 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joi
 end
 
 function dynamics{X, M, T, W}(state::MechanismState{X, M};
-    torques::Dict{Joint, Vector{T}} = Dict{Joint, Vector{T}}(),
+    torques::Dict{Joint, Vector{T}} = Dict{Joint, Vector{X}}(),
     externalWrenches::Dict{RigidBody{M}, Wrench{W}} = Dict{RigidBody{M}, Wrench{X}}())
 
     joints = keys(state.q)
     q̇ = velocity_to_configuration_derivative(state.q, state.v)
-    τ = torque_dict_to_vector(torques, joints)
     c = torque_dict_to_vector(inverse_dynamics(state; externalWrenches = externalWrenches), joints)
+    τ = isempty(torques) ? zeros(c) : convert(Vector{C}, torque_dict_to_vector(torques, joints))
     v̇ = velocity_vector_to_dict(mass_matrix(state) \ (τ - c), joints)
     return q̇, v̇
 end
 
-# Convenience function that provides a Vector state interface, e.g. for use with standard ODE integrators
+# Convenience function that takes a Vector argument for the state and returns a Vector,
+# e.g. for use with standard ODE integrators
 # Note that preallocatedState is required so that we don't need to allocate a new
 # MechanismState object every time this function is called
-function dynamics{X, M, T, W}(stateVector::Vector{X}, preallocatedState::MechanismState{X, M};
-    torques::Dict{Joint, Vector{T}} = Dict{Joint, Vector{T}}(),
-    externalWrenches::Dict{RigidBody{M}, Wrench{W}} = Dict{RigidBody{M}, Wrench{X}}())
-
+function dynamics{X}(stateVector::Vector{X}, preallocatedState::MechanismState{X}; kwargs...)
     set!(preallocatedState, stateVector)
+    (q̇, v̇) = dynamics(preallocatedState; kwargs...)
     joints = keys(preallocatedState.q)
-    (q̇, v̇) = dynamics(preallocatedState; torques = torques, externalWrenches = externalWrenches)
     return [configuration_dict_to_vector(q̇, joints); velocity_dict_to_vector(v̇, joints)]
 end
