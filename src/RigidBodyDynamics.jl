@@ -32,6 +32,7 @@ export
     QuaternionFloating,
     Revolute,
     Prismatic,
+    Fixed,
     Twist,
     GeometricJacobian,
     Wrench,
