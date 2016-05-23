@@ -79,23 +79,29 @@ function rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
     # Try to generate a random but physical moment of inertia
     # by constructing it from its eigendecomposition
     Q = rotationmatrix(qrotation(rand(T, 3) * 2*pi))
-    principal_moments = Vector{T}(3)
+    principalMoments = Vector{T}(3)
 
     # Scale the inertias to make the length scale of the
     # equivalent inertial ellipsoid roughly ~1 unit
-    principal_moments[1:2] = rand(2) / 10.
+    principalMoments[1:2] = rand(2) / 10.
 
     # Ensure that the principal moments of inertia obey the triangle
     # inequalities:
     # http://www.mathworks.com/help/physmod/sm/mech/vis/about-body-color-and-geometry.html
-    lb = abs(principal_moments[1] - principal_moments[2])
-    ub = principal_moments[1] + principal_moments[2]
-    principal_moments[3] = rand() * (ub - lb) + lb
+    lb = abs(principalMoments[1] - principalMoments[2])
+    ub = principalMoments[1] + principalMoments[2]
+    principalMoments[3] = rand() * (ub - lb) + lb
 
     # Construct the moment of inertia tensor
-    J = Mat{3, 3, T}(Q * diagm(principal_moments) * Q')
+    J = Mat{3, 3, T}(Q * diagm(principalMoments) * Q')
 
-    SpatialInertia(frame, J, rand(Vec{3, T}), rand(T))
+    # Construct the inertia in CoM frame
+    comFrame = CartesianFrame3D("com")
+    spatialInertia = SpatialInertia(comFrame, J, zero(Vec{3, T}), rand(T))
+
+    # Put the center of mass at a random offset
+    comFrameToDesiredFrame = Transform3D(comFrame, frame, rand(Vec{3, T}) - 0.5)
+    transform(spatialInertia, comFrameToDesiredFrame)
 end
 
 immutable Twist{T<:Real}
