@@ -22,10 +22,11 @@ RigidBodyDynamics.jl is a small rigid body dynamics library for Julia. It was in
 * momentum matrix
 * mass matrix (composite rigid body algorithm)
 * inverse dynamics (recursive Newton-Euler)
+* dynamics
 
-Since the inverse dynamics algorithm can also be used to compute just the Coriolis and gravitational torques, it could be used in conjunction with the mass matrix algorithm to do forward dynamics. The articulated-body algorithm for forward dynamics has not yet been implemented.
+The (forward) dynamics algorithm is currently rudimentary; it just computes the mass matrix and the bias term (using the inverse dynamics algorithm), and then solves for joint accelerations without exploiting sparsity.
 
-Closed loop systems are not yet supported.
+Closed loop systems and contact are not yet supported.
 
 ## Citing this library
 ```
