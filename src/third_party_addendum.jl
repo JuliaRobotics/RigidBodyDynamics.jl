@@ -35,8 +35,8 @@ end
 
 function rpy_to_quaternion(rpy::Vector)
     rpy2 = rpy / 2
-    s = sin(rpy)
-    c = cos(rpy)
+    s = sin(rpy2)
+    c = cos(rpy2)
     return Quaternion(
         c[1]*c[2]*c[3] + s[1]*s[2]*s[3],
         s[1]*c[2]*c[3] - c[1]*s[2]*s[3],
