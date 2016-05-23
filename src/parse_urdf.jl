@@ -6,7 +6,7 @@ function parse_scalar{T}(::Type{T}, e::XMLElement, name::ASCIIString, default::A
     T(parse(e == nothing ? default : attribute(e, name)))
 end
 
-function parse_vector{T}(::Type{T}, e::XMLElement, name::ASCIIString, default::ASCIIString)
+function parse_vector{T}(::Type{T}, e::Union{XMLElement, Void}, name::ASCIIString, default::ASCIIString)
     usedefault = e == nothing || attribute(e, name) == nothing # TODO: better handling of required attributes
     [T(parse(str)) for str in split(usedefault ? default : attribute(e, name), " ")]
 end
@@ -21,10 +21,15 @@ function parse_inertia{T}(::Type{T}, xmlInertia::XMLElement)
     return @fsa([ixx ixy ixz; ixy iyy iyz; ixz iyz izz])
 end
 
-function parse_pose{T}(::Type{T}, xmlPose::XMLElement)
-    trans = Vec(parse_vector(T, xmlPose, "xyz", "0 0 0"))
-    rpy = parse_vector(T, xmlPose, "rpy", "0 0 0")
-    rot = rpy_to_quaternion(rpy)
+function parse_pose{T}(::Type{T}, xmlPose::Union{Void, XMLElement})
+    if xmlPose == nothing
+        rot = one(Quaternion{T})
+        trans = zero(Vec{3, T})
+    else
+        rpy = parse_vector(T, xmlPose, "rpy", "0 0 0")
+        rot = rpy_to_quaternion(rpy)
+        trans = Vec(parse_vector(T, xmlPose, "xyz", "0 0 0"))
+    end
     rot, trans
 end
 
@@ -58,7 +63,7 @@ end
 
 function parse_body{T}(::Type{T}, xmlLink::XMLElement, frame::CartesianFrame3D)
     xmlInertial = find_element(xmlLink, "inertial")
-    inertia = parse_inertia(T, xmlInertial, frame)
+    inertia = xmlInertial == nothing ? zero(SpatialInertia{T}, frame) : parse_inertia(T, xmlInertial, frame)
     linkname = attribute(xmlLink, "name") # TODO: make sure link name is unique
     return RigidBody(linkname, inertia)
 end
