@@ -15,6 +15,8 @@ function show(io::IO, inertia::SpatialInertia)
     print(io, "moment of inertia:\n$(inertia.moment)")
 end
 
+zero{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) = SpatialInertia(frame, zero(Mat{3, 3, T}), zero(Vec{3, T}), zero(T))
+
 function isapprox(x::SpatialInertia, y::SpatialInertia; atol = 1e-12)
     return x.frame == y.frame && isapprox_tol(x.moment, y.moment; atol = atol) && isapprox_tol(x.centerOfMass, y.centerOfMass; atol = atol) && isapprox(x.mass, y.mass; atol = atol)
 end
@@ -64,13 +66,17 @@ function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
     R = rotationmatrix_normalized_fsa(Quaternion{S}(t.rot))
     p = convert(Vec{3, S}, t.trans)
 
-    cnew = R * (c * m)
-    Jnew = vector_to_skew_symmetric_squared(cnew)
-    cnew += m * p
-    Jnew -= vector_to_skew_symmetric_squared(cnew)
-    Jnew /= m
-    Jnew += R * J * R'
-    cnew /= m
+    if m == zero(S)
+        return zero(SpatialInertia{S}, t.to)
+    else
+        cnew = R * (c * m)
+        Jnew = vector_to_skew_symmetric_squared(cnew)
+        cnew += m * p
+        Jnew -= vector_to_skew_symmetric_squared(cnew)
+        Jnew /= m
+        Jnew += R * J * R'
+        cnew /= m
+    end
 
     return SpatialInertia(t.to, Jnew, cnew, m)
 end
