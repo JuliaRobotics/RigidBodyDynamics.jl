@@ -81,7 +81,7 @@ function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{
     return hcat(motionSubspaces...)
 end
 
-function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::Dict{Joint, Vector{V}})
+function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::Associative{Joint, Vector{V}})
     p = path(state.mechanism, base, body)
     J = geometric_jacobian(state, p)
     v̇path = vcat([v̇[joint]::Vector{V} for joint in p.edgeData]...)
@@ -132,7 +132,9 @@ function momentum_matrix(state::MechanismState)
     hcat([crb_inertia(state, vertex.vertexData) * motion_subspace(state, vertex.edgeToParentData) for vertex in state.mechanism.toposortedTree[2 : end]]...)
 end
 
-function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joint, Vector{V}} = Dict{Joint, Vector{X}}(); externalWrenches::Dict{RigidBody{M}, Wrench{W}} = Dict{RigidBody{M}, Wrench{X}}())
+function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Associative{Joint, Vector{V}} = NullDict{Joint, Vector{X}}();
+    externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}())
+
     vertices = state.mechanism.toposortedTree
     T = promote_type(X, M, V, W)
 
@@ -187,15 +189,16 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joi
     τ
 end
 
-function dynamics{X, M, T, W}(state::MechanismState{X, M};
-    torques::Dict{Joint, Vector{T}} = Dict{Joint, Vector{X}}(),
-    externalWrenches::Dict{RigidBody{M}, Wrench{W}} = Dict{RigidBody{M}, Wrench{X}}())
+function dynamics{X, Mech, T, W}(state::MechanismState{X, Mech};
+    torques::Associative{Joint, Vector{T}} = NullDict{Joint, Vector{X}}(),
+    externalWrenches::Associative{RigidBody{Mech}, Wrench{W}} = NullDict{RigidBody{Mech}, Wrench{X}}())
 
     joints = keys(state.q)
     q̇ = velocity_to_configuration_derivative(state.q, state.v)
     c = torque_dict_to_vector(inverse_dynamics(state; externalWrenches = externalWrenches), joints)
-    τ = isempty(torques) ? zeros(c) : convert(Vector{C}, torque_dict_to_vector(torques, joints))
-    v̇ = velocity_vector_to_dict(mass_matrix(state) \ (τ - c), joints)
+    biasedTorques = isempty(torques) ? -c : torque_dict_to_vector(torques, joints) - c
+    M = mass_matrix(state)
+    v̇ = velocity_vector_to_dict(M \ biasedTorques, joints)
     return q̇, v̇
 end
 

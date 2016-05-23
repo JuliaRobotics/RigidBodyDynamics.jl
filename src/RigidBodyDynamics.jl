@@ -8,6 +8,7 @@ using Quaternions
 using DataStructures
 
 include("third_party_addendum.jl")
+include("util.jl")
 include("frames.jl")
 include("spatial.jl")
 include("rigid_body.jl")
