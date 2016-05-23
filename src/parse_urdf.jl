@@ -1,5 +1,9 @@
+function parse_scalar{T}(::Type{T}, e::XMLElement, name::ASCIIString)
+    T(parse(attribute(e, name)))
+end
+
 function parse_scalar{T}(::Type{T}, e::XMLElement, name::ASCIIString, default::ASCIIString)
-    T(parse(e == nothing ? default : attribute(e, name))) # TODO: better handling of required attributes
+    T(parse(e == nothing ? default : attribute(e, name)))
 end
 
 function parse_vector{T}(::Type{T}, e::XMLElement, name::ASCIIString, default::ASCIIString)
@@ -36,7 +40,7 @@ function parse_joint{T}(::Type{T}, xmlJoint::XMLElement)
     elseif jointType == "Floating"
         return Joint(name, QuaternionFloating())
     else
-        error("joint type not recognized")
+        error("joint type $jointType not recognized")
     end
 end
 
