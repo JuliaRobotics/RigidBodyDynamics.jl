@@ -8,6 +8,7 @@ using Quaternions
 using DataStructures
 
 include("third_party_addendum.jl")
+include("util.jl")
 include("frames.jl")
 include("spatial.jl")
 include("rigid_body.jl")
@@ -40,6 +41,7 @@ export
     Mechanism,
     MechanismState,
     # functions
+    name,
     transform,
     to_array,
     newton_euler,
@@ -67,6 +69,12 @@ export
     rand_mechanism,
     rand_chain_mechanism,
     rand_tree_mechanism,
+    velocity_dict_to_vector,
+    torque_dict_to_vector,
+    configuration_dict_to_vector,
+    velocity_vector_to_dict,
+    torque_vector_to_dict,
+    configuration_vector_to_dict,
     configuration_vector,
     velocity_vector,
     state_vector,
@@ -94,5 +102,6 @@ export
     potential_energy,
     mass_matrix,
     momentum_matrix,
-    inverse_dynamics
+    inverse_dynamics,
+    dynamics
 end

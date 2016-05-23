@@ -60,8 +60,8 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     return m
 end
 
-joints(m::Mechanism) = keys(m.jointToJointTransforms) # note: unsorted
-bodies(m::Mechanism) = keys(m.bodyFixedFrameDefinitions)
+joints(m::Mechanism) = [vertex.edgeToParentData for vertex in m.toposortedTree[2 : end]] # TODO: make less expensive
+bodies(m::Mechanism) = [vertex.vertexData for vertex in m.toposortedTree[2 : end]] # TODO: make less expensive
 default_frame(m::Mechanism, body::RigidBody) = first(m.bodyFixedFrameDefinitions[body]).to # allows standardization on a frame to reduce number of transformations required
 
 num_positions(m::Mechanism) = num_positions(joints(m))
@@ -94,3 +94,32 @@ function velocity_to_configuration_derivative{Q, V}(q::OrderedDict{Joint, Vector
     T = promote_type(Q, V)
     return OrderedDict([j::Joint => velocity_to_configuration_derivative(j, q[j], v[j])::Vector{T} for j in keys(q)])
 end
+
+function joint_dict_to_vector{T}(dict::Associative{Joint, Vector{T}}, sizefun::Function, joint_iterable)
+    ret = Array(T, sizefun(joint_iterable))
+    startIndex = 1
+    for joint in joint_iterable
+        nv = sizefun(joint)
+        ret[startIndex : startIndex + nv - 1] = dict[joint]
+        startIndex += nv
+    end
+    ret
+end
+velocity_dict_to_vector{T}(dict::Associative{Joint, Vector{T}}, joint_iterable) = joint_dict_to_vector(dict, num_velocities, joint_iterable)
+torque_dict_to_vector{T}(dict::Associative{Joint, Vector{T}}, joint_iterable) = joint_dict_to_vector(dict, num_velocities, joint_iterable)
+configuration_dict_to_vector{T}(dict::Associative{Joint, Vector{T}}, joint_iterable) = joint_dict_to_vector(dict, num_positions, joint_iterable)
+
+function vector_to_joint_dict{T}(vec::Vector{T}, sizefun::Function, joint_iterable)
+    ret = Dict{Joint, Vector{T}}()
+    sizehint!(ret, length(joint_iterable))
+    startIndex = 1
+    for joint in joint_iterable
+        nv = sizefun(joint)
+        ret[joint] = vec[startIndex : startIndex + nv - 1]
+        startIndex += nv
+    end
+    ret
+end
+velocity_vector_to_dict{T}(vec::Vector{T}, joint_iterable) = vector_to_joint_dict(vec, num_velocities, joint_iterable)
+torque_vector_to_dict{T}(vec::Vector{T}, joint_iterable) = vector_to_joint_dict(vec, num_velocities, joint_iterable)
+configuration_vector_to_dict{T}(vec::Vector{T}, joint_iterable) = vector_to_joint_dict(vec, num_positions, joint_iterable)

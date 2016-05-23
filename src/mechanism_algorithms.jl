@@ -81,7 +81,7 @@ function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{
     return hcat(motionSubspaces...)
 end
 
-function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::Dict{Joint, Vector{V}})
+function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::Associative{Joint, Vector{V}})
     p = path(state.mechanism, base, body)
     J = geometric_jacobian(state, p)
     v̇path = vcat([v̇[joint]::Vector{V} for joint in p.edgeData]...)
@@ -107,8 +107,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
         # Hii
         bodyi = vi.vertexData
         jointi = vi.edgeToParentData
-        vStarti = state.velocityVectorStartIndices[jointi]
-        irange = vStarti : vStarti + num_velocities(jointi) - 1
+        irange = state.vRanges[jointi]
         Si = motion_subspace(state, jointi)
         F = crb_inertia(state, bodyi) * Si
         H[irange, irange] = At_mul_B(Si.mat, F.mat)
@@ -117,8 +116,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
         vj = vi.parent
         while (!isroot(vj))
             jointj = vj.edgeToParentData
-            vStartj = state.velocityVectorStartIndices[jointj]
-            jrange = vStartj : vStartj + num_velocities(jointj) - 1
+            jrange = state.vRanges[jointj]
             Sj = motion_subspace(state, jointj)
             @assert F.frame == Sj.frame
             Hji = At_mul_B(Sj.mat, F.mat)
@@ -134,7 +132,9 @@ function momentum_matrix(state::MechanismState)
     hcat([crb_inertia(state, vertex.vertexData) * motion_subspace(state, vertex.edgeToParentData) for vertex in state.mechanism.toposortedTree[2 : end]]...)
 end
 
-function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joint, Vector{V}} = Dict{Joint, Vector{X}}(), externalWrenches::Dict{RigidBody{M}, Wrench{W}} = Dict{RigidBody{M}, Wrench{X}}())
+function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Associative{Joint, Vector{V}} = NullDict{Joint, Vector{X}}();
+    externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}())
+
     vertices = state.mechanism.toposortedTree
     T = promote_type(X, M, V, W)
 
@@ -172,7 +172,8 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joi
     end
 
     # project joint wrench to find torques, update parent joint wrench
-    ret = zeros(T, num_velocities(state.mechanism))
+    τ = Dict{Joint, Vector{T}}()
+    sizehint!(τ, length(vertices) - 1)
     for i = length(vertices) : -1 : 2
         vertex = vertices[i]
         body = vertex.vertexData
@@ -180,12 +181,34 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Dict{Joi
         joint = vertex.edgeToParentData
         jointWrench = jointWrenches[body]
         S = motion_subspace(state, joint)
-        τ = joint_torque(S, jointWrench)
-        vStart = state.velocityVectorStartIndices[joint]
-        ret[vStart : vStart + num_velocities(joint) - 1] = τ
+        τ[joint] = joint_torque(S, jointWrench)
         if !isroot(parentBody)
             jointWrenches[parentBody] = jointWrenches[parentBody] + jointWrench # action = -reaction
         end
     end
-    return ret
+    τ
+end
+
+function dynamics{X, Mech, T, W}(state::MechanismState{X, Mech};
+    torques::Associative{Joint, Vector{T}} = NullDict{Joint, Vector{X}}(),
+    externalWrenches::Associative{RigidBody{Mech}, Wrench{W}} = NullDict{RigidBody{Mech}, Wrench{X}}())
+
+    joints = keys(state.q)
+    q̇ = velocity_to_configuration_derivative(state.q, state.v)
+    c = torque_dict_to_vector(inverse_dynamics(state; externalWrenches = externalWrenches), joints)
+    biasedTorques = isempty(torques) ? -c : torque_dict_to_vector(torques, joints) - c
+    M = mass_matrix(state)
+    v̇ = velocity_vector_to_dict(M \ biasedTorques, joints)
+    return q̇, v̇
+end
+
+# Convenience function that takes a Vector argument for the state and returns a Vector,
+# e.g. for use with standard ODE integrators
+# Note that preallocatedState is required so that we don't need to allocate a new
+# MechanismState object every time this function is called
+function dynamics{X}(stateVector::Vector{X}, preallocatedState::MechanismState{X}; kwargs...)
+    set!(preallocatedState, stateVector)
+    (q̇, v̇) = dynamics(preallocatedState; kwargs...)
+    joints = keys(preallocatedState.q)
+    return [configuration_dict_to_vector(q̇, joints); velocity_dict_to_vector(v̇, joints)]
 end

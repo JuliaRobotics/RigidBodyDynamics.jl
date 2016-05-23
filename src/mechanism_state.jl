@@ -2,7 +2,8 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     mechanism::Mechanism{M}
     q::OrderedDict{Joint, Vector{X}}
     v::OrderedDict{Joint, Vector{X}}
-    velocityVectorStartIndices::Dict{Joint, Int64}
+    qRanges::Dict{Joint, UnitRange{Int64}}
+    vRanges::Dict{Joint, UnitRange{Int64}}
     transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}
     transformsToRoot::Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}
     twistsWrtWorld::Dict{RigidBody{M}, CacheElement{Twist{C}}}
@@ -15,13 +16,20 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
         sortedjoints = [x.edgeToParentData for x in m.toposortedTree[2 : end]]
         q = OrderedDict{Joint, Vector{X}}()
         v = OrderedDict{Joint, Vector{X}}()
-        velocityVectorStartIndices = Dict{Joint, Int64}()
-        startIndex = 1
+        qRanges = Dict{Joint, UnitRange{Int64}}()
+        vRanges = Dict{Joint, UnitRange{Int64}}()
+        sortedjoints = [x.edgeToParentData for x in m.toposortedTree[2 : end]]
+        qStart = vStart = 1
         for joint in sortedjoints
-            velocityVectorStartIndices[joint] = startIndex
-            startIndex += num_velocities(joint)
-            q[joint] = Vector{X}(num_positions(joint))
-            v[joint] = Vector{X}(num_velocities(joint))
+            num_q = num_positions(joint)
+            qRanges[joint] = qStart : qStart + num_q - 1
+            q[joint] = Vector{X}(num_q)
+            qStart += num_q
+
+            num_v = num_velocities(joint)
+            vRanges[joint] = vStart : vStart + num_v - 1
+            v[joint] = Vector{X}(num_v)
+            vStart += num_v
         end
         transformsToParent = Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}()
         transformsToRoot = Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}()
@@ -30,7 +38,7 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
         biasAccelerations = Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}}}()
         spatialInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}}}()
         crbInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}}}()
-        new(m, q, v, velocityVectorStartIndices, transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces, biasAccelerations, spatialInertias, crbInertias)
+        new(m, q, v, qRanges, vRanges, transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces, biasAccelerations, spatialInertias, crbInertias)
     end
 end
 
@@ -67,12 +75,12 @@ function rand_velocity!(state::MechanismState)
 end
 rand!(state::MechanismState) = begin rand_configuration!(state); rand_velocity!(state) end
 
-configuration_vector(state::MechanismState) = vcat([last(kv) for kv in state.q]...)
-velocity_vector(state::MechanismState) = vcat([last(kv) for kv in state.v]...)
+configuration_vector(state::MechanismState) = configuration_dict_to_vector(state.q, keys(state.q))
+velocity_vector(state::MechanismState) = velocity_dict_to_vector(state.v, keys(state.v))
 state_vector(state::MechanismState) = [configuration_vector(state); velocity_vector(state)]
 
-configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.q[joint] for joint in path.edgeData]...)
-velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.v[joint] for joint in path.edgeData]...)
+configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = configuration_dict_to_vector(state.q, [j for j in path.edgeData])
+velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = velocity_dict_to_vector(state.v, [j for j in path.edgeData])
 
 function set_configuration!(state::MechanismState, joint::Joint, q::Vector)
     state.q[joint][:] = q

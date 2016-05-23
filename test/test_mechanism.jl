@@ -107,8 +107,7 @@ facts("momentum_matrix / summing momenta") do
     for vertex in mechanism.toposortedTree[2 : end]
         body = vertex.vertexData
         joint = vertex.edgeToParentData
-        start = x.velocityVectorStartIndices[joint]
-        Ajoint = A.mat[:, start : start + num_velocities(joint) - 1]
+        Ajoint = A.mat[:, x.vRanges[joint]]
         @fact (crb_inertia(x, body) * motion_subspace(x, joint)).mat --> roughly(Ajoint; atol = 1e-12)
     end
 
@@ -139,9 +138,9 @@ facts("inverse dynamics / acceleration term") do
     v̇_to_τ = v̇ -> begin
         v̇Dict = Dict{Joint, Vector{eltype(v̇)}}()
         for joint in keys(x.v)
-            v̇Dict[joint] = v̇[x.velocityVectorStartIndices[joint] : x.velocityVectorStartIndices[joint] + num_velocities(joint) - 1]
+            v̇Dict[joint] = v̇[x.vRanges[joint]]
         end
-        return inverse_dynamics(x, v̇Dict)
+        return torque_dict_to_vector(inverse_dynamics(x, v̇Dict), joints(mechanism))
     end
     M = mass_matrix(x)
     @fact ForwardDiff.jacobian(v̇_to_τ, zeros(Float64, num_velocities(mechanism))) --> roughly(M; atol = 1e-12)
@@ -167,7 +166,7 @@ facts("inverse dynamics / Coriolis term") do
         local x = MechanismState(eltype(v), mechanism)
         set_configuration!(x, q)
         set_velocity!(x, v)
-        return inverse_dynamics(x, v̇)
+        return torque_dict_to_vector(inverse_dynamics(x, v̇), joints(mechanism))
     end
     C = 1/2 * ForwardDiff.jacobian(v_to_c, q̇)
 
@@ -181,7 +180,7 @@ facts("inverse dynamics / gravity term") do
     rand!(x)
     v̇ = Dict([j::Joint => zeros(num_velocities(j))::Vector{Float64} for j in joints(mechanism)])
     zero_velocity!(x)
-    g = inverse_dynamics(x, v̇)
+    g = torque_dict_to_vector(inverse_dynamics(x, v̇), joints(mechanism))
     q_to_potential = q -> begin
         local x = MechanismState(eltype(q), mechanism)
         set_configuration!(x, q)
@@ -200,12 +199,10 @@ facts("inverse dynamics / external wrenches") do
     v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints(mechanism)])
     nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
     externalWrenches = Dict(([body::RigidBody{Float64} => rand(Wrench{Float64}, root_frame(mechanism))::Wrench{Float64} for body in nonRootBodies]))
-    τ = inverse_dynamics(x, v̇, externalWrenches)
+    τ = inverse_dynamics(x, v̇; externalWrenches = externalWrenches)
     floatingBodyVertex = root_vertex(mechanism).children[1]
     floatingJoint = floatingBodyVertex.edgeToParentData
-    start = x.velocityVectorStartIndices[floatingJoint]
-    range = start : start + num_velocities(floatingJoint) - 1
-    floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[range])
+    floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[floatingJoint])
     floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
 
     A = momentum_matrix(x)
@@ -227,4 +224,21 @@ facts("inverse dynamics / external wrenches") do
     gravitational_wrench = Wrench(gravitational_force.frame, cross(com, gravitational_force).v, gravitational_force.v)
     total_wrench = floatingJointWrench + gravitational_wrench + sum((w) -> transform(x, w, root_frame(mechanism)), values(externalWrenches))
     @fact to_array(total_wrench) --> roughly(ḣ; atol = 1e-12)
+end
+
+facts("dynamics / inverse dynamics") do
+    mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
+    x = MechanismState(Float64, mechanism)
+    rand!(x)
+
+    joints = keys(x.v)
+    τ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints])
+    externalWrenches = Dict(([body::RigidBody{Float64} => rand(Wrench{Float64}, root_frame(mechanism))::Wrench{Float64} for body in bodies(mechanism)]))
+    stateVector = state_vector(x)
+    ẋ = dynamics(stateVector, x; torques = τ, externalWrenches = externalWrenches)
+    v̇ = velocity_vector_to_dict(ẋ[num_positions(mechanism) + 1 : end], joints)
+    τcheck = inverse_dynamics(x, v̇; externalWrenches = externalWrenches)
+    for joint in joints
+        @fact τcheck[joint] --> roughly(τ[joint]; atol = 1e-12)
+    end
 end

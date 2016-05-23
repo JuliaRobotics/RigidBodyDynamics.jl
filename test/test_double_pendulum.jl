@@ -56,8 +56,8 @@ facts("double pendulum") do
     G = [m1 * g * lc1 * s1 + m2 * g * (l1 * s1 + lc2 * s12); m2 * g * lc2 * s12]
 
     v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints(double_pendulum)])
-    τ = inverse_dynamics(x, v̇)
-    v̇ = vcat([v̇[joint] for joint in (joint1, joint2)]...)
+    τ = torque_dict_to_vector(inverse_dynamics(x, v̇), joints(double_pendulum))
+    v̇ = velocity_dict_to_vector(v̇, joints(double_pendulum))
     v = velocity_vector(x)
 
     @fact T1 --> roughly(kinetic_energy(x, body1); atol = 1e-12)
