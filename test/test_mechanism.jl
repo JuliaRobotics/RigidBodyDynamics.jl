@@ -233,7 +233,8 @@ facts("dynamics / inverse dynamics") do
 
     joints = keys(x.v)
     τ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints])
-    externalWrenches = Dict(([body::RigidBody{Float64} => rand(Wrench{Float64}, root_frame(mechanism))::Wrench{Float64} for body in bodies(mechanism)]))
+    nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
+    externalWrenches = Dict(([body::RigidBody{Float64} => rand(Wrench{Float64}, root_frame(mechanism))::Wrench{Float64} for body in nonRootBodies]))
     stateVector = state_vector(x)
     ẋ = dynamics(stateVector, x; torques = τ, externalWrenches = externalWrenches)
     v̇ = velocity_vector_to_dict(ẋ[num_positions(mechanism) + 1 : end], joints)
