@@ -1,32 +1,32 @@
 facts("double pendulum") do
-    lc1 = rand()
-    l1 = rand()
-    m1 = rand()
-    I1 = rand()
-    lc2 = rand()
-    l2 = rand()
-    m2 = rand()
-    I2 = rand()
+    lc1 = -0.5
+    l1 = -1.
+    m1 = 1.
+    I1 = 0.333 # about joint instead of CoM in URDF
+    lc2 = -1.
+    l2 = -2.
+    m2 = 1.
+    I2 = 1.33 # about joint instead of CoM in URDF
     g = -9.81
 
     axis = Vec(0, 1, 0)
 
-    double_pendulum = Mechanism{Float64}("world"; gravity = Vec(0, 0, g))
-    world = root_body(double_pendulum)
+    doublePendulum = Mechanism{Float64}("world"; gravity = Vec(0, 0, g))
+    world = root_body(doublePendulum)
 
     inertia1 = SpatialInertia(CartesianFrame3D("body1"), I1 * (axis * axis'), Vec(0, 0, lc1), m1)
     body1 = RigidBody(inertia1)
     joint1 = Joint("1", Revolute(axis))
     joint1ToWorld = Transform3D{Float64}(joint1.frameBefore, world.frame)
-    attach!(double_pendulum, world, joint1, joint1ToWorld, body1)
+    attach!(doublePendulum, world, joint1, joint1ToWorld, body1)
 
     inertia2 = SpatialInertia(CartesianFrame3D("body2"), I2 * (axis * axis'), Vec(0, 0, lc2), m2)
     body2 = RigidBody(inertia2)
     joint2 = Joint("2", Revolute(axis))
     joint2ToBody1 = Transform3D(joint2.frameBefore, body1.frame, Vec(0, 0, l1))
-    attach!(double_pendulum, body1, joint2, joint2ToBody1, body2)
+    attach!(doublePendulum, body1, joint2, joint2ToBody1, body2)
 
-    x = MechanismState(Float64, double_pendulum)
+    x = MechanismState(Float64, doublePendulum)
     rand!(x)
 
     # from http://underactuated.csail.mit.edu/underactuated.html?chapter=3
@@ -55,13 +55,31 @@ facts("double pendulum") do
 
     G = [m1 * g * lc1 * s1 + m2 * g * (l1 * s1 + lc2 * s12); m2 * g * lc2 * s12]
 
-    v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints(double_pendulum)])
-    τ = torque_dict_to_vector(inverse_dynamics(x, v̇), joints(double_pendulum))
-    v̇ = velocity_dict_to_vector(v̇, joints(double_pendulum))
+    v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints(doublePendulum)])
+    τ = torque_dict_to_vector(inverse_dynamics(x, v̇), joints(doublePendulum))
+    v̇ = velocity_dict_to_vector(v̇, joints(doublePendulum))
     v = velocity_vector(x)
 
     @fact T1 --> roughly(kinetic_energy(x, body1); atol = 1e-12)
     @fact T2 --> roughly(kinetic_energy(x, body2); atol = 1e-12)
     @fact M --> roughly(mass_matrix(x); atol = 1e-12)
     @fact τ --> roughly(M * v̇ + C * v + G; atol = 1e-12)
+
+    # compare against URDF
+    doublePendulumUrdf = parse_urdf(Float64, "urdf/Acrobot.urdf")
+    x_urdf = MechanismState(Float64, doublePendulumUrdf)
+    for i in 1 : length(joints(doublePendulum))
+        j = joints(doublePendulum)[i]
+        j_urdf = joints(doublePendulumUrdf)[i]
+        set_configuration!(x_urdf, j_urdf, x.q[j])
+        set_velocity!(x_urdf, j_urdf, x.v[j])
+    end
+    v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints(doublePendulumUrdf)])
+    τ = torque_dict_to_vector(inverse_dynamics(x_urdf, v̇), joints(doublePendulumUrdf))
+    v̇ = velocity_dict_to_vector(v̇, joints(doublePendulumUrdf))
+    @fact T1 --> roughly(kinetic_energy(x_urdf, bodies(doublePendulumUrdf)[2]); atol = 1e-12)
+    @fact T2 --> roughly(kinetic_energy(x_urdf, bodies(doublePendulumUrdf)[3]); atol = 1e-12)
+    @fact M --> roughly(mass_matrix(x_urdf); atol = 1e-12)
+    @fact τ --> roughly(M * v̇ + C * v + G; atol = 1e-12)
+
 end
