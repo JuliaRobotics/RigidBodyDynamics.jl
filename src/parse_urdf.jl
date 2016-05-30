@@ -8,7 +8,7 @@ end
 
 function parse_vector{T}(::Type{T}, e::Union{XMLElement, Void}, name::ASCIIString, default::ASCIIString)
     usedefault = e == nothing || attribute(e, name) == nothing # TODO: better handling of required attributes
-    [T(parse(str)) for str in split(usedefault ? default : attribute(e, name), " ")]
+    [T(parse(str)) for str in split(usedefault ? default : attribute(e, name))]
 end
 
 function parse_inertia{T}(::Type{T}, xmlInertia::XMLElement)
