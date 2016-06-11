@@ -4,6 +4,8 @@ immutable SpatialInertia{T<:Real}
     centerOfMass::Vec{3, T}
     mass::T
 end
+
+convert{T<:Real}(::Type{SpatialInertia{T}}, inertia::SpatialInertia{T}) = inertia
 function convert{T<:Real}(::Type{SpatialInertia{T}}, inertia::SpatialInertia)
     SpatialInertia(inertia.frame, convert(Mat{3, 3, T}, inertia.moment), convert(Vec{3, T}, inertia.centerOfMass), convert(T, inertia.mass))
 end
@@ -44,20 +46,22 @@ function Array(inertia::SpatialInertia)
             C' m * eye(3)]
 end
 
+function vector_to_skew_symmetric_squared(a::Vec{3})
+    aSq1 = a[1] * a[1]
+    aSq2 = a[2] * a[2]
+    aSq3 = a[3] * a[3]
+    b11 = -aSq2 - aSq3
+    b12 = a[1] * a[2]
+    b13 = a[1] * a[3]
+    b22 = -aSq1 - aSq3
+    b23 = a[2] * a[3]
+    b33 = -aSq1 - aSq2
+    return Mat((b11, b12, b13), (b12, b22, b23), (b13, b23, b33))::Mat{3, 3, eltype(a)}
+end
 
 function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
     @assert t.from == inertia.frame
     S = promote_type(I, T)
-    function vector_to_skew_symmetric_squared(a::Vec{3})
-        aSq = a .* a
-        b11 = -aSq[2] - aSq[3]
-        b12 = a[1] * a[2]
-        b13 = a[1] * a[3]
-        b22 = -aSq[1] - aSq[3]
-        b23 = a[2] * a[3]
-        b33 = -aSq[1] - aSq[2]
-        return Mat((b11, b12, b13), (b12, b22, b23), (b13, b23, b33))
-    end
 
     J = convert(Mat{3, 3, S}, inertia.moment)
     m = convert(S, inertia.mass)
@@ -119,6 +123,7 @@ immutable Twist{T<:Real}
     linear::Vec{3, T}
 end
 Twist{T<:Real}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector{T}) = Twist(body, base, frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
+convert{T<:Real}(::Type{Twist{T}}, t::Twist{T}) = t
 convert{T<:Real}(::Type{Twist{T}}, t::Twist) = Twist(t.body, t.base, t.frame, convert(Vec{3, T}, t.angular), convert(Vec{3, T}, t.linear))
 
 function show(io::IO, t::Twist)
@@ -177,6 +182,7 @@ function GeometricJacobian{T}(body::CartesianFrame3D, base::CartesianFrame3D, fr
     GeometricJacobian(body, base, frame, Mat(mat[1 : 3, :]), Mat(mat[4 : 6, :]))
 end
 
+convert{T<:Real, N}(::Type{GeometricJacobian{T, N}}, jac::GeometricJacobian{T, N}) = jac
 convert{T<:Real, N}(::Type{GeometricJacobian{T, N}}, jac::GeometricJacobian) = GeometricJacobian(jac.body, jac.base, jac.frame, convert(Mat{3, N, T}, jac.angular), convert(Mat{3, N, T}, jac.linear))
 Array(jac::GeometricJacobian) = [Array(jac.angular); Array(jac.linear)]
 
@@ -232,6 +238,7 @@ immutable Wrench{T<:Real} <: ForceSpaceElement{T}
     linear::Vec{3, T}
 end
 Wrench{T}(frame::CartesianFrame3D, vec::Vector{T}) = Wrench{T}(frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
+convert{T<:Real}(::Type{Wrench{T}}, wrench::Wrench{T}) = wrench
 convert{T<:Real}(::Type{Wrench{T}}, wrench::Wrench) = Wrench(wrench.frame, convert(Vec{3, T}, wrench.angular), convert(Vec{3, T}, wrench.linear))
 
 show(io::IO, w::Wrench) = print(io, "Wrench expressed in \"$(w.frame.name)\":\nangular: $(w.angular), linear: $(w.linear)")
@@ -247,6 +254,7 @@ immutable Momentum{T<:Real} <: ForceSpaceElement{T}
     linear::Vec{3, T}
 end
 Momentum{T}(frame::CartesianFrame3D, vec::Vector{T}) = Momentum{T}(frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
+convert{T<:Real}(::Type{Wrench{T}}, momentum::Momentum{T}) = momentum
 convert{T<:Real}(::Type{Wrench{T}}, momentum::Momentum) = Momentum(momentum.frame, convert(Vec{3, T}, momentum.angular), convert(Vec{3, T}, momentum.linear))
 
 show(io::IO, m::Momentum) = print(io, "Momentum expressed in \"$(m.frame.name)\":\nangular: $(m.angular), linear: $(m.linear)")
@@ -298,7 +306,6 @@ type MomentumMatrix{T<:Real, N}
     angular::Mat{3, N, T}
     linear::Mat{3, N, T}
 end
-# convert{T<:Real}(::Type{Wrench{T}}, m::MomentumMatrix{}) = MomentumMatrix(m.frame, convert(Array{T}, m.mat))
 
 function MomentumMatrix{T}(frame::CartesianFrame3D, mat::Array{T, 2})
     @assert size(mat, 1) == 6
@@ -363,6 +370,8 @@ immutable SpatialAcceleration{T<:Real}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
+
+convert{T<:Real}(::Type{SpatialAcceleration{T}}, accel::SpatialAcceleration{T}) = accel
 convert{T<:Real}(::Type{SpatialAcceleration{T}}, accel::SpatialAcceleration) = SpatialAcceleration(accel.body, accel.base, accel.frame, convert(Vec{3, T}, accel.angular), convert(Vec{3, T}, accel.linear))
 
 function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector)
