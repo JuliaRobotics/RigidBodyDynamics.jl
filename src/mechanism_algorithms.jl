@@ -122,9 +122,9 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
                     jrange = state.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
                     @assert F.frame == Sj.frame
-                    Hji = sub(ret, jrange, irange)
-                    Hij = sub(ret, irange, jrange)
-                    set_unsafe!(Hji, Sj.angular' * F.angular + Sj.linear' * F.linear)
+                    Hji = Sj.angular' * F.angular + Sj.linear' * F.linear
+                    set_unsafe!(sub(ret, jrange, irange), Hji)
+                    set_unsafe!(sub(ret, irange, jrange), Hji')
                     Hij = Hji'
                 end
                 vj = vj.parent
