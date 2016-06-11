@@ -111,7 +111,8 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = crb_inertia(state, bodyi) * Si
-            ret[irange, irange] = Array(Si.angular' * F.angular + Si.linear' * F.linear)
+            Hii = sub(ret, irange, irange)
+            set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear)
 
             # Hji, Hij
             vj = vi.parent
@@ -121,9 +122,10 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
                     jrange = state.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
                     @assert F.frame == Sj.frame
-                    Hji = Array(Sj.angular' * F.angular + Sj.linear' * F.linear)
-                    ret[jrange, irange] = Hji
-                    ret[irange, jrange] = Hji'
+                    Hji = sub(ret, jrange, irange)
+                    Hij = sub(ret, irange, jrange)
+                    set_unsafe!(Hji, Sj.angular' * F.angular + Sj.linear' * F.linear)
+                    Hij = Hji'
                 end
                 vj = vj.parent
             end
