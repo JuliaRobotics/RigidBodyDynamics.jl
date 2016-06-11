@@ -98,7 +98,8 @@ kinetic_energy(state::MechanismState) = kinetic_energy(state, filter(b -> !isroo
 potential_energy{X, M, C}(state::MechanismState{X, M, C}) = -mass(state) * dot(convert(Vec{3, C}, state.mechanism.gravity), transform(state, center_of_mass(state), root_frame(state.mechanism)).v)
 
 function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
-    ret = zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism)))
+    ret::Symmetric = Symmetric(zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism))))
+    @assert ret.uplo == 'U'
 
     for i = 2 : length(state.mechanism.toposortedTree)
         vi = state.mechanism.toposortedTree[i]
@@ -111,7 +112,8 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = crb_inertia(state, bodyi) * Si
-            ret[irange, irange] = Array(Si.angular' * F.angular + Si.linear' * F.linear)
+            Hii = sub(ret.data, irange, irange)
+            set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear)
 
             # Hji, Hij
             vj = vi.parent
@@ -121,9 +123,8 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
                     jrange = state.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
                     @assert F.frame == Sj.frame
-                    Hji = Array(Sj.angular' * F.angular + Sj.linear' * F.linear)
-                    ret[jrange, irange] = Hji
-                    ret[irange, jrange] = Hji'
+                    Hji = Sj.angular' * F.angular + Sj.linear' * F.linear
+                    set_unsafe!(sub(ret.data, jrange, irange), Hji)
                 end
                 vj = vj.parent
             end
@@ -196,7 +197,7 @@ end
 function dynamics{X, M, C, T, W}(state::MechanismState{X, M, C};
     torques::Associative{Joint, Vector{T}} = NullDict{Joint, Vector{X}}(),
     externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}(),
-    massMatrix = zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism)))
+    massMatrix = Symmetric(zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism))))
 
     joints = keys(state.q)
     q̇ = velocity_to_configuration_derivative(state.q, state.v)

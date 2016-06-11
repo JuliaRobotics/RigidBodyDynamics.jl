@@ -11,6 +11,7 @@ immutable Point3D{T<:Real}
     Point3D(frame::CartesianFrame3D) = new(frame, zero(Vec{3, T}))
 end
 Point3D{T}(frame::CartesianFrame3D, v::Vec{3, T}) = Point3D{T}(frame, v)
+convert{T}(::Type{Point3D{T}}, p::Point3D{T}) = p
 convert{T}(::Type{Point3D{T}}, p::Point3D) = Point3D(p.frame, convert(Vec{3, T}, p.v))
 
 (+)(p1::Point3D, p2::Point3D) = begin @assert p1.frame == p2.frame; return Point3D(p1.frame, p1.v + p2.v) end
@@ -29,6 +30,7 @@ immutable FreeVector3D{T<:Real}
     FreeVector3D(frame::CartesianFrame3D) = new(frame, zero(Vec{3, T}))
 end
 FreeVector3D{T}(frame::CartesianFrame3D, v::Vec{3, T}) = FreeVector3D{T}(frame, v)
+convert{T}(::Type{FreeVector3D{T}}, v::FreeVector3D{T}) = v
 convert{T}(::Type{FreeVector3D{T}}, v::FreeVector3D) = FreeVector3D(v.frame, convert(Vec{3, T}, v.v))
 
 (+)(v1::FreeVector3D, v2::FreeVector3D) = begin @assert v1.frame == v2.frame; return FreeVector3D(v1.frame, v1.v + v2.v) end
@@ -62,6 +64,8 @@ Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Quaternion{T})
 Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, trans::Vec{3, T}) = Transform3D{T}(from, to, one(Quaternion{T}), trans)
 Transform3D{T}(::Type{T}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D{T}(from, to, one(Quaternion{T}), zero(Vec{3, T}))
 Transform3D{T}(::Type{T}, frame::CartesianFrame3D) = Transform3D{T}(frame, frame, one(Quaternion{T}), zero(Vec{3, T}))
+
+convert{T}(::Type{Transform3D{T}}, t::Transform3D{T}) = t
 convert{T}(::Type{Transform3D{T}}, t::Transform3D) = Transform3D(t.from, t.to, convert(Quaternion{T}, t.rot), convert(Vec{3, T}, t.trans))
 
 function show(io::IO, t::Transform3D)
