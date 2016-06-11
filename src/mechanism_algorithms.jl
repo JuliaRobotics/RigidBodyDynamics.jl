@@ -98,7 +98,8 @@ kinetic_energy(state::MechanismState) = kinetic_energy(state, filter(b -> !isroo
 potential_energy{X, M, C}(state::MechanismState{X, M, C}) = -mass(state) * dot(convert(Vec{3, C}, state.mechanism.gravity), transform(state, center_of_mass(state), root_frame(state.mechanism)).v)
 
 function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
-    ret = zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism)))
+    ret::Symmetric = Symmetric(zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism))))
+    @assert ret.uplo == 'U'
 
     for i = 2 : length(state.mechanism.toposortedTree)
         vi = state.mechanism.toposortedTree[i]
@@ -111,7 +112,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = crb_inertia(state, bodyi) * Si
-            Hii = sub(ret, irange, irange)
+            Hii = sub(ret.data, irange, irange)
             set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear)
 
             # Hji, Hij
@@ -123,9 +124,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
                     Sj = motion_subspace(state, jointj)
                     @assert F.frame == Sj.frame
                     Hji = Sj.angular' * F.angular + Sj.linear' * F.linear
-                    set_unsafe!(sub(ret, jrange, irange), Hji)
-                    set_unsafe!(sub(ret, irange, jrange), Hji')
-                    Hij = Hji'
+                    set_unsafe!(sub(ret.data, jrange, irange), Hji)
                 end
                 vj = vj.parent
             end
@@ -198,14 +197,14 @@ end
 function dynamics{X, M, C, T, W}(state::MechanismState{X, M, C};
     torques::Associative{Joint, Vector{T}} = NullDict{Joint, Vector{X}}(),
     externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}(),
-    massMatrix = zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism)))
+    massMatrix = Symmetric(zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism))))
 
     joints = keys(state.q)
     q̇ = velocity_to_configuration_derivative(state.q, state.v)
     c = torque_dict_to_vector(inverse_dynamics(state; externalWrenches = externalWrenches), joints)
     biasedTorques = isempty(torques) ? -c : torque_dict_to_vector(torques, joints) - c
     mass_matrix(state; ret = massMatrix)
-    v̇ = velocity_vector_to_dict(Symmetric(massMatrix) \ biasedTorques, joints)
+    v̇ = velocity_vector_to_dict(massMatrix \ biasedTorques, joints)
     return q̇, v̇
 end
 
