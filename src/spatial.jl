@@ -31,11 +31,13 @@ function (+){T}(inertia1::SpatialInertia{T}, inertia2::SpatialInertia{T})
     return SpatialInertia(inertia1.frame, moment, centerOfMass, mass)
 end
 
-function vector_to_skew_symmetric(v::Vec{3})
-    return [
-    0 -v[3] v[2];
-    v[3] 0 -v[1];
-    -v[2] v[1] 0];
+function vector_to_skew_symmetric{T}(v::Vec{3, T})
+    Mat((zero(T), v[3], -v[2]), (-v[3], zero(T), v[1]), (v[2], -v[1], zero(T)))::Mat{3, 3, T}
+end
+
+function cross{N, T}(a::Vec{3, T}, B::Mat{3, N, T})
+    vector_to_skew_symmetric(a) * B
+    # Mat(map((col) -> cross(a, Vec(col))._::Tuple{T, T, T}, B._))::Mat{3, N, T} # way slower
 end
 
 function Array(inertia::SpatialInertia)

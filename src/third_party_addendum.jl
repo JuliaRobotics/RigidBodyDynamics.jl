@@ -54,10 +54,6 @@ function hcat(head::Mat, tail::Mat...)
     end
 end
 
-function cross{N, T}(a::Vec{3, T}, B::Mat{3, N, T})
-    Mat(map((col) -> cross(a, Vec(col))._::Tuple{T, T, T}, B._))::Mat{3, N, T}
-end
-
 function set_unsafe!(dest::AbstractArray, src::Mat)
     rows, cols = size(src)
     for col = 1 : cols
