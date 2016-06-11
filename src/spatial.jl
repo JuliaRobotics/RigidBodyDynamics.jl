@@ -178,6 +178,7 @@ function GeometricJacobian{T}(body::CartesianFrame3D, base::CartesianFrame3D, fr
 end
 
 convert{T<:Real, N}(::Type{GeometricJacobian{T, N}}, jac::GeometricJacobian) = GeometricJacobian(jac.body, jac.base, jac.frame, convert(Mat{3, N, T}, jac.angular), convert(Mat{3, N, T}, jac.linear))
+Array(jac::GeometricJacobian) = [Array(jac.angular); Array(jac.linear)]
 
 num_cols{T, N}(jac::GeometricJacobian{T, N}) = N
 
@@ -197,7 +198,7 @@ end
 (-){T<:Real}(jac::GeometricJacobian{T, 0}) = GeometricJacobian(jac.base, jac.body, jac.frame, jac.angular, jac.linear)
 (-)(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.angular, -jac.linear)
 function show(io::IO, jac::GeometricJacobian)
-    print(io, "GeometricJacobian: body: \"$(jac.body.name)\", base: \"$(jac.base.name)\", expressed in \"$(jac.frame.name)\":\n$([Array(jac.angular); Array(jac.linear)])")
+    print(io, "GeometricJacobian: body: \"$(jac.body.name)\", base: \"$(jac.base.name)\", expressed in \"$(jac.frame.name)\":\n$(Array(jac))")
 end
 
 function hcat{T}(jacobians::GeometricJacobian{T}...)
@@ -306,10 +307,10 @@ end
 
 num_cols{T, N}(mat::MomentumMatrix{T, N}) = N
 
-show(io::IO, m::MomentumMatrix) = print(io, "MomentumMatrix expressed in \"$(m.frame.name)\":\n$([Array(m.angular); Array(m.linear)])")
+Array(m::MomentumMatrix) = [Array(angular_part(m)); Array(linear_part(m))]
+show(io::IO, m::MomentumMatrix) = print(io, "MomentumMatrix expressed in \"$(m.frame.name)\":\n$(Array(m))")
 angular_part(m::MomentumMatrix) = m.angular
 linear_part(m::MomentumMatrix) = m.linear
-Array(m::MomentumMatrix) = [Array(angular_part(m)); Array(linear_part(m))]
 
 function (*){T}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T, 0})
     @assert inertia.frame == jac.frame
