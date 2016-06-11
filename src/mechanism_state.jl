@@ -44,6 +44,9 @@ end
 
 num_positions(state::MechanismState) = num_positions(keys(state.q))
 num_velocities(state::MechanismState) = num_velocities(keys(state.v))
+state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
+mechanism_eltype{X, M, C}(state::MechanismState{X, M, C}) = M
+cache_eltype{X, M, C}(state::MechanismState{X, M, C}) = C
 
 function setdirty!(state::MechanismState)
     for element in values(state.transformsToParent) setdirty!(element) end

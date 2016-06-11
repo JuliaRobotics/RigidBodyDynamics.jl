@@ -53,3 +53,7 @@ function hcat(head::Mat, tail::Mat...)
         return Mat((head._..., tailhcat._...))
     end
 end
+
+function cross{N, T}(a::Vec{3, T}, B::Mat{3, N, T})
+    Mat(map((col) -> cross(a, Vec(col))._::Tuple{T, T, T}, B._))::Mat{3, N, T}
+end
