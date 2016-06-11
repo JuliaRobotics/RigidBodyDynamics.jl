@@ -226,7 +226,7 @@ function transform(jac::GeometricJacobian, transform::Transform3D)
     R = rotationmatrix_normalized_fsa(transform.rot)
     T = eltype(R)
     angular = R * jac.angular
-    linear = R * jac.linear + Mat(map((col) -> cross(transform.trans, Vec(col))._::Tuple{T, T, T}, angular._))
+    linear = R * jac.linear + cross(transform.trans, angular)
     return GeometricJacobian(jac.body, jac.base, transform.to, angular, linear)
 end
 
@@ -332,8 +332,8 @@ function (*){T, N}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T, N})
     J = inertia.moment
     m = inertia.mass
     mc = inertia.mass * inertia.centerOfMass
-    angular = J * Jω + Mat(map((col) -> cross(mc, Vec(col))._::Tuple{T, T, T}, Jv._))
-    linear = m * Jv - Mat(map((col) -> cross(mc, Vec(col))._::Tuple{T, T, T}, Jω._))
+    angular = J * Jω + cross(mc, Jv)
+    linear = m * Jv - cross(mc, Jω)
     MomentumMatrix(inertia.frame, angular, linear)
 end
 
@@ -359,7 +359,7 @@ function transform(mat::MomentumMatrix, transform::Transform3D)
     R = rotationmatrix_normalized_fsa(transform.rot)
     linear = R * linear_part(mat)
     T = eltype(linear)
-    angular = R * angular_part(mat) + Mat(map((col) -> cross(transform.trans, Vec(col))._::Tuple{T, T, T}, linear._))
+    angular = R * angular_part(mat) + cross(transform.trans, linear)
     return MomentumMatrix(transform.to, angular, linear)
 end
 
