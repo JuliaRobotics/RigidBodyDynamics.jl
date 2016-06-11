@@ -9,7 +9,7 @@ facts("double pendulum") do
     I2 = 1.33 # about joint instead of CoM in URDF
     g = -9.81
 
-    axis = Vec(0, 1, 0)
+    axis = Vec(0., 1., 0.)
 
     doublePendulum = Mechanism{Float64}("world"; gravity = Vec(0, 0, g))
     world = root_body(doublePendulum)

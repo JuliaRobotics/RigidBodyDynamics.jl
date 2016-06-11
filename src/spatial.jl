@@ -124,7 +124,7 @@ immutable Twist{T<:Real}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
-Twist{T<:Real}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector{T}) = Twist(body, base, frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
+Twist{T<:Real}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector{T}) = Twist(body, base, frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
 convert{T<:Real}(::Type{Twist{T}}, t::Twist{T}) = t
 convert{T<:Real}(::Type{Twist{T}}, t::Twist) = Twist(t.body, t.base, t.frame, convert(Vec{3, T}, t.angular), convert(Vec{3, T}, t.linear))
 
@@ -199,7 +199,7 @@ function Twist{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, v::Vector{T2})
 end
 
 function Twist(jac::GeometricJacobian, v::Vector)
-    vFixed = Vec(v)
+    vFixed = Vec(v...)
     Twist(jac.body, jac.base, jac.frame, jac.angular * vFixed, jac.linear * vFixed)
 end
 
@@ -239,7 +239,7 @@ immutable Wrench{T<:Real} <: ForceSpaceElement{T}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
-Wrench{T}(frame::CartesianFrame3D, vec::Vector{T}) = Wrench{T}(frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
+Wrench{T}(frame::CartesianFrame3D, vec::Vector{T}) = Wrench{T}(frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
 convert{T<:Real}(::Type{Wrench{T}}, wrench::Wrench{T}) = wrench
 convert{T<:Real}(::Type{Wrench{T}}, wrench::Wrench) = Wrench(wrench.frame, convert(Vec{3, T}, wrench.angular), convert(Vec{3, T}, wrench.linear))
 
@@ -255,7 +255,7 @@ immutable Momentum{T<:Real} <: ForceSpaceElement{T}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
-Momentum{T}(frame::CartesianFrame3D, vec::Vector{T}) = Momentum{T}(frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
+Momentum{T}(frame::CartesianFrame3D, vec::Vector{T}) = Momentum{T}(frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
 convert{T<:Real}(::Type{Wrench{T}}, momentum::Momentum{T}) = momentum
 convert{T<:Real}(::Type{Wrench{T}}, momentum::Momentum) = Momentum(momentum.frame, convert(Vec{3, T}, momentum.angular), convert(Vec{3, T}, momentum.linear))
 
@@ -350,7 +350,7 @@ function hcat{T}(mats::MomentumMatrix{T}...)
 end
 
 function Momentum(mat::MomentumMatrix, v::Vector)
-    vFixed = Vec(v)
+    vFixed = Vec(v...)
     Momentum(mat.frame, mat.angular * vFixed, mat.linear * vFixed)
 end
 
@@ -377,7 +377,7 @@ convert{T<:Real}(::Type{SpatialAcceleration{T}}, accel::SpatialAcceleration{T}) 
 convert{T<:Real}(::Type{SpatialAcceleration{T}}, accel::SpatialAcceleration) = SpatialAcceleration(accel.body, accel.base, accel.frame, convert(Vec{3, T}, accel.angular), convert(Vec{3, T}, accel.linear))
 
 function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector)
-    return SpatialAcceleration(body, base, frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
+    return SpatialAcceleration(body, base, frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
 end
 
 function SpatialAcceleration{T1<:Real, T2}(jac::GeometricJacobian{T1, 0}, v̇::Vector{T2})
@@ -387,7 +387,7 @@ end
 
 
 function SpatialAcceleration(jac::GeometricJacobian, v̇::Vector)
-    v̇Fixed = Vec(v̇)
+    v̇Fixed = Vec(v̇...)
     SpatialAcceleration(jac.body, jac.base, jac.frame, jac.angular * v̇Fixed, jac.linear * v̇Fixed)
 end
 
