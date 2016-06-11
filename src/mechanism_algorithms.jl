@@ -205,7 +205,7 @@ function dynamics{X, M, C, T, W}(state::MechanismState{X, M, C};
     c = torque_dict_to_vector(inverse_dynamics(state; externalWrenches = externalWrenches), joints)
     biasedTorques = isempty(torques) ? -c : torque_dict_to_vector(torques, joints) - c
     mass_matrix(state; ret = massMatrix)
-    v̇ = velocity_vector_to_dict(massMatrix \ biasedTorques, joints)
+    v̇ = velocity_vector_to_dict(Symmetric(massMatrix) \ biasedTorques, joints)
     return q̇, v̇
 end
 
