@@ -36,7 +36,7 @@ function vector_to_skew_symmetric(v::Vec{3})
     -v[2] v[1] 0];
 end
 
-function to_array(inertia::SpatialInertia)
+function Array(inertia::SpatialInertia)
     J = Array(inertia.moment)
     m = inertia.mass
     C = Array(vector_to_skew_symmetric(m * inertia.centerOfMass))
@@ -129,7 +129,7 @@ function isapprox(x::Twist, y::Twist; atol = 1e-12)
     x.body == y.body && x.base == y.base && x.frame == y.frame && isapprox_tol(x.angular, y.angular; atol = atol) && isapprox_tol(x.linear, y.linear; atol = atol)
 end
 
-to_array(twist::Twist) = [twist.angular...; twist.linear...]
+Array(twist::Twist) = [twist.angular...; twist.linear...]
 
 function (+)(twist1::Twist, twist2::Twist)
     @assert twist1.frame == twist2.frame
@@ -160,22 +160,45 @@ change_body_no_relative_motion(t::Twist, body::CartesianFrame3D) = Twist(body, t
 zero{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, zero(Vec{3, T}), zero(Vec{3, T}))
 rand{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, rand(Vec{3, T}), rand(Vec{3, T}))
 
-type GeometricJacobian{T<:Real}
+type GeometricJacobian{T<:Real, N}
     body::CartesianFrame3D
     base::CartesianFrame3D
     frame::CartesianFrame3D
-    mat::Array{T}
+    angular::Mat{3, N, T}
+    linear::Mat{3, N, T}
 end
-convert{T<:Real}(::Type{GeometricJacobian{T}}, jac::GeometricJacobian) = GeometricJacobian(jac.body, jac.base, jac.frame, convert(Array{T}, jac.mat))
 
-angular_part(jac::GeometricJacobian) = jac.mat[1 : 3, :]
-linear_part(jac::GeometricJacobian) = jac.mat[4 : 6, :]
+# function GeometricJacobian{T, N}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::Mat{3, N, T}, linear::Mat{3, N, T})
+#     GeometricJacobian{T, N}(body, base, frame, angular, linear)
+# end
 
-Twist(jac::GeometricJacobian, v::Vector) = Twist(jac.body, jac.base, jac.frame, jac.mat * v)
+function GeometricJacobian{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, mat::Array{T, 2})
+    @assert size(mat, 1) == 6
+    GeometricJacobian(body, base, frame, Mat(mat[1 : 3, :]), Mat(mat[4 : 6, :]))
+end
 
-(-)(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.mat)
+convert{T<:Real, N}(::Type{GeometricJacobian{T, N}}, jac::GeometricJacobian) = GeometricJacobian(jac.body, jac.base, jac.frame, convert(Mat{3, N, T}, jac.angular), convert(Mat{3, N, T}, jac.linear))
+Array(jac::GeometricJacobian) = [Array(jac.angular); Array(jac.linear)]
+
+num_cols{T, N}(jac::GeometricJacobian{T, N}) = N
+
+angular_part(jac::GeometricJacobian) = jac.angular
+linear_part(jac::GeometricJacobian) = jac.linear
+
+function Twist{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, v::Vector{T2})
+    T = promote_type(T1, T2)
+    zero(Twist{T}, jac.body, jac.base, jac.frame)
+end
+
+function Twist(jac::GeometricJacobian, v::Vector)
+    vFixed = Vec(v)
+    Twist(jac.body, jac.base, jac.frame, jac.angular * vFixed, jac.linear * vFixed)
+end
+
+(-){T<:Real}(jac::GeometricJacobian{T, 0}) = GeometricJacobian(jac.base, jac.body, jac.frame, jac.angular, jac.linear)
+(-)(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.angular, -jac.linear)
 function show(io::IO, jac::GeometricJacobian)
-    print(io, "GeometricJacobian: body: \"$(jac.body.name)\", base: \"$(jac.base.name)\", expressed in \"$(jac.frame.name)\":\n$(jac.mat)")
+    print(io, "GeometricJacobian: body: \"$(jac.body.name)\", base: \"$(jac.base.name)\", expressed in \"$(jac.frame.name)\":\n$(Array(jac))")
 end
 
 function hcat{T}(jacobians::GeometricJacobian{T}...)
@@ -184,19 +207,21 @@ function hcat{T}(jacobians::GeometricJacobian{T}...)
         @assert jacobians[j].frame == frame
         @assert jacobians[j].base == jacobians[j - 1].body
     end
-    return GeometricJacobian(jacobians[end].body, jacobians[1].base, frame, hcat([jac.mat for jac in jacobians]...))
+    angular = hcat([jac.angular::Mat for jac in jacobians]...)
+    linear = hcat([jac.linear::Mat for jac in jacobians]...)
+    return GeometricJacobian(jacobians[end].body, jacobians[1].base, frame, angular, linear)
 end
+
+# zero column case
+transform{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, transform::Transform3D{T2}) = GeometricJacobian(jac.body, jac.base, transform.to, jac.angular, jac.linear)
 
 function transform(jac::GeometricJacobian, transform::Transform3D)
     @assert jac.frame == transform.from
-    R = rotationmatrix(transform.rot)
-    angular = R * angular_part(jac)
-    linear = R * linear_part(jac)
-    transArray = Array(transform.trans)
-    for i = 1 : size(angular, 2)
-        linear[:, i] += cross(transArray, angular[:, i])
-    end
-    return GeometricJacobian(jac.body, jac.base, transform.to, [angular; linear])
+    R = rotationmatrix_normalized_fsa(transform.rot)
+    T = eltype(R)
+    angular = R * jac.angular
+    linear = R * jac.linear + Mat(map((col) -> cross(transform.trans, Vec(col))._::Tuple{T, T, T}, angular._))
+    return GeometricJacobian(jac.body, jac.base, transform.to, angular, linear)
 end
 
 abstract ForceSpaceElement{T<:Real}
@@ -248,7 +273,7 @@ end
 
 (-){F<:ForceSpaceElement}(f::F) = F(f.frame, -f.angular, -f.linear)
 
-to_array{F<:ForceSpaceElement}(f::F) = [f.angular...; f.linear...]
+Array{F<:ForceSpaceElement}(f::F) = [f.angular...; f.linear...]
 isapprox{F<:ForceSpaceElement}(x::F, y::F; atol = 1e-12) = x.frame == y.frame && isapprox_tol(x.angular, y.angular, atol = atol) && isapprox_tol(x.linear, y.linear, atol = atol)
 
 function mul_inertia{I, T}(J::Mat{3, 3, I}, c::Vec{3, I}, m::I, ω::Vec{3, T}, v::Vec{3, T})
@@ -268,32 +293,41 @@ function (*)(inertia::SpatialInertia, twist::Twist)
 end
 
 
-type MomentumMatrix{T<:Real}
+type MomentumMatrix{T<:Real, N}
     frame::CartesianFrame3D
-    mat::Array{T}
+    angular::Mat{3, N, T}
+    linear::Mat{3, N, T}
 end
-convert{T<:Real}(::Type{Wrench{T}}, m::MomentumMatrix) = MomentumMatrix(m.frame, convert(Array{T}, m.mat))
+# convert{T<:Real}(::Type{Wrench{T}}, m::MomentumMatrix{}) = MomentumMatrix(m.frame, convert(Array{T}, m.mat))
 
-show(io::IO, m::MomentumMatrix) = print(io, "MomentumMatrix expressed in \"$(m.frame.name)\":\n$(m.mat)")
-angular_part(m::MomentumMatrix) = m.mat[1 : 3, :]
-linear_part(m::MomentumMatrix) = m.mat[4 : 6, :]
+function MomentumMatrix{T}(frame::CartesianFrame3D, mat::Array{T, 2})
+    @assert size(mat, 1) == 6
+    MomentumMatrix(frame, Mat(mat[1 : 3, :]), Mat(mat[4 : 6, :]))
+end
 
-function (*){T}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T})
+num_cols{T, N}(mat::MomentumMatrix{T, N}) = N
+
+Array(m::MomentumMatrix) = [Array(angular_part(m)); Array(linear_part(m))]
+show(io::IO, m::MomentumMatrix) = print(io, "MomentumMatrix expressed in \"$(m.frame.name)\":\n$(Array(m))")
+angular_part(m::MomentumMatrix) = m.angular
+linear_part(m::MomentumMatrix) = m.linear
+
+function (*){T}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T, 0})
+    @assert inertia.frame == jac.frame
+    MomentumMatrix(inertia.frame, zero(Mat{3, 0, T}), zero(Mat{3, 0, T}))
+end
+
+function (*){T, N}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T, N})
     @assert inertia.frame == jac.frame
 
-    Jω = angular_part(jac)
-    Jv = linear_part(jac)
-    J = Array(inertia.moment)
-    c = Array(inertia.centerOfMass)
+    Jω = jac.angular
+    Jv = jac.linear
+    J = inertia.moment
     m = inertia.mass
-    angular = J * Jω
-    linear = m * Jv
-    for i = 1 : size(Jω, 2)
-        mc = m * c
-        angular[:, i] += cross(mc, Jv[:, i])
-        linear[:, i] -= cross(mc, Jω[:, i])
-    end
-    return MomentumMatrix(inertia.frame, [angular; linear])
+    mc = inertia.mass * inertia.centerOfMass
+    angular = J * Jω + Mat(map((col) -> cross(mc, Vec(col))._::Tuple{T, T, T}, Jv._))
+    linear = m * Jv - Mat(map((col) -> cross(mc, Vec(col))._::Tuple{T, T, T}, Jω._))
+    MomentumMatrix(inertia.frame, angular, linear)
 end
 
 function hcat{T}(mats::MomentumMatrix{T}...)
@@ -301,22 +335,25 @@ function hcat{T}(mats::MomentumMatrix{T}...)
     for j = 2 : length(mats)
         @assert mats[j].frame == frame
     end
-    return MomentumMatrix(frame, hcat([m.mat for m in mats]...))
+    angular = hcat([m.angular::Mat for m in mats]...)
+    linear = hcat([m.linear::Mat for m in mats]...)
+    return MomentumMatrix(frame, angular, linear)
 end
 
-Momentum(mat::MomentumMatrix, v::Vector) = Momentum(mat.frame, mat.mat * v)
+function Momentum(mat::MomentumMatrix, v::Vector)
+    vFixed = Vec(v)
+    Momentum(mat.frame, mat.angular * vFixed, mat.linear * vFixed)
+end
+
+transform{T1<:Real, T2<:Real}(mat::MomentumMatrix{T1, 0}, transform::Transform3D{T2}) = MomentumMatrix(transform.to, mat.angular, mat.linear)
 
 function transform(mat::MomentumMatrix, transform::Transform3D)
     @assert mat.frame == transform.from
-    R = rotationmatrix(transform.rot)
-
+    R = rotationmatrix_normalized_fsa(transform.rot)
     linear = R * linear_part(mat)
-    angular = R * angular_part(mat)
-    transArray = Array(transform.trans)
-    for i = 1 : size(angular, 2)
-        angular[:, i] += cross(transArray, linear[:, i])
-    end
-    return MomentumMatrix(transform.to, [angular; linear])
+    T = eltype(linear)
+    angular = R * angular_part(mat) + Mat(map((col) -> cross(transform.trans, Vec(col))._::Tuple{T, T, T}, linear._))
+    return MomentumMatrix(transform.to, angular, linear)
 end
 
 immutable SpatialAcceleration{T<:Real}
@@ -332,7 +369,16 @@ function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, fra
     return SpatialAcceleration(body, base, frame, Vec(vec[1 : 3]), Vec(vec[4 : 6]))
 end
 
-SpatialAcceleration(jac::GeometricJacobian, v̇::Vector) = SpatialAcceleration(jac.body, jac.base, jac.frame, jac.mat * v̇)
+function SpatialAcceleration{T1<:Real, T2}(jac::GeometricJacobian{T1, 0}, v̇::Vector{T2})
+    T = promote_type(T1, T2)
+    SpatialAcceleration(jac.body, jac.base, jac.frame, zero(Vec{3, T}), zero(Vec{3, T}))
+end
+
+
+function SpatialAcceleration(jac::GeometricJacobian, v̇::Vector)
+    v̇Fixed = Vec(v̇)
+    SpatialAcceleration(jac.body, jac.base, jac.frame, jac.angular * v̇Fixed, jac.linear * v̇Fixed)
+end
 
 function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
     @assert accel1.frame == accel2.frame
@@ -346,7 +392,7 @@ end
 
 (-)(accel::SpatialAcceleration) = SpatialAcceleration(accel.base, accel.body, accel.frame, -accel.angular, -accel.linear)
 
-to_array(accel::SpatialAcceleration) = [accel.angular...; accel.linear...]
+Array(accel::SpatialAcceleration) = [accel.angular...; accel.linear...]
 
 function show(io::IO, a::SpatialAcceleration)
     print(io, "SpatialAcceleration of \"$(a.body.name)\" w.r.t \"$(a.base.name)\" in \"$(a.frame.name)\":\nangular: $(a.angular), linear: $(a.linear)")
@@ -400,9 +446,15 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
     return Wrench(frame, angular, linear)
 end
 
+function joint_torque{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, wrench::Wrench{T2})
+    @assert jac.frame == wrench.frame
+    T = promote_type(T1, T2)
+    Vec{0, T}()
+end
+
 function joint_torque(jac::GeometricJacobian, wrench::Wrench)
     @assert jac.frame == wrench.frame
-    return jac.mat' * [wrench.angular...; wrench.linear...]
+    jac.angular' * wrench.angular + jac.linear' * wrench.linear
 end
 
 function kinetic_energy(I::SpatialInertia, twist::Twist)

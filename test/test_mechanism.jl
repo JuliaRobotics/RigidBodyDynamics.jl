@@ -79,9 +79,9 @@ facts("relative_acceleration") do
     set_configuration!(x_autodiff, q_autodiff)
     set_velocity!(x_autodiff, v_autodiff)
     twist_autodiff = relative_twist(x_autodiff, body, base)
-    accel_vec = [ForwardDiff.grad(x)[1]::Float64 for x in (to_array(twist_autodiff))]
+    accel_vec = [ForwardDiff.grad(x)[1]::Float64 for x in (Array(twist_autodiff))]
 
-    @fact to_array(Ṫ) --> roughly(accel_vec; atol = 1e-12)
+    @fact Array(Ṫ) --> roughly(accel_vec; atol = 1e-12)
 end
 
 facts("motion subspace / twist wrt world") do
@@ -104,11 +104,12 @@ end
 
 facts("momentum_matrix / summing momenta") do
     A = momentum_matrix(x)
+    Amat = Array(A)
     for vertex in mechanism.toposortedTree[2 : end]
         body = vertex.vertexData
         joint = vertex.edgeToParentData
-        Ajoint = A.mat[:, x.vRanges[joint]]
-        @fact (crb_inertia(x, body) * motion_subspace(x, joint)).mat --> roughly(Ajoint; atol = 1e-12)
+        Ajoint = Amat[:, x.vRanges[joint]]
+        @fact Array(crb_inertia(x, body) * motion_subspace(x, joint)) --> roughly(Ajoint; atol = 1e-12)
     end
 
     v = velocity_vector(x)
@@ -210,20 +211,20 @@ facts("inverse dynamics / external wrenches") do
         local x = MechanismState(eltype(q), mechanism)
         set_configuration!(x, q)
         zero_velocity!(x)
-        return vec(momentum_matrix(x).mat)
+        return vec(Array(momentum_matrix(x)))
     end
     dAdq = ForwardDiff.jacobian(q_to_A, configuration_vector(x))
     q̇ = vcat([velocity_to_configuration_derivative(x.q, x.v)[joint] for joint in keys(x.v)]...)
-    Ȧ = reshape(dAdq * q̇, size(A.mat))
+    Ȧ = reshape(dAdq * q̇, (6, num_velocities(mechanism)))
     v̇ = vcat([v̇[joint] for joint in keys(x.v)]...)
     v = velocity_vector(x)
-    ḣ = A.mat * v̇ + Ȧ * v # rate of change of momentum
+    ḣ = Array(A) * v̇ + Ȧ * v # rate of change of momentum
 
     gravitational_force = FreeVector3D(root_frame(mechanism), mass(mechanism) * mechanism.gravity)
     com = center_of_mass(x)
     gravitational_wrench = Wrench(gravitational_force.frame, cross(com, gravitational_force).v, gravitational_force.v)
     total_wrench = floatingJointWrench + gravitational_wrench + sum((w) -> transform(x, w, root_frame(mechanism)), values(externalWrenches))
-    @fact to_array(total_wrench) --> roughly(ḣ; atol = 1e-12)
+    @fact Array(total_wrench) --> roughly(ḣ; atol = 1e-12)
 end
 
 facts("dynamics / inverse dynamics") do
