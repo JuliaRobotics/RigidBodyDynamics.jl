@@ -45,4 +45,11 @@ function rpy_to_quaternion(rpy::Vector)
 end
 
 hcat(head::Mat) = head
-hcat(head::Mat, tail::Mat...) = Mat((head._..., hcat(tail...)._...))
+function hcat(head::Mat, tail::Mat...)
+    tailhcat = hcat(tail...)
+    if isempty(head) && isempty(tailhcat)
+        return zero(head) # TODO: check size match
+    else
+        return Mat((head._..., tailhcat._...))
+    end
+end
