@@ -46,7 +46,6 @@ export
     # functions
     name,
     transform,
-    to_array,
     newton_euler,
     joint_torque,
     root_body,
@@ -61,6 +60,7 @@ export
     configuration_derivative_to_velocity,
     num_positions,
     num_velocities,
+    num_cols,
     joint_transform,
     motion_subspace,
     has_fixed_motion_subspace,

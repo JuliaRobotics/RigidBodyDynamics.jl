@@ -12,10 +12,6 @@ show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointTy
 showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
 
 immutable QuaternionFloating <: JointType
-    motionSubspace::Array{Float64, 2}
-    function QuaternionFloating()
-        new(eye(6))
-    end
 end
 show(io::IO, jt::QuaternionFloating) = print(io, "Quaternion floating joint")
 rand(::Type{QuaternionFloating}) = QuaternionFloating()
@@ -28,7 +24,9 @@ function joint_transform{T<:Real}(j::Joint, q::Vector{T}, jt::QuaternionFloating
 end
 
 function motion_subspace{T<:Real}(j::Joint, q::Vector{T}, jt::QuaternionFloating = j.jointType)
-    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, copy(jt.motionSubspace))
+    angular = hcat(eye(Mat{3, 3, T}), zero(Mat{3, 3, T}))
+    linear = hcat(zero(Mat{3, 3, T}), eye(Mat{3, 3, T}))
+    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, linear)
 end
 
 num_positions(j::Joint, jt::QuaternionFloating = j.jointType) = 7::Int64
@@ -72,10 +70,8 @@ abstract OneDegreeOfFreedomFixedAxis <: JointType
 
 immutable Prismatic{T<:Real} <: OneDegreeOfFreedomFixedAxis
     translation_axis::Vec{3, T}
-    motionSubspace::Vector{Float64}
-    Prismatic(translation_axis::Vec{3, T}) = new(translation_axis, [zeros(3); Array(translation_axis)])
 end
-Prismatic{T}(rotation_axis::Vec{3, T}) = Prismatic{T}(rotation_axis)
+# Prismatic{T}(rotation_axis::Vec{3, T}) = Prismatic{T}(rotation_axis)
 show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.translation_axis)")
 rand{T}(::Type{Prismatic{T}}) = Prismatic(FixedSizeArrays.normalize(rand(Vec{3, T})))
 
@@ -86,15 +82,14 @@ function joint_twist{T<:Real}(j::Joint, q::Vector{T}, v::Vector{T}, jt::Prismati
 end
 
 function motion_subspace{T<:Real}(j::Joint, q::Vector{T}, jt::Prismatic = j.jointType)
-    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, copy(jt.motionSubspace))
+    linear = Mat(jt.translation_axis)
+    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, zero(linear), linear)
 end
 
 immutable Revolute{T<:Real} <: OneDegreeOfFreedomFixedAxis
     rotation_axis::Vec{3, T}
-    motionSubspace::Vector{Float64}
-    Revolute(rotation_axis::Vec{3, T}) = new(rotation_axis, [Array(rotation_axis); zeros(3)])
 end
-Revolute{T}(rotation_axis::Vec{3, T}) = Revolute{T}(rotation_axis)
+# Revolute{T}(rotation_axis::Vec{3, T}) = Revolute{T}(rotation_axis)
 show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.rotation_axis)")
 rand{T}(::Type{Revolute{T}}) = Revolute(FixedSizeArrays.normalize(rand(Vec{3, T})))
 
@@ -108,7 +103,8 @@ function joint_twist{T<:Real}(j::Joint, q::Vector{T}, v::Vector{T}, jt::Revolute
 end
 
 function motion_subspace{T<:Real}(j::Joint, q::Vector{T}, jt::Revolute = j.jointType)
-    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, copy(jt.motionSubspace))
+    angular = Mat(jt.rotation_axis)
+    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, zero(angular))
 end
 
 num_positions(j::Joint, jt::OneDegreeOfFreedomFixedAxis = j.jointType) = 1::Int64
@@ -130,7 +126,7 @@ function joint_twist{T<:Real}(j::Joint, q::Vector{T}, v::Vector{T}, jt::Fixed = 
     return zero(Twist{T}, j.frameAfter, j.frameBefore, j.frameAfter)
 end
 function motion_subspace{T<:Real}(j::Joint, q::Vector{T}, jt::Fixed = j.jointType)
-    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, zeros(T, 6, 0))
+    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, Mat{3, 0, T}(), Mat{3, 0, T}())
 end
 num_positions(j::Joint, jt::Fixed = j.jointType) = 0::Int64
 num_velocities(j::Joint, jt::Fixed = j.jointType) = 0::Int64

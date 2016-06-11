@@ -43,3 +43,6 @@ function rpy_to_quaternion(rpy::Vector)
         c[1]*s[2]*c[3] + s[1]*c[2]*s[3],
         c[1]*c[2]*s[3] - s[1]*s[2]*c[3])
 end
+
+hcat(head::Mat) = head
+hcat(head::Mat, tail::Mat...) = Mat((head._..., hcat(tail...)._...))

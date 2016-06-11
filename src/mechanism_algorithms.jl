@@ -105,24 +105,29 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
         vi = state.mechanism.toposortedTree[i]
 
         # Hii
-        bodyi = vi.vertexData
         jointi = vi.edgeToParentData
-        irange = state.vRanges[jointi]
-        Si = motion_subspace(state, jointi)
-        F = crb_inertia(state, bodyi) * Si
-        H[irange, irange] = At_mul_B(Si.mat, F.mat)
+        if num_velocities(jointi) > 0
+            bodyi = vi.vertexData
+            irange = state.vRanges[jointi]
+            Si = motion_subspace(state, jointi)
+            Ii = crb_inertia(state, bodyi)
+            F = crb_inertia(state, bodyi) * Si
+            H[irange, irange] = Array(Si.angular' * F.angular + Si.linear' * F.linear)
 
-        # Hji, Hij
-        vj = vi.parent
-        while (!isroot(vj))
-            jointj = vj.edgeToParentData
-            jrange = state.vRanges[jointj]
-            Sj = motion_subspace(state, jointj)
-            @assert F.frame == Sj.frame
-            Hji = At_mul_B(Sj.mat, F.mat)
-            H[jrange, irange] = Hji
-            H[irange, jrange] = Hji'
-            vj = vj.parent
+            # Hji, Hij
+            vj = vi.parent
+            while (!isroot(vj))
+                jointj = vj.edgeToParentData
+                if num_velocities(jointj) > 0
+                    jrange = state.vRanges[jointj]
+                    Sj = motion_subspace(state, jointj)
+                    @assert F.frame == Sj.frame
+                    Hji = Array(Sj.angular' * F.angular + Sj.linear' * F.linear)
+                    H[jrange, irange] = Hji
+                    H[irange, jrange] = Hji'
+                end
+                vj = vj.parent
+            end
         end
     end
     return H
@@ -176,9 +181,9 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Associat
     sizehint!(τ, length(vertices) - 1)
     for i = length(vertices) : -1 : 2
         vertex = vertices[i]
+        joint = vertex.edgeToParentData
         body = vertex.vertexData
         parentBody = vertex.parent.vertexData
-        joint = vertex.edgeToParentData
         jointWrench = jointWrenches[body]
         S = motion_subspace(state, joint)
         τ[joint] = joint_torque(S, jointWrench)

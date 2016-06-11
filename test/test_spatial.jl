@@ -15,9 +15,9 @@ facts("spatial inertia") do
     I1 = transform(I2, H21)
     I3 = rand(SpatialInertia{Float64}, f2)
     @fact I2.mass --> I1.mass
-    @fact to_array(I1) --> roughly(Ad(inv(H21))' * to_array(I2) * Ad(inv(H21)); atol = 1e-12)
+    @fact Array(I1) --> roughly(Ad(inv(H21))' * Array(I2) * Ad(inv(H21)); atol = 1e-12)
     @fact I2 --> roughly(transform(I1, inv(H21)))
-    @fact to_array(I2) + to_array(I3) --> roughly(to_array(I2 + I3); atol = 1e-12)
+    @fact Array(I2) + Array(I3) --> roughly(Array(I2 + I3); atol = 1e-12)
 end
 
 facts("twist") do
@@ -31,13 +31,13 @@ facts("twist") do
     @fact T2 + T1 --> roughly(T3)
     @fact_throws AssertionError T1 + rand(Twist{Float64}, f3, f2, f4) # wrong frame
     @fact_throws ArgumentError T1 + rand(Twist{Float64}, f3, f4, f3) # wrong base
-    @fact to_array(transform(T1, H31)) --> roughly(Ad(H31) * to_array(T1))
+    @fact Array(transform(T1, H31)) --> roughly(Ad(H31) * Array(T1))
 end
 
 facts("wrench") do
     W = rand(Wrench{Float64}, f2)
     H21 = rand(Transform3D{Float64}, f2, f1)
-    @fact to_array(transform(W, H21)) --> roughly(Ad(inv(H21))' * to_array(W))
+    @fact Array(transform(W, H21)) --> roughly(Ad(inv(H21))' * Array(W))
     @fact_throws AssertionError transform(W, inv(H21)) # wrong frame
 end
 
@@ -47,16 +47,16 @@ facts("momentum") do
     T2 = rand(Twist{Float64}, f2, f1, f1)
     H21 = rand(Transform3D{Float64}, f2, f1)
     h = I * T
-    @fact to_array(I) * to_array(T) --> roughly(to_array(h); atol = 1e-12)
+    @fact Array(I) * Array(T) --> roughly(Array(h); atol = 1e-12)
     @fact_throws AssertionError I * T2 # wrong frame
     @fact transform(I, H21) * transform(T, H21) --> roughly(transform(h, H21))
-    @fact to_array(transform(h, H21)) --> roughly(Ad(inv(H21))' * to_array(h))
+    @fact Array(transform(h, H21)) --> roughly(Ad(inv(H21))' * Array(h))
     @fact_throws AssertionError transform(h, inv(H21)) # wrong frame
 end
 
 facts("geometric jacobian, power") do
     J = GeometricJacobian(f2, f1, f3, rand(6, 14))
-    v = rand(size(J.mat, 2))
+    v = rand(num_cols(J))
     W = rand(Wrench{Float64}, f3)
     T = Twist(J, v)
     H = rand(Transform3D{Float64}, f3, f1)
@@ -65,14 +65,14 @@ facts("geometric jacobian, power") do
     @fact J.base --> T.base
     @fact J.frame --> T.frame
     @fact Twist(transform(J, H), v) --> roughly(transform(T, H))
-    @fact dot(τ, v) --> roughly(dot(T, W); atol = 1e-12) # power equality
+    @fact dot(Array(τ), v) --> roughly(dot(T, W); atol = 1e-12) # power equality
     @fact_throws AssertionError dot(transform(T, H), W)
     @fact_throws AssertionError joint_torque(transform(J, H), W)
 end
 
 facts("momentum matrix") do
     A = MomentumMatrix(f3, rand(6, 13))
-    v = rand(size(A.mat, 2))
+    v = rand(num_cols(A))
     h = Momentum(A, v)
     H = rand(Transform3D{Float64}, f3, f1)
     @fact h.frame --> A.frame
@@ -93,6 +93,6 @@ facts("other functionality") do
     T = rand(Twist{Float64}, f2, f1, f2)
     H = rand(Transform3D{Float64}, f2, f1)
     Ek = kinetic_energy(I, T)
-    @fact (1//2 * to_array(T)' * to_array(I) * to_array(T))[1] --> roughly(Ek; atol = 1e-12)
+    @fact (1//2 * Array(T)' * Array(I) * Array(T))[1] --> roughly(Ek; atol = 1e-12)
     @fact kinetic_energy(transform(I, H), transform(T, H)) --> roughly(Ek; atol = 1e-12)
 end
