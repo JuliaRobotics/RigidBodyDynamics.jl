@@ -63,7 +63,7 @@ function rand_configuration{T<:Real}(j::Joint, ::Type{T}, jt::QuaternionFloating
 end
 
 function joint_twist{T<:Real}(j::Joint, q::Vector{T}, v::Vector{T}, jt::QuaternionFloating = j.jointType)
-    return Twist(j.frameAfter, j.frameBefore, j.frameAfter, Vec(v[1 : 3]), Vec(v[4 : 6]))
+    return Twist(j.frameAfter, j.frameBefore, j.frameAfter, Vec(v[1], v[2], v[3]), Vec(v[4], v[5], v[6]))
 end
 
 abstract OneDegreeOfFreedomFixedAxis <: JointType
