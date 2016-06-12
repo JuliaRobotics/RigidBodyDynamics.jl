@@ -203,9 +203,9 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
         end
 
         # additional body fixed frames
-        for transform in m.bodyFixedFrameDefinitions[body]
-            if transform.from != transform.to
-                add_frame!(state, transform)
+        for tf in m.bodyFixedFrameDefinitions[body]
+            if tf.from != tf.to
+                add_frame!(state, tf)
             end
         end
 

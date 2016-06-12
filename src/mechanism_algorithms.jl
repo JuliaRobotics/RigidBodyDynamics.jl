@@ -91,7 +91,7 @@ end
 
 kinetic_energy{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = kinetic_energy(spatial_inertia(state, body), twist_wrt_world(state, body))
 function kinetic_energy{X, M}(state::MechanismState{X, M}, itr)
-    return sum(body::RigidBody{M} -> kinetic_energy(state, body), itr)
+    return sum(body::RigidBody -> kinetic_energy(state, body), itr)
 end
 kinetic_energy(state::MechanismState) = kinetic_energy(state, filter(b -> !isroot(b), bodies(state.mechanism)))
 
