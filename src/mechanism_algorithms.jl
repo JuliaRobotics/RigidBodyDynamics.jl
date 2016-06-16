@@ -1,3 +1,12 @@
+function configuration_derivative(state::MechanismState)
+    X = state_vector_eltype(state)
+    q̇ = Vector{X}(num_positions(state))
+    for joint in joints(state.mechanism)
+        slice(q̇, state.qRanges[joint])[:] = velocity_to_configuration_derivative(joint, state.q, slice(state.v, state.vRanges[joint]))
+    end
+    q̇
+end
+
 transform_to_parent(state::MechanismState, frame::CartesianFrame3D) = get(state.transformsToParent[frame])
 transform_to_root(state::MechanismState, frame::CartesianFrame3D) = get(state.transformsToRoot[frame])
 relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D) = inv(transform_to_root(state, to)) * transform_to_root(state, from)
@@ -81,10 +90,10 @@ function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{
     return hcat(motionSubspaces...)
 end
 
-function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::Associative{Joint, Vector{V}})
+function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::Vector{V})
     p = path(state.mechanism, base, body)
     J = geometric_jacobian(state, p)
-    v̇path = vcat([v̇[joint]::Vector{V} for joint in p.edgeData]...)
+    v̇path = vcat([v̇[state.vRanges[joint]] for joint in p.edgeData]...)
     bias = -bias_acceleration(state, base) + bias_acceleration(state, body)
     return SpatialAcceleration(J, v̇path) + bias
 end
@@ -137,7 +146,7 @@ function momentum_matrix(state::MechanismState)
     hcat([crb_inertia(state, vertex.vertexData) * motion_subspace(state, vertex.edgeToParentData) for vertex in state.mechanism.toposortedTree[2 : end]]...)
 end
 
-function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Associative{Joint, Vector{V}} = NullDict{Joint, Vector{X}}();
+function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable{Vector{V}} = Nullable{Vector{X}}();
     externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}())
 
     vertices = state.mechanism.toposortedTree
@@ -153,9 +162,13 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Associat
         body = vertex.vertexData
         joint = vertex.edgeToParentData
         S = motion_subspace(state, joint)
-        v̇joint = get(v̇, joint, zeros(T, num_velocities(joint)))
-        joint_accel = SpatialAcceleration(S, v̇joint)
-        accels[body] = accels[vertex.parent.vertexData] + joint_accel
+        if isnull(v̇)
+            accels[body] = accels[vertex.parent.vertexData]
+        else
+            v̇joint = slice(get(v̇), state.vRanges[joint])
+            joint_accel = SpatialAcceleration(S, v̇joint)
+            accels[body] = accels[vertex.parent.vertexData] + joint_accel
+        end
     end
 
     # add biases to accelerations and initialize joint wrenches with net wrenches computed using Newton Euler equations
@@ -177,8 +190,7 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Associat
     end
 
     # project joint wrench to find torques, update parent joint wrench
-    τ = Dict{Joint, Vector{T}}()
-    sizehint!(τ, length(vertices) - 1)
+    τ = Vector{T}(num_velocities(state))
     for i = length(vertices) : -1 : 2
         vertex = vertices[i]
         joint = vertex.edgeToParentData
@@ -186,7 +198,8 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Associat
         parentBody = vertex.parent.vertexData
         jointWrench = jointWrenches[body]
         S = motion_subspace(state, joint)
-        τ[joint] = joint_torque(S, jointWrench)
+        τjoint = joint_torque(S, jointWrench)
+        unsafe_copy!(slice(τ, state.vRanges[joint]), 1, τjoint, 1, length(τjoint))
         if !isroot(parentBody)
             jointWrenches[parentBody] = jointWrenches[parentBody] + jointWrench # action = -reaction
         end
@@ -194,17 +207,18 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Associat
     τ
 end
 
+inverse_dynamics(state::MechanismState, v̇::Vector; kwargs...) = inverse_dynamics(state, Nullable(v̇); kwargs...)
+
 function dynamics{X, M, C, T, W}(state::MechanismState{X, M, C};
-    torques::Associative{Joint, Vector{T}} = NullDict{Joint, Vector{X}}(),
+    torques::Nullable{Vector{T}} = Nullable{Vector{X}}(),
     externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}(),
     massMatrix = Symmetric(zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism))))
 
-    joints = keys(state.q)
-    q̇ = velocity_to_configuration_derivative(state.q, state.v)
-    c = torque_dict_to_vector(inverse_dynamics(state; externalWrenches = externalWrenches), joints)
-    biasedTorques = isempty(torques) ? -c : torque_dict_to_vector(torques, joints) - c
+    q̇ = configuration_derivative(state)
+    c = inverse_dynamics(state; externalWrenches = externalWrenches)
+    biasedTorques = isnull(torques) ? -c : get(torques) - c
     mass_matrix(state; ret = massMatrix)
-    v̇ = velocity_vector_to_dict(massMatrix \ biasedTorques, joints)
+    v̇ = massMatrix \ biasedTorques
     return q̇, v̇
 end
 
@@ -215,6 +229,5 @@ end
 function dynamics{X}(stateVector::Vector{X}, preallocatedState::MechanismState{X}; kwargs...)
     set!(preallocatedState, stateVector)
     (q̇, v̇) = dynamics(preallocatedState; kwargs...)
-    joints = keys(preallocatedState.q)
-    return [configuration_dict_to_vector(q̇, joints); velocity_dict_to_vector(v̇, joints)]
+    return [q̇; v̇]
 end
