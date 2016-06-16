@@ -11,7 +11,7 @@ function convert{T<:Real}(::Type{SpatialInertia{T}}, inertia::SpatialInertia)
 end
 
 function show(io::IO, inertia::SpatialInertia)
-    println(io, "SpatialInertia expressed in \"$(inertia.frame.name)\":")
+    println(io, "SpatialInertia expressed in \"$(name(inertia.frame))\":")
     println(io, "mass: $(inertia.mass)")
     println(io, "center of mass: $(inertia.centerOfMass)")
     print(io, "moment of inertia:\n$(inertia.moment)")
@@ -129,7 +129,7 @@ convert{T<:Real}(::Type{Twist{T}}, t::Twist{T}) = t
 convert{T<:Real}(::Type{Twist{T}}, t::Twist) = Twist(t.body, t.base, t.frame, convert(Vec{3, T}, t.angular), convert(Vec{3, T}, t.linear))
 
 function show(io::IO, t::Twist)
-    print(io, "Twist of \"$(t.body.name)\" w.r.t \"$(t.base.name)\" in \"$(t.frame.name)\":\nangular: $(t.angular), linear: $(t.linear)")
+    print(io, "Twist of \"$(name(t.body))\" w.r.t \"$(name(t.base))\" in \"$(name(t.frame))\":\nangular: $(t.angular), linear: $(t.linear)")
 end
 
 function isapprox(x::Twist, y::Twist; atol = 1e-12)
@@ -206,7 +206,7 @@ end
 (-){T<:Real}(jac::GeometricJacobian{T, 0}) = GeometricJacobian(jac.base, jac.body, jac.frame, jac.angular, jac.linear)
 (-)(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.angular, -jac.linear)
 function show(io::IO, jac::GeometricJacobian)
-    print(io, "GeometricJacobian: body: \"$(jac.body.name)\", base: \"$(jac.base.name)\", expressed in \"$(jac.frame.name)\":\n$(Array(jac))")
+    print(io, "GeometricJacobian: body: \"$(name(jac.body))\", base: \"$(name(jac.base))\", expressed in \"$(name(jac.frame))\":\n$(Array(jac))")
 end
 
 function hcat{T}(jacobians::GeometricJacobian{T}...)
@@ -243,7 +243,7 @@ Wrench{T}(frame::CartesianFrame3D, vec::Vector{T}) = Wrench{T}(frame, Vec(vec[1]
 convert{T<:Real}(::Type{Wrench{T}}, wrench::Wrench{T}) = wrench
 convert{T<:Real}(::Type{Wrench{T}}, wrench::Wrench) = Wrench(wrench.frame, convert(Vec{3, T}, wrench.angular), convert(Vec{3, T}, wrench.linear))
 
-show(io::IO, w::Wrench) = print(io, "Wrench expressed in \"$(w.frame.name)\":\nangular: $(w.angular), linear: $(w.linear)")
+show(io::IO, w::Wrench) = print(io, "Wrench expressed in \"$(name(w.frame))\":\nangular: $(w.angular), linear: $(w.linear)")
 zero{T}(::Type{Wrench{T}}, frame::CartesianFrame3D) = Wrench(frame, zero(Vec{3, T}), zero(Vec{3, T}))
 rand{T}(::Type{Wrench{T}}, frame::CartesianFrame3D) = Wrench(frame, rand(Vec{3, T}), rand(Vec{3, T}))
 
@@ -259,7 +259,7 @@ Momentum{T}(frame::CartesianFrame3D, vec::Vector{T}) = Momentum{T}(frame, Vec(ve
 convert{T<:Real}(::Type{Wrench{T}}, momentum::Momentum{T}) = momentum
 convert{T<:Real}(::Type{Wrench{T}}, momentum::Momentum) = Momentum(momentum.frame, convert(Vec{3, T}, momentum.angular), convert(Vec{3, T}, momentum.linear))
 
-show(io::IO, m::Momentum) = print(io, "Momentum expressed in \"$(m.frame.name)\":\nangular: $(m.angular), linear: $(m.linear)")
+show(io::IO, m::Momentum) = print(io, "Momentum expressed in \"$(name(m.frame))\":\nangular: $(m.angular), linear: $(m.linear)")
 zero{T}(::Type{Momentum{T}}, frame::CartesianFrame3D) = Momentum(frame, zero(Vec{3, T}), zero(Vec{3, T}))
 rand{T}(::Type{Momentum{T}}, frame::CartesianFrame3D) = Momentum(frame, rand(Vec{3, T}), rand(Vec{3, T}))
 
@@ -317,7 +317,7 @@ end
 num_cols{T, N}(mat::MomentumMatrix{T, N}) = N
 
 Array(m::MomentumMatrix) = [Array(angular_part(m)); Array(linear_part(m))]
-show(io::IO, m::MomentumMatrix) = print(io, "MomentumMatrix expressed in \"$(m.frame.name)\":\n$(Array(m))")
+show(io::IO, m::MomentumMatrix) = print(io, "MomentumMatrix expressed in \"$(name(m.frame))\":\n$(Array(m))")
 angular_part(m::MomentumMatrix) = m.angular
 linear_part(m::MomentumMatrix) = m.linear
 
@@ -406,7 +406,7 @@ end
 Array(accel::SpatialAcceleration) = [accel.angular...; accel.linear...]
 
 function show(io::IO, a::SpatialAcceleration)
-    print(io, "SpatialAcceleration of \"$(a.body.name)\" w.r.t \"$(a.base.name)\" in \"$(a.frame.name)\":\nangular: $(a.angular), linear: $(a.linear)")
+    print(io, "SpatialAcceleration of \"$(name(a.body))\" w.r.t \"$(name(a.base))\" in \"$(name(a.frame))\":\nangular: $(a.angular), linear: $(a.linear)")
 end
 
 function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCurrentWrtNew::Twist, twistOfBodyWrtBase::Twist)
