@@ -1,7 +1,25 @@
+# NOTE: The `next_frame_id' and `frame_names' globals below are a hack, but they
+# significantly reduce allocation.
+# Storing the names of all CartesianFrame3D objects in this frame_names vector instead
+# of in the CartesianFrame3D and having CartesianFrame3D only contain an integer ID
+# makes CartesianFram3D an isbits type.
+# This in turn makes it so that a lot of the geometry/dynamics types become isbits
+# (pointer free) types, making them stack allocated and allowing all sorts of
+# optimizations.
+const next_frame_id = Ref(0)
+const frame_names = Dict{Int64, ASCIIString}()
+
 immutable CartesianFrame3D
-    name::ASCIIString
+    id::Int64
+    function CartesianFrame3D(name::ASCIIString)
+        ret = new(next_frame_id.x)
+        next_frame_id.x += 1
+        frame_names[ret.id] = name
+        ret
+    end
 end
-show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(frame.name)\"")
+name(frame::CartesianFrame3D) = frame_names[frame.id]
+show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\"")
 
 immutable Point3D{T<:Real}
     frame::CartesianFrame3D
@@ -19,7 +37,7 @@ convert{T}(::Type{Point3D{T}}, p::Point3D) = Point3D(p.frame, convert(Vec{3, T},
 (*)(p::Point3D, s::Real) = Point3D(p.frame, p.v * s)
 (*)(s::Real, p::Point3D) = Point3D(p.frame, s * p.v)
 rand{T}(::Type{Point3D{T}}, frame::CartesianFrame3D) = Point3D(frame, rand(Vec{3, T}))
-show(io::IO, p::Point3D) = print(io, "Point3D in \"$(p.frame.name)\": $(p.v)")
+show(io::IO, p::Point3D) = print(io, "Point3D in \"$(name(p.frame))\": $(p.v)")
 isapprox{T}(x::Point3D{T}, y::Point3D{T}; atol::Real = 1e-12) = x.frame == y.frame && isapprox_tol(x.v, y.v; atol = atol)
 
 immutable FreeVector3D{T<:Real}
@@ -39,7 +57,7 @@ convert{T}(::Type{FreeVector3D{T}}, v::FreeVector3D) = FreeVector3D(v.frame, con
 (*)(v::FreeVector3D, s::Real) = FreeVector3D(v.frame, v.v * s)
 (*)(s::Real, v::FreeVector3D) = FreeVector3D(v.frame, s * v.v)
 rand{T}(::Type{FreeVector3D{T}}, frame::CartesianFrame3D) = FreeVector3D(frame, rand(Vec{3, T}))
-show(io::IO, v::FreeVector3D) = print(io, "FreeVector3D in \"$(v.frame.name)\": $(v.v)")
+show(io::IO, v::FreeVector3D) = print(io, "FreeVector3D in \"$(name(v.frame))\": $(v.v)")
 isapprox{T}(x::FreeVector3D{T}, y::FreeVector3D{T}; atol::Real = 1e-12) = x.frame == y.frame && isapprox_tol(x.v, y.v; atol = atol)
 
 # Mixed Point and FreeVector
@@ -69,7 +87,7 @@ convert{T}(::Type{Transform3D{T}}, t::Transform3D{T}) = t
 convert{T}(::Type{Transform3D{T}}, t::Transform3D) = Transform3D(t.from, t.to, convert(Quaternion{T}, t.rot), convert(Vec{3, T}, t.trans))
 
 function show(io::IO, t::Transform3D)
-    println(io, "Transform3D from \"$(t.from.name)\" to \"$(t.to.name)\":")
+    println(io, "Transform3D from \"$(name(t.from))\" to \"$(name(t.to))\":")
     angle, axis = angle_axis_proper(t.rot)
     println(io, "rotation: $(angle) rad about $(axis), translation: $(t.trans)") # TODO: use fixed Quaternions.jl version once it's updated
 end
