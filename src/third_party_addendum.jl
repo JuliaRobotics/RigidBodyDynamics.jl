@@ -62,3 +62,9 @@ function set_unsafe!(dest::AbstractArray, src::Mat)
         end
     end
 end
+
+function unsafe_copy!{N, T}(dest::AbstractVector{T}, doffs, src::Vec{N, T}, soffs, n)
+    @inbounds for i = 0 : n - 1
+        dest[doffs + i] = src[soffs + i]
+    end
+end

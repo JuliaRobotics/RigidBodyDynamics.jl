@@ -30,10 +30,10 @@ facts("double pendulum") do
     rand!(x)
 
     # from http://underactuated.csail.mit.edu/underactuated.html?chapter=3
-    q1 = x.q[joint1][1]
-    q2 = x.q[joint2][1]
-    v1 = x.v[joint1][1]
-    v2 = x.v[joint2][1]
+    q1 = configuration(x, joint1)[1]
+    q2 = configuration(x, joint2)[1]
+    v1 = velocity(x, joint1)[1]
+    v2 = velocity(x, joint2)[1]
     c1 = cos(q1)
     c2 = cos(q2)
     s1 = sin(q1)
@@ -55,9 +55,8 @@ facts("double pendulum") do
 
     G = [m1 * g * lc1 * s1 + m2 * g * (l1 * s1 + lc2 * s12); m2 * g * lc2 * s12]
 
-    v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints(doublePendulum)])
-    τ = torque_dict_to_vector(inverse_dynamics(x, v̇), joints(doublePendulum))
-    v̇ = velocity_dict_to_vector(v̇, joints(doublePendulum))
+    v̇ = rand(num_velocities(x))
+    τ = inverse_dynamics(x, v̇)
     v = velocity_vector(x)
 
     @fact T1 --> roughly(kinetic_energy(x, body1); atol = 1e-12)
@@ -71,12 +70,11 @@ facts("double pendulum") do
     for i in 1 : length(joints(doublePendulum))
         j = joints(doublePendulum)[i]
         j_urdf = joints(doublePendulumUrdf)[i]
-        set_configuration!(x_urdf, j_urdf, x.q[j])
-        set_velocity!(x_urdf, j_urdf, x.v[j])
+        set_configuration!(x_urdf, j_urdf, configuration(x, j))
+        set_velocity!(x_urdf, j_urdf, velocity(x, j))
     end
-    v̇ = Dict([joint::Joint => rand(Float64, num_velocities(joint))::Vector{Float64} for joint in joints(doublePendulumUrdf)])
-    τ = torque_dict_to_vector(inverse_dynamics(x_urdf, v̇), joints(doublePendulumUrdf))
-    v̇ = velocity_dict_to_vector(v̇, joints(doublePendulumUrdf))
+    v̇ = rand(num_velocities(x_urdf))
+    τ = inverse_dynamics(x_urdf, v̇)
     @fact T1 --> roughly(kinetic_energy(x_urdf, bodies(doublePendulumUrdf)[2]); atol = 1e-12)
     @fact T2 --> roughly(kinetic_energy(x_urdf, bodies(doublePendulumUrdf)[3]); atol = 1e-12)
     @fact M --> roughly(mass_matrix(x_urdf); atol = 1e-12)

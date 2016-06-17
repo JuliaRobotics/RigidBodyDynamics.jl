@@ -124,7 +124,7 @@ immutable Twist{T<:Real}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
-Twist{T<:Real}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector{T}) = Twist(body, base, frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
+Twist{T<:Real}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::AbstractVector{T}) = Twist(body, base, frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
 convert{T<:Real}(::Type{Twist{T}}, t::Twist{T}) = t
 convert{T<:Real}(::Type{Twist{T}}, t::Twist) = Twist(t.body, t.base, t.frame, convert(Vec{3, T}, t.angular), convert(Vec{3, T}, t.linear))
 
@@ -193,12 +193,12 @@ num_cols{T, N}(jac::GeometricJacobian{T, N}) = N
 angular_part(jac::GeometricJacobian) = jac.angular
 linear_part(jac::GeometricJacobian) = jac.linear
 
-function Twist{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, v::Vector{T2})
+function Twist{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, v::AbstractVector{T2})
     T = promote_type(T1, T2)
     zero(Twist{T}, jac.body, jac.base, jac.frame)
 end
 
-function Twist(jac::GeometricJacobian, v::Vector)
+function Twist(jac::GeometricJacobian, v::AbstractVector)
     vFixed = Vec(v...)
     Twist(jac.body, jac.base, jac.frame, jac.angular * vFixed, jac.linear * vFixed)
 end
@@ -239,7 +239,7 @@ immutable Wrench{T<:Real} <: ForceSpaceElement{T}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
-Wrench{T}(frame::CartesianFrame3D, vec::Vector{T}) = Wrench{T}(frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
+Wrench{T}(frame::CartesianFrame3D, vec::AbstractVector{T}) = Wrench{T}(frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
 convert{T<:Real}(::Type{Wrench{T}}, wrench::Wrench{T}) = wrench
 convert{T<:Real}(::Type{Wrench{T}}, wrench::Wrench) = Wrench(wrench.frame, convert(Vec{3, T}, wrench.angular), convert(Vec{3, T}, wrench.linear))
 
@@ -255,7 +255,7 @@ immutable Momentum{T<:Real} <: ForceSpaceElement{T}
     angular::Vec{3, T}
     linear::Vec{3, T}
 end
-Momentum{T}(frame::CartesianFrame3D, vec::Vector{T}) = Momentum{T}(frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
+Momentum{T}(frame::CartesianFrame3D, vec::AbstractVector{T}) = Momentum{T}(frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
 convert{T<:Real}(::Type{Wrench{T}}, momentum::Momentum{T}) = momentum
 convert{T<:Real}(::Type{Wrench{T}}, momentum::Momentum) = Momentum(momentum.frame, convert(Vec{3, T}, momentum.angular), convert(Vec{3, T}, momentum.linear))
 
@@ -349,7 +349,7 @@ function hcat{T}(mats::MomentumMatrix{T}...)
     return MomentumMatrix(frame, angular, linear)
 end
 
-function Momentum(mat::MomentumMatrix, v::Vector)
+function Momentum(mat::MomentumMatrix, v::AbstractVector)
     vFixed = Vec(v...)
     Momentum(mat.frame, mat.angular * vFixed, mat.linear * vFixed)
 end
@@ -376,17 +376,17 @@ end
 convert{T<:Real}(::Type{SpatialAcceleration{T}}, accel::SpatialAcceleration{T}) = accel
 convert{T<:Real}(::Type{SpatialAcceleration{T}}, accel::SpatialAcceleration) = SpatialAcceleration(accel.body, accel.base, accel.frame, convert(Vec{3, T}, accel.angular), convert(Vec{3, T}, accel.linear))
 
-function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::Vector)
+function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::AbstractVector)
     return SpatialAcceleration(body, base, frame, Vec(vec[1], vec[2], vec[3]), Vec(vec[4], vec[5], vec[6]))
 end
 
-function SpatialAcceleration{T1<:Real, T2}(jac::GeometricJacobian{T1, 0}, v̇::Vector{T2})
+function SpatialAcceleration{T1<:Real, T2}(jac::GeometricJacobian{T1, 0}, v̇::AbstractVector{T2})
     T = promote_type(T1, T2)
     SpatialAcceleration(jac.body, jac.base, jac.frame, zero(Vec{3, T}), zero(Vec{3, T}))
 end
 
 
-function SpatialAcceleration(jac::GeometricJacobian, v̇::Vector)
+function SpatialAcceleration(jac::GeometricJacobian, v̇::AbstractVector)
     v̇Fixed = Vec(v̇...)
     SpatialAcceleration(jac.body, jac.base, jac.frame, jac.angular * v̇Fixed, jac.linear * v̇Fixed)
 end
