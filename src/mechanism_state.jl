@@ -177,8 +177,7 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
             # motion subspaces
             update_motion_subspace = () -> begin
                 S = transform(motion_subspace(joint, qJoint), get(transformToRootCache))
-                S.base = parentFrame # to make frames line up
-                return S
+                GeometricJacobian(S.body, parentFrame, S.frame, S.angular, S.linear) # to make frames line up
             end
             state.motionSubspaces[joint] = CacheElement(GeometricJacobian{C}, update_motion_subspace)
 
