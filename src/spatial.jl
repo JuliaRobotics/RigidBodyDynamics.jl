@@ -167,7 +167,7 @@ change_body_no_relative_motion(t::Twist, body::CartesianFrame3D) = Twist(body, t
 zero{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, zero(Vec{3, T}), zero(Vec{3, T}))
 rand{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, rand(Vec{3, T}), rand(Vec{3, T}))
 
-type GeometricJacobian{T<:Real, N}
+immutable GeometricJacobian{T<:Real, N}
     body::CartesianFrame3D
     base::CartesianFrame3D
     frame::CartesianFrame3D
@@ -303,7 +303,7 @@ function (*)(inertia::SpatialInertia, twist::Twist)
 end
 
 
-type MomentumMatrix{T<:Real, N}
+immutable MomentumMatrix{T<:Real, N}
     frame::CartesianFrame3D
     angular::Mat{3, N, T}
     linear::Mat{3, N, T}
