@@ -1,5 +1,4 @@
-function configuration_derivative(state::MechanismState)
-    X = state_vector_eltype(state)
+function configuration_derivative{X}(state::MechanismState{X})
     q̇ = Vector{X}(num_positions(state))
     for joint in joints(state.mechanism)
         slice(q̇, state.qRanges[joint])[:] = velocity_to_configuration_derivative(joint, state.q, slice(state.v, state.vRanges[joint]))
@@ -107,33 +106,36 @@ kinetic_energy(state::MechanismState) = kinetic_energy(state, filter(b -> !isroo
 potential_energy{X, M, C}(state::MechanismState{X, M, C}) = -mass(state) * dot(convert(Vec{3, C}, state.mechanism.gravity), transform(state, center_of_mass(state), root_frame(state.mechanism)).v)
 
 function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
-    ret::Symmetric = Symmetric(zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism))))
+    ret::Symmetric = Symmetric(Array{C, 2}(num_velocities(state.mechanism), num_velocities(state.mechanism))))
     @assert ret.uplo == 'U'
+    ret.data[:] = zero(C)
 
     for i = 2 : length(state.mechanism.toposortedTree)
         vi = state.mechanism.toposortedTree[i]
 
         # Hii
         jointi = vi.edgeToParentData
-        if num_velocities(jointi) > 0
+        nvi = num_velocities(jointi)
+        if nvi > 0
             bodyi = vi.vertexData
             irange = state.vRanges[jointi]
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = crb_inertia(state, bodyi) * Si
             Hii = sub(ret.data, irange, irange)
-            set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear)
+            set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear, nvi, nvi)
 
             # Hji, Hij
             vj = vi.parent
             while (!isroot(vj))
                 jointj = vj.edgeToParentData
-                if num_velocities(jointj) > 0
+                nvj = num_velocities(jointj)
+                if nvj > 0
                     jrange = state.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
                     @assert F.frame == Sj.frame
                     Hji = Sj.angular' * F.angular + Sj.linear' * F.linear
-                    set_unsafe!(sub(ret.data, jrange, irange), Hji)
+                    set_unsafe!(sub(ret.data, jrange, irange), Hji, nvj, nvi)
                 end
                 vj = vj.parent
             end
@@ -151,6 +153,7 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable
 
     vertices = state.mechanism.toposortedTree
     T = promote_type(X, M, V, W)
+    ret = Vector{T}(num_velocities(state))
 
     # compute spatial accelerations minus bias
     rootBody = root_body(state.mechanism)
@@ -190,7 +193,6 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable
     end
 
     # project joint wrench to find torques, update parent joint wrench
-    τ = Vector{T}(num_velocities(state))
     for i = length(vertices) : -1 : 2
         vertex = vertices[i]
         joint = vertex.edgeToParentData
@@ -199,12 +201,12 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable
         jointWrench = jointWrenches[body]
         S = motion_subspace(state, joint)
         τjoint = joint_torque(S, jointWrench)
-        unsafe_copy!(slice(τ, state.vRanges[joint]), 1, τjoint, 1, length(τjoint))
+        unsafe_copy!(slice(ret, state.vRanges[joint]), 1, τjoint, 1, length(τjoint))
         if !isroot(parentBody)
             jointWrenches[parentBody] = jointWrenches[parentBody] + jointWrench # action = -reaction
         end
     end
-    τ
+    ret
 end
 
 inverse_dynamics(state::MechanismState, v̇::Vector; kwargs...) = inverse_dynamics(state, Nullable(v̇); kwargs...)
@@ -215,11 +217,16 @@ function dynamics{X, M, C, T, W}(state::MechanismState{X, M, C};
     massMatrix = Symmetric(zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism))))
 
     q̇ = configuration_derivative(state)
-    c = inverse_dynamics(state; externalWrenches = externalWrenches)
-    biasedTorques = isnull(torques) ? -c : get(torques) - c
+    biasedTorques = inverse_dynamics(state; externalWrenches = externalWrenches)
+    scale!(biasedTorques, -1)
+    if !isnull(torques)
+        biasedTorques += get(torques)
+    end
     mass_matrix(state; ret = massMatrix)
-    v̇ = massMatrix \ biasedTorques
-    return q̇, v̇
+    # v̇ = massMatrix \ biasedTorques, but faster:
+    Base.LinAlg.LAPACK.posv!(massMatrix.uplo, massMatrix.data, biasedTorques)
+    v̇ = biasedTorques
+    q̇, v̇
 end
 
 # Convenience function that takes a Vector argument for the state and returns a Vector,

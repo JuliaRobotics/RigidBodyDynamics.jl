@@ -95,7 +95,11 @@ rand{T}(::Type{Revolute{T}}) = Revolute(FixedSizeArrays.normalize(rand(Vec{3, T}
 
 function joint_transform{T1, T2}(j::Joint, q::AbstractVector{T1}, jt::Revolute{T2} = j.jointType)
     T = promote_type(T1, T2)
-    Transform3D(j.frameAfter, j.frameBefore, qrotation(convert(Vector{T}, Array(jt.rotation_axis)), convert(T, q[1]))) # TODO: notify Quaternions maintainer
+    arg = q[1] / T(2)
+    s = sin(arg)
+    axis = jt.rotation_axis
+    rot = Quaternion(cos(arg), s * axis[1], s * axis[2], s * axis[3], true)
+    Transform3D(j.frameAfter, j.frameBefore, rot)
 end
 
 function joint_twist{T<:Real}(j::Joint, q::AbstractVector{T}, v::AbstractVector{T}, jt::Revolute = j.jointType)
