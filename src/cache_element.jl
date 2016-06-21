@@ -11,7 +11,7 @@ CacheElement{T}(::Type{T}, updateFunction::Function) = CacheElement{T}(updateFun
 
 function get{T}(element::CacheElement{T})
     if element.dirty
-        element.data = element.updateFunction()
+        element.data = element.updateFunction()::T
         element.dirty = false
     end
     return element.data
