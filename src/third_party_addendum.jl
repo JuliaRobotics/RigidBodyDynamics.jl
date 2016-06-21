@@ -54,17 +54,16 @@ function hcat(head::Mat, tail::Mat...)
     end
 end
 
-function set_unsafe!(dest::AbstractArray, src::Mat)
-    rows, cols = size(src)
+function set_unsafe!(dest::AbstractArray, src::Mat, rows, cols)
     for col = 1 : cols
-        for row = 1 : rows
+        @simd for row = 1 : rows
             @inbounds dest[row, col] = src[row, col]
         end
     end
 end
 
 function unsafe_copy!{N, T}(dest::AbstractVector{T}, doffs, src::Vec{N, T}, soffs, n)
-    @inbounds for i = 0 : n - 1
-        dest[doffs + i] = src[soffs + i]
+    @simd for i = 0 : n - 1
+        @inbounds dest[doffs + i] = src[soffs + i]
     end
 end
