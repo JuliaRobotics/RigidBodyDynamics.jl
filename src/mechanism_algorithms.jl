@@ -149,11 +149,11 @@ function momentum_matrix(state::MechanismState)
 end
 
 function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable{Vector{V}} = Nullable{Vector{X}}();
-    externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}(),
-    ret = Vector{T}(num_velocities(state)))
+    externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}())
 
     vertices = state.mechanism.toposortedTree
     T = promote_type(X, M, V, W)
+    ret = Vector{T}(num_velocities(state))
 
     # compute spatial accelerations minus bias
     rootBody = root_body(state.mechanism)
@@ -214,11 +214,10 @@ inverse_dynamics(state::MechanismState, v̇::Vector; kwargs...) = inverse_dynami
 function dynamics{X, M, C, T, W}(state::MechanismState{X, M, C};
     torques::Nullable{Vector{T}} = Nullable{Vector{X}}(),
     externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}(),
-    massMatrix = Symmetric(zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism))),
-    biasedTorques = zeros(C, num_velocities(mechanism)))
+    massMatrix = Symmetric(zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism))))
 
     q̇ = configuration_derivative(state)
-    inverse_dynamics(state; externalWrenches = externalWrenches, ret = biasedTorques)
+    biasedTorques = inverse_dynamics(state; externalWrenches = externalWrenches)
     scale!(biasedTorques, -1)
     if !isnull(torques)
         biasedTorques += get(torques)
