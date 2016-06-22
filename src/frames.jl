@@ -7,11 +7,11 @@
 # (pointer free) types, making them stack allocated and allowing all sorts of
 # optimizations.
 const next_frame_id = Ref(0)
-const frame_names = Dict{Int64, ASCIIString}()
+const frame_names = Dict{Int64, AbstractString}()
 
 immutable CartesianFrame3D
     id::Int64
-    function CartesianFrame3D(name::ASCIIString)
+    function CartesianFrame3D(name::AbstractString)
         ret = new(next_frame_id.x)
         next_frame_id.x += 1
         frame_names[ret.id] = name

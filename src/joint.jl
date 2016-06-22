@@ -1,12 +1,12 @@
 abstract JointType
 
 immutable Joint
-    name::ASCIIString
+    name::AbstractString
     frameBefore::CartesianFrame3D
     frameAfter::CartesianFrame3D
     jointType::JointType
 
-    Joint(name::ASCIIString, jointType::JointType) = new(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
+    Joint(name::AbstractString, jointType::JointType) = new(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
 end
 show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
 showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
