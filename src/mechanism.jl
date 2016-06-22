@@ -5,7 +5,7 @@ type Mechanism{T<:Real}
     jointToJointTransforms::Dict{Joint, Transform3D{T}}
     gravity::Vec{3, T}
 
-    function Mechanism(rootname::ASCIIString; gravity::Vec{3, T} = Vec(zero(T), zero(T), T(-9.81)))
+    function Mechanism(rootname::AbstractString; gravity::Vec{3, T} = Vec(zero(T), zero(T), T(-9.81)))
         rootBody = RigidBody{T}(rootname)
         tree = Tree{RigidBody{T}, Joint}(rootBody)
         bodyFixedFrameDefinitions = OrderedDict{RigidBody{T}, Set{Transform3D{T}}}(rootBody => Set([Transform3D(T, rootBody.frame)]))

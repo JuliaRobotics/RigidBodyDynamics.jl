@@ -1,17 +1,17 @@
 immutable RigidBody{T<:Real}
-    name::ASCIIString
+    name::AbstractString
     frame::CartesianFrame3D
     isRoot::Bool
     inertia::SpatialInertia{T}
 
     # world body
-    RigidBody(name::ASCIIString) = new(name, CartesianFrame3D(name), true)
+    RigidBody(name::AbstractString) = new(name, CartesianFrame3D(name), true)
 
     # other bodies
-    RigidBody(name::ASCIIString, inertia::SpatialInertia{T}) = new(name, inertia.frame, false, inertia)
+    RigidBody(name::AbstractString, inertia::SpatialInertia{T}) = new(name, inertia.frame, false, inertia)
     RigidBody(inertia::SpatialInertia{T}) = new(name(inertia.frame), inertia.frame, false, inertia) # TODO: deprecate?
 end
-RigidBody{T}(name::ASCIIString, inertia::SpatialInertia{T}) = RigidBody{T}(name, inertia)
+RigidBody{T}(name::AbstractString, inertia::SpatialInertia{T}) = RigidBody{T}(name, inertia)
 RigidBody{T}(inertia::SpatialInertia{T}) = RigidBody{T}(inertia) # TODO: deprecate?
 name(b::RigidBody) = b.name
 isroot(b::RigidBody) = b.isRoot
