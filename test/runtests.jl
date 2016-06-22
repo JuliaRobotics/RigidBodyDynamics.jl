@@ -7,8 +7,8 @@ using FactCheck
 import ForwardDiff
 
 import FactCheck: roughly
-roughly{T}(x::T, atol) = (y::T) -> isapprox(y, x; atol = atol)
-roughly{T}(x::T; kvtols...) = (y::T) -> isapprox(y, x; kvtols...)
+roughly{T}(x::T, atol) = y -> isapprox(y, x; atol = atol)
+roughly{T}(x::T; kvtols...) = y -> isapprox(y, x; kvtols...)
 
 include("test_frames.jl")
 include("test_spatial.jl")
