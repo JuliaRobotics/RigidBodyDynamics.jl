@@ -1,8 +1,10 @@
+typealias SliceType{T} SubArray{T,1,Array{T,1},Tuple{UnitRange{Int64}},1}
+
 immutable UpdateTwistWithRespectToWorld{C}
     parentFrame::CartesianFrame3D
     joint::Joint
-    qJoint::AbstractVector #TODO: constraint type more?
-    vJoint::AbstractVector
+    qJoint::SliceType{C}
+    vJoint::SliceType{C}
     transformToRootCache::CacheElement{Transform3D{C}, Function}
     parentTwistCache::CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}}
 
@@ -17,7 +19,7 @@ function call{C}(functor::UpdateTwistWithRespectToWorld{C})
     if isdefined(functor, :joint)
         joint = functor.joint
         parentTwist = get(functor.parentTwistCache)
-        jointTwist = joint_twist(joint, functor.qJoint, functor.vJoint)
+        jointTwist = joint_twist(joint, functor.qJoint, functor.vJoint)::Twist{C}
         jointTwist = Twist(joint.frameAfter, parentFrame, jointTwist.frame, jointTwist.angular, jointTwist.linear) # to make the frames line up;
         ret = parentTwist + transform(jointTwist, get(functor.transformToRootCache))
     else
@@ -26,17 +28,17 @@ function call{C}(functor::UpdateTwistWithRespectToWorld{C})
     ret
 end
 
-immutable UpdateSpatialInertiaInWorld{C}
-    body::RigidBody # TODO: fully specify type?
+immutable UpdateSpatialInertiaInWorld{M, C}
+    body::RigidBody{M}
     transformToRootCache::CacheElement{Transform3D{C}, Function}
 end
 function call(functor::UpdateSpatialInertiaInWorld)
     transform(functor.body.inertia, get(functor.transformToRootCache))
 end
 
-immutable UpdateCompositeRigidBodyInertia{C}
-    this::CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{C}}
-    children::Vector{CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{C}}}
+immutable UpdateCompositeRigidBodyInertia{M, C}
+    this::CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{M, C}}
+    children::Vector{CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}
 end
 function call(functor::UpdateCompositeRigidBodyInertia)
     ret = get(functor.this)
@@ -57,8 +59,8 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     twistsWrtWorld::Dict{RigidBody{M}, CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}}}
     motionSubspaces::Dict{Joint, CacheElement{GeometricJacobian{C}, Function}}
     biasAccelerations::Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}, Function}}
-    spatialInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{C}}}
-    crbInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{C}}}
+    spatialInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{M, C}}}
+    crbInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}
 
     function MechanismState(m::Mechanism{M})
         sortedjoints = [x.edgeToParentData for x in m.toposortedTree[2 : end]]
@@ -82,8 +84,8 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
         twistsWrtWorld = Dict{RigidBody{M}, CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}}}()
         motionSubspaces = Dict{Joint, CacheElement{GeometricJacobian, Function}}()
         biasAccelerations = Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}, Function}}()
-        spatialInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{C}}}()
-        crbInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{C}}}()
+        spatialInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{M, C}}}()
+        crbInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}()
         new(m, q, v, qRanges, vRanges, transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces, biasAccelerations, spatialInertias, crbInertias)
     end
 end
