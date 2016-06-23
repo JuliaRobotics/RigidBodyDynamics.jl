@@ -119,12 +119,6 @@ facts("momentum_matrix / summing momenta") do
     @fact h --> roughly(hSum; atol = 1e-12)
 end
 
-function kinetic_energy_fun(v)
-    local x = MechanismState(eltype(v), mechanism)
-    set_configuration!(x, q)
-    set_velocity!(x, v)
-    kinetic_energy(x)
-end
 
 facts("mass matrix / kinetic energy") do
     Ek = kinetic_energy(x)
@@ -133,9 +127,16 @@ facts("mass matrix / kinetic energy") do
     @fact 1/2 * dot(v, M * v) --> roughly(Ek; atol = 1e-12)
 
     q = configuration_vector(x)
+    kinetic_energy_fun = v -> begin
+        local x = MechanismState(eltype(v), mechanism)
+        set_configuration!(x, q)
+        set_velocity!(x, v)
+        kinetic_energy(x)
+    end
 
     M2 = similar(M)
-    M2 = ForwardDiff.hessian!(M2, kinetic_energy_fun, velocity_vector(x))
+    # FIXME: changed after updating to ForwardDiff 0.2: chunk size 1 necessary because creating a MechanismState with a max size Dual takes forever...
+    M2 = ForwardDiff.hessian!(M2, kinetic_energy_fun, velocity_vector(x), ForwardDiff.Chunk{1}())
     @fact M2 --> roughly(M; atol = 1e-12)
 end
 
