@@ -4,6 +4,7 @@ using RigidBodyDynamics
 using Quaternions
 using FixedSizeArrays
 using FactCheck
+using IJulia
 import ForwardDiff
 
 import FactCheck: roughly
@@ -17,7 +18,6 @@ include("test_mechanism.jl")
 
 # run notebooks
 if VERSION < v"0.4" # julia version number embedded in notebooks is used by default; haven't figured out how to override it yet.
-    using IJulia
     jupyter = IJulia.jupyter
     for f in filter(x -> endswith(x, "ipynb"), readdir("../examples"))
         notebook = "../examples/" * f
