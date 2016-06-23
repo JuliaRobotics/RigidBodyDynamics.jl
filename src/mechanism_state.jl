@@ -1,3 +1,23 @@
+immutable UpdateSpatialInertiaInWorld{C}
+    body::RigidBody # TODO: fully specify type?
+    transformToRoot::CacheElement{Transform3D{C}, Function}
+end
+function call(functor::UpdateSpatialInertiaInWorld)
+    transform(functor.body.inertia, get(functor.transformToRoot))
+end
+
+immutable UpdateCompositeRigidBodyInertia{C}
+    this::CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{C}}
+    children::Vector{CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{C}}}
+end
+function call(functor::UpdateCompositeRigidBodyInertia)
+    ret = get(functor.this)
+    for child in functor.children
+        ret += get(child)
+    end
+    ret
+end
+
 immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change q and v and use the setdirty! method to have cache elements recomputed
     mechanism::Mechanism{M}
     q::Vector{X}
@@ -9,8 +29,8 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     twistsWrtWorld::Dict{RigidBody{M}, CacheElement{Twist{C}, Function}}
     motionSubspaces::Dict{Joint, CacheElement{GeometricJacobian{C}, Function}}
     biasAccelerations::Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}, Function}}
-    spatialInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, Function}}
-    crbInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, Function}}
+    spatialInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{C}}}
+    crbInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{C}}}
 
     function MechanismState(m::Mechanism{M})
         sortedjoints = [x.edgeToParentData for x in m.toposortedTree[2 : end]]
@@ -34,8 +54,8 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
         twistsWrtWorld = Dict{RigidBody{M}, CacheElement{Twist{C}, Function}}()
         motionSubspaces = Dict{Joint, CacheElement{GeometricJacobian, Function}}()
         biasAccelerations = Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}, Function}}()
-        spatialInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, Function}}()
-        crbInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, Function}}()
+        spatialInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{C}}}()
+        crbInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{C}}}()
         new(m, q, v, qRanges, vRanges, transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces, biasAccelerations, spatialInertias, crbInertias)
     end
 end
@@ -205,8 +225,8 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
 
             # inertias
             transformBodyToRootCache = state.transformsToRoot[body.inertia.frame]
-            spatialInertiaCache = CacheElement(SpatialInertia{C}, () -> transform(body.inertia, get(transformBodyToRootCache)))
-            state.spatialInertias[body] = spatialInertiaCache
+
+            state.spatialInertias[body] = CacheElement(SpatialInertia{C}, UpdateSpatialInertiaInWorld(body, transformBodyToRootCache))
         end
     end
 
@@ -214,8 +234,8 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
     for i = length(m.toposortedTree) : -1 : 2
         vertex = m.toposortedTree[i]
         body = vertex.vertexData
-        caches = [state.spatialInertias[body]; [state.crbInertias[v.vertexData] for v in vertex.children]...]
-        state.crbInertias[body] = CacheElement(SpatialInertia{C}, () -> sum(get, caches))
+        children = [state.crbInertias[v.vertexData] for v in vertex.children]
+        state.crbInertias[body] = CacheElement(SpatialInertia{C}, UpdateCompositeRigidBodyInertia(state.spatialInertias[body], children))
     end
 
     setdirty!(state)
