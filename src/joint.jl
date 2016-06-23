@@ -108,7 +108,7 @@ function joint_twist{T<:Real}(j::Joint, jt::Prismatic, q::AbstractVector{T}, v::
 end
 
 function motion_subspace{T<:Real}(j::Joint, jt::Prismatic, q::AbstractVector{T})
-    linear = Mat(jt.translation_axis)
+    linear = convert(Mat{3, 1, T}, Mat(jt.translation_axis))
     return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, zero(linear), linear)
 end
 
@@ -133,7 +133,7 @@ function joint_twist{T<:Real}(j::Joint, jt::Revolute, q::AbstractVector{T}, v::A
 end
 
 function motion_subspace{T<:Real}(j::Joint, jt::Revolute, q::AbstractVector{T})
-    angular = Mat(jt.rotation_axis)
+    angular = convert(Mat{3, 1, T}, Mat(jt.rotation_axis))
     return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, zero(angular))
 end
 
