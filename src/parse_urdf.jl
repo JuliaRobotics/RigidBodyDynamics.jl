@@ -1,12 +1,12 @@
-function parse_scalar{T}(::Type{T}, e::XMLElement, name::AbstractString)
+function parse_scalar{T}(::Type{T}, e::XMLElement, name::String)
     T(parse(attribute(e, name)))
 end
 
-function parse_scalar{T}(::Type{T}, e::XMLElement, name::AbstractString, default::AbstractString)
+function parse_scalar{T}(::Type{T}, e::XMLElement, name::String, default::String)
     T(parse(e == nothing ? default : attribute(e, name)))
 end
 
-function parse_vector{T}(::Type{T}, e::Union{XMLElement, Void}, name::AbstractString, default::AbstractString)
+function parse_vector{T}(::Type{T}, e::Union{XMLElement, Void}, name::String, default::String)
     usedefault = e == nothing || attribute(e, name) == nothing # TODO: better handling of required attributes
     [T(parse(str)) for str in split(usedefault ? default : attribute(e, name))]
 end
@@ -90,7 +90,7 @@ function parse_urdf{T}(::Type{T}, filename)
 
     # create tree structure of XML elements
     vertices = [TreeVertex{XMLElement, XMLElement}(e) for e in xmlLinks]
-    nameToVertex = [attribute(v.vertexData, "name")::AbstractString => v::TreeVertex{XMLElement, XMLElement} for v in vertices]
+    nameToVertex = [attribute(v.vertexData, "name")::String => v::TreeVertex{XMLElement, XMLElement} for v in vertices]
     for xmlJoint in xmlJoints
         parent = nameToVertex[attribute(find_element(xmlJoint, "parent"), "link")]
         child = nameToVertex[attribute(find_element(xmlJoint, "child"), "link")]

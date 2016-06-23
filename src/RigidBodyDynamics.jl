@@ -8,6 +8,9 @@ using Quaternions
 using DataStructures
 using LightXML
 
+using Compat
+import Compat.String
+
 include("third_party_addendum.jl")
 include("util.jl")
 include("frames.jl")
