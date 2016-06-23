@@ -4,13 +4,13 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     v::Vector{X}
     qRanges::Dict{Joint, UnitRange{Int64}}
     vRanges::Dict{Joint, UnitRange{Int64}}
-    transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}
-    transformsToRoot::Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}
-    twistsWrtWorld::Dict{RigidBody{M}, CacheElement{Twist{C}}}
-    motionSubspaces::Dict{Joint, CacheElement{GeometricJacobian{C}}}
-    biasAccelerations::Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}}}
-    spatialInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}}}
-    crbInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}}}
+    transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{C}, Function}}
+    transformsToRoot::Dict{CartesianFrame3D, CacheElement{Transform3D{C}, Function}}
+    twistsWrtWorld::Dict{RigidBody{M}, CacheElement{Twist{C}, Function}}
+    motionSubspaces::Dict{Joint, CacheElement{GeometricJacobian{C}, Function}}
+    biasAccelerations::Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}, Function}}
+    spatialInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, Function}}
+    crbInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, Function}}
 
     function MechanismState(m::Mechanism{M})
         sortedjoints = [x.edgeToParentData for x in m.toposortedTree[2 : end]]
@@ -29,13 +29,13 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
             vRanges[joint] = vStart : vStart + num_v - 1
             vStart += num_v
         end
-        transformsToParent = Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}()
-        transformsToRoot = Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}()
-        twistsWrtWorld = Dict{RigidBody{M}, CacheElement{Twist{C}}}()
-        motionSubspaces = Dict{Joint, CacheElement{GeometricJacobian}}()
-        biasAccelerations = Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}}}()
-        spatialInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}}}()
-        crbInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}}}()
+        transformsToParent = Dict{CartesianFrame3D, CacheElement{Transform3D{C}, Function}}()
+        transformsToRoot = Dict{CartesianFrame3D, CacheElement{Transform3D{C}, Function}}()
+        twistsWrtWorld = Dict{RigidBody{M}, CacheElement{Twist{C}, Function}}()
+        motionSubspaces = Dict{Joint, CacheElement{GeometricJacobian, Function}}()
+        biasAccelerations = Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}, Function}}()
+        spatialInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, Function}}()
+        crbInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, Function}}()
         new(m, q, v, qRanges, vRanges, transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces, biasAccelerations, spatialInertias, crbInertias)
     end
 end

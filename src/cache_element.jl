@@ -1,21 +1,22 @@
-type CacheElement{T}
+# immutable Identity{T}
+#     value::T
+# end
+# call(id::Identity) = id.value
+
+type CacheElement{T, F}
+    updateFunction::F
     data::T
-    updateFunction::Function
     dirty::Bool
-
-    CacheElement(t::T) = new(t, () -> t, false)
-    CacheElement(updateFunction::Function) = new(updateFunction(), updateFunction, true)
 end
-CacheElement{T}(t::T) = CacheElement{T}(t)
-CacheElement{T}(::Type{T}, updateFunction::Function) = CacheElement{T}(updateFunction)
+CacheElement{T, F}(::Type{T}, updateFunction::F) = CacheElement{T, F}(updateFunction, updateFunction(), true)
+# CacheElement{T}(value::T) = CacheElement(Identity(value), value, false)
+CacheElement{T}(value::T) = CacheElement{T, Function}(() -> value, value, false)
 
-function get{T}(element::CacheElement{T})
+function get{T, F}(element::CacheElement{T, F})
     if element.dirty
-        element.data = element.updateFunction()::T
+        element.data = element.updateFunction()
         element.dirty = false
     end
-    return element.data
+    element.data
 end
-function setdirty!{T}(element::CacheElement{T})
-    element.dirty = true
-end
+setdirty!(element::CacheElement) = element.dirty = true
