@@ -218,7 +218,8 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
             # twists
             transformToRootCache = state.transformsToRoot[joint.frameAfter]
             parentTwistCache = state.twistsWrtWorld[parentBody]
-            state.twistsWrtWorld[body] = CacheElement(Twist{C}, UpdateTwistWithRespectToWorld{C}(parentFrame, joint, qJoint, vJoint, transformToRootCache, parentTwistCache))
+            twistCache = CacheElement(Twist{C}, UpdateTwistWithRespectToWorld{C}(parentFrame, joint, qJoint, vJoint, transformToRootCache, parentTwistCache))
+            state.twistsWrtWorld[body] = twistCache
 
             # motion subspaces
             update_motion_subspace = () -> begin
@@ -229,10 +230,19 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
 
             # bias accelerations
             parentBiasAccelerationCache = state.biasAccelerations[parentBody]
+
             update_bias_acceleration = () -> begin
                 bias = bias_acceleration(joint, qJoint, vJoint)
-                bias = SpatialAcceleration(bias.body, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
-                return get(parentBiasAccelerationCache) + transform(state, bias, root.frame)
+                bias = SpatialAcceleration(joint.frameAfter, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
+
+                jointTwist = joint_twist(joint, qJoint, vJoint)::Twist{C}
+                jointTwist = Twist(joint.frameAfter, parentFrame, jointTwist.frame, jointTwist.angular, jointTwist.linear) # to make the frames line up;
+
+                bodyToRoot = get(transformToRootCache)
+                rootToBody = inv(bodyToRoot)
+                twistOfBodyWrtRoot = transform(get(twistCache), rootToBody)
+
+                return get(parentBiasAccelerationCache) + transform(bias, bodyToRoot, twistOfBodyWrtRoot, jointTwist)
             end
             state.biasAccelerations[body] = CacheElement(SpatialAcceleration{C}, update_bias_acceleration)
         else
