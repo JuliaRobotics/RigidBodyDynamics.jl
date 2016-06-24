@@ -1,10 +1,8 @@
-typealias SliceType{T} SubArray{T,1,Array{T,1},Tuple{UnitRange{Int64}},1}
-
 immutable UpdateTransformToRoot{C}
     parentToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
-    toParentCache::CacheElement{Transform3D{C}, Function}
+    toParentCache::CacheElement{Transform3D{C}}
     UpdateTransformToRoot() = new()
-    function UpdateTransformToRoot(parentToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}, toParentCache::CacheElement{Transform3D{C}, Function})
+    function UpdateTransformToRoot(parentToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}, toParentCache::CacheElement{Transform3D{C}})
         new(parentToRootCache, toParentCache)
     end
 end
@@ -15,8 +13,8 @@ end
 immutable UpdateTwistWithRespectToWorld{C}
     parentFrame::CartesianFrame3D
     joint::Joint
-    qJoint::SliceType{C}
-    vJoint::SliceType{C}
+    qJoint
+    vJoint
     transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
     parentTwistCache::CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}}
 
@@ -60,11 +58,11 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     v::Vector{X}
     qRanges::Dict{Joint, UnitRange{Int64}}
     vRanges::Dict{Joint, UnitRange{Int64}}
-    transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{C}, Function}}
+    transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}
     transformsToRoot::Dict{CartesianFrame3D, CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}}
     twistsWrtWorld::Dict{RigidBody{M}, CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}}}
-    motionSubspaces::Dict{Joint, CacheElement{GeometricJacobian{C}, Function}}
-    biasAccelerations::Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}, Function}}
+    motionSubspaces::Dict{Joint, CacheElement{GeometricJacobian{C}}}
+    biasAccelerations::Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}}}
     spatialInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{M, C}}}
     crbInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}
 
@@ -85,11 +83,11 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
             vRanges[joint] = vStart : vStart + num_v - 1
             vStart += num_v
         end
-        transformsToParent = Dict{CartesianFrame3D, CacheElement{Transform3D{C}, Function}}()
+        transformsToParent = Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}()
         transformsToRoot = Dict{CartesianFrame3D, CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}}()
         twistsWrtWorld = Dict{RigidBody{M}, CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}}}()
-        motionSubspaces = Dict{Joint, CacheElement{GeometricJacobian, Function}}()
-        biasAccelerations = Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}, Function}}()
+        motionSubspaces = Dict{Joint, CacheElement{GeometricJacobian}}()
+        biasAccelerations = Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}}}()
         spatialInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{M, C}}}()
         crbInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}()
         new(m, q, v, qRanges, vRanges, transformsToParent, transformsToRoot, twistsWrtWorld, motionSubspaces, biasAccelerations, spatialInertias, crbInertias)
@@ -182,7 +180,7 @@ function add_frame!{X, M, C, T<:Real}(state::MechanismState{X, M, C}, t::Transfo
     return state
 end
 
-function add_frame!{X, M, C}(state::MechanismState{X, M, C}, updateTransformToParent::Function)
+function add_frame!{X, M, C}(state::MechanismState{X, M, C}, updateTransformToParent)
     # for non-fixed frames
     to_parent = CacheElement(Transform3D{C}, () -> convert(Transform3D{C}, updateTransformToParent()))
     t = to_parent.data
