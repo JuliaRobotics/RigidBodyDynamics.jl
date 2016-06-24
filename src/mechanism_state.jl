@@ -1,36 +1,42 @@
 typealias SliceType{T} SubArray{T,1,Array{T,1},Tuple{UnitRange{Int64}},1}
 
+immutable UpdateTransformToRoot{C}
+    parentToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
+    toParentCache::CacheElement{Transform3D{C}, Function}
+    UpdateTransformToRoot() = new()
+    function UpdateTransformToRoot(parentToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}, toParentCache::CacheElement{Transform3D{C}, Function})
+        new(parentToRootCache, toParentCache)
+    end
+end
+function call(functor::UpdateTransformToRoot)
+    get(functor.parentToRootCache) * get(functor.toParentCache)
+end
+
 immutable UpdateTwistWithRespectToWorld{C}
     parentFrame::CartesianFrame3D
     joint::Joint
     qJoint::SliceType{C}
     vJoint::SliceType{C}
-    transformToRootCache::CacheElement{Transform3D{C}, Function}
+    transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
     parentTwistCache::CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}}
 
-    UpdateTwistWithRespectToWorld(parentFrame::CartesianFrame3D) = new(parentFrame)
-    function UpdateTwistWithRespectToWorld(parentFrame::CartesianFrame3D, joint::Joint, qJoint::AbstractVector, vJoint::AbstractVector, transformToRootCache::CacheElement{Transform3D{C}, Function}, parentTwistCache::CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}})
+    UpdateTwistWithRespectToWorld() = new()
+    function UpdateTwistWithRespectToWorld(parentFrame::CartesianFrame3D, joint::Joint, qJoint::AbstractVector, vJoint::AbstractVector, transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}, parentTwistCache::CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}})
         new(parentFrame, joint, qJoint, vJoint, transformToRootCache, parentTwistCache)
     end
 end
 function call{C}(functor::UpdateTwistWithRespectToWorld{C})
-    ret::Twist{C}
     parentFrame = functor.parentFrame
-    if isdefined(functor, :joint)
-        joint = functor.joint
-        parentTwist = get(functor.parentTwistCache)
-        jointTwist = joint_twist(joint, functor.qJoint, functor.vJoint)::Twist{C}
-        jointTwist = Twist(joint.frameAfter, parentFrame, jointTwist.frame, jointTwist.angular, jointTwist.linear) # to make the frames line up;
-        ret = parentTwist + transform(jointTwist, get(functor.transformToRootCache))
-    else
-        ret = zero(Twist{C}, parentFrame, parentFrame, parentFrame)
-    end
-    ret
+    joint = functor.joint
+    parentTwist = get(functor.parentTwistCache)
+    jointTwist = joint_twist(joint, functor.qJoint, functor.vJoint)::Twist{C}
+    jointTwist = Twist(joint.frameAfter, parentFrame, jointTwist.frame, jointTwist.angular, jointTwist.linear) # to make the frames line up;
+    parentTwist + transform(jointTwist, get(functor.transformToRootCache))
 end
 
 immutable UpdateSpatialInertiaInWorld{M, C}
     body::RigidBody{M}
-    transformToRootCache::CacheElement{Transform3D{C}, Function}
+    transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
 end
 function call(functor::UpdateSpatialInertiaInWorld)
     transform(functor.body.inertia, get(functor.transformToRootCache))
@@ -55,7 +61,7 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     qRanges::Dict{Joint, UnitRange{Int64}}
     vRanges::Dict{Joint, UnitRange{Int64}}
     transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{C}, Function}}
-    transformsToRoot::Dict{CartesianFrame3D, CacheElement{Transform3D{C}, Function}}
+    transformsToRoot::Dict{CartesianFrame3D, CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}}
     twistsWrtWorld::Dict{RigidBody{M}, CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}}}
     motionSubspaces::Dict{Joint, CacheElement{GeometricJacobian{C}, Function}}
     biasAccelerations::Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}, Function}}
@@ -80,7 +86,7 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
             vStart += num_v
         end
         transformsToParent = Dict{CartesianFrame3D, CacheElement{Transform3D{C}, Function}}()
-        transformsToRoot = Dict{CartesianFrame3D, CacheElement{Transform3D{C}, Function}}()
+        transformsToRoot = Dict{CartesianFrame3D, CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}}()
         twistsWrtWorld = Dict{RigidBody{M}, CacheElement{Twist{C}, UpdateTwistWithRespectToWorld{C}}}()
         motionSubspaces = Dict{Joint, CacheElement{GeometricJacobian, Function}}()
         biasAccelerations = Dict{RigidBody{M}, CacheElement{SpatialAcceleration{C}, Function}}()
@@ -171,7 +177,7 @@ function add_frame!{X, M, C, T<:Real}(state::MechanismState{X, M, C}, t::Transfo
     to_parent = CacheElement(convert(Transform3D{C}, t))
     parent_to_root = state.transformsToRoot[t.to]
     state.transformsToParent[t.from] = to_parent
-    state.transformsToRoot[t.from] = CacheElement(Transform3D{C}, () -> get(parent_to_root) * get(to_parent))
+    state.transformsToRoot[t.from] = CacheElement(Transform3D{C}, UpdateTransformToRoot{C}(parent_to_root, to_parent))
     setdirty!(state)
     return state
 end
@@ -182,7 +188,7 @@ function add_frame!{X, M, C}(state::MechanismState{X, M, C}, updateTransformToPa
     t = to_parent.data
     parent_to_root = state.transformsToRoot[t.to]
     state.transformsToParent[t.from] = to_parent
-    state.transformsToRoot[t.from] = CacheElement(Transform3D{C}, () -> get(parent_to_root) * get(to_parent))
+    state.transformsToRoot[t.from] = CacheElement(Transform3D{C}, UpdateTransformToRoot{C}(parent_to_root, to_parent))
 
     setdirty!(state)
     return state
@@ -194,7 +200,6 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
     state = MechanismState{X, M, C}(m)
     zero!(state)
 
-    state.transformsToRoot[root.frame] = CacheElement(Transform3D{C}(root.frame, root.frame))
     state.biasAccelerations[root] = CacheElement(zero(SpatialAcceleration{C}, root.frame, root.frame, root.frame))
 
     for vertex in m.toposortedTree
@@ -233,7 +238,8 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
             end
             state.biasAccelerations[body] = CacheElement(SpatialAcceleration{C}, update_bias_acceleration)
         else
-            state.twistsWrtWorld[body] = CacheElement(Twist{C}, UpdateTwistWithRespectToWorld{C}(root.frame))
+            state.transformsToRoot[root.frame] = CacheElement(Transform3D{C}(root.frame, root.frame), UpdateTransformToRoot{C}())
+            state.twistsWrtWorld[body] = CacheElement(zero(Twist{C}, root.frame, root.frame, root.frame), UpdateTwistWithRespectToWorld{C}())
         end
 
         # additional body fixed frames

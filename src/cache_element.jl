@@ -1,10 +1,13 @@
 type CacheElement{T, F}
-    updateFunction::F
     data::T
+    updateFunction::F
     dirty::Bool
+    constant::Bool
+    CacheElement(value::T, updateFunction::F, constant::Bool) = new(value, updateFunction, !constant, constant)
 end
-CacheElement{T, F}(::Type{T}, updateFunction::F) = CacheElement{T, F}(updateFunction, updateFunction(), true)
-CacheElement{T}(value::T) = CacheElement{T, Function}(() -> value, value, false)
+CacheElement{T, F}(::Type{T}, updateFunction::F) = CacheElement{T, F}(updateFunction(), updateFunction, false)
+CacheElement{T, F}(value::T, updateFunction::F) = CacheElement{T, F}(value, updateFunction, true)
+CacheElement{T}(value::T) = CacheElement{T, Function}(value, () -> value, true) # TODO: remove
 
 function get{T, F}(element::CacheElement{T, F})
     if element.dirty
@@ -13,4 +16,8 @@ function get{T, F}(element::CacheElement{T, F})
     end
     element.data
 end
-setdirty!(element::CacheElement) = element.dirty = true
+function setdirty!(element::CacheElement)
+    if !element.constant
+        element.dirty = true
+    end
+end
