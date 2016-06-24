@@ -10,14 +10,14 @@ transform_to_parent(state::MechanismState, frame::CartesianFrame3D) = get(state.
 transform_to_root(state::MechanismState, frame::CartesianFrame3D) = get(state.transformsToRoot[frame])
 relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D) = inv(transform_to_root(state, to)) * transform_to_root(state, from)
 
-twist_wrt_world{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.twistsWrtWorld[body])
-relative_twist{X, M}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}) = -get(state.twistsWrtWorld[base]) + get(state.twistsWrtWorld[body])
+twist_wrt_world{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.twistsAndBiases[body])[1]
+relative_twist{X, M}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}) = -twist_wrt_world(base) + twist_wrt_world(body)
 function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D)
     twist = relative_twist(state, state.mechanism.bodyFixedFrameToBody[bodyFrame],  state.mechanism.bodyFixedFrameToBody[baseFrame])
     return Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)
 end
 
-bias_acceleration{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.biasAccelerations[body])
+bias_acceleration{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.twistsAndBiases[body])[2]
 
 motion_subspace(state::MechanismState, joint::Joint) = get(state.motionSubspaces[joint])
 
