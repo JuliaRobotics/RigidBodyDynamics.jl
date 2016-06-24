@@ -37,7 +37,7 @@ function call{C}(functor::UpdateTwistAndBias{C})
     jointTwist = Twist(joint.frameAfter, parentFrame, jointTwist.frame, jointTwist.angular, jointTwist.linear) # to make the frames line up;
     twist = parentTwist + transform(jointTwist, bodyToRoot)
 
-    bias = bias_acceleration(joint, qJoint, vJoint)
+    bias = bias_acceleration(joint, qJoint, vJoint)::SpatialAcceleration{C}
     bias = SpatialAcceleration(joint.frameAfter, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
     rootToBody = inv(bodyToRoot)
     twistOfBodyWrtRoot = transform(twist, rootToBody)
