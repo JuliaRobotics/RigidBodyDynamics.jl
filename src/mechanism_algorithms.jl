@@ -1,7 +1,7 @@
 function configuration_derivative{X}(state::MechanismState{X})
     q̇ = Vector{X}(num_positions(state))
     for joint in joints(state.mechanism)
-        view(q̇, state.qRanges[joint])[:] = velocity_to_configuration_derivative(joint, state.q, view(state.v, state.vRanges[joint]))
+        slice(q̇, state.qRanges[joint])[:] = velocity_to_configuration_derivative(joint, state.q, slice(state.v, state.vRanges[joint]))
     end
     q̇
 end
@@ -122,7 +122,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = crb_inertia(state, bodyi) * Si
-            Hii = view(ret.data, irange, irange)
+            Hii = sub(ret.data, irange, irange)
             set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear, nvi, nvi)
 
             # Hji, Hij
@@ -135,7 +135,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
                     Sj = motion_subspace(state, jointj)
                     @assert F.frame == Sj.frame
                     Hji = Sj.angular' * F.angular + Sj.linear' * F.linear
-                    set_unsafe!(view(ret.data, jrange, irange), Hji, nvj, nvi)
+                    set_unsafe!(sub(ret.data, jrange, irange), Hji, nvj, nvi)
                 end
                 vj = vj.parent
             end
@@ -168,7 +168,7 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable
         if isnull(v̇)
             accels[body] = accels[vertex.parent.vertexData]
         else
-            v̇joint = view(get(v̇), state.vRanges[joint])
+            v̇joint = slice(get(v̇), state.vRanges[joint])
             joint_accel = SpatialAcceleration(S, v̇joint)
             accels[body] = accels[vertex.parent.vertexData] + joint_accel
         end
@@ -201,7 +201,7 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable
         jointWrench = jointWrenches[body]
         S = motion_subspace(state, joint)
         τjoint = joint_torque(S, jointWrench)
-        unsafe_copy!(view(ret, state.vRanges[joint]), 1, τjoint, 1, length(τjoint))
+        unsafe_copy!(slice(ret, state.vRanges[joint]), 1, τjoint, 1, length(τjoint))
         if !isroot(parentBody)
             jointWrenches[parentBody] = jointWrenches[parentBody] + jointWrench # action = -reaction
         end
