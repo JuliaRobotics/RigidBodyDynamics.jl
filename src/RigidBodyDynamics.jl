@@ -8,8 +8,13 @@ using Quaternions
 using DataStructures
 using LightXML
 
+# Julia version compatibility
 using Compat
 import Compat.String
+
+if VERSION < v"0.5.0-dev+4923" # approximately right
+    view = Base.slice
+end
 
 include("third_party_addendum.jl")
 include("util.jl")

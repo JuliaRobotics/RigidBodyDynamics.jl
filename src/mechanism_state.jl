@@ -45,8 +45,8 @@ num_velocities(state::MechanismState) = length(state.v)
 state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
 mechanism_eltype{X, M, C}(state::MechanismState{X, M, C}) = M
 cache_eltype{X, M, C}(state::MechanismState{X, M, C}) = C
-configuration(state::MechanismState, joint::Joint) = state.q[state.qRanges[joint]] #slice(state.q, state.qRanges[joint])
-velocity(state::MechanismState, joint::Joint) = state.v[state.vRanges[joint]] #slice(state.v, state.vRanges[joint])
+configuration(state::MechanismState, joint::Joint) = state.q[state.qRanges[joint]] #view(state.q, state.qRanges[joint])
+velocity(state::MechanismState, joint::Joint) = state.v[state.vRanges[joint]] #view(state.v, state.vRanges[joint])
 
 function setdirty!(state::MechanismState)
     for element in values(state.transformsToParent) setdirty!(element) end
@@ -60,7 +60,7 @@ end
 
 function zero_configuration!(state::MechanismState)
     X = eltype(state.q)
-    for joint in joints(state.mechanism) slice(state.q, state.qRanges[joint])[:] = zero_configuration(joint, X) end
+    for joint in joints(state.mechanism) view(state.q, state.qRanges[joint])[:] = zero_configuration(joint, X) end
     setdirty!(state)
 end
 function zero_velocity!(state::MechanismState)
@@ -72,7 +72,7 @@ zero!(state::MechanismState) = begin zero_configuration!(state); zero_velocity!(
 
 function rand_configuration!(state::MechanismState)
     X = eltype(state.q)
-    for joint in joints(state.mechanism) slice(state.q, state.qRanges[joint])[:] = rand_configuration(joint, X) end
+    for joint in joints(state.mechanism) view(state.q, state.qRanges[joint])[:] = rand_configuration(joint, X) end
     setdirty!(state)
 end
 function rand_velocity!(state::MechanismState)
@@ -89,12 +89,12 @@ configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) 
 velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.v[state.vRanges[joint]] for joint in path.edgeData]...)
 
 function set_configuration!(state::MechanismState, joint::Joint, q::Vector)
-    slice(state.q, state.qRanges[joint])[:] = q
+    view(state.q, state.qRanges[joint])[:] = q
     setdirty!(state)
 end
 
 function set_velocity!(state::MechanismState, joint::Joint, v::Vector)
-    slice(state.v, state.vRanges[joint])[:] = v
+    view(state.v, state.vRanges[joint])[:] = v
     setdirty!(state)
 end
 
@@ -111,8 +111,8 @@ end
 function set!(state::MechanismState, x::Vector)
     nq = num_positions(state)
     nv = num_velocities(state)
-    state.q[:] = slice(x, 1 : nq)
-    state.v[:] = slice(x, (nq + 1) : nq + nv)
+    state.q[:] = view(x, 1 : nq)
+    state.v[:] = view(x, (nq + 1) : nq + nv)
     setdirty!(state)
 end
 
@@ -156,8 +156,8 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
             joint = vertex.edgeToParentData
             parentFrame = default_frame(m, parentBody)
 
-            qJoint = slice(state.q, state.qRanges[joint])
-            vJoint = slice(state.v, state.vRanges[joint])
+            qJoint = view(state.q, state.qRanges[joint])
+            vJoint = view(state.v, state.vRanges[joint])
 
             # frames
             add_frame!(state, m.jointToJointTransforms[joint])
