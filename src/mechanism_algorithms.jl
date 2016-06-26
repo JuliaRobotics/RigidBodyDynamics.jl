@@ -7,9 +7,9 @@ function configuration_derivative{X}(state::MechanismState{X})
     q̇
 end
 
-transform_to_parent(state::MechanismState, frame::CartesianFrame3D) = get(state.transformsToParent[frame])
-transform_to_root(state::MechanismState, frame::CartesianFrame3D) = get(state.transformsToRoot[frame])
-relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D) = inv(transform_to_root(state, to)) * transform_to_root(state, from)
+transform_to_parent(state::MechanismState, frame::CartesianFrame3D) = transform_to_parent(state.transformCache, frame)
+transform_to_root(state::MechanismState, frame::CartesianFrame3D) = transform_to_root(state.transformCache, frame)
+relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D) = relative_transform(state.transformCache, from, to)
 
 twist_wrt_world{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.twistsAndBiases[body])[1]
 relative_twist{X, M}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}) = -twist_wrt_world(state, base) + twist_wrt_world(state, body)
