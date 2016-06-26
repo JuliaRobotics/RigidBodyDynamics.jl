@@ -13,7 +13,7 @@ using Compat
 import Compat.String
 
 if VERSION < v"0.5.0-dev+4923" # approximately right
-    view = Base.slice
+    view{T,N}(A::AbstractArray{T,N}, I...) = Base.sub(A, I...)
 end
 
 include("third_party_addendum.jl")
