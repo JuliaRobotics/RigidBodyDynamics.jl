@@ -4,6 +4,8 @@ type Mechanism{T<:Real}
     bodyFixedFrameToBody::OrderedDict{CartesianFrame3D, RigidBody{T}}
     jointToJointTransforms::Dict{Joint, Transform3D{T}}
     gravity::Vec{3, T}
+    qRanges::Dict{Joint, UnitRange{Int64}}
+    vRanges::Dict{Joint, UnitRange{Int64}}
 
     function Mechanism(rootname::String; gravity::Vec{3, T} = Vec(zero(T), zero(T), T(-9.81)))
         rootBody = RigidBody{T}(rootname)
@@ -57,7 +59,11 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
         m.bodyFixedFrameToBody[childToJoint.from] = childBody
     end
     m.toposortedTree = toposort(tree(m))
-    return m
+    nq = num_positions(m)
+    nv = num_velocities(m)
+    m.qRanges[joint] = nq + 1 : nq + num_positions(joint)
+    m.vRanges[joint] = nv + 1 : nv + num_velocities(joint)
+    m
 end
 
 joints(m::Mechanism) = [vertex.edgeToParentData for vertex in m.toposortedTree[2 : end]] # TODO: make less expensive
