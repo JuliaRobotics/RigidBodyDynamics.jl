@@ -4,6 +4,8 @@ type Mechanism{T<:Real}
     bodyFixedFrameToBody::OrderedDict{CartesianFrame3D, RigidBody{T}}
     jointToJointTransforms::Dict{Joint, Transform3D{T}}
     gravity::Vec{3, T}
+    qRanges::Dict{Joint, UnitRange{Int64}}
+    vRanges::Dict{Joint, UnitRange{Int64}}
 
     function Mechanism(rootname::String; gravity::Vec{3, T} = Vec(zero(T), zero(T), T(-9.81)))
         rootBody = RigidBody{T}(rootname)
@@ -11,7 +13,9 @@ type Mechanism{T<:Real}
         bodyFixedFrameDefinitions = OrderedDict{RigidBody{T}, Set{Transform3D{T}}}(rootBody => Set([Transform3D(T, rootBody.frame)]))
         bodyFixedFrameToBody = OrderedDict{CartesianFrame3D, RigidBody{T}}(rootBody.frame => rootBody)
         jointToJointTransforms = Dict{Joint, Transform3D{T}}()
-        new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody, jointToJointTransforms, gravity)
+        qRanges = Dict{Joint, UnitRange{Int64}}()
+        vRanges = Dict{Joint, UnitRange{Int64}}()
+        new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody, jointToJointTransforms, gravity, qRanges, vRanges)
     end
 end
 root_vertex(m::Mechanism) = m.toposortedTree[1]
@@ -46,7 +50,7 @@ function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform
 end
 
 function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T}, childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(childBody.frame, joint.frameAfter))
-    insert!(tree(m), childBody, joint, parentBody)
+    vertex = insert!(tree(m), childBody, joint, parentBody)
     m.jointToJointTransforms[joint] = add_body_fixed_frame!(m, parentBody, jointToParent)
     @assert childToJoint.from == childBody.frame
     @assert childToJoint.to == joint.frameAfter
@@ -56,8 +60,13 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
         push!(m.bodyFixedFrameDefinitions[childBody], childToJoint)
         m.bodyFixedFrameToBody[childToJoint.from] = childBody
     end
-    m.toposortedTree = toposort(tree(m))
-    return m
+    # m.toposortedTree = toposort(tree(m))
+    push!(m.toposortedTree, vertex)
+    nq = num_positions(m)
+    nv = num_velocities(m)
+    m.qRanges[joint] = nq - num_positions(joint) + 1 : nq
+    m.vRanges[joint] = nv - num_velocities(joint) + 1 : nv
+    m
 end
 
 joints(m::Mechanism) = [vertex.edgeToParentData for vertex in m.toposortedTree[2 : end]] # TODO: make less expensive

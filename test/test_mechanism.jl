@@ -20,14 +20,14 @@ facts("basic stuff") do
     qcopy = copy(configuration_vector(x))
     zero_configuration!(x)
     for joint in joints(mechanism)
-        set_configuration!(x, joint, qcopy[x.qRanges[joint]])
+        set_configuration!(x, joint, qcopy[mechanism.qRanges[joint]])
     end
     @fact q --> configuration_vector(x)
 
     vcopy = copy(velocity_vector(x))
     zero_velocity!(x)
     for joint in joints(mechanism)
-        set_velocity!(x, joint, vcopy[x.vRanges[joint]])
+        set_velocity!(x, joint, vcopy[mechanism.vRanges[joint]])
     end
     @fact v --> velocity_vector(x)
 
@@ -43,8 +43,8 @@ facts("q̇ <-> v") do
     q̇ = configuration_derivative(x)
     v = velocity_vector(x)
     for joint in joints(mechanism)
-        qjoint = q[x.qRanges[joint]]
-        q̇joint = q̇[x.qRanges[joint]]
+        qjoint = q[mechanism.qRanges[joint]]
+        q̇joint = q̇[mechanism.qRanges[joint]]
         @fact velocity(x, joint) --> roughly(configuration_derivative_to_velocity(joint, qjoint, q̇joint); atol = 1e-12)
     end
 end
@@ -109,7 +109,7 @@ facts("momentum_matrix / summing momenta") do
     for vertex in mechanism.toposortedTree[2 : end]
         body = vertex.vertexData
         joint = vertex.edgeToParentData
-        Ajoint = Amat[:, x.vRanges[joint]]
+        Ajoint = Amat[:, mechanism.vRanges[joint]]
         @fact Array(crb_inertia(x, body) * motion_subspace(x, joint)) --> roughly(Ajoint; atol = 1e-12)
     end
 
@@ -199,7 +199,7 @@ facts("inverse dynamics / external wrenches") do
     τ = inverse_dynamics(x, v̇; externalWrenches = externalWrenches)
     floatingBodyVertex = root_vertex(mechanism).children[1]
     floatingJoint = floatingBodyVertex.edgeToParentData
-    floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[x.vRanges[floatingJoint]])
+    floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[mechanism.vRanges[floatingJoint]])
     floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
 
     A = momentum_matrix(x)

@@ -70,8 +70,6 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     mechanism::Mechanism{M}
     q::Vector{X}
     v::Vector{X}
-    qRanges::Dict{Joint, UnitRange{Int64}}
-    vRanges::Dict{Joint, UnitRange{Int64}}
     transformsToParent::Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}
     transformsToRoot::Dict{CartesianFrame3D, CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}}
     twistsAndBiases::Dict{RigidBody{M}, CacheElement{Tuple{Twist{C}, SpatialAcceleration{C}}, UpdateTwistAndBias{C}}}
@@ -80,29 +78,15 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     crbInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}
 
     function MechanismState(m::Mechanism{M})
-        sortedjoints = [x.edgeToParentData for x in m.toposortedTree[2 : end]]
         q = zeros(X, num_positions(m))
         v = zeros(X, num_velocities(m))
-        qRanges = Dict{Joint, UnitRange{Int64}}()
-        vRanges = Dict{Joint, UnitRange{Int64}}()
-        sortedjoints = [x.edgeToParentData for x in m.toposortedTree[2 : end]]
-        qStart = vStart = 1
-        for joint in sortedjoints
-            num_q = num_positions(joint)
-            qRanges[joint] = qStart : qStart + num_q - 1
-            qStart += num_q
-
-            num_v = num_velocities(joint)
-            vRanges[joint] = vStart : vStart + num_v - 1
-            vStart += num_v
-        end
         transformsToParent = Dict{CartesianFrame3D, CacheElement{Transform3D{C}}}()
         transformsToRoot = Dict{CartesianFrame3D, CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}}()
         twistsAndBiases = Dict{RigidBody{M}, CacheElement{Tuple{Twist{C}, SpatialAcceleration{C}}, UpdateTwistAndBias{C}}}()
         motionSubspaces = Dict{Joint, CacheElement{GeometricJacobian}}()
         spatialInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{M, C}}}()
         crbInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}()
-        new(m, q, v, qRanges, vRanges, transformsToParent, transformsToRoot, twistsAndBiases, motionSubspaces, spatialInertias, crbInertias)
+        new(m, q, v, transformsToParent, transformsToRoot, twistsAndBiases, motionSubspaces, spatialInertias, crbInertias)
     end
 end
 
@@ -111,8 +95,8 @@ num_velocities(state::MechanismState) = length(state.v)
 state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
 mechanism_eltype{X, M, C}(state::MechanismState{X, M, C}) = M
 cache_eltype{X, M, C}(state::MechanismState{X, M, C}) = C
-configuration(state::MechanismState, joint::Joint) = state.q[state.qRanges[joint]] #view(state.q, state.qRanges[joint])
-velocity(state::MechanismState, joint::Joint) = state.v[state.vRanges[joint]] #view(state.v, state.vRanges[joint])
+configuration(state::MechanismState, joint::Joint) = state.q[state.mechanism.qRanges[joint]] #view(state.q, state.qRanges[joint])
+velocity(state::MechanismState, joint::Joint) = state.v[state.mechanism.vRanges[joint]] #view(state.v, state.vRanges[joint])
 
 function setdirty!(state::MechanismState)
     for element in values(state.transformsToParent) setdirty!(element) end
@@ -125,7 +109,7 @@ end
 
 function zero_configuration!(state::MechanismState)
     X = eltype(state.q)
-    for joint in joints(state.mechanism) view(state.q, state.qRanges[joint])[:] = zero_configuration(joint, X) end
+    for joint in joints(state.mechanism) view(state.q, state.mechanism.qRanges[joint])[:] = zero_configuration(joint, X) end
     setdirty!(state)
 end
 function zero_velocity!(state::MechanismState)
@@ -137,7 +121,7 @@ zero!(state::MechanismState) = begin zero_configuration!(state); zero_velocity!(
 
 function rand_configuration!(state::MechanismState)
     X = eltype(state.q)
-    for joint in joints(state.mechanism) view(state.q, state.qRanges[joint])[:] = rand_configuration(joint, X) end
+    for joint in joints(state.mechanism) view(state.q, state.mechanism.qRanges[joint])[:] = rand_configuration(joint, X) end
     setdirty!(state)
 end
 function rand_velocity!(state::MechanismState)
@@ -150,16 +134,16 @@ configuration_vector(state::MechanismState) = state.q
 velocity_vector(state::MechanismState) = state.v
 state_vector(state::MechanismState) = [configuration_vector(state); velocity_vector(state)]
 
-configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.q[state.qRanges[joint]] for joint in path.edgeData]...)
-velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.v[state.vRanges[joint]] for joint in path.edgeData]...)
+configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.q[state.mechanism.qRanges[joint]] for joint in path.edgeData]...)
+velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.v[state.mechanism.vRanges[joint]] for joint in path.edgeData]...)
 
 function set_configuration!(state::MechanismState, joint::Joint, q::Vector)
-    view(state.q, state.qRanges[joint])[:] = q
+    view(state.q, state.mechanism.qRanges[joint])[:] = q
     setdirty!(state)
 end
 
 function set_velocity!(state::MechanismState, joint::Joint, v::Vector)
-    view(state.v, state.vRanges[joint])[:] = v
+    view(state.v, state.mechanism.vRanges[joint])[:] = v
     setdirty!(state)
 end
 
@@ -176,8 +160,8 @@ end
 function set!(state::MechanismState, x::Vector)
     nq = num_positions(state)
     nv = num_velocities(state)
-    state.q[:] = view(x, 1 : nq)
-    state.v[:] = view(x, (nq + 1) : nq + nv)
+    copy!(state.q, 1, x, 1, nq)
+    copy!(state.v, 1, x, nq + 1, nv)
     setdirty!(state)
 end
 
@@ -217,8 +201,8 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
             joint = vertex.edgeToParentData
             parentFrame = default_frame(m, parentBody)
 
-            qJoint = view(state.q, state.qRanges[joint])
-            vJoint = view(state.v, state.vRanges[joint])
+            qJoint = view(state.q, state.mechanism.qRanges[joint])
+            vJoint = view(state.v, state.mechanism.vRanges[joint])
 
             # frames
             add_frame!(state, m.jointToJointTransforms[joint])

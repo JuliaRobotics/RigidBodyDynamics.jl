@@ -1,7 +1,8 @@
 function configuration_derivative{X}(state::MechanismState{X})
     q̇ = Vector{X}(num_positions(state))
-    for joint in joints(state.mechanism)
-        view(q̇, state.qRanges[joint])[:] = velocity_to_configuration_derivative(joint, state.q, view(state.v, state.vRanges[joint]))
+    mechanism = state.mechanism
+    for joint in joints(mechanism)
+        view(q̇, mechanism.qRanges[joint])[:] = velocity_to_configuration_derivative(joint, state.q, view(state.v, state.mechanism.vRanges[joint]))
     end
     q̇
 end
@@ -92,7 +93,7 @@ end
 function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::Vector{V})
     p = path(state.mechanism, base, body)
     J = geometric_jacobian(state, p)
-    v̇path = vcat([v̇[state.vRanges[joint]] for joint in p.edgeData]...)
+    v̇path = vcat([v̇[state.mechanism.vRanges[joint]] for joint in p.edgeData]...)
     bias = -bias_acceleration(state, base) + bias_acceleration(state, body)
     return SpatialAcceleration(J, v̇path) + bias
 end
@@ -109,16 +110,17 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
     ret::Symmetric = Symmetric(Array{C, 2}(num_velocities(state.mechanism), num_velocities(state.mechanism))))
     @assert ret.uplo == 'U'
     ret.data[:] = zero(C)
+    mechanism = state.mechanism
 
     for i = 2 : length(state.mechanism.toposortedTree)
-        vi = state.mechanism.toposortedTree[i]
+        vi = mechanism.toposortedTree[i]
 
         # Hii
         jointi = vi.edgeToParentData
         nvi = num_velocities(jointi)
         if nvi > 0
             bodyi = vi.vertexData
-            irange = state.vRanges[jointi]
+            irange = mechanism.vRanges[jointi]
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = crb_inertia(state, bodyi) * Si
@@ -131,7 +133,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
                 jointj = vj.edgeToParentData
                 nvj = num_velocities(jointj)
                 if nvj > 0
-                    jrange = state.vRanges[jointj]
+                    jrange = mechanism.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
                     @assert F.frame == Sj.frame
                     Hji = Sj.angular' * F.angular + Sj.linear' * F.linear
@@ -151,7 +153,8 @@ end
 function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable{Vector{V}} = Nullable{Vector{X}}();
     externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}())
 
-    vertices = state.mechanism.toposortedTree
+    mechanism = state.mechanism
+    vertices = mechanism.toposortedTree
     T = promote_type(X, M, V, W)
     ret = Vector{T}(num_velocities(state))
 
@@ -168,7 +171,7 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable
         if isnull(v̇)
             accels[body] = accels[vertex.parent.vertexData]
         else
-            v̇joint = view(get(v̇), state.vRanges[joint])
+            v̇joint = view(get(v̇), mechanism.vRanges[joint])
             joint_accel = SpatialAcceleration(S, v̇joint)
             accels[body] = accels[vertex.parent.vertexData] + joint_accel
         end
@@ -201,7 +204,7 @@ function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable
         jointWrench = jointWrenches[body]
         S = motion_subspace(state, joint)
         τjoint = joint_torque(S, jointWrench)
-        unsafe_copy!(view(ret, state.vRanges[joint]), 1, τjoint, 1, length(τjoint))
+        unsafe_copy!(view(ret, mechanism.vRanges[joint]), 1, τjoint, 1, length(τjoint))
         if !isroot(parentBody)
             jointWrenches[parentBody] = jointWrenches[parentBody] + jointWrench # action = -reaction
         end
