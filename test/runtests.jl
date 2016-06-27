@@ -5,6 +5,7 @@ using Quaternions
 using FixedSizeArrays
 using FactCheck
 using IJulia
+using Compat
 import ForwardDiff
 
 import FactCheck: roughly
