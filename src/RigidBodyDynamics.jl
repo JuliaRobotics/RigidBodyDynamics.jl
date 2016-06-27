@@ -12,8 +12,8 @@ using LightXML
 using Compat
 import Compat.String
 
-if VERSION < v"0.5.0-dev+4923" # approximately right
-    view{T,N}(A::AbstractArray{T,N}, I...) = Base.sub(A, I...)
+if !isdefined(Base, :view)
+    const view = slice
 end
 
 include("third_party_addendum.jl")
