@@ -1,10 +1,18 @@
-function configuration_derivative{X}(state::MechanismState{X})
-    q̇ = Vector{X}(num_positions(state))
+function configuration_derivative!{X}(out::AbstractVector, state::MechanismState{X})
     mechanism = state.mechanism
     for joint in joints(mechanism)
-        view(q̇, mechanism.qRanges[joint])[:] = velocity_to_configuration_derivative(joint, state.q, view(state.v, state.mechanism.vRanges[joint]))
+        qrange = mechanism.qRanges[joint]
+        qjoint = view(state.q, qrange)
+        vjoint = view(state.v, state.mechanism.vRanges[joint])
+        q̇joint = view(out, qrange)
+        copy!(q̇joint, velocity_to_configuration_derivative(joint, qjoint, vjoint))
     end
-    q̇
+end
+
+function configuration_derivative{X}(state::MechanismState{X})
+    ret = Vector{X}(num_positions(state))
+    configuration_derivative!(ret, state)
+    ret
 end
 
 transform_to_parent(state::MechanismState, frame::CartesianFrame3D) = transform_to_parent(state.transformCache, frame)
@@ -90,7 +98,7 @@ function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{
     return hcat(motionSubspaces...)
 end
 
-function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::Vector{V})
+function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::AbstractVector{V})
     p = path(state.mechanism, base, body)
     J = geometric_jacobian(state, p)
     v̇path = vcat([v̇[state.mechanism.vRanges[joint]] for joint in p.edgeData]...)
@@ -106,10 +114,9 @@ kinetic_energy(state::MechanismState) = kinetic_energy(state, filter(b -> !isroo
 
 potential_energy{X, M, C}(state::MechanismState{X, M, C}) = -mass(state) * dot(convert(Vec{3, C}, state.mechanism.gravity), transform(state, center_of_mass(state), root_frame(state.mechanism)).v)
 
-function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
-    ret::Symmetric = Symmetric(Array{C, 2}(num_velocities(state.mechanism), num_velocities(state.mechanism))))
-    @assert ret.uplo == 'U'
-    ret.data[:] = zero(C)
+function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
+    @assert out.uplo == 'U'
+    fill!(out.data, zero(C))
     mechanism = state.mechanism
 
     for i = 2 : length(state.mechanism.toposortedTree)
@@ -124,7 +131,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = crb_inertia(state, bodyi) * Si
-            Hii = view(ret.data, irange, irange)
+            Hii = view(out.data, irange, irange)
             set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear, nvi, nvi)
 
             # Hji, Hij
@@ -137,12 +144,18 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C};
                     Sj = motion_subspace(state, jointj)
                     @assert F.frame == Sj.frame
                     Hji = Sj.angular' * F.angular + Sj.linear' * F.linear
-                    set_unsafe!(view(ret.data, jrange, irange), Hji, nvj, nvi)
+                    set_unsafe!(view(out.data, jrange, irange), Hji, nvj, nvi)
                 end
                 vj = vj.parent
             end
         end
     end
+end
+
+function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
+    nv = num_velocities(state)
+    ret = Symmetric(Matrix{C}(nv, nv))
+    mass_matrix!(ret, state)
     ret
 end
 
@@ -150,94 +163,188 @@ function momentum_matrix(state::MechanismState)
     hcat([crb_inertia(state, vertex.vertexData) * motion_subspace(state, vertex.edgeToParentData) for vertex in state.mechanism.toposortedTree[2 : end]]...)
 end
 
-function inverse_dynamics{X, M, V, W}(state::MechanismState{X, M}, v̇::Nullable{Vector{V}} = Nullable{Vector{X}}();
-    externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}())
-
+function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M})
     mechanism = state.mechanism
     vertices = mechanism.toposortedTree
-    T = promote_type(X, M, V, W)
-    ret = Vector{T}(num_velocities(state))
+    gravityBias = convert(SpatialAcceleration{T}, -gravitational_acceleration(mechanism))
+    for i = 2 : length(vertices)
+        body = vertices[i].vertexData
+        out[body] = gravityBias + bias_acceleration(state, body)
+    end
+    nothing
+end
 
-    # compute spatial accelerations minus bias
-    rootBody = root_body(state.mechanism)
-    gravitational_accel = SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zero(Vec{3, T}), -convert(Vec{3, T}, state.mechanism.gravity))
-    accels = @compat Dict(rootBody => gravitational_accel)
-    sizehint!(accels, length(vertices))
+function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M}, v̇::AbstractVector)
+    mechanism = state.mechanism
+    vertices = mechanism.toposortedTree
+
+    # unbiased joint accelerations + gravity
+    rootBody = vertices[1].vertexData
+    out[rootBody] = convert(SpatialAcceleration{T}, -gravitational_acceleration(mechanism))
     for i = 2 : length(vertices)
         vertex = vertices[i]
         body = vertex.vertexData
         joint = vertex.edgeToParentData
         S = motion_subspace(state, joint)
-        if isnull(v̇)
-            accels[body] = accels[vertex.parent.vertexData]
-        else
-            v̇joint = view(get(v̇), mechanism.vRanges[joint])
-            joint_accel = SpatialAcceleration(S, v̇joint)
-            accels[body] = accels[vertex.parent.vertexData] + joint_accel
-        end
+        v̇joint = view(v̇, mechanism.vRanges[joint])
+        joint_accel = SpatialAcceleration(S, v̇joint)
+        out[body] = out[vertex.parent.vertexData] + joint_accel
     end
 
-    # add biases to accelerations and initialize joint wrenches with net wrenches computed using Newton Euler equations
-    jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
-    sizehint!(jointWrenches, length(vertices) - 1)
+    # add bias acceleration - gravity
+    for i = 2 : length(vertices)
+        body = vertices[i].vertexData
+        out[body] += bias_acceleration(state, body)
+    end
+    nothing
+end
+
+function newton_euler!{T, X, M, W}(
+        out::Associative{RigidBody{M}, Wrench{T}}, state::MechanismState{X, M},
+        accelerations::Associative{RigidBody{M}, SpatialAcceleration{T}},
+        externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+
+    mechanism = state.mechanism
+    vertices = mechanism.toposortedTree
     for i = 2 : length(vertices)
         vertex = vertices[i]
         body = vertex.vertexData
         joint = vertex.edgeToParentData
 
-        Ṫbody = accels[body] + bias_acceleration(state, body)
+        Ṫbody = accelerations[body]
         I = spatial_inertia(state, body)
         Tbody = twist_wrt_world(state, body)
         wrench = newton_euler(I, Ṫbody, Tbody)
         if haskey(externalWrenches, body)
-            wrench = wrench - transform(state, externalWrenches[body], wrench.frame)
+            wrench -= transform(state, externalWrenches[body], wrench.frame)
         end
-        jointWrenches[body] = wrench
+        out[body] = wrench
     end
+end
 
-    # project joint wrench to find torques, update parent joint wrench
+"""
+Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
+"""
+function joint_wrenches_and_torques!{T, X, M}(
+        torquesOut::AbstractVector{T},
+        netWrenchesInJointWrenchesOut::Associative{RigidBody{M}, Wrench{T}},
+        state::MechanismState{X, M})
+
+    mechanism = state.mechanism
+    vertices = mechanism.toposortedTree
     for i = length(vertices) : -1 : 2
         vertex = vertices[i]
         joint = vertex.edgeToParentData
         body = vertex.vertexData
         parentBody = vertex.parent.vertexData
-        jointWrench = jointWrenches[body]
+        jointWrench = netWrenchesInJointWrenchesOut[body]
         S = motion_subspace(state, joint)
         τjoint = joint_torque(S, jointWrench)
-        unsafe_copy!(view(ret, mechanism.vRanges[joint]), 1, τjoint, 1, length(τjoint))
+        unsafe_copy!(view(torquesOut, mechanism.vRanges[joint]), 1, τjoint, 1, length(τjoint))
         if !isroot(parentBody)
-            jointWrenches[parentBody] = jointWrenches[parentBody] + jointWrench # action = -reaction
+            netWrenchesInJointWrenchesOut[parentBody] = netWrenchesInJointWrenchesOut[parentBody] + jointWrench # action = -reaction
         end
     end
-    ret
 end
 
-inverse_dynamics(state::MechanismState, v̇::Vector; kwargs...) = inverse_dynamics(state, Nullable(v̇); kwargs...)
+function dynamics_bias!{T, X, M, W}(
+        torques::AbstractVector{T},
+        biasAccelerations::Associative{RigidBody{M}, SpatialAcceleration{T}},
+        wrenches::Associative{RigidBody{M}, Wrench{T}},
+        state::MechanismState{X, M},
+        externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
 
-function dynamics{X, M, C, T, W}(state::MechanismState{X, M, C};
-    torques::Nullable{Vector{T}} = Nullable{Vector{X}}(),
-    externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}(),
-    massMatrix = Symmetric(zeros(C, num_velocities(state.mechanism), num_velocities(state.mechanism))))
+    bias_accelerations!(biasAccelerations, state)
+    newton_euler!(wrenches, state, biasAccelerations, externalWrenches)
+    joint_wrenches_and_torques!(torques, wrenches, state)
+end
 
-    q̇ = configuration_derivative(state)
-    biasedTorques = inverse_dynamics(state; externalWrenches = externalWrenches)
-    scale!(biasedTorques, -1)
-    if !isnull(torques)
-        biasedTorques += get(torques)
+function inverse_dynamics!{T, X, M, V, W}(
+        torquesOut::AbstractVector{T},
+        jointWrenchesOut::Associative{RigidBody{M}, Wrench{T}},
+        accelerations::Associative{RigidBody{M}, SpatialAcceleration{T}},
+        state::MechanismState{X, M},
+        v̇::AbstractVector{V},
+        externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+    spatial_accelerations!(accelerations, state, v̇)
+    newton_euler!(jointWrenchesOut, state, accelerations, externalWrenches)
+    joint_wrenches_and_torques!(torquesOut, jointWrenchesOut, state)
+end
+
+# note: lots of allocations, preallocate stuff and use inverse_dynamics! for performance
+function inverse_dynamics{X, M, V, W}(
+        state::MechanismState{X, M},
+        v̇::AbstractVector{V},
+        externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}())
+
+    T = promote_type(X, M, V, W)
+    torques = Vector{T}(num_velocities(state))
+    jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
+    accelerations = Dict{RigidBody{M}, SpatialAcceleration{T}}()
+    inverse_dynamics!(torques, jointWrenches, accelerations, state, v̇, externalWrenches)
+    torques
+end
+
+type DynamicsResult{M, T}
+    massMatrix::Symmetric{T, Matrix{T}}
+    massMatrixInversionCache::Symmetric{T, Matrix{T}}
+    dynamicsBias::Vector{T}
+    biasedTorques::Vector{T}
+    ẋ::Vector{T}
+    q̇::AbstractVector{T}
+    v̇::AbstractVector{T}
+    accelerations::Dict{RigidBody{M}, SpatialAcceleration{T}}
+    jointWrenches::Dict{RigidBody{M}, Wrench{T}}
+
+    function DynamicsResult(::Type{T}, mechanism::Mechanism{M})
+        nq = num_positions(mechanism)
+        nv = num_velocities(mechanism)
+        massMatrix = Symmetric(zeros(T, nv, nv))
+        massMatrixInversionCache = Symmetric(zeros(T, nv, nv))
+        ẋ = zeros(T, nq + nv)
+        q̇ = view(ẋ, 1 : nq)
+        v̇ = view(ẋ, nq + 1 : nq + nv)
+        dynamicsBias = zeros(T, nv)
+        biasedTorques = zeros(T, nv)
+        accelerations = Dict{RigidBody{M}, SpatialAcceleration{T}}()
+        sizehint!(accelerations, length(bodies(mechanism)))
+        jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
+        sizehint!(jointWrenches, length(bodies(mechanism)))
+        new(massMatrix, massMatrixInversionCache, dynamicsBias, biasedTorques, ẋ, q̇, v̇, accelerations, jointWrenches)
     end
-    mass_matrix(state; ret = massMatrix)
-    # v̇ = massMatrix \ biasedTorques, but faster:
-    Base.LinAlg.LAPACK.posv!(massMatrix.uplo, massMatrix.data, biasedTorques)
-    v̇ = biasedTorques
-    q̇, v̇
+end
+
+DynamicsResult{M, T}(t::Type{T}, mechanism::Mechanism{M}) = DynamicsResult{M, T}(t, mechanism)
+
+function joint_accelerations!(out::AbstractVector, massMatrixInversionCache::Symmetric, massMatrix::Symmetric, biasedTorques::Vector)
+    out[:] = massMatrix \ biasedTorques # TODO: make more efficient
+    nothing
+end
+
+function joint_accelerations!(out::AbstractVector{Float64}, massMatrixInversionCache::Symmetric{Float64, Matrix{Float64}}, massMatrix::Symmetric{Float64, Matrix{Float64}}, biasedTorques::Vector{Float64})
+    @inbounds copy!(out, biasedTorques)
+    @inbounds copy!(massMatrixInversionCache.data, massMatrix.data)
+    Base.LinAlg.LAPACK.posv!(massMatrixInversionCache.uplo, massMatrixInversionCache.data, out)
+    nothing
+end
+
+function dynamics!{T, X, M, W}(out::DynamicsResult{T}, state::MechanismState{X, M}, externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+    configuration_derivative!(out.q̇, state)
+    dynamics_bias!(out.dynamicsBias, out.accelerations, out.jointWrenches, state, externalWrenches)
+    @inbounds copy!(out.biasedTorques, out.dynamicsBias) # TODO: handle input torques again
+    scale!(out.biasedTorques, -1)
+    mass_matrix!(out.massMatrix, state)
+    out.massMatrixInversionCache = out.massMatrix
+    joint_accelerations!(out.v̇, out.massMatrixInversionCache, out.massMatrix, out.biasedTorques)
+    nothing
 end
 
 # Convenience function that takes a Vector argument for the state and returns a Vector,
 # e.g. for use with standard ODE integrators
 # Note that preallocatedState is required so that we don't need to allocate a new
 # MechanismState object every time this function is called
-function dynamics{X}(stateVector::Vector{X}, preallocatedState::MechanismState{X}; kwargs...)
-    set!(preallocatedState, stateVector)
-    (q̇, v̇) = dynamics(preallocatedState; kwargs...)
-    return [q̇; v̇]
+function dynamics!{T, X, M, W}(result::DynamicsResult{T}, state::MechanismState{X, M}, stateVec::Vector{X}, externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+    set!(state, stateVec)
+    dynamics!(result, state, externalWrenches)
+    return copy(result.ẋ)
 end

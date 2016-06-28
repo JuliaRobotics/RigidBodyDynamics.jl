@@ -197,7 +197,7 @@ facts("inverse dynamics / external wrenches") do
     nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
     # TODO: use proper dict comprehension when compat allows it:
     externalWrenches = @compat Dict{RigidBody{Float64}, Wrench{Float64}}([body => rand(Wrench{Float64}, root_frame(mechanism)) for body in nonRootBodies]...)
-    τ = inverse_dynamics(x, v̇; externalWrenches = externalWrenches)
+    τ = inverse_dynamics(x, v̇, externalWrenches)
     floatingBodyVertex = root_vertex(mechanism).children[1]
     floatingJoint = floatingBodyVertex.edgeToParentData
     floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[mechanism.vRanges[floatingJoint]])
@@ -229,13 +229,13 @@ facts("dynamics / inverse dynamics") do
     rand!(x)
 
     js = joints(mechanism)
-    τ = rand(num_velocities(mechanism))
     nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
     # TODO: use proper dict comprehension when compat allows it:
     externalWrenches = @compat Dict{RigidBody{Float64}, Wrench{Float64}}([body => rand(Wrench{Float64}, root_frame(mechanism)) for body in nonRootBodies]...)
     stateVector = state_vector(x)
-    ẋ = dynamics(stateVector, x; torques = Nullable(τ), externalWrenches = externalWrenches)
-    v̇ = ẋ[num_positions(mechanism) + 1 : end]
-    τcheck = inverse_dynamics(x, v̇; externalWrenches = externalWrenches)
-    @fact τcheck --> roughly(τ; atol = 1e-12)
+
+    result = DynamicsResult(Float64, mechanism)
+    dynamics!(result, x, stateVector, externalWrenches)
+    τ = inverse_dynamics(x, result.v̇, externalWrenches)
+    @fact τ --> roughly(zeros(num_velocities(mechanism)); atol = 1e-12)
 end
