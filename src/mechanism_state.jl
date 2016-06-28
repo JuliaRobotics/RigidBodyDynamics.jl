@@ -145,8 +145,8 @@ end
 function set!(state::MechanismState, x::Vector)
     nq = num_positions(state)
     nv = num_velocities(state)
-    copy!(state.q, 1, x, 1, nq)
-    copy!(state.v, 1, x, nq + 1, nv)
+    state.q[:] = view(x, 1 : nq)
+    state.v[:] = view(x, nq + 1 : nq + nv)
     setdirty!(state)
 end
 

@@ -93,3 +93,8 @@ end
 
 rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> m.toposortedTree[end].vertexData, jointTypes...)
 rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> rand(collect(bodies(m))), jointTypes...)
+
+function gravitational_acceleration{M}(m::Mechanism{M})
+    rootBody = root_body(m)
+    SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zero(Vec{3, M}), m.gravity)
+end

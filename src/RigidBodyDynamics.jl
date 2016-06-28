@@ -52,6 +52,7 @@ export
     SpatialAcceleration,
     Mechanism,
     MechanismState,
+    DynamicsResult,
     # functions
     name,
     transform,
@@ -108,9 +109,11 @@ export
     relative_acceleration,
     kinetic_energy,
     potential_energy,
+    mass_matrix!,
     mass_matrix,
     momentum_matrix,
+    inverse_dynamics!,
     inverse_dynamics,
-    dynamics,
+    dynamics!,
     parse_urdf
 end
