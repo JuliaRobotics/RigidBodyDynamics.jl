@@ -24,7 +24,7 @@ function isapprox(x::SpatialInertia, y::SpatialInertia; atol = 1e-12)
 end
 
 function (+){T}(inertia1::SpatialInertia{T}, inertia2::SpatialInertia{T})
-    @assert inertia1.frame == inertia2.frame
+    framecheck(inertia1.frame, inertia2.frame)
     moment = inertia1.moment + inertia2.moment
     mass = inertia1.mass + inertia2.mass
     centerOfMass = (inertia1.centerOfMass * inertia1.mass + inertia2.centerOfMass * inertia2.mass) / mass
@@ -62,7 +62,7 @@ function vector_to_skew_symmetric_squared(a::Vec{3})
 end
 
 function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
-    @assert t.from == inertia.frame
+    framecheck(t.from, inertia.frame)
     S = promote_type(I, T)
 
     J = convert(Mat{3, 3, S}, inertia.moment)
@@ -139,7 +139,7 @@ end
 Array(twist::Twist) = [twist.angular...; twist.linear...]
 
 function (+)(twist1::Twist, twist2::Twist)
-    @assert twist1.frame == twist2.frame
+    framecheck(twist1.frame, twist2.frame)
     if twist1.body == twist2.base
         return Twist(twist2.body, twist1.base, twist1.frame, twist1.angular + twist2.angular, twist1.linear + twist2.linear)
     elseif twist1.base == twist2.body
@@ -157,7 +157,7 @@ function transform_spatial_motion(angular::Vec{3}, linear::Vec{3}, rot::Quaterni
 end
 
 function transform(twist::Twist, transform::Transform3D)
-    @assert twist.frame == transform.from
+    framecheck(twist.frame, transform.from)
     angular, linear = transform_spatial_motion(twist.angular, twist.linear, transform.rot, transform.trans)
     return Twist(twist.body, twist.base, transform.to, angular, linear)
 end
@@ -212,8 +212,8 @@ end
 function hcat{T}(jacobians::GeometricJacobian{T}...)
     frame = jacobians[1].frame
     for j = 2 : length(jacobians)
-        @assert jacobians[j].frame == frame
-        @assert jacobians[j].base == jacobians[j - 1].body
+        framecheck(jacobians[j].frame, frame)
+        framecheck(jacobians[j].base, jacobians[j - 1].body)
     end
     angular = hcat([jac.angular::Mat for jac in jacobians]...)
     linear = hcat([jac.linear::Mat for jac in jacobians]...)
@@ -224,7 +224,7 @@ end
 transform{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, transform::Transform3D{T2}) = GeometricJacobian(jac.body, jac.base, transform.to, jac.angular, jac.linear)
 
 function transform(jac::GeometricJacobian, transform::Transform3D)
-    @assert jac.frame == transform.from
+    framecheck(jac.frame, transform.from)
     R = rotationmatrix_normalized_fsa(transform.rot)
     T = eltype(R)
     angular = R * jac.angular
@@ -247,7 +247,7 @@ show(io::IO, w::Wrench) = print(io, "Wrench expressed in \"$(name(w.frame))\":\n
 zero{T}(::Type{Wrench{T}}, frame::CartesianFrame3D) = Wrench(frame, zero(Vec{3, T}), zero(Vec{3, T}))
 rand{T}(::Type{Wrench{T}}, frame::CartesianFrame3D) = Wrench(frame, rand(Vec{3, T}), rand(Vec{3, T}))
 
-dot(w::Wrench, t::Twist) = begin @assert w.frame == t.frame; return dot(w.angular, t.angular) + dot(w.linear, t.linear) end
+dot(w::Wrench, t::Twist) = begin framecheck(w.frame, t.frame); return dot(w.angular, t.angular) + dot(w.linear, t.linear) end
 dot(t::Twist, w::Wrench) = dot(w, t)
 
 immutable Momentum{T<:Real} <: ForceSpaceElement{T}
@@ -265,19 +265,19 @@ rand{T}(::Type{Momentum{T}}, frame::CartesianFrame3D) = Momentum(frame, rand(Vec
 
 
 function transform{F<:ForceSpaceElement}(f::F, transform::Transform3D)
-    @assert f.frame == transform.from
+    framecheck(f.frame, transform.from)
     linear = rotate(f.linear, transform.rot)
     angular = rotate(f.angular, transform.rot) + cross(transform.trans, linear)
     return F(transform.to, angular, linear)
 end
 
 function (+){F<:ForceSpaceElement}(f1::F, f2::F)
-    @assert f1.frame == f2.frame
+    framecheck(f1.frame, f2.frame)
     return F(f1.frame, f1.angular + f2.angular, f1.linear + f2.linear)
 end
 
 function (-){F<:ForceSpaceElement}(f1::F, f2::F)
-    @assert f1.frame == f2.frame
+    framecheck(f1.frame, f2.frame)
     return F(f1.frame, f1.angular - f2.angular, f1.linear - f2.linear)
 end
 
@@ -298,7 +298,7 @@ function mul_inertia{I, T}(J::Mat{3, 3, I}, c::Vec{3, I}, m::I, ω::Vec{3, T}, v
 end
 
 function (*)(inertia::SpatialInertia, twist::Twist)
-    @assert inertia.frame == twist.frame
+    framecheck(inertia.frame, twist.frame)
     return Momentum(inertia.frame, mul_inertia(inertia.moment, inertia.centerOfMass, inertia.mass, twist.angular, twist.linear)...)
 end
 
@@ -322,12 +322,12 @@ angular_part(m::MomentumMatrix) = m.angular
 linear_part(m::MomentumMatrix) = m.linear
 
 function (*){T}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T, 0})
-    @assert inertia.frame == jac.frame
+    framecheck(inertia.frame, jac.frame)
     MomentumMatrix(inertia.frame, zero(Mat{3, 0, T}), zero(Mat{3, 0, T}))
 end
 
 function (*){T, N}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T, N})
-    @assert inertia.frame == jac.frame
+    framecheck(inertia.frame, jac.frame)
 
     Jω = jac.angular
     Jv = jac.linear
@@ -342,7 +342,7 @@ end
 function hcat{T}(mats::MomentumMatrix{T}...)
     frame = mats[1].frame
     for j = 2 : length(mats)
-        @assert mats[j].frame == frame
+        framecheck(mats[j].frame, frame)
     end
     angular = hcat([m.angular::Mat for m in mats]...)
     linear = hcat([m.linear::Mat for m in mats]...)
@@ -357,7 +357,7 @@ end
 transform{T1<:Real, T2<:Real}(mat::MomentumMatrix{T1, 0}, transform::Transform3D{T2}) = MomentumMatrix(transform.to, mat.angular, mat.linear)
 
 function transform(mat::MomentumMatrix, transform::Transform3D)
-    @assert mat.frame == transform.from
+    framecheck(mat.frame, transform.from)
     R = rotationmatrix_normalized_fsa(transform.rot)
     linear = R * linear_part(mat)
     T = eltype(linear)
@@ -392,7 +392,7 @@ function SpatialAcceleration(jac::GeometricJacobian, v̇::AbstractVector)
 end
 
 function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
-    @assert accel1.frame == accel2.frame
+    framecheck(accel1.frame, accel2.frame)
     if accel1.body == accel2.base
         return SpatialAcceleration(accel2.body, accel1.base, accel1.frame, accel1.angular + accel2.angular, accel1.linear + accel2.linear)
     elseif accel1.body == accel2.body && accel1.base == accel2.base
@@ -414,13 +414,13 @@ function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCur
     accel.frame == oldToNew.to && return accel
 
     # frame checks
-    @assert oldToNew.from == accel.frame
-    @assert twistOfCurrentWrtNew.frame == accel.frame
-    @assert twistOfCurrentWrtNew.body == accel.frame
-    @assert twistOfCurrentWrtNew.base == oldToNew.to
-    @assert twistOfBodyWrtBase.frame == accel.frame
-    @assert twistOfBodyWrtBase.body == accel.body
-    @assert twistOfBodyWrtBase.base == accel.base
+    framecheck(oldToNew.from, accel.frame)
+    framecheck(twistOfCurrentWrtNew.frame, accel.frame)
+    framecheck(twistOfCurrentWrtNew.body, accel.frame)
+    framecheck(twistOfCurrentWrtNew.base, oldToNew.to)
+    framecheck(twistOfBodyWrtBase.frame, accel.frame)
+    framecheck(twistOfBodyWrtBase.body, accel.body)
+    framecheck(twistOfBodyWrtBase.base, accel.base)
 
     # spatial motion cross product:
     angular = cross(twistOfCurrentWrtNew.angular, twistOfBodyWrtBase.angular)
@@ -445,10 +445,10 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
     base = Ṫ.base # TODO: should assert that this is an inertial frame somehow
     frame = Ṫ.frame
 
-    @assert I.frame == frame
-    @assert T.body == body
-    @assert T.base == base
-    @assert T.frame == frame
+    framecheck(I.frame, frame)
+    framecheck(T.body, body)
+    framecheck(T.base, base)
+    framecheck(T.frame, frame)
 
     angular, linear = mul_inertia(I.moment, I.centerOfMass, I.mass, Ṫ.angular, Ṫ.linear)
     angularMomentum, linearMomentum = mul_inertia(I.moment, I.centerOfMass, I.mass, T.angular, T.linear)
@@ -458,18 +458,18 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
 end
 
 function joint_torque{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, wrench::Wrench{T2})
-    @assert jac.frame == wrench.frame
+    framecheck(jac.frame, wrench.frame)
     T = promote_type(T1, T2)
     Vec{0, T}()
 end
 
 function joint_torque(jac::GeometricJacobian, wrench::Wrench)
-    @assert jac.frame == wrench.frame
+    framecheck(jac.frame, wrench.frame)
     jac.angular' * wrench.angular + jac.linear' * wrench.linear
 end
 
 function kinetic_energy(I::SpatialInertia, twist::Twist)
-    @assert I.frame == twist.frame
+    framecheck(I.frame, twist.frame)
     # TODO: should assert that twist.base is an inertial frame somehow
     ω = twist.angular
     v = twist.linear
