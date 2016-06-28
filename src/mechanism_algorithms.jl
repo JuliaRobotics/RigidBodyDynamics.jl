@@ -1,10 +1,13 @@
-function configuration_derivative!{X}(out::AbstractVector, state::MechanismState{X})
+function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
     mechanism = state.mechanism
-    for joint in joints(mechanism)
-        qrange = mechanism.qRanges[joint]
-        qjoint = view(state.q, qrange)
-        vjoint = view(state.v, state.mechanism.vRanges[joint])
-        q̇joint = view(out, qrange)
+    vertices = mechanism.toposortedTree
+    for i = 2 : length(vertices)
+        joint = vertices[i].edgeToParentData
+        qRange = mechanism.qRanges[joint]
+        vRange = state.mechanism.vRanges[joint]
+        @inbounds qjoint = view(state.q, qRange)
+        @inbounds vjoint = view(state.v, vRange)
+        @inbounds q̇joint = view(out, qRange)
         copy!(q̇joint, velocity_to_configuration_derivative(joint, qjoint, vjoint))
     end
 end
@@ -132,7 +135,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             Ii = crb_inertia(state, bodyi)
             F = crb_inertia(state, bodyi) * Si
             Hii = view(out.data, irange, irange)
-            set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear, nvi, nvi)
+            set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear)
 
             # Hji, Hij
             vj = vi.parent
@@ -142,9 +145,9 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                 if nvj > 0
                     jrange = mechanism.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
-                    @assert F.frame == Sj.frame
+                    framecheck(F.frame, Sj.frame)
                     Hji = Sj.angular' * F.angular + Sj.linear' * F.linear
-                    set_unsafe!(view(out.data, jrange, irange), Hji, nvj, nvi)
+                    set_unsafe!(view(out.data, jrange, irange), Hji)
                 end
                 vj = vj.parent
             end

@@ -54,9 +54,11 @@ function hcat(head::Mat, tail::Mat...)
     end
 end
 
-function set_unsafe!(dest::AbstractArray, src::Mat, rows, cols)
-    for col = 1 : cols
-        @simd for row = 1 : rows
+function set_unsafe!{N, M, T}(dest::AbstractArray{T}, src::Mat{N, M, T})
+    rowRange = 1 : N
+    colRange = 1 : M
+    @inbounds for col = colRange
+        @inbounds for row in rowRange
             @inbounds dest[row, col] = src[row, col]
         end
     end

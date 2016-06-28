@@ -52,8 +52,8 @@ end
 function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T}, childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(childBody.frame, joint.frameAfter))
     vertex = insert!(tree(m), childBody, joint, parentBody)
     m.jointToJointTransforms[joint] = add_body_fixed_frame!(m, parentBody, jointToParent)
-    @assert childToJoint.from == childBody.frame
-    @assert childToJoint.to == joint.frameAfter
+    framecheck(childToJoint.from, childBody.frame)
+    framecheck(childToJoint.to, joint.frameAfter)
     m.bodyFixedFrameDefinitions[childBody] = Set([Transform3D(T, joint.frameAfter)])
     m.bodyFixedFrameToBody[joint.frameAfter] = childBody
     if childToJoint.from != childToJoint.to

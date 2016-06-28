@@ -21,6 +21,13 @@ end
 name(frame::CartesianFrame3D) = frame_names[frame.id]
 show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\"")
 
+# enable/disable frame checks
+if isdefined(Main, :RIGID_BODY_DYNAMICS_RELEASE)
+    framecheck(f1::CartesianFrame3D, f2::CartesianFrame3D) = nothing
+else
+    framecheck(f1::CartesianFrame3D, f2::CartesianFrame3D) = f1 != f2 && error("$f1 doesn't match $f2")
+end
+
 immutable Point3D{T<:Real}
     frame::CartesianFrame3D
     v::Vec{3, T}
@@ -32,7 +39,7 @@ Point3D{T}(frame::CartesianFrame3D, v::Vec{3, T}) = Point3D{T}(frame, v)
 convert{T}(::Type{Point3D{T}}, p::Point3D{T}) = p
 convert{T}(::Type{Point3D{T}}, p::Point3D) = Point3D(p.frame, convert(Vec{3, T}, p.v))
 
-(+)(p1::Point3D, p2::Point3D) = begin @assert p1.frame == p2.frame; return Point3D(p1.frame, p1.v + p2.v) end
+(+)(p1::Point3D, p2::Point3D) = begin framecheck(p1.frame, p2.frame); return Point3D(p1.frame, p1.v + p2.v) end
 (/)(p::Point3D, s::Real) = Point3D(p.frame, p.v / s)
 (*)(p::Point3D, s::Real) = Point3D(p.frame, p.v * s)
 (*)(s::Real, p::Point3D) = Point3D(p.frame, s * p.v)
@@ -51,8 +58,8 @@ FreeVector3D{T}(frame::CartesianFrame3D, v::Vec{3, T}) = FreeVector3D{T}(frame, 
 convert{T}(::Type{FreeVector3D{T}}, v::FreeVector3D{T}) = v
 convert{T}(::Type{FreeVector3D{T}}, v::FreeVector3D) = FreeVector3D(v.frame, convert(Vec{3, T}, v.v))
 
-(+)(v1::FreeVector3D, v2::FreeVector3D) = begin @assert v1.frame == v2.frame; return FreeVector3D(v1.frame, v1.v + v2.v) end
-(-)(v1::FreeVector3D, v2::FreeVector3D) = begin @assert v1.frame == v2.frame; return FreeVector3D(v1.frame, v1.v - v2.v) end
+(+)(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); return FreeVector3D(v1.frame, v1.v + v2.v) end
+(-)(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); return FreeVector3D(v1.frame, v1.v - v2.v) end
 (/)(v::FreeVector3D, s::Real) = FreeVector3D(v.frame, v.v / s)
 (*)(v::FreeVector3D, s::Real) = FreeVector3D(v.frame, v.v * s)
 (*)(s::Real, v::FreeVector3D) = FreeVector3D(v.frame, s * v.v)
@@ -61,11 +68,11 @@ show(io::IO, v::FreeVector3D) = print(io, "FreeVector3D in \"$(name(v.frame))\":
 isapprox{T}(x::FreeVector3D{T}, y::FreeVector3D{T}; atol::Real = 1e-12) = x.frame == y.frame && isapprox_tol(x.v, y.v; atol = atol)
 
 # Mixed Point and FreeVector
-(+)(p1::Point3D, v2::FreeVector3D) = begin @assert p1.frame == v2.frame; return Point3D(p1.frame, p1.v + v2.v) end
+(+)(p1::Point3D, v2::FreeVector3D) = begin framecheck(p1.frame, v2.frame); return Point3D(p1.frame, p1.v + v2.v) end
 (+)(v1::FreeVector3D, p2::Point3D) = p2 + v1
-(-)(p1::Point3D, v2::FreeVector3D) = begin @assert p1.frame == v2.frame; return Point3D(p1.frame, p1.v - v2.v) end
-(-)(p1::FreeVector3D, p2::Point3D) = begin @assert p1.frame == p2.frame; return FreeVector3D(p1.frame, p1.v - p2.v) end
-cross(p1::Point3D, v2::FreeVector3D) = begin @assert p1.frame == v2.frame; return FreeVector3D(p1.frame, cross(p1.v, v2.v)) end
+(-)(p1::Point3D, v2::FreeVector3D) = begin framecheck(p1.frame, v2.frame); return Point3D(p1.frame, p1.v - v2.v) end
+(-)(p1::FreeVector3D, p2::Point3D) = begin framecheck(p1.frame, p2.frame); return FreeVector3D(p1.frame, p1.v - p2.v) end
+cross(p1::Point3D, v2::FreeVector3D) = begin framecheck(p1.frame, v2.frame); return FreeVector3D(p1.frame, cross(p1.v, v2.v)) end
 
 immutable Transform3D{T<:Real}
     from::CartesianFrame3D
@@ -93,7 +100,7 @@ function show(io::IO, t::Transform3D)
 end
 
 function *(t1::Transform3D, t2::Transform3D)
-    @assert t1.from == t2.to
+    framecheck(t1.from, t2.to)
     return Transform3D(t2.from, t1.to, t1.rot * t2.rot, t1.trans + rotate(t2.trans, t1.rot))
 end
 
@@ -110,11 +117,11 @@ function isapprox{T}(x::Transform3D{T}, y::Transform3D{T}; atol::Real = 1e-12)
 end
 
 function *{T}(t::Transform3D{T}, point::Point3D{T})
-    @assert t.from == point.frame
+    framecheck(t.from, point.frame)
     return Point3D(t.to, rotate(point.v, t.rot) + t.trans)
 end
 
 function *{T}(t::Transform3D{T}, vector::FreeVector3D{T})
-    @assert t.from == vector.frame
+    framecheck(t.from, vector.frame)
     return FreeVector3D(t.to, rotate(vector.v, t.rot))
 end
