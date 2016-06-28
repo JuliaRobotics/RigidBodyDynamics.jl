@@ -90,7 +90,7 @@ function parse_urdf{T}(::Type{T}, filename)
 
     # create tree structure of XML elements
     vertices = [TreeVertex{XMLElement, XMLElement}(e) for e in xmlLinks]
-    nameToVertex = [attribute(v.vertexData, "name")::String => v::TreeVertex{XMLElement, XMLElement} for v in vertices]
+    nameToVertex = @compat Dict{String, TreeVertex{XMLElement, XMLElement}}([attribute(v.vertexData, "name") => v for v in vertices]...) # TODO: use proper dict comprehension when compat allows it
     for xmlJoint in xmlJoints
         parent = nameToVertex[attribute(find_element(xmlJoint, "parent"), "link")]
         child = nameToVertex[attribute(find_element(xmlJoint, "child"), "link")]
