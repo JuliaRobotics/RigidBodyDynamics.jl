@@ -145,8 +145,9 @@ end
 function set!(state::MechanismState, x::Vector)
     nq = num_positions(state)
     nv = num_velocities(state)
-    state.q[:] = view(x, 1 : nq)
-    state.v[:] = view(x, nq + 1 : nq + nv)
+    length(x) == nq + nv || error("wrong size")
+    unsafe_copy!(state.q, 1, x, 1, nq)
+    unsafe_copy!(state.v, 1, x, nq + 1, nv)
     setdirty!(state)
 end
 
