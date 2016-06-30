@@ -29,7 +29,7 @@ facts("twist") do
     @fact T3.base --> T1.base
     @fact T3.frame --> f3
     @fact T2 + T1 --> roughly(T3)
-    @fact_throws AssertionError T1 + rand(Twist{Float64}, f3, f2, f4) # wrong frame
+    @fact_throws ArgumentError T1 + rand(Twist{Float64}, f3, f2, f4) # wrong frame
     @fact_throws ArgumentError T1 + rand(Twist{Float64}, f3, f4, f3) # wrong base
     @fact Array(transform(T1, H31)) --> roughly(Ad(H31) * Array(T1))
 end
@@ -38,7 +38,7 @@ facts("wrench") do
     W = rand(Wrench{Float64}, f2)
     H21 = rand(Transform3D{Float64}, f2, f1)
     @fact Array(transform(W, H21)) --> roughly(Ad(inv(H21))' * Array(W))
-    @fact_throws AssertionError transform(W, inv(H21)) # wrong frame
+    @fact_throws ArgumentError transform(W, inv(H21)) # wrong frame
 end
 
 facts("momentum") do
@@ -48,10 +48,10 @@ facts("momentum") do
     H21 = rand(Transform3D{Float64}, f2, f1)
     h = I * T
     @fact Array(I) * Array(T) --> roughly(Array(h); atol = 1e-12)
-    @fact_throws AssertionError I * T2 # wrong frame
+    @fact_throws ArgumentError I * T2 # wrong frame
     @fact transform(I, H21) * transform(T, H21) --> roughly(transform(h, H21))
     @fact Array(transform(h, H21)) --> roughly(Ad(inv(H21))' * Array(h))
-    @fact_throws AssertionError transform(h, inv(H21)) # wrong frame
+    @fact_throws ArgumentError transform(h, inv(H21)) # wrong frame
 end
 
 facts("geometric jacobian, power") do
@@ -66,8 +66,8 @@ facts("geometric jacobian, power") do
     @fact J.frame --> T.frame
     @fact Twist(transform(J, H), v) --> roughly(transform(T, H))
     @fact dot(Array(τ), v) --> roughly(dot(T, W); atol = 1e-12) # power equality
-    @fact_throws AssertionError dot(transform(T, H), W)
-    @fact_throws AssertionError joint_torque(transform(J, H), W)
+    @fact_throws ArgumentError dot(transform(T, H), W)
+    @fact_throws ArgumentError joint_torque(transform(J, H), W)
 end
 
 facts("momentum matrix") do

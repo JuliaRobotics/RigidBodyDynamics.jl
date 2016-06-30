@@ -25,7 +25,7 @@ show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(fr
 if isdefined(Main, :RIGID_BODY_DYNAMICS_RELEASE)
     framecheck(f1::CartesianFrame3D, f2::CartesianFrame3D) = nothing
 else
-    framecheck(f1::CartesianFrame3D, f2::CartesianFrame3D) = f1 != f2 && error("$f1 doesn't match $f2")
+    framecheck(f1::CartesianFrame3D, f2::CartesianFrame3D) = f1 != f2 && throw(ArgumentError(("$f1 doesn't match $f2")))
 end
 
 immutable Point3D{T<:Real}
