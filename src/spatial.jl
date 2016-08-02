@@ -479,15 +479,18 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
     return Wrench(frame, angular, linear)
 end
 
-function joint_torque{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, wrench::Wrench{T2})
-    framecheck(jac.frame, wrench.frame)
-    T = promote_type(T1, T2)
-    SVector{0, T}()
-end
-
-function joint_torque(jac::GeometricJacobian, wrench::Wrench)
-    framecheck(jac.frame, wrench.frame)
-    jac.angular' * wrench.angular + jac.linear' * wrench.linear
+@generated function joint_torque{T1, T2, N}(jac::GeometricJacobian{T1, N}, wrench::Wrench{T2})
+    if N == 0
+        return quote
+            framecheck(jac.frame, wrench.frame)
+            zeros(SVector{0, promote_type(T1, T2)})
+        end
+    else
+        return quote
+            framecheck(jac.frame, wrench.frame)
+            jac.angular' * wrench.angular + jac.linear' * wrench.linear
+        end
+    end
 end
 
 function kinetic_energy(I::SpatialInertia, twist::Twist)

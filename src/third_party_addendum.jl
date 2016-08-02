@@ -1,16 +1,9 @@
-rotate{N}(x::SMatrix{3}, q::Quaternion) = rotationmatrix_normalized_fsa(q) * x
+rotate(x::SMatrix{3}, q::Quaternion) = rotationmatrix_normalized_fsa(q) * x
 
 function rotate(x::SVector{3}, q::Quaternion)
     qret = q * Quaternion(zero(eltype(x)), x[1], x[2], x[3]) * inv(q)
     SVector(qret.v1, qret.v2, qret.v3)
 end
-
-# function isapprox{FSA <: FixedArray, A <: Union{Array, FixedArray}}(a::FSA, b::A; atol::Real = 0)
-#     for i=1:length(a)
-#         !isapprox(a[i], b[i]; atol = atol) && return false
-#     end
-#     true
-# end
 
 angle_axis_proper(q::Quaternion) = angle_proper(q), axis_proper(q)
 
@@ -44,18 +37,7 @@ function rpy_to_quaternion(rpy::Vector)
         c[1]*c[2]*s[3] - s[1]*s[2]*c[3])
 end
 
-# hcat(head::SMatrix) = head
-# function hcat(head::SMatrix, tail::SMatrix...)
-#     tailhcat = hcat(tail...)
-#     if isempty(head) && isempty(tailhcat)
-#         return zero(head) # TODO: check size match
-#     else
-#         return SMatrix((head.values..., tailhcat.values...))
-#     end
-# end
-#
-# function unsafe_copy!{N, T}(dest::AbstractVector{T}, doffs, src::SVector{N, T}, soffs, n)
-#     @simd for i = 0 : n - 1
-#         @inbounds dest[doffs + i] = src[soffs + i]
-#     end
-# end
+# TODO: notify StaticArrays maintainer:
+function cross(x::SVector{3}, y::SVector{3})
+    SVector(x[2] * y[3] - x[3] * y[2], x[3] * y[1] - x[1] * y[3], x[1] * y[2] - x[2] * y[1])
+end

@@ -104,7 +104,7 @@ function *(t1::Transform3D, t2::Transform3D)
     return Transform3D(t2.from, t1.to, t1.rot * t2.rot, t1.trans + rotate(t2.trans, t1.rot))
 end
 
-function inv{T}(t::Transform3D{T})
+function inv(t::Transform3D)
     rotinv = inv(t.rot)
     return Transform3D(t.to, t.from, rotinv, -rotate(t.trans, rotinv))
 end
@@ -116,12 +116,12 @@ function isapprox{T}(x::Transform3D{T}, y::Transform3D{T}; atol::Real = 1e-12)
     return x.from == y.from && x.to == y.to && isapprox(theta, zero(T), atol = atol) && isapprox(x.trans, y.trans, atol = atol)
 end
 
-function *{T}(t::Transform3D{T}, point::Point3D{T})
+function *(t::Transform3D, point::Point3D)
     framecheck(t.from, point.frame)
     return Point3D(t.to, rotate(point.v, t.rot) + t.trans)
 end
 
-function *{T}(t::Transform3D{T}, vector::FreeVector3D{T})
+function *(t::Transform3D, vector::FreeVector3D)
     framecheck(t.from, vector.frame)
     return FreeVector3D(t.to, rotate(vector.v, t.rot))
 end
