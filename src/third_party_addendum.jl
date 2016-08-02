@@ -1,10 +1,8 @@
-function rotate{N, T}(x::SMatrix{3, N, T}, q::Quaternion{T})
-    return SMatrix(rotationmatrix(q)) * x
-end
+rotate{N}(x::SMatrix{3}, q::Quaternion) = rotationmatrix_normalized_fsa(q) * x
 
-function rotate{T}(x::SVector{3, T}, q::Quaternion{T})
-    qret = q * Quaternion(0, x[1], x[2], x[3]) * inv(q)
-    return SVector(qret.v1, qret.v2, qret.v3)
+function rotate(x::SVector{3}, q::Quaternion)
+    qret = q * Quaternion(zero(eltype(x)), x[1], x[2], x[3]) * inv(q)
+    SVector(qret.v1, qret.v2, qret.v3)
 end
 
 # function isapprox{FSA <: FixedArray, A <: Union{Array, FixedArray}}(a::FSA, b::A; atol::Real = 0)
@@ -53,16 +51,6 @@ end
 #         return zero(head) # TODO: check size match
 #     else
 #         return SMatrix((head.values..., tailhcat.values...))
-#     end
-# end
-#
-# function set_unsafe!{N, M, T}(dest::AbstractArray{T}, src::SMatrix{N, M, T})
-#     rowRange = 1 : N
-#     colRange = 1 : M
-#     @inbounds for col = colRange
-#         @inbounds for row in rowRange
-#             @inbounds dest[row, col] = src[row, col]
-#         end
 #     end
 # end
 #

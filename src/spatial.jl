@@ -201,14 +201,17 @@ num_cols{T, N}(jac::GeometricJacobian{T, N}) = N
 angular_part(jac::GeometricJacobian) = jac.angular
 linear_part(jac::GeometricJacobian) = jac.linear
 
-function Twist{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, v::AbstractVector{T2})
-    T = promote_type(T1, T2)
-    zero(Twist{T}, jac.body, jac.base, jac.frame)
-end
-
-function Twist(jac::GeometricJacobian, v::AbstractVector)
-    vFixed = SVector(v...)
-    Twist(jac.body, jac.base, jac.frame, jac.angular * vFixed, jac.linear * vFixed)
+@generated function Twist{T1, T2, N}(jac::GeometricJacobian{T1, N}, v::AbstractVector{T2})
+    if N == 0
+        return quote
+            zero(Twist{promote_type(T1, T2)}, jac.body, jac.base, jac.frame)
+        end
+    else
+        return quote
+            vFixed = SVector{N}(v)
+            Twist(jac.body, jac.base, jac.frame, jac.angular * vFixed, jac.linear * vFixed)
+        end
+    end
 end
 
 (-){T<:Real}(jac::GeometricJacobian{T, 0}) = GeometricJacobian(jac.base, jac.body, jac.frame, jac.angular, jac.linear)
@@ -223,8 +226,8 @@ function hcat{T}(jacobians::GeometricJacobian{T}...)
         framecheck(jacobians[j].frame, frame)
         framecheck(jacobians[j].base, jacobians[j - 1].body)
     end
-    angular = hcat([jac.angular::SMatrix for jac in jacobians]...)
-    linear = hcat([jac.linear::SMatrix for jac in jacobians]...)
+    angular = hcat((jac.angular::SMatrix for jac in jacobians)...)
+    linear = hcat((jac.linear::SMatrix for jac in jacobians)...)
     return GeometricJacobian(jacobians[end].body, jacobians[1].base, frame, angular, linear)
 end
 
@@ -353,14 +356,22 @@ function hcat{T}(mats::MomentumMatrix{T}...)
     for j = 2 : length(mats)
         framecheck(mats[j].frame, frame)
     end
-    angular = hcat([m.angular::SMatrix for m in mats]...)
-    linear = hcat([m.linear::SMatrix for m in mats]...)
+    angular = hcat((m.angular::SMatrix for m in mats)...)
+    linear = hcat((m.linear::SMatrix for m in mats)...)
     return MomentumMatrix(frame, angular, linear)
 end
 
-function Momentum(mat::MomentumMatrix, v::AbstractVector)
-    vFixed = SVector(v...)
-    Momentum(mat.frame, mat.angular * vFixed, mat.linear * vFixed)
+@generated function Momentum{T1, T2, N}(mat::MomentumMatrix{T1, N}, v::AbstractVector{T2})
+    if N == 0
+        return quote
+            zero(Momentum{promote_type(T1, T2)}, mat.frame)
+        end
+    else
+        return quote
+            vFixed = SVector{N}(v)
+            Momentum(mat.frame, mat.angular * vFixed, mat.linear * vFixed)
+        end
+    end
 end
 
 transform{T1<:Real, T2<:Real}(mat::MomentumMatrix{T1, 0}, transform::Transform3D{T2}) = MomentumMatrix(transform.to, mat.angular, mat.linear)
@@ -389,15 +400,17 @@ function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, fra
     return SpatialAcceleration(body, base, frame, SVector(vec[1], vec[2], vec[3]), SVector(vec[4], vec[5], vec[6]))
 end
 
-function SpatialAcceleration{T1<:Real, T2}(jac::GeometricJacobian{T1, 0}, v̇::AbstractVector{T2})
-    T = promote_type(T1, T2)
-    SpatialAcceleration(jac.body, jac.base, jac.frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
-end
-
-
-function SpatialAcceleration(jac::GeometricJacobian, v̇::AbstractVector)
-    v̇Fixed = SVector(v̇...)
-    SpatialAcceleration(jac.body, jac.base, jac.frame, jac.angular * v̇Fixed, jac.linear * v̇Fixed)
+@generated function SpatialAcceleration{T1, T2, N}(jac::GeometricJacobian{T1, N}, v̇::AbstractVector{T2})
+    if N == 0
+        return quote
+            zero(SpatialAcceleration{promote_type(T1, T2)}, jac.body, jac.base, jac.frame)
+        end
+    else
+        return quote
+            v̇Fixed = SVector{N}(v̇)
+            SpatialAcceleration(jac.body, jac.base, jac.frame, jac.angular * v̇Fixed, jac.linear * v̇Fixed)
+        end
+    end
 end
 
 function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)

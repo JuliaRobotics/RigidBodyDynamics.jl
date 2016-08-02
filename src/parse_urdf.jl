@@ -28,7 +28,7 @@ function parse_pose{T}(::Type{T}, xmlPose::Union{Void, XMLElement})
     else
         rpy = parse_vector(T, xmlPose, "rpy", "0 0 0")
         rot = rpy_to_quaternion(rpy)
-        trans = SVector(parse_vector(T, xmlPose, "xyz", "0 0 0"))
+        trans = SVector{3}(parse_vector(T, xmlPose, "xyz", "0 0 0"))
     end
     rot, trans
 end
@@ -37,10 +37,10 @@ function parse_joint{T}(::Type{T}, xmlJoint::XMLElement)
     name = attribute(xmlJoint, "name")
     jointType = attribute(xmlJoint, "type")
     if jointType == "revolute" || jointType == "continuous" # TODO: handle joint limits for revolute
-        axis = SVector(parse_vector(T, find_element(xmlJoint, "axis"), "xyz", "1 0 0"))
+        axis = SVector{3}(parse_vector(T, find_element(xmlJoint, "axis"), "xyz", "1 0 0"))
         return Joint(name, Revolute(axis))
     elseif jointType == "prismatic"
-        axis = SVector(parse_vector(T, find_element(xmlJoint, "axis"), "xyz", "1 0 0"))
+        axis = SVector{3}(parse_vector(T, find_element(xmlJoint, "axis"), "xyz", "1 0 0"))
         return Joint(name, Prismatic(axis))
     elseif jointType == "floating"
         return Joint(name, QuaternionFloating())

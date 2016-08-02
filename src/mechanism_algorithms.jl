@@ -135,7 +135,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             Ii = crb_inertia(state, bodyi)
             F = crb_inertia(state, bodyi) * Si
             Hii = view(out.data, irange, irange)
-            set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear)
+            Hii[:] = Si.angular' * F.angular + Si.linear' * F.linear
 
             # Hji, Hij
             vj = vi.parent
@@ -146,8 +146,8 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                     jrange = mechanism.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
                     framecheck(F.frame, Sj.frame)
-                    Hji = Sj.angular' * F.angular + Sj.linear' * F.linear
-                    set_unsafe!(view(out.data, jrange, irange), Hji)
+                    Hji = view(out.data, jrange, irange)
+                    Hji[:] = Sj.angular' * F.angular + Sj.linear' * F.linear
                 end
                 vj = vj.parent
             end
@@ -242,8 +242,7 @@ function joint_wrenches_and_torques!{T, X, M}(
         parentBody = vertex.parent.vertexData
         jointWrench = netWrenchesInJointWrenchesOut[body]
         S = motion_subspace(state, joint)
-        τjoint = joint_torque(S, jointWrench)
-        unsafe_copy!(view(torquesOut, mechanism.vRanges[joint]), 1, τjoint, 1, length(τjoint))
+        view(torquesOut, mechanism.vRanges[joint])[:] = joint_torque(S, jointWrench)
         if !isroot(parentBody)
             netWrenchesInJointWrenchesOut[parentBody] = netWrenchesInJointWrenchesOut[parentBody] + jointWrench # action = -reaction
         end

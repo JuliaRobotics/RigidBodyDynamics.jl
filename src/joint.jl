@@ -99,7 +99,10 @@ immutable Prismatic{T<:Real} <: OneDegreeOfFreedomFixedAxis
 end
 # Prismatic{T}(rotation_axis::SVector{3, T}) = Prismatic{T}(rotation_axis)
 show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.translation_axis)")
-rand{T}(::Type{Prismatic{T}}) = Prismatic(FixedSizeArrays.normalize(rand(SVector{3, T})))
+function rand{T}(::Type{Prismatic{T}})
+    axis = rand(SVector{3, T})
+    Prismatic(axis / norm(axis))
+end
 
 joint_transform{T1<:Real, T2}(j::Joint, jt::Prismatic{T2}, q::AbstractVector{T1}) = Transform3D(j.frameAfter, j.frameBefore, q[1] * jt.translation_axis)
 
@@ -108,8 +111,9 @@ function joint_twist{T<:Real}(j::Joint, jt::Prismatic, q::AbstractVector{T}, v::
 end
 
 function motion_subspace{T<:Real}(j::Joint, jt::Prismatic, q::AbstractVector{T})
-    linear = convert(SMatrix{3, 1, T}, SMatrix(jt.translation_axis))
-    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, zero(linear), linear)
+    angular = zeros(SMatrix{3, 1, T})
+    linear = SMatrix{3, 1, T}(jt.translation_axis)
+    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, linear)
 end
 
 immutable Revolute{T<:Real} <: OneDegreeOfFreedomFixedAxis
@@ -117,7 +121,10 @@ immutable Revolute{T<:Real} <: OneDegreeOfFreedomFixedAxis
 end
 # Revolute{T}(rotation_axis::SVector{3, T}) = Revolute{T}(rotation_axis)
 show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.rotation_axis)")
-rand{T}(::Type{Revolute{T}}) = Revolute(FixedSizeArrays.normalize(rand(SVector{3, T})))
+function rand{T}(::Type{Revolute{T}})
+    axis = rand(SVector{3, T})
+    Revolute(axis / norm(axis))
+end
 
 function joint_transform{T1, T2}(j::Joint, jt::Revolute{T2}, q::AbstractVector{T1})
     T = promote_type(T1, T2)
@@ -134,7 +141,8 @@ end
 
 function motion_subspace{T<:Real}(j::Joint, jt::Revolute, q::AbstractVector{T})
     angular = SMatrix{3, 1, T}(jt.rotation_axis)
-    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, zero(angular))
+    linear = zeros(SMatrix{3, 1, T})
+    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, linear)
 end
 
 num_positions(j::Joint, jt::OneDegreeOfFreedomFixedAxis) = 1::Int64
@@ -152,10 +160,10 @@ show(io::IO, jt::Fixed) = print(io, "Fixed joint")
 rand(::Type{Fixed}) = Fixed()
 joint_transform{T}(j::Joint, jt::Fixed, q::AbstractVector{T}) = Transform3D(T, j.frameAfter, j.frameBefore)
 function joint_twist{T<:Real}(j::Joint, jt::Fixed, q::AbstractVector{T}, v::AbstractVector{T})
-    return zero(Twist{T}, j.frameAfter, j.frameBefore, j.frameAfter)
+    zero(Twist{T}, j.frameAfter, j.frameBefore, j.frameAfter)
 end
 function motion_subspace{T<:Real}(j::Joint, jt::Fixed, q::AbstractVector{T})
-    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, SMatrix{3, 0, T}(), SMatrix{3, 0, T}())
+    GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, zeros(SMatrix{3, 0, T}), zeros(SMatrix{3, 0, T}))
 end
 num_positions(j::Joint, jt::Fixed) = 0::Int64
 num_velocities(j::Joint, jt::Fixed) = 0::Int64
