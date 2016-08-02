@@ -2,7 +2,7 @@ using Base.Test
 
 using RigidBodyDynamics
 using Quaternions
-using FixedSizeArrays
+using StaticArrays
 using FactCheck
 using IJulia
 using Compat

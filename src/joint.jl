@@ -46,13 +46,13 @@ rand(::Type{QuaternionFloating}) = QuaternionFloating()
 function joint_transform{T<:Real}(j::Joint, jt::QuaternionFloating, q::AbstractVector{T})
     rot = Quaternion(q[1], q[2 : 4])
     Quaternions.normalize(rot)
-    trans = Vec(q[5], q[6], q[7])
+    trans = SVector(q[5], q[6], q[7])
     return Transform3D{T}(j.frameAfter, j.frameBefore, rot, trans)
 end
 
 function motion_subspace{T<:Real}(j::Joint, jt::QuaternionFloating, q::AbstractVector{T})
-    angular = hcat(eye(Mat{3, 3, T}), zero(Mat{3, 3, T}))
-    linear = hcat(zero(Mat{3, 3, T}), eye(Mat{3, 3, T}))
+    angular = hcat(eye(SMatrix{3, 3, T}), zeros(SMatrix{3, 3, T}))
+    linear = hcat(zeros(SMatrix{3, 3, T}), eye(SMatrix{3, 3, T}))
     return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, linear)
 end
 
@@ -64,7 +64,7 @@ function configuration_derivative_to_velocity(j::Joint, jt::QuaternionFloating, 
     quat = Quaternion(q[1], q[2 : 4])
     Quaternions.normalize(quat)
     quatdot = Quaternion(q̇[1], q̇[2 : 4])
-    posdot = Vec(q̇[5], q̇[6], q̇[7])
+    posdot = SVector(q̇[5], q̇[6], q̇[7])
     linear = rotate(posdot, inv(quat))
     angularQuat = 2 * inv(quat) * quatdot
     return [angularQuat.v1; angularQuat.v2; angularQuat.v3; linear...]
@@ -74,7 +74,7 @@ function velocity_to_configuration_derivative(j::Joint, jt::QuaternionFloating, 
     quat = Quaternion(q[1], q[2 : 4])
     Quaternions.normalize(quat)
     ωQuat = Quaternion(0, v[1], v[2], v[3])
-    linear = Vec(v[4], v[5], v[6])
+    linear = SVector(v[4], v[5], v[6])
     quatdot = 1/2 * quat * ωQuat
     posdot = rotate(linear, quat)
     return [quatdot.s; quatdot.v1; quatdot.v2; quatdot.v3; posdot...]
@@ -89,35 +89,35 @@ function rand_configuration{T<:Real}(j::Joint, jt::QuaternionFloating, ::Type{T}
 end
 
 function joint_twist{T<:Real}(j::Joint, jt::QuaternionFloating, q::AbstractVector{T}, v::AbstractVector{T})
-    return Twist(j.frameAfter, j.frameBefore, j.frameAfter, Vec(v[1], v[2], v[3]), Vec(v[4], v[5], v[6]))
+    return Twist(j.frameAfter, j.frameBefore, j.frameAfter, SVector(v[1], v[2], v[3]), SVector(v[4], v[5], v[6]))
 end
 
 abstract OneDegreeOfFreedomFixedAxis <: JointType
 
 immutable Prismatic{T<:Real} <: OneDegreeOfFreedomFixedAxis
-    translation_axis::Vec{3, T}
+    translation_axis::SVector{3, T}
 end
-# Prismatic{T}(rotation_axis::Vec{3, T}) = Prismatic{T}(rotation_axis)
+# Prismatic{T}(rotation_axis::SVector{3, T}) = Prismatic{T}(rotation_axis)
 show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.translation_axis)")
-rand{T}(::Type{Prismatic{T}}) = Prismatic(FixedSizeArrays.normalize(rand(Vec{3, T})))
+rand{T}(::Type{Prismatic{T}}) = Prismatic(FixedSizeArrays.normalize(rand(SVector{3, T})))
 
 joint_transform{T1<:Real, T2}(j::Joint, jt::Prismatic{T2}, q::AbstractVector{T1}) = Transform3D(j.frameAfter, j.frameBefore, q[1] * jt.translation_axis)
 
 function joint_twist{T<:Real}(j::Joint, jt::Prismatic, q::AbstractVector{T}, v::AbstractVector{T})
-    return Twist(j.frameAfter, j.frameBefore, j.frameAfter, zero(Vec{3, T}), jt.translation_axis * v[1])
+    return Twist(j.frameAfter, j.frameBefore, j.frameAfter, zeros(SVector{3, T}), jt.translation_axis * v[1])
 end
 
 function motion_subspace{T<:Real}(j::Joint, jt::Prismatic, q::AbstractVector{T})
-    linear = convert(Mat{3, 1, T}, Mat(jt.translation_axis))
+    linear = convert(SMatrix{3, 1, T}, SMatrix(jt.translation_axis))
     return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, zero(linear), linear)
 end
 
 immutable Revolute{T<:Real} <: OneDegreeOfFreedomFixedAxis
-    rotation_axis::Vec{3, T}
+    rotation_axis::SVector{3, T}
 end
-# Revolute{T}(rotation_axis::Vec{3, T}) = Revolute{T}(rotation_axis)
+# Revolute{T}(rotation_axis::SVector{3, T}) = Revolute{T}(rotation_axis)
 show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.rotation_axis)")
-rand{T}(::Type{Revolute{T}}) = Revolute(FixedSizeArrays.normalize(rand(Vec{3, T})))
+rand{T}(::Type{Revolute{T}}) = Revolute(FixedSizeArrays.normalize(rand(SVector{3, T})))
 
 function joint_transform{T1, T2}(j::Joint, jt::Revolute{T2}, q::AbstractVector{T1})
     T = promote_type(T1, T2)
@@ -129,11 +129,11 @@ function joint_transform{T1, T2}(j::Joint, jt::Revolute{T2}, q::AbstractVector{T
 end
 
 function joint_twist{T<:Real}(j::Joint, jt::Revolute, q::AbstractVector{T}, v::AbstractVector{T})
-    return Twist(j.frameAfter, j.frameBefore, j.frameAfter, jt.rotation_axis * v[1], zero(Vec{3, T}))
+    return Twist(j.frameAfter, j.frameBefore, j.frameAfter, jt.rotation_axis * v[1], zeros(SVector{3, T}))
 end
 
 function motion_subspace{T<:Real}(j::Joint, jt::Revolute, q::AbstractVector{T})
-    angular = convert(Mat{3, 1, T}, Mat(jt.rotation_axis))
+    angular = SMatrix{3, 1, T}(jt.rotation_axis)
     return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, zero(angular))
 end
 
@@ -155,7 +155,7 @@ function joint_twist{T<:Real}(j::Joint, jt::Fixed, q::AbstractVector{T}, v::Abst
     return zero(Twist{T}, j.frameAfter, j.frameBefore, j.frameAfter)
 end
 function motion_subspace{T<:Real}(j::Joint, jt::Fixed, q::AbstractVector{T})
-    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, Mat{3, 0, T}(), Mat{3, 0, T}())
+    return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, SMatrix{3, 0, T}(), SMatrix{3, 0, T}())
 end
 num_positions(j::Joint, jt::Fixed) = 0::Int64
 num_velocities(j::Joint, jt::Fixed) = 0::Int64

@@ -1,18 +1,18 @@
-function rotate{N, T}(x::Mat{3, N, T}, q::Quaternion{T})
-    return Mat(rotationmatrix(q)) * x
+function rotate{N, T}(x::SMatrix{3, N, T}, q::Quaternion{T})
+    return SMatrix(rotationmatrix(q)) * x
 end
 
-function rotate{T}(x::Vec{3, T}, q::Quaternion{T})
+function rotate{T}(x::SVector{3, T}, q::Quaternion{T})
     qret = q * Quaternion(0, x[1], x[2], x[3]) * inv(q)
-    return Vec(qret.v1, qret.v2, qret.v3)
+    return SVector(qret.v1, qret.v2, qret.v3)
 end
 
-function isapprox_tol{FSA <: FixedArray, A <: Union{Array, FixedArray}}(a::FSA, b::A; atol::Real = 0)
-    for i=1:length(a)
-        !isapprox(a[i], b[i]; atol = atol) && return false
-    end
-    true
-end
+# function isapprox{FSA <: FixedArray, A <: Union{Array, FixedArray}}(a::FSA, b::A; atol::Real = 0)
+#     for i=1:length(a)
+#         !isapprox(a[i], b[i]; atol = atol) && return false
+#     end
+#     true
+# end
 
 angle_axis_proper(q::Quaternion) = angle_proper(q), axis_proper(q)
 
@@ -30,7 +30,9 @@ function rotationmatrix_normalized_fsa{T}(q::Quaternion{T})
     sx, sy, sz = 2q.s*q.v1, 2q.s*q.v2, 2q.s*q.v3
     xx, xy, xz = 2q.v1^2, 2q.v1*q.v2, 2q.v1*q.v3
     yy, yz, zz = 2q.v2^2, 2q.v2*q.v3, 2q.v3^2
-    return Mat{3, 3, T}((1-(yy+zz), xy+sz, xz-sy), (xy-sz, 1-(xx+zz), yz+sx), (xz+sy, yz-sx, 1-(xx+yy)))
+    @SMatrix [one(T)-(yy+zz) xy-sz xz+sy;
+              xy+sz one(T)-(xx+zz) yz-sx;
+              xz-sy yz+sx one(T)-(xx+yy)]
 end
 
 function rpy_to_quaternion(rpy::Vector)
@@ -44,28 +46,28 @@ function rpy_to_quaternion(rpy::Vector)
         c[1]*c[2]*s[3] - s[1]*s[2]*c[3])
 end
 
-hcat(head::Mat) = head
-function hcat(head::Mat, tail::Mat...)
-    tailhcat = hcat(tail...)
-    if isempty(head) && isempty(tailhcat)
-        return zero(head) # TODO: check size match
-    else
-        return Mat((head.values..., tailhcat.values...))
-    end
-end
-
-function set_unsafe!{N, M, T}(dest::AbstractArray{T}, src::Mat{N, M, T})
-    rowRange = 1 : N
-    colRange = 1 : M
-    @inbounds for col = colRange
-        @inbounds for row in rowRange
-            @inbounds dest[row, col] = src[row, col]
-        end
-    end
-end
-
-function unsafe_copy!{N, T}(dest::AbstractVector{T}, doffs, src::Vec{N, T}, soffs, n)
-    @simd for i = 0 : n - 1
-        @inbounds dest[doffs + i] = src[soffs + i]
-    end
-end
+# hcat(head::SMatrix) = head
+# function hcat(head::SMatrix, tail::SMatrix...)
+#     tailhcat = hcat(tail...)
+#     if isempty(head) && isempty(tailhcat)
+#         return zero(head) # TODO: check size match
+#     else
+#         return SMatrix((head.values..., tailhcat.values...))
+#     end
+# end
+#
+# function set_unsafe!{N, M, T}(dest::AbstractArray{T}, src::SMatrix{N, M, T})
+#     rowRange = 1 : N
+#     colRange = 1 : M
+#     @inbounds for col = colRange
+#         @inbounds for row in rowRange
+#             @inbounds dest[row, col] = src[row, col]
+#         end
+#     end
+# end
+#
+# function unsafe_copy!{N, T}(dest::AbstractVector{T}, doffs, src::SVector{N, T}, soffs, n)
+#     @simd for i = 0 : n - 1
+#         @inbounds dest[doffs + i] = src[soffs + i]
+#     end
+# end
