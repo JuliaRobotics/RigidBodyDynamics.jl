@@ -50,7 +50,7 @@ function hcat(head::Mat, tail::Mat...)
     if isempty(head) && isempty(tailhcat)
         return zero(head) # TODO: check size match
     else
-        return Mat((head._..., tailhcat._...))
+        return Mat((head.values..., tailhcat.values...))
     end
 end
 

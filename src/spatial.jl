@@ -37,7 +37,7 @@ end
 
 function cross{N, T}(a::Vec{3, T}, B::Mat{3, N, T})
     vector_to_skew_symmetric(a) * B
-    # Mat(map((col) -> cross(a, Vec(col))._::Tuple{T, T, T}, B._))::Mat{3, N, T} # way slower
+    # Mat(map((col) -> cross(a, Vec(col)).values::Tuple{T, T, T}, B.values))::Mat{3, N, T} # way slower
 end
 
 function Array(inertia::SpatialInertia)
