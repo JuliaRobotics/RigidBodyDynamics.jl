@@ -80,12 +80,12 @@ mass(state::MechanismState) = mass(state.mechanism)
 
 function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
     frame = root_body(state.mechanism).frame
-    com = Point3D(frame, zero(Vec{3, C}))
+    com = Point3D(frame, zeros(SVector{3, C}))
     mass = zero(C)
     for body in itr
         if !isroot(body)
             inertia = body.inertia
-            com += inertia.mass * transform(state, Point3D(inertia.frame, convert(Vec{3, C}, inertia.centerOfMass)), frame)
+            com += inertia.mass * transform(state, Point3D(inertia.frame, convert(SVector{3, C}, inertia.centerOfMass)), frame)
             mass += inertia.mass
         end
     end
@@ -115,7 +115,7 @@ function kinetic_energy{X, M}(state::MechanismState{X, M}, itr)
 end
 kinetic_energy(state::MechanismState) = kinetic_energy(state, filter(b -> !isroot(b), bodies(state.mechanism)))
 
-potential_energy{X, M, C}(state::MechanismState{X, M, C}) = -mass(state) * dot(convert(Vec{3, C}, state.mechanism.gravity), transform(state, center_of_mass(state), root_frame(state.mechanism)).v)
+potential_energy{X, M, C}(state::MechanismState{X, M, C}) = -mass(state) * dot(convert(SVector{3, C}, state.mechanism.gravity), transform(state, center_of_mass(state), root_frame(state.mechanism)).v)
 
 function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
     @assert out.uplo == 'U'
@@ -135,7 +135,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             Ii = crb_inertia(state, bodyi)
             F = crb_inertia(state, bodyi) * Si
             Hii = view(out.data, irange, irange)
-            set_unsafe!(Hii, Si.angular' * F.angular + Si.linear' * F.linear)
+            Hii[:] = Si.angular' * F.angular + Si.linear' * F.linear
 
             # Hji, Hij
             vj = vi.parent
@@ -146,8 +146,8 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                     jrange = mechanism.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
                     framecheck(F.frame, Sj.frame)
-                    Hji = Sj.angular' * F.angular + Sj.linear' * F.linear
-                    set_unsafe!(view(out.data, jrange, irange), Hji)
+                    Hji = view(out.data, jrange, irange)
+                    Hji[:] = Sj.angular' * F.angular + Sj.linear' * F.linear
                 end
                 vj = vj.parent
             end
@@ -242,8 +242,7 @@ function joint_wrenches_and_torques!{T, X, M}(
         parentBody = vertex.parent.vertexData
         jointWrench = netWrenchesInJointWrenchesOut[body]
         S = motion_subspace(state, joint)
-        τjoint = joint_torque(S, jointWrench)
-        unsafe_copy!(view(torquesOut, mechanism.vRanges[joint]), 1, τjoint, 1, length(τjoint))
+        view(torquesOut, mechanism.vRanges[joint])[:] = joint_torque(S, jointWrench)
         if !isroot(parentBody)
             netWrenchesInJointWrenchesOut[parentBody] = netWrenchesInJointWrenchesOut[parentBody] + jointWrench # action = -reaction
         end

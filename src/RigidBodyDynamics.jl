@@ -2,8 +2,8 @@
 
 module RigidBodyDynamics
 
-import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!
-using FixedSizeArrays
+import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array
+using StaticArrays
 using Quaternions
 using DataStructures
 using LightXML

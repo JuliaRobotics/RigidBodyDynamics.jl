@@ -18,17 +18,17 @@ function parse_inertia{T}(::Type{T}, xmlInertia::XMLElement)
     iyy = parse_scalar(T, xmlInertia, "iyy", "0")
     iyz = parse_scalar(T, xmlInertia, "iyz", "0")
     izz = parse_scalar(T, xmlInertia, "izz", "0")
-    return @fsa([ixx ixy ixz; ixy iyy iyz; ixz iyz izz])
+    return @SMatrix [ixx ixy ixz; ixy iyy iyz; ixz iyz izz]
 end
 
 function parse_pose{T}(::Type{T}, xmlPose::Union{Void, XMLElement})
     if xmlPose == nothing
         rot = one(Quaternion{T})
-        trans = zero(Vec{3, T})
+        trans = zeros(SVector{3, T})
     else
         rpy = parse_vector(T, xmlPose, "rpy", "0 0 0")
         rot = rpy_to_quaternion(rpy)
-        trans = Vec(parse_vector(T, xmlPose, "xyz", "0 0 0"))
+        trans = SVector{3}(parse_vector(T, xmlPose, "xyz", "0 0 0"))
     end
     rot, trans
 end
@@ -37,10 +37,10 @@ function parse_joint{T}(::Type{T}, xmlJoint::XMLElement)
     name = attribute(xmlJoint, "name")
     jointType = attribute(xmlJoint, "type")
     if jointType == "revolute" || jointType == "continuous" # TODO: handle joint limits for revolute
-        axis = Vec(parse_vector(T, find_element(xmlJoint, "axis"), "xyz", "1 0 0"))
+        axis = SVector{3}(parse_vector(T, find_element(xmlJoint, "axis"), "xyz", "1 0 0"))
         return Joint(name, Revolute(axis))
     elseif jointType == "prismatic"
-        axis = Vec(parse_vector(T, find_element(xmlJoint, "axis"), "xyz", "1 0 0"))
+        axis = SVector{3}(parse_vector(T, find_element(xmlJoint, "axis"), "xyz", "1 0 0"))
         return Joint(name, Prismatic(axis))
     elseif jointType == "floating"
         return Joint(name, QuaternionFloating())
@@ -54,7 +54,7 @@ end
 function parse_inertia{T}(::Type{T}, xmlInertial::XMLElement, frame::CartesianFrame3D)
     urdfFrame = CartesianFrame3D("inertia urdf helper")
     moment = parse_inertia(T, find_element(xmlInertial, "inertia"))
-    com = zero(Vec{3, T})
+    com = zeros(SVector{3, T})
     mass = parse_scalar(T, find_element(xmlInertial, "mass"), "value", "0")
     inertia = SpatialInertia(urdfFrame, moment, com, mass)
     pose = parse_pose(T, find_element(xmlInertial, "origin"))

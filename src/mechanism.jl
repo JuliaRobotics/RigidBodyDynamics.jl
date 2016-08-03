@@ -3,11 +3,11 @@ type Mechanism{T<:Real}
     bodyFixedFrameDefinitions::OrderedDict{RigidBody{T}, Set{Transform3D{T}}}
     bodyFixedFrameToBody::OrderedDict{CartesianFrame3D, RigidBody{T}}
     jointToJointTransforms::Dict{Joint, Transform3D{T}}
-    gravity::Vec{3, T}
+    gravity::SVector{3, T}
     qRanges::Dict{Joint, UnitRange{Int64}}
     vRanges::Dict{Joint, UnitRange{Int64}}
 
-    function Mechanism(rootname::String; gravity::Vec{3, T} = Vec(zero(T), zero(T), T(-9.81)))
+    function Mechanism(rootname::String; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
         rootBody = RigidBody{T}(rootname)
         tree = Tree{RigidBody{T}, Joint}(rootBody)
         bodyFixedFrameDefinitions = @compat OrderedDict(rootBody => Set([Transform3D(T, rootBody.frame)]))
@@ -96,5 +96,5 @@ rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechani
 
 function gravitational_acceleration{M}(m::Mechanism{M})
     rootBody = root_body(m)
-    SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zero(Vec{3, M}), m.gravity)
+    SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zeros(SVector{3, M}), m.gravity)
 end
