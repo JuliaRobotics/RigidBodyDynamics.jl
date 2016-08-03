@@ -133,9 +133,9 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             irange = mechanism.vRanges[jointi]
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
-            F = crb_inertia(state, bodyi) * Si
+            F = Ii * Si
             Hii = view(out.data, irange, irange)
-            Hii[:] = Si.angular' * F.angular + Si.linear' * F.linear
+            @inbounds Hii[:] = Si.angular' * F.angular + Si.linear' * F.linear
 
             # Hji, Hij
             vj = vi.parent
@@ -147,7 +147,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                     Sj = motion_subspace(state, jointj)
                     framecheck(F.frame, Sj.frame)
                     Hji = view(out.data, jrange, irange)
-                    Hji[:] = Sj.angular' * F.angular + Sj.linear' * F.linear
+                    @inbounds Hji[:] = Sj.angular' * F.angular + Sj.linear' * F.linear
                 end
                 vj = vj.parent
             end
