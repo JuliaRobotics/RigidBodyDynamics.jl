@@ -27,14 +27,15 @@ function rotationmatrix_normalized_fsa{T}(q::Quaternion{T})
 end
 
 function rpy_to_quaternion(rpy::Vector)
+    length(rpy) != 3 && error("wrong size")
     rpy2 = rpy / 2
     s = sin(rpy2)
     c = cos(rpy2)
-    return Quaternion(
-        c[1]*c[2]*c[3] + s[1]*s[2]*s[3],
-        s[1]*c[2]*c[3] - c[1]*s[2]*s[3],
-        c[1]*s[2]*c[3] + s[1]*c[2]*s[3],
-        c[1]*c[2]*s[3] - s[1]*s[2]*c[3])
+    @inbounds qs = c[1]*c[2]*c[3] + s[1]*s[2]*s[3]
+    @inbounds qx = s[1]*c[2]*c[3] - c[1]*s[2]*s[3]
+    @inbounds qy = c[1]*s[2]*c[3] + s[1]*c[2]*s[3]
+    @inbounds qz = c[1]*c[2]*s[3] - s[1]*s[2]*c[3]
+    Quaternion(qs, qx, qy, qz)
 end
 
 # TODO: notify StaticArrays maintainer:

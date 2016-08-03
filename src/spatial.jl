@@ -1,6 +1,6 @@
 immutable SpatialInertia{T<:Real}
     frame::CartesianFrame3D
-    moment::SMatrix{3, 3, T}
+    moment::SMatrix{3, 3, T, 9}
     centerOfMass::SVector{3, T}
     mass::T
 end
@@ -174,12 +174,12 @@ change_body_no_relative_motion(t::Twist, body::CartesianFrame3D) = Twist(body, t
 zero{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
 rand{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, rand(SVector{3, T}), rand(SVector{3, T}))
 
-immutable GeometricJacobian{T<:Real, N}
+immutable GeometricJacobian{T<:Real, N, L}
     body::CartesianFrame3D
     base::CartesianFrame3D
     frame::CartesianFrame3D
-    angular::SMatrix{3, N, T}
-    linear::SMatrix{3, N, T}
+    angular::SMatrix{3, N, T, L}
+    linear::SMatrix{3, N, T, L}
 end
 
 # function GeometricJacobian{T, N}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, N, T}, linear::SMatrix{3, N, T})
@@ -314,10 +314,10 @@ function (*)(inertia::SpatialInertia, twist::Twist)
 end
 
 
-immutable MomentumMatrix{T<:Real, N}
+immutable MomentumMatrix{T<:Real, N, L}
     frame::CartesianFrame3D
-    angular::SMatrix{3, N, T}
-    linear::SMatrix{3, N, T}
+    angular::SMatrix{3, N, T, L}
+    linear::SMatrix{3, N, T, L}
 end
 
 function MomentumMatrix{T}(frame::CartesianFrame3D, mat::Array{T, 2})
