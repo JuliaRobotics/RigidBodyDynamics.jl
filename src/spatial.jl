@@ -201,17 +201,9 @@ num_cols{T, N}(jac::GeometricJacobian{T, N}) = N
 angular_part(jac::GeometricJacobian) = jac.angular
 linear_part(jac::GeometricJacobian) = jac.linear
 
-@generated function Twist{T1, T2, N}(jac::GeometricJacobian{T1, N}, v::AbstractVector{T2})
-    if N == 0
-        return quote
-            zero(Twist{promote_type(T1, T2)}, jac.body, jac.base, jac.frame)
-        end
-    else
-        return quote
-            vFixed = SVector{N}(v)
-            Twist(jac.body, jac.base, jac.frame, jac.angular * vFixed, jac.linear * vFixed)
-        end
-    end
+function Twist(jac::GeometricJacobian, v::AbstractVector)
+    vFixed = SVector{num_cols(jac)}(v)
+    Twist(jac.body, jac.base, jac.frame, jac.angular * vFixed, jac.linear * vFixed)
 end
 
 (-){T<:Real}(jac::GeometricJacobian{T, 0}) = GeometricJacobian(jac.base, jac.body, jac.frame, jac.angular, jac.linear)
@@ -361,17 +353,9 @@ function hcat{T}(mats::MomentumMatrix{T}...)
     return MomentumMatrix(frame, angular, linear)
 end
 
-@generated function Momentum{T1, T2, N}(mat::MomentumMatrix{T1, N}, v::AbstractVector{T2})
-    if N == 0
-        return quote
-            zero(Momentum{promote_type(T1, T2)}, mat.frame)
-        end
-    else
-        return quote
-            vFixed = SVector{N}(v)
-            Momentum(mat.frame, mat.angular * vFixed, mat.linear * vFixed)
-        end
-    end
+function Momentum(mat::MomentumMatrix, v::AbstractVector)
+    vFixed = SVector{num_cols(mat)}(v)
+    Momentum(mat.frame, mat.angular * vFixed, mat.linear * vFixed)
 end
 
 transform{T1<:Real, T2<:Real}(mat::MomentumMatrix{T1, 0}, transform::Transform3D{T2}) = MomentumMatrix(transform.to, mat.angular, mat.linear)
@@ -400,17 +384,9 @@ function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, fra
     return SpatialAcceleration(body, base, frame, SVector(vec[1], vec[2], vec[3]), SVector(vec[4], vec[5], vec[6]))
 end
 
-@generated function SpatialAcceleration{T1, T2, N}(jac::GeometricJacobian{T1, N}, v̇::AbstractVector{T2})
-    if N == 0
-        return quote
-            zero(SpatialAcceleration{promote_type(T1, T2)}, jac.body, jac.base, jac.frame)
-        end
-    else
-        return quote
-            v̇Fixed = SVector{N}(v̇)
-            SpatialAcceleration(jac.body, jac.base, jac.frame, jac.angular * v̇Fixed, jac.linear * v̇Fixed)
-        end
-    end
+function SpatialAcceleration(jac::GeometricJacobian, v̇::AbstractVector)
+    v̇Fixed = SVector{num_cols(jac)}(v̇)
+    SpatialAcceleration(jac.body, jac.base, jac.frame, jac.angular * v̇Fixed, jac.linear * v̇Fixed)
 end
 
 function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
@@ -479,18 +455,9 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
     return Wrench(frame, angular, linear)
 end
 
-@generated function joint_torque{T1, T2, N}(jac::GeometricJacobian{T1, N}, wrench::Wrench{T2})
-    if N == 0
-        return quote
-            framecheck(jac.frame, wrench.frame)
-            zeros(SVector{0, promote_type(T1, T2)})
-        end
-    else
-        return quote
-            framecheck(jac.frame, wrench.frame)
-            jac.angular' * wrench.angular + jac.linear' * wrench.linear
-        end
-    end
+function joint_torque(jac::GeometricJacobian, wrench::Wrench)
+    framecheck(jac.frame, wrench.frame)
+    jac.angular' * wrench.angular + jac.linear' * wrench.linear
 end
 
 function kinetic_energy(I::SpatialInertia, twist::Twist)

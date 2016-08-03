@@ -14,13 +14,13 @@ facts("double pendulum") do
     doublePendulum = Mechanism{Float64}("world"; gravity = SVector(0, 0, g))
     world = root_body(doublePendulum)
 
-    inertia1 = SpatialInertia(CartesianFrame3D("body1"), SMatrix(I1 * axis * axis'), SVector(0, 0, lc1), m1)
+    inertia1 = SpatialInertia(CartesianFrame3D("body1"), I1 * axis * axis', SVector(0, 0, lc1), m1)
     body1 = RigidBody(inertia1)
     joint1 = Joint("1", Revolute(axis))
     joint1ToWorld = Transform3D{Float64}(joint1.frameBefore, world.frame)
     attach!(doublePendulum, world, joint1, joint1ToWorld, body1)
 
-    inertia2 = SpatialInertia(CartesianFrame3D("body2"), SMatrix(I2 * axis * axis'), SVector(0, 0, lc2), m2)
+    inertia2 = SpatialInertia(CartesianFrame3D("body2"), I2 * axis * axis', SVector(0, 0, lc2), m2)
     body2 = RigidBody(inertia2)
     joint2 = Joint("2", Revolute(axis))
     joint2ToBody1 = Transform3D(joint2.frameBefore, body1.frame, SVector(0, 0, l1))

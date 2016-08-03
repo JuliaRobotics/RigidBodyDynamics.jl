@@ -38,7 +38,5 @@ function rpy_to_quaternion(rpy::Vector)
     Quaternion(qs, qx, qy, qz)
 end
 
-# TODO: notify StaticArrays maintainer:
-function cross(x::SVector{3}, y::SVector{3})
-    SVector(x[2] * y[3] - x[3] * y[2], x[3] * y[1] - x[1] * y[3], x[1] * y[2] - x[2] * y[1])
-end
+# TODO: notify StaticArrays maintainer
+@inline (::Type{SVector{0}}){T}(::AbstractArray{T}) = zeros(SVector{0, T})
