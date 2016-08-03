@@ -134,7 +134,7 @@ facts("mass matrix / kinetic energy") do
         kinetic_energy(x)
     end
 
-    M2 = similar(M)
+    M2 = similar(M.data)
     # FIXME: changed after updating to ForwardDiff 0.2: chunk size 1 necessary because creating a MechanismState with a max size Dual takes forever...
     M2 = ForwardDiff.hessian!(M2, kinetic_energy_fun, velocity_vector(x), ForwardDiff.Chunk{1}())
     @fact M2 --> roughly(M; atol = 1e-12)
@@ -146,7 +146,7 @@ facts("inverse dynamics / acceleration term") do
     function v̇_to_τ(v̇)
         inverse_dynamics(x, v̇)
     end
-    M2 = similar(M)
+    M2 = similar(M.data)
     ForwardDiff.jacobian!(M2, v̇_to_τ, zeros(Float64, num_velocities(mechanism)))
     @fact M2 --> roughly(M; atol = 1e-12)
 end
@@ -239,9 +239,6 @@ facts("inverse dynamics / external wrenches") do
     com = center_of_mass(x)
     gravitational_wrench = Wrench(gravitational_force.frame, cross(com, gravitational_force).v, gravitational_force.v)
     total_wrench = floatingJointWrench + gravitational_wrench + sum((w) -> transform(x, w, root_frame(mechanism)), values(externalWrenches))
-    println(typeof(total_wrench))
-    println(typeof(Array(total_wrench)))
-    println(typeof(ḣ))
     @fact Array(total_wrench) --> roughly(ḣ; atol = 1e-12)
 end
 
