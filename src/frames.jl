@@ -104,9 +104,9 @@ function *(t1::Transform3D, t2::Transform3D)
     return Transform3D(t2.from, t1.to, t1.rot * t2.rot, t1.trans + rotate(t2.trans, t1.rot))
 end
 
-function inv(t::Transform3D)
+function inv{T}(t::Transform3D{T})
     rotinv = inv(t.rot)
-    return Transform3D(t.to, t.from, rotinv, -rotate(t.trans, rotinv))
+    return Transform3D{T}(t.to, t.from, rotinv, -rotate(t.trans, rotinv))
 end
 
 rand(::Type{Transform3D{Float64}}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D(from, to, nquatrand(), rand(SVector{3, Float64}))
