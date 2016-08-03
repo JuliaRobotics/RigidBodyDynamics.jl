@@ -73,14 +73,14 @@ facts("relative_acceleration") do
     q = configuration_vector(x)
     v = velocity_vector(x)
     q̇ = configuration_derivative(x)
-    create_autodiff = (z, dz) -> [ForwardDiff.GradientNumber(z[i]::Float64, dz[i]::Float64) for i in 1 : length(z)]
+    create_autodiff = (z, dz) -> [ForwardDiff.Dual(z[i]::Float64, dz[i]::Float64) for i in 1 : length(z)]
     q_autodiff = create_autodiff(q, q̇)
     v_autodiff = create_autodiff(v, v̇)
     x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
     set_configuration!(x_autodiff, q_autodiff)
     set_velocity!(x_autodiff, v_autodiff)
     twist_autodiff = relative_twist(x_autodiff, body, base)
-    accel_vec = [ForwardDiff.grad(x)[1]::Float64 for x in (Array(twist_autodiff))]
+    accel_vec = [ForwardDiff.partials(x, 1)::Float64 for x in (Array(twist_autodiff))]
 
     @fact Array(Ṫ) --> roughly(accel_vec; atol = 1e-12)
 end
@@ -119,6 +119,7 @@ facts("momentum_matrix / summing momenta") do
     @fact h --> roughly(hSum; atol = 1e-12)
 end
 
+
 facts("mass matrix / kinetic energy") do
     Ek = kinetic_energy(x)
     M = mass_matrix(x)
@@ -130,42 +131,55 @@ facts("mass matrix / kinetic energy") do
         local x = MechanismState(eltype(v), mechanism)
         set_configuration!(x, q)
         set_velocity!(x, v)
-        return kinetic_energy(x)
+        kinetic_energy(x)
     end
-    M2 = ForwardDiff.hessian(kinetic_energy_fun, velocity_vector(x))
+
+    M2 = similar(M.data)
+    # FIXME: changed after updating to ForwardDiff 0.2: chunk size 1 necessary because creating a MechanismState with a max size Dual takes forever...
+    M2 = ForwardDiff.hessian!(M2, kinetic_energy_fun, velocity_vector(x), ForwardDiff.Chunk{1}())
     @fact M2 --> roughly(M; atol = 1e-12)
 end
 
 facts("inverse dynamics / acceleration term") do
-    js = joints(mechanism)
-    v̇_to_τ = v̇ -> inverse_dynamics(x, v̇)
     M = mass_matrix(x)
-    @fact ForwardDiff.jacobian(v̇_to_τ, zeros(Float64, num_velocities(mechanism))) --> roughly(M; atol = 1e-12)
+
+    function v̇_to_τ(v̇)
+        inverse_dynamics(x, v̇)
+    end
+    M2 = similar(M.data)
+    ForwardDiff.jacobian!(M2, v̇_to_τ, zeros(Float64, num_velocities(mechanism)))
+    @fact M2 --> roughly(M; atol = 1e-12)
 end
 
 facts("inverse dynamics / Coriolis term") do
     mechanism = rand_tree_mechanism(Float64, [[Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # skew symmetry property tested later on doesn't hold when q̇ ≠ v
     x = MechanismState(Float64, mechanism)
     rand!(x)
-    q_to_M = q -> begin
+
+    function q_to_M(q)
         local x = MechanismState(eltype(q), mechanism)
         set_configuration!(x, q)
         zero_velocity!(x)
-        return vec(mass_matrix(x))
+        vec(mass_matrix(x))
     end
-    dMdq = ForwardDiff.jacobian(q_to_M, configuration_vector(x))
+    nv = num_velocities(mechanism)
+    nq = num_positions(mechanism)
+    dMdq = zeros(nv * nv, nq)
+    ForwardDiff.jacobian!(dMdq, q_to_M, configuration_vector(x))
     q̇ = velocity_vector(x)
     Ṁ = reshape(dMdq * q̇, num_velocities(mechanism), num_velocities(mechanism))
 
     q = configuration_vector(x)
     v̇ = zeros(num_velocities(mechanism))
-    v_to_c = v -> begin
+    function v_to_c(v)
         local x = MechanismState(eltype(v), mechanism)
         set_configuration!(x, q)
         set_velocity!(x, v)
         inverse_dynamics(x, v̇)
     end
-    C = 1/2 * ForwardDiff.jacobian(v_to_c, q̇)
+    C = similar(Ṁ)
+    ForwardDiff.jacobian!(C, v_to_c, q̇)
+    C *= 1/2
 
     skew = Ṁ - 2 * C;
     @fact skew + skew' --> roughly(zeros(size(skew)); atol = 1e-12)
@@ -178,13 +192,17 @@ facts("inverse dynamics / gravity term") do
     v̇ = zeros(num_velocities(mechanism))
     zero_velocity!(x)
     g = inverse_dynamics(x, v̇)
-    q_to_potential = q -> begin
-        local x = MechanismState(eltype(q), mechanism)
+
+    function q_to_potential(q)
+        x = MechanismState(eltype(q), mechanism)
         set_configuration!(x, q)
         zero_velocity!(x)
         return [potential_energy(x)]
     end
-    @fact ForwardDiff.jacobian(q_to_potential, configuration_vector(x)) --> roughly(g'; atol = 1e-12)
+
+    g2 = similar(g')
+    ForwardDiff.jacobian!(g2, q_to_potential, configuration_vector(x))
+    @fact g2 --> roughly(g'; atol = 1e-12)
 end
 
 facts("inverse dynamics / external wrenches") do
@@ -193,6 +211,9 @@ facts("inverse dynamics / external wrenches") do
     rand_configuration!(x)
     rand_velocity!(x)
 
+    q = configuration_vector(x)
+    q̇ = configuration_derivative(x)
+    v = velocity_vector(x)
     v̇ = rand(num_velocities(mechanism))
     nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
     # TODO: use proper dict comprehension when compat allows it:
@@ -203,18 +224,16 @@ facts("inverse dynamics / external wrenches") do
     floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[mechanism.vRanges[floatingJoint]])
     floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
 
-    A = momentum_matrix(x)
-    q_to_A = q -> begin
-        local x = MechanismState(eltype(q), mechanism)
-        set_configuration!(x, q)
-        zero_velocity!(x)
-        return vec(Array(momentum_matrix(x)))
-    end
-    dAdq = ForwardDiff.jacobian(q_to_A, configuration_vector(x))
-    q̇ = configuration_derivative(x)
-    Ȧ = reshape(dAdq * q̇, (6, num_velocities(mechanism)))
-    v = velocity_vector(x)
-    ḣ = Array(A) * v̇ + Ȧ * v # rate of change of momentum
+    create_autodiff = (z, dz) -> [ForwardDiff.Dual(z[i]::Float64, dz[i]::Float64) for i in 1 : length(z)]
+    q_autodiff = create_autodiff(q, q̇)
+    v_autodiff = create_autodiff(v, v̇)
+    x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
+    set_configuration!(x_autodiff, q_autodiff)
+    set_velocity!(x_autodiff, v_autodiff)
+    A_autodiff = Array(momentum_matrix(x_autodiff))
+    A = [ForwardDiff.value(A_autodiff[i, j])::Float64 for i = 1 : size(A_autodiff, 1), j = 1 : size(A_autodiff, 2)]
+    Ȧ = [ForwardDiff.partials(A_autodiff[i, j], 1)::Float64 for i = 1 : size(A_autodiff, 1), j = 1 : size(A_autodiff, 2)]
+    ḣ = A * v̇ + Ȧ * v # rate of change of momentum
 
     gravitational_force = FreeVector3D(root_frame(mechanism), mass(mechanism) * mechanism.gravity)
     com = center_of_mass(x)
