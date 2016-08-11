@@ -75,7 +75,7 @@ function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
     m = convert(S, inertia.mass)
     c = convert(SVector{3, S}, inertia.centerOfMass)
 
-    R = rotationmatrix_normalized_fsa(Quaternion{S}(t.rot))
+    R = rotationmatrix_normalized_fsa(convert(Quaternion{S}, t.rot))
     p = convert(SVector{3, S}, t.trans)
 
     if m == zero(S)
