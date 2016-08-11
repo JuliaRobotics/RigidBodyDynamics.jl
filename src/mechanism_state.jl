@@ -1,13 +1,13 @@
 immutable UpdateTwistAndBias{C}
     parentFrame::CartesianFrame3D
     joint::Joint
-    qJoint
-    vJoint
+    qJoint::SubArray{C,1,Array{C,1},Tuple{UnitRange{Int64}},true}
+    vJoint::SubArray{C,1,Array{C,1},Tuple{UnitRange{Int64}},true}
     transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
     parentCache::CacheElement{Tuple{Twist{C}, SpatialAcceleration{C}}, UpdateTwistAndBias{C}}
 
     UpdateTwistAndBias() = new()
-    function UpdateTwistAndBias(parentFrame::CartesianFrame3D, joint::Joint, qJoint::AbstractVector, vJoint::AbstractVector, transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}, parentCache::CacheElement{Tuple{Twist{C}, SpatialAcceleration{C}}, UpdateTwistAndBias{C}})
+    function UpdateTwistAndBias(parentFrame::CartesianFrame3D, joint::Joint, qJoint::SubArray{C,1,Array{C,1},Tuple{UnitRange{Int64}},true}, vJoint::SubArray{C,1,Array{C,1},Tuple{UnitRange{Int64}},true}, transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}, parentCache::CacheElement{Tuple{Twist{C}, SpatialAcceleration{C}}, UpdateTwistAndBias{C}})
         new(parentFrame, joint, qJoint, vJoint, transformToRootCache, parentCache)
     end
 end
@@ -21,11 +21,11 @@ end
     parentBias = parent[2]
 
     bodyToRoot = get(functor.transformToRootCache)
-    jointTwist = joint_twist(joint, qJoint, vJoint)::Twist{C}
+    jointTwist = joint_twist(joint, qJoint, vJoint)#::Twist{C}
     jointTwist = Twist(joint.frameAfter, parentFrame, jointTwist.frame, jointTwist.angular, jointTwist.linear) # to make the frames line up;
     twist = parentTwist + transform(jointTwist, bodyToRoot)
 
-    bias = bias_acceleration(joint, qJoint, vJoint)::SpatialAcceleration{C}
+    bias = bias_acceleration(joint, qJoint, vJoint)#::SpatialAcceleration{C}
     bias = SpatialAcceleration(joint.frameAfter, parentFrame, bias.frame, bias.angular, bias.linear) # to make the frames line up
     rootToBody = inv(bodyToRoot)
     twistOfBodyWrtRoot = transform(twist, rootToBody)
