@@ -55,7 +55,8 @@ facts("momentum") do
 end
 
 facts("geometric jacobian, power") do
-    J = GeometricJacobian(f2, f1, f3, rand(6, 14))
+    n = 14
+    J = GeometricJacobian(f2, f1, f3, rand(SMatrix{3, n}), rand(SMatrix{3, n}))
     v = rand(num_cols(J))
     W = rand(Wrench{Float64}, f3)
     T = Twist(J, v)
@@ -71,7 +72,8 @@ facts("geometric jacobian, power") do
 end
 
 facts("momentum matrix") do
-    A = MomentumMatrix(f3, rand(6, 13))
+    n = 13
+    A = MomentumMatrix(f3, rand(SMatrix{3, n}), rand(SMatrix{3, n}))
     v = rand(num_cols(A))
     h = Momentum(A, v)
     H = rand(Transform3D{Float64}, f3, f1)

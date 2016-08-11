@@ -174,45 +174,51 @@ change_body_no_relative_motion(t::Twist, body::CartesianFrame3D) = Twist(body, t
 zero{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
 rand{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, rand(SVector{3, T}), rand(SVector{3, T}))
 
-immutable GeometricJacobian{T<:Real, N, L}
+immutable GeometricJacobian{A<:AbstractMatrix}
     body::CartesianFrame3D
     base::CartesianFrame3D
     frame::CartesianFrame3D
-    angular::SMatrix{3, N, T, L}
-    linear::SMatrix{3, N, T, L}
+    angular::A
+    linear::A
+
+    function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A)
+        @assert size(angular, 1) == 3
+        @assert size(linear, 1) == 3
+        @assert size(angular, 2) == size(linear, 2)
+        new(body, base, frame, angular, linear)
+    end
 end
 
-# function GeometricJacobian{T, N}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, N, T}, linear::SMatrix{3, N, T})
-#     GeometricJacobian{T, N}(body, base, frame, angular, linear)
+function GeometricJacobian{A<:AbstractMatrix}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A)
+    GeometricJacobian{A}(body, base, frame, angular, linear)
+end
+
+# function GeometricJacobian{A<:AbstractMatrix}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, mat::A) # TODO: remove?
+#     @assert size(mat, 1) == 6
+#     @inbounds angular = mat[1 : 3, :]
+#     @inbounds linear = mat[4 : 6, :]
+#     GeometricJacobian(body, base, frame, angular, linear)
 # end
 
-function GeometricJacobian{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, mat::Array{T, 2})
-    @assert size(mat, 1) == 6
-    N = size(mat, 2)
-    GeometricJacobian(body, base, frame, SMatrix{3, N}(mat[1 : 3, :]), SMatrix{3, N}(mat[4 : 6, :]))
-end
-
-convert{T<:Real, N}(::Type{GeometricJacobian{T, N}}, jac::GeometricJacobian{T, N}) = jac
-convert{T<:Real, N}(::Type{GeometricJacobian{T, N}}, jac::GeometricJacobian) = GeometricJacobian(jac.body, jac.base, jac.frame, convert(SMatrix{3, N, T}, jac.angular), convert(SMatrix{3, N, T}, jac.linear))
+convert{A}(::Type{GeometricJacobian{A}}, jac::GeometricJacobian{A}) = jac
+convert{A}(::Type{GeometricJacobian{A}}, jac::GeometricJacobian) = GeometricJacobian(jac.body, jac.base, jac.frame, convert(A, jac.angular), convert(A, jac.linear))
 Array(jac::GeometricJacobian) = [Array(jac.angular); Array(jac.linear)]
 
-num_cols{T, N}(jac::GeometricJacobian{T, N}) = N
-
+eltype{A}(::Type{GeometricJacobian{A}}) = eltype(A)
+num_cols(jac::GeometricJacobian) = size(jac.angular, 2)
 angular_part(jac::GeometricJacobian) = jac.angular
 linear_part(jac::GeometricJacobian) = jac.linear
 
 function Twist(jac::GeometricJacobian, v::AbstractVector)
-    vFixed = SVector{num_cols(jac)}(v)
-    Twist(jac.body, jac.base, jac.frame, jac.angular * vFixed, jac.linear * vFixed)
+    Twist(jac.body, jac.base, jac.frame, convert(SVector{3}, jac.angular * v), convert(SVector{3}, jac.linear * v))
 end
 
-(-){T<:Real}(jac::GeometricJacobian{T, 0}) = GeometricJacobian(jac.base, jac.body, jac.frame, jac.angular, jac.linear)
 (-)(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.angular, -jac.linear)
 function show(io::IO, jac::GeometricJacobian)
     print(io, "GeometricJacobian: body: \"$(name(jac.body))\", base: \"$(name(jac.base))\", expressed in \"$(name(jac.frame))\":\n$(Array(jac))")
 end
 
-function hcat{T}(jacobians::GeometricJacobian{T}...)
+function hcat(jacobians::GeometricJacobian...)
     frame = jacobians[1].frame
     for j = 2 : length(jacobians)
         framecheck(jacobians[j].frame, frame)
@@ -220,11 +226,8 @@ function hcat{T}(jacobians::GeometricJacobian{T}...)
     end
     angular = hcat((jac.angular::SMatrix for jac in jacobians)...)
     linear = hcat((jac.linear::SMatrix for jac in jacobians)...)
-    return GeometricJacobian(jacobians[end].body, jacobians[1].base, frame, angular, linear)
+    GeometricJacobian(jacobians[end].body, jacobians[1].base, frame, angular, linear)
 end
-
-# zero column case
-transform{T1<:Real, T2<:Real}(jac::GeometricJacobian{T1, 0}, transform::Transform3D{T2}) = GeometricJacobian(jac.body, jac.base, transform.to, jac.angular, jac.linear)
 
 function transform(jac::GeometricJacobian, transform::Transform3D)
     framecheck(jac.frame, transform.from)
@@ -306,33 +309,43 @@ function (*)(inertia::SpatialInertia, twist::Twist)
 end
 
 
-immutable MomentumMatrix{T<:Real, N, L}
+immutable MomentumMatrix{A<:AbstractMatrix}
     frame::CartesianFrame3D
-    angular::SMatrix{3, N, T, L}
-    linear::SMatrix{3, N, T, L}
+    angular::A
+    linear::A
+
+    function MomentumMatrix(frame::CartesianFrame3D, angular::A, linear::A)
+        @assert size(angular, 1) == 3
+        @assert size(linear, 1) == 3
+        @assert size(angular, 2) == size(linear, 2)
+        new(frame, angular, linear)
+    end
 end
 
-function MomentumMatrix{T}(frame::CartesianFrame3D, mat::Array{T, 2})
-    @assert size(mat, 1) == 6
-    N = size(mat, 2)
-    MomentumMatrix(frame, SMatrix{3, N}(mat[1 : 3, :]), SMatrix{3, N}(mat[4 : 6, :]))
+function MomentumMatrix{A<:AbstractMatrix}(frame::CartesianFrame3D, angular::A, linear::A)
+    MomentumMatrix{A}(frame, angular, linear)
 end
 
-num_cols{T, N}(mat::MomentumMatrix{T, N}) = N
+# function MomentumMatrix{A<:AbstractMatrix}(frame::CartesianFrame3D, mat::A) # TODO: remove?
+#     @assert size(mat, 1) == 6
+#     @inbounds angular = mat[1 : 3, :]
+#     @inbounds linear = mat[4 : 6, :]
+#     MomentumMatrix(frame, angular, linear)
+# end
 
-Array(m::MomentumMatrix) = [Array(angular_part(m)); Array(linear_part(m))]
+convert{A}(::Type{MomentumMatrix{A}}, mat::MomentumMatrix{A}) = mat
+convert{A}(::Type{MomentumMatrix{A}}, mat::MomentumMatrix) = MomentumMatrix(mat.frame, convert(A, mat.angular), convert(A, mat.linear))
+Array(mat::MomentumMatrix) = [Array(mat.angular); Array(mat.linear)]
+
+eltype{A}(::Type{MomentumMatrix{A}}) = eltype(A)
+num_cols(mat::MomentumMatrix) = size(mat.angular, 2)
+angular_part(mat::MomentumMatrix) = mat.angular
+linear_part(mat::MomentumMatrix) = mat.linear
+
 show(io::IO, m::MomentumMatrix) = print(io, "MomentumMatrix expressed in \"$(name(m.frame))\":\n$(Array(m))")
-angular_part(m::MomentumMatrix) = m.angular
-linear_part(m::MomentumMatrix) = m.linear
 
-function (*){T}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T, 0})
+function (*)(inertia::SpatialInertia, jac::GeometricJacobian)
     framecheck(inertia.frame, jac.frame)
-    MomentumMatrix(inertia.frame, zeros(SMatrix{3, 0, T}), zeros(SMatrix{3, 0, T}))
-end
-
-function (*){T, N}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T, N})
-    framecheck(inertia.frame, jac.frame)
-
     Jω = jac.angular
     Jv = jac.linear
     J = inertia.moment
@@ -343,22 +356,19 @@ function (*){T, N}(inertia::SpatialInertia{T}, jac::GeometricJacobian{T, N})
     MomentumMatrix(inertia.frame, angular, linear)
 end
 
-function hcat{T}(mats::MomentumMatrix{T}...)
+function hcat(mats::MomentumMatrix...)
     frame = mats[1].frame
     for j = 2 : length(mats)
         framecheck(mats[j].frame, frame)
     end
     angular = hcat((m.angular::SMatrix for m in mats)...)
     linear = hcat((m.linear::SMatrix for m in mats)...)
-    return MomentumMatrix(frame, angular, linear)
+    MomentumMatrix(frame, angular, linear)
 end
 
 function Momentum(mat::MomentumMatrix, v::AbstractVector)
-    vFixed = SVector{num_cols(mat)}(v)
-    Momentum(mat.frame, mat.angular * vFixed, mat.linear * vFixed)
+    Momentum(mat.frame, convert(SVector{3}, mat.angular * v), convert(SVector{3}, mat.linear * v))
 end
-
-transform{T1<:Real, T2<:Real}(mat::MomentumMatrix{T1, 0}, transform::Transform3D{T2}) = MomentumMatrix(transform.to, mat.angular, mat.linear)
 
 function transform(mat::MomentumMatrix, transform::Transform3D)
     framecheck(mat.frame, transform.from)
@@ -366,7 +376,7 @@ function transform(mat::MomentumMatrix, transform::Transform3D)
     linear = R * linear_part(mat)
     T = eltype(linear)
     angular = R * angular_part(mat) + cross(transform.trans, linear)
-    return MomentumMatrix(transform.to, angular, linear)
+    MomentumMatrix(transform.to, angular, linear)
 end
 
 immutable SpatialAcceleration{T<:Real}
