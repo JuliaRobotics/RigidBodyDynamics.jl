@@ -97,7 +97,7 @@ center_of_mass(state::MechanismState) = center_of_mass(state, bodies(state.mecha
 
 function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{RigidBody{M}, Joint})
     copysign = (motionSubspace::GeometricJacobian, sign::Int64) -> sign < 0 ? -motionSubspace : motionSubspace
-    motionSubspaces = [copysign(motion_subspace(state, joint), sign)::GeometricJacobian{C} for (joint, sign) in zip(path.edgeData, path.directions)]
+    motionSubspaces = [copysign(motion_subspace(state, joint), sign)::GeometricJacobian for (joint, sign) in zip(path.edgeData, path.directions)]
     return hcat(motionSubspaces...)
 end
 
