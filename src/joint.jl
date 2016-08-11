@@ -37,6 +37,7 @@ end
 @joint_type_dependent_function zero_configuration(t::Type)
 @joint_type_dependent_function rand_configuration(t::Type)
 @joint_type_dependent_function joint_twist(q::AbstractVector, v::AbstractVector)
+@joint_type_dependent_function joint_torque!(q::AbstractVector, joint_wrench::Wrench, τ::AbstractVector)
 
 immutable QuaternionFloating <: JointType
 end
@@ -101,7 +102,23 @@ function joint_twist{T<:Real}(j::Joint, jt::QuaternionFloating, q::AbstractVecto
     ret
 end
 
+function joint_torque!(j::Joint, jt::QuaternionFloating, q::AbstractVector, joint_wrench::Wrench, τ::AbstractVector)
+    framecheck(joint_wrench.frame, j.frameAfter)
+    length(τ) == num_velocities(j, jt) || error("τ has wrong size")
+    @inbounds τ[1 : 3] = joint_wrench.angular
+    @inbounds τ[4 : 6] = joint_wrench.linear
+end
+
+
 abstract OneDegreeOfFreedomFixedAxis <: JointType
+num_positions(j::Joint, jt::OneDegreeOfFreedomFixedAxis) = 1::Int64
+num_velocities(j::Joint, jt::OneDegreeOfFreedomFixedAxis) = 1::Int64
+zero_configuration{T<:Real}(j::Joint, jt::OneDegreeOfFreedomFixedAxis, ::Type{T}) = [zero(T)]
+rand_configuration{T<:Real}(j::Joint, jt::OneDegreeOfFreedomFixedAxis, ::Type{T}) = [rand(T)]
+bias_acceleration{T<:Real}(j::Joint, jt::OneDegreeOfFreedomFixedAxis, q::AbstractVector{T}, v::AbstractVector{T}) = zero(SpatialAcceleration{T}, j.frameAfter, j.frameBefore, j.frameAfter)
+configuration_derivative_to_velocity(j::Joint, jt::OneDegreeOfFreedomFixedAxis, q::AbstractVector, q̇::AbstractVector) = q̇
+velocity_to_configuration_derivative(j::Joint, jt::OneDegreeOfFreedomFixedAxis, q::AbstractVector, v::AbstractVector) = v
+
 
 immutable Prismatic{T<:Real} <: OneDegreeOfFreedomFixedAxis
     translation_axis::SVector{3, T}
@@ -125,10 +142,17 @@ function motion_subspace{T<:Real}(j::Joint, jt::Prismatic, q::AbstractVector{T})
     return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, linear)
 end
 
+function joint_torque!(j::Joint, jt::Prismatic, q::AbstractVector, joint_wrench::Wrench, τ::AbstractVector)
+    framecheck(joint_wrench.frame, j.frameAfter)
+    length(τ) == num_velocities(j, jt) || error("τ has wrong size")
+    @inbounds τ[1] = dot(joint_wrench.linear, jt.translation_axis)
+end
+
+
 immutable Revolute{T<:Real} <: OneDegreeOfFreedomFixedAxis
     rotation_axis::SVector{3, T}
 end
-# Revolute{T}(rotation_axis::SVector{3, T}) = Revolute{T}(rotation_axis)
+
 show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.rotation_axis)")
 function rand{T}(::Type{Revolute{T}})
     axis = rand(SVector{3, T})
@@ -154,14 +178,11 @@ function motion_subspace{T<:Real}(j::Joint, jt::Revolute, q::AbstractVector{T})
     return GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, linear)
 end
 
-num_positions(j::Joint, jt::OneDegreeOfFreedomFixedAxis) = 1::Int64
-num_velocities(j::Joint, jt::OneDegreeOfFreedomFixedAxis) = 1::Int64
-zero_configuration{T<:Real}(j::Joint, jt::OneDegreeOfFreedomFixedAxis, ::Type{T}) = [zero(T)]
-rand_configuration{T<:Real}(j::Joint, jt::OneDegreeOfFreedomFixedAxis, ::Type{T}) = [rand(T)]
-bias_acceleration{T<:Real}(j::Joint, jt::OneDegreeOfFreedomFixedAxis, q::AbstractVector{T}, v::AbstractVector{T}) = zero(SpatialAcceleration{T}, j.frameAfter, j.frameBefore, j.frameAfter)
-configuration_derivative_to_velocity(j::Joint, jt::OneDegreeOfFreedomFixedAxis, q::AbstractVector, q̇::AbstractVector) = q̇
-velocity_to_configuration_derivative(j::Joint, jt::OneDegreeOfFreedomFixedAxis, q::AbstractVector, v::AbstractVector) = v
-
+function joint_torque!(j::Joint, jt::Revolute, q::AbstractVector, joint_wrench::Wrench, τ::AbstractVector)
+    framecheck(joint_wrench.frame, j.frameAfter)
+    length(τ) == num_velocities(j, jt) || error("τ has wrong size")
+    @inbounds τ[1] = dot(joint_wrench.angular, jt.rotation_axis)
+end
 
 immutable Fixed <: JointType
 end
@@ -181,6 +202,7 @@ rand_configuration{T<:Real}(j::Joint, jt::Fixed, ::Type{T}) = zeros(T, 0, 1)
 bias_acceleration{T<:Real}(j::Joint, jt::Fixed, q::AbstractVector{T}, v::AbstractVector{T}) = zero(SpatialAcceleration{T}, j.frameAfter, j.frameBefore, j.frameAfter)
 configuration_derivative_to_velocity(j::Joint, jt::Fixed, q::AbstractVector, q̇::AbstractVector) = q̇
 velocity_to_configuration_derivative(j::Joint, jt::Fixed, q::AbstractVector, v::AbstractVector) = v
+joint_torque!(j::Joint, jt::Fixed, q::AbstractVector, joint_wrench::Wrench, τ::AbstractVector) = nothing
 
 
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
