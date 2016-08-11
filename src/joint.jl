@@ -107,6 +107,7 @@ function joint_torque!(j::Joint, jt::QuaternionFloating, q::AbstractVector, join
     length(τ) == num_velocities(j, jt) || error("τ has wrong size")
     @inbounds τ[1 : 3] = joint_wrench.angular
     @inbounds τ[4 : 6] = joint_wrench.linear
+    nothing
 end
 
 
@@ -146,6 +147,7 @@ function joint_torque!(j::Joint, jt::Prismatic, q::AbstractVector, joint_wrench:
     framecheck(joint_wrench.frame, j.frameAfter)
     length(τ) == num_velocities(j, jt) || error("τ has wrong size")
     @inbounds τ[1] = dot(joint_wrench.linear, jt.translation_axis)
+    nothing
 end
 
 
@@ -182,6 +184,7 @@ function joint_torque!(j::Joint, jt::Revolute, q::AbstractVector, joint_wrench::
     framecheck(joint_wrench.frame, j.frameAfter)
     length(τ) == num_velocities(j, jt) || error("τ has wrong size")
     @inbounds τ[1] = dot(joint_wrench.angular, jt.rotation_axis)
+    nothing
 end
 
 immutable Fixed <: JointType
