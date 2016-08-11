@@ -49,6 +49,17 @@ facts("q̇ <-> v") do
     end
 end
 
+facts("joint_torque! / geometric_jacobian") do
+    for joint in joints(mechanism)
+        qjoint = configuration(x, joint)
+        wrench = rand(Wrench{Float64}, joint.frameAfter)
+        τ = Vector{Float64}(num_velocities(joint))
+        joint_torque!(joint, τ, qjoint, wrench)
+        S = motion_subspace(joint, qjoint)
+        @fact τ --> roughly(joint_torque(S, wrench))
+    end
+end
+
 facts("geometric_jacobian / relative_twist") do
     bs = Set(bodies(mechanism))
     body = rand([bs...])
@@ -256,3 +267,5 @@ facts("dynamics / inverse dynamics") do
     τ = inverse_dynamics(x, result.v̇, externalWrenches)
     @fact τ --> roughly(zeros(num_velocities(mechanism)); atol = 1e-12)
 end
+
+nothing

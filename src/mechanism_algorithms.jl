@@ -241,11 +241,12 @@ function joint_wrenches_and_torques!{T, X, M}(
         body = vertex.vertexData
         parentBody = vertex.parent.vertexData
         jointWrench = netWrenchesInJointWrenchesOut[body]
-        S = motion_subspace(state, joint)
-        view(torquesOut, mechanism.vRanges[joint])[:] = joint_torque(S, jointWrench)
         if !isroot(parentBody)
             netWrenchesInJointWrenchesOut[parentBody] = netWrenchesInJointWrenchesOut[parentBody] + jointWrench # action = -reaction
         end
+        jointWrench = transform(state, jointWrench, joint.frameAfter)
+        τjoint = view(torquesOut, mechanism.vRanges[joint])
+        joint_torque!(joint, τjoint, configuration(state, joint), jointWrench)
     end
 end
 

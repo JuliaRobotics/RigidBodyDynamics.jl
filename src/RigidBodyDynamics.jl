@@ -58,6 +58,7 @@ export
     transform,
     newton_euler,
     joint_torque,
+    joint_torque!,
     root_body,
     root_frame,
     root_vertex,

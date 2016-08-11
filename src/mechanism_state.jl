@@ -81,8 +81,8 @@ num_velocities(state::MechanismState) = length(state.v)
 state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
 mechanism_eltype{X, M, C}(state::MechanismState{X, M, C}) = M
 cache_eltype{X, M, C}(state::MechanismState{X, M, C}) = C
-configuration(state::MechanismState, joint::Joint) = state.q[state.mechanism.qRanges[joint]] #view(state.q, state.qRanges[joint])
-velocity(state::MechanismState, joint::Joint) = state.v[state.mechanism.vRanges[joint]] #view(state.v, state.vRanges[joint])
+configuration(state::MechanismState, joint::Joint) = view(state.q, state.mechanism.qRanges[joint])
+velocity(state::MechanismState, joint::Joint) = view(state.v, state.mechanism.vRanges[joint])
 
 function setdirty!(state::MechanismState)
     setdirty!(state.transformCache)
@@ -122,27 +122,27 @@ state_vector(state::MechanismState) = [configuration_vector(state); velocity_vec
 configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.q[state.mechanism.qRanges[joint]] for joint in path.edgeData]...)
 velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint}) = vcat([state.v[state.mechanism.vRanges[joint]] for joint in path.edgeData]...)
 
-function set_configuration!(state::MechanismState, joint::Joint, q::Vector)
+function set_configuration!(state::MechanismState, joint::Joint, q::AbstractVector)
     view(state.q, state.mechanism.qRanges[joint])[:] = q
     setdirty!(state)
 end
 
-function set_velocity!(state::MechanismState, joint::Joint, v::Vector)
+function set_velocity!(state::MechanismState, joint::Joint, v::AbstractVector)
     view(state.v, state.mechanism.vRanges[joint])[:] = v
     setdirty!(state)
 end
 
-function set_configuration!(state::MechanismState, q::Vector)
+function set_configuration!(state::MechanismState, q::AbstractVector)
     copy!(state.q, q)
     setdirty!(state)
 end
 
-function set_velocity!(state::MechanismState, v::Vector)
+function set_velocity!(state::MechanismState, v::AbstractVector)
     copy!(state.v, v)
     setdirty!(state)
 end
 
-function set!(state::MechanismState, x::Vector)
+function set!(state::MechanismState, x::AbstractVector)
     nq = num_positions(state)
     nv = num_velocities(state)
     length(x) == nq + nv || error("wrong size")
