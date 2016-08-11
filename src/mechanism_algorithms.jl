@@ -246,7 +246,7 @@ function joint_wrenches_and_torques!{T, X, M}(
         end
         jointWrench = transform(state, jointWrench, joint.frameAfter)
         τjoint = view(torquesOut, mechanism.vRanges[joint])
-        joint_torque!(joint, configuration(state, joint), jointWrench, τjoint)
+        joint_torque!(joint, τjoint, configuration(state, joint), jointWrench)
     end
 end
 

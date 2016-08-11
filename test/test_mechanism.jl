@@ -54,7 +54,7 @@ facts("joint_torque! / geometric_jacobian") do
         qjoint = configuration(x, joint)
         wrench = rand(Wrench{Float64}, joint.frameAfter)
         τ = Vector{Float64}(num_velocities(joint))
-        joint_torque!(joint, qjoint, wrench, τ)
+        joint_torque!(joint, τ, qjoint, wrench)
         S = motion_subspace(joint, qjoint)
         @fact τ --> roughly(joint_torque(S, wrench))
     end
