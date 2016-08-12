@@ -1,44 +1,48 @@
 immutable SpatialInertia{T<:Real}
     frame::CartesianFrame3D
     moment::SMatrix{3, 3, T, 9}
-    centerOfMass::SVector{3, T}
+    crossPart::SVector{3, T} # mass times center of mass
     mass::T
 end
 
-convert{T<:Real}(::Type{SpatialInertia{T}}, inertia::SpatialInertia{T}) = inertia
+convert{T}(::Type{SpatialInertia{T}}, inertia::SpatialInertia{T}) = inertia
 
 function convert{T<:Real}(::Type{SpatialInertia{T}}, inertia::SpatialInertia)
-    SpatialInertia(inertia.frame, convert(SMatrix{3, 3, T}, inertia.moment), convert(SVector{3, T}, inertia.centerOfMass), convert(T, inertia.mass))
+    SpatialInertia(inertia.frame, convert(SMatrix{3, 3, T}, inertia.moment), convert(SVector{3, T}, inertia.crossPart), convert(T, inertia.mass))
 end
 
-function convert{T}(::Type{Matrix{T}}, inertia::SpatialInertia{T})
-    J = Array(inertia.moment)
+function convert{T}(::Type{SMatrix{6, 6, T}}, inertia::SpatialInertia)
+    J = inertia.moment
+    C = vector_to_skew_symmetric(inertia.crossPart)
     m = inertia.mass
-    C = Array(vector_to_skew_symmetric(m * inertia.centerOfMass))
-    [J  C; C' m * eye(T, 3)]
+    [J  C; C' m * eye(SMatrix{3, 3, T})]
 end
+
+convert{T<:Matrix}(::Type{T}, inertia::SpatialInertia) = convert(T, convert(SMatrix{6, 6, eltype(T)}, inertia))
 
 Array{T}(inertia::SpatialInertia{T}) = convert(Matrix{T}, inertia)  # TODO: clean up
+
+center_of_mass(inertia::SpatialInertia) = inertia.crossPart / inertia.mass
 
 function show(io::IO, inertia::SpatialInertia)
     println(io, "SpatialInertia expressed in \"$(name(inertia.frame))\":")
     println(io, "mass: $(inertia.mass)")
-    println(io, "center of mass: $(inertia.centerOfMass)")
+    println(io, "center of mass: $(center_of_mass(inertia))")
     print(io, "moment of inertia:\n$(inertia.moment)")
 end
 
 zero{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) = SpatialInertia(frame, zeros(SMatrix{3, 3, T}), zeros(SVector{3, T}), zero(T))
 
 function isapprox(x::SpatialInertia, y::SpatialInertia; atol = 1e-12)
-    return x.frame == y.frame && isapprox(x.moment, y.moment; atol = atol) && isapprox(x.centerOfMass, y.centerOfMass; atol = atol) && isapprox(x.mass, y.mass; atol = atol)
+    x.frame == y.frame && isapprox(x.moment, y.moment; atol = atol) && isapprox(x.crossPart, y.crossPart; atol = atol) && isapprox(x.mass, y.mass; atol = atol)
 end
 
 function (+){T}(inertia1::SpatialInertia{T}, inertia2::SpatialInertia{T})
     framecheck(inertia1.frame, inertia2.frame)
     moment = inertia1.moment + inertia2.moment
+    crossPart = inertia1.crossPart + inertia2.crossPart
     mass = inertia1.mass + inertia2.mass
-    centerOfMass = (inertia1.centerOfMass * inertia1.mass + inertia2.centerOfMass * inertia2.mass) / mass
-    return SpatialInertia(inertia1.frame, moment, centerOfMass, mass)
+    SpatialInertia(inertia1.frame, moment, crossPart, mass)
 end
 
 function vector_to_skew_symmetric{T}(v::SVector{3, T})
@@ -71,26 +75,27 @@ function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
     framecheck(t.from, inertia.frame)
     S = promote_type(I, T)
 
-    J = convert(SMatrix{3, 3, S}, inertia.moment)
-    m = convert(S, inertia.mass)
-    c = convert(SVector{3, S}, inertia.centerOfMass)
-
-    R = rotationmatrix_normalized_fsa(convert(Quaternion{S}, t.rot))
-    p = convert(SVector{3, S}, t.trans)
-
-    if m == zero(S)
-        return zero(SpatialInertia{S}, t.to)
+    if t.from == t.to
+        ret = inertia
+    elseif inertia.mass == zero(I)
+        ret = zero(SpatialInertia{S}, t.to)
     else
-        cnew = R * (c * m)
+        J = convert(SMatrix{3, 3, S}, inertia.moment)
+        m = convert(S, inertia.mass)
+        c = convert(SVector{3, S}, inertia.crossPart)
+
+        R = rotationmatrix_normalized_fsa(convert(Quaternion{S}, t.rot))
+        p = convert(SVector{3, S}, t.trans)
+
+        cnew = R * c
         Jnew = vector_to_skew_symmetric_squared(cnew)
         cnew += m * p
         Jnew -= vector_to_skew_symmetric_squared(cnew)
         Jnew /= m
         Jnew += R * J * R'
-        cnew /= m
+        ret = SpatialInertia(t.to, Jnew, cnew, m)
     end
-
-    return SpatialInertia(t.to, Jnew, cnew, m)
+    ret
 end
 
 function rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
@@ -235,7 +240,7 @@ function transform(jac::GeometricJacobian, transform::Transform3D)
     T = eltype(R)
     angular = R * jac.angular
     linear = R * jac.linear + cross(transform.trans, angular)
-    return GeometricJacobian(jac.body, jac.base, transform.to, angular, linear)
+    GeometricJacobian(jac.body, jac.base, transform.to, angular, linear)
 end
 
 abstract ForceSpaceElement{T<:Real}
@@ -274,17 +279,17 @@ function transform{F<:ForceSpaceElement}(f::F, transform::Transform3D)
     framecheck(f.frame, transform.from)
     linear = rotate(f.linear, transform.rot)
     angular = rotate(f.angular, transform.rot) + cross(transform.trans, linear)
-    return F(transform.to, angular, linear)
+    F(transform.to, angular, linear)
 end
 
 function (+){F<:ForceSpaceElement}(f1::F, f2::F)
     framecheck(f1.frame, f2.frame)
-    return F(f1.frame, f1.angular + f2.angular, f1.linear + f2.linear)
+    F(f1.frame, f1.angular + f2.angular, f1.linear + f2.linear)
 end
 
 function (-){F<:ForceSpaceElement}(f1::F, f2::F)
     framecheck(f1.frame, f2.frame)
-    return F(f1.frame, f1.angular - f2.angular, f1.linear - f2.linear)
+    F(f1.frame, f1.angular - f2.angular, f1.linear - f2.linear)
 end
 
 (-){F<:ForceSpaceElement}(f::F) = F(f.frame, -f.angular, -f.linear)
@@ -292,20 +297,15 @@ end
 Array{F<:ForceSpaceElement}(f::F) = [f.angular...; f.linear...]
 isapprox{F<:ForceSpaceElement}(x::F, y::F; atol = 1e-12) = x.frame == y.frame && isapprox(x.angular, y.angular, atol = atol) && isapprox(x.linear, y.linear, atol = atol)
 
-function mul_inertia{I, T}(J::SMatrix{3, 3, I}, c::SVector{3, I}, m::I, ω::SVector{3, T}, v::SVector{3, T})
-    S = promote_type(I, T)
-    mc = convert(SVector{3, S}, m * c)
-    J = convert(SMatrix{3, 3, S}, J)
-    ω = convert(SVector{3, S}, ω)
-    v = convert(SVector{3, S}, v)
-    angular = J * ω + cross(mc, v)
-    linear = m * v - cross(mc, ω)
-    return angular, linear
+function mul_inertia(J, c, m, ω, v)
+    angular = J * ω + cross(c, v)
+    linear = m * v - cross(c, ω)
+    angular, linear
 end
 
 function (*)(inertia::SpatialInertia, twist::Twist)
     framecheck(inertia.frame, twist.frame)
-    return Momentum(inertia.frame, mul_inertia(inertia.moment, inertia.centerOfMass, inertia.mass, twist.angular, twist.linear)...)
+    Momentum(inertia.frame, mul_inertia(inertia.moment, inertia.crossPart, inertia.mass, twist.angular, twist.linear)...)
 end
 
 
@@ -350,9 +350,9 @@ function (*)(inertia::SpatialInertia, jac::GeometricJacobian)
     Jv = jac.linear
     J = inertia.moment
     m = inertia.mass
-    mc = inertia.mass * inertia.centerOfMass
-    angular = J * Jω + cross(mc, Jv)
-    linear = m * Jv - cross(mc, Jω)
+    c = inertia.crossPart
+    angular = J * Jω + cross(c, Jv)
+    linear = m * Jv - cross(c, Jω)
     MomentumMatrix(inertia.frame, angular, linear)
 end
 
@@ -391,7 +391,7 @@ convert{T<:Real}(::Type{SpatialAcceleration{T}}, accel::SpatialAcceleration{T}) 
 convert{T<:Real}(::Type{SpatialAcceleration{T}}, accel::SpatialAcceleration) = SpatialAcceleration(accel.body, accel.base, accel.frame, convert(SVector{3, T}, accel.angular), convert(SVector{3, T}, accel.linear))
 
 function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::AbstractVector)
-    return SpatialAcceleration(body, base, frame, SVector(vec[1], vec[2], vec[3]), SVector(vec[4], vec[5], vec[6]))
+    SpatialAcceleration(body, base, frame, SVector(vec[1], vec[2], vec[3]), SVector(vec[4], vec[5], vec[6]))
 end
 
 function SpatialAcceleration(jac::GeometricJacobian, v̇::AbstractVector)
@@ -442,7 +442,7 @@ function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCur
     # transform to new frame
     angular, linear = transform_spatial_motion(angular, linear, oldToNew.rot, oldToNew.trans)
 
-    return SpatialAcceleration(accel.body, accel.base, oldToNew.to, angular, linear)
+    SpatialAcceleration(accel.body, accel.base, oldToNew.to, angular, linear)
 end
 
 zero{T}(::Type{SpatialAcceleration{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = SpatialAcceleration(body, base, frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
@@ -458,11 +458,11 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
     framecheck(T.base, base)
     framecheck(T.frame, frame)
 
-    angular, linear = mul_inertia(I.moment, I.centerOfMass, I.mass, Ṫ.angular, Ṫ.linear)
-    angularMomentum, linearMomentum = mul_inertia(I.moment, I.centerOfMass, I.mass, T.angular, T.linear)
+    angular, linear = mul_inertia(I.moment, I.crossPart, I.mass, Ṫ.angular, Ṫ.linear)
+    angularMomentum, linearMomentum = mul_inertia(I.moment, I.crossPart, I.mass, T.angular, T.linear)
     angular += cross(T.angular, angularMomentum) + cross(T.linear, linearMomentum)
     linear += cross(T.angular, linearMomentum)
-    return Wrench(frame, angular, linear)
+    Wrench(frame, angular, linear)
 end
 
 function joint_torque(jac::GeometricJacobian, wrench::Wrench)
@@ -476,7 +476,7 @@ function kinetic_energy(I::SpatialInertia, twist::Twist)
     ω = twist.angular
     v = twist.linear
     J = I.moment
-    c = I.centerOfMass
+    c = I.crossPart
     m = I.mass
-    return 1/2 * (dot(ω, J * ω) + m * dot(v, v + 2 * cross(ω, c)))
+    1/2 * (dot(ω, J * ω) + dot(v, m * v + 2 * cross(ω, c)))
 end
