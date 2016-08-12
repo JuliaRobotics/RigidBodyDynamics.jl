@@ -85,7 +85,8 @@ function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
     for body in itr
         if !isroot(body)
             inertia = body.inertia
-            com += inertia.mass * transform(state, Point3D(inertia.frame, convert(SVector{3, C}, inertia.centerOfMass)), frame)
+            bodyCom = Point3D(inertia.frame, convert(SVector{3, C}, center_of_mass(inertia)))
+            com += inertia.mass * transform(state, bodyCom, frame)
             mass += inertia.mass
         end
     end
