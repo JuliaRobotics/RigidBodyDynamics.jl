@@ -126,7 +126,7 @@ facts("momentum_matrix / summing momenta") do
 
     v = velocity_vector(x)
     h = Momentum(A, v)
-    hSum = sum((b::RigidBody) -> isroot(b) ? zero(Momentum{Float64}, A.frame) : spatial_inertia(x, b) * twist_wrt_world(x, b), bodies(mechanism))
+    hSum = sum(b -> spatial_inertia(x, b) * twist_wrt_world(x, b), non_root_bodies(mechanism))
     @fact h --> roughly(hSum; atol = 1e-12)
 end
 
@@ -226,8 +226,7 @@ facts("inverse dynamics / external wrenches") do
     q̇ = configuration_derivative(x)
     v = velocity_vector(x)
     v̇ = rand(num_velocities(mechanism))
-    nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
-    externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in nonRootBodies)
+    externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
     τ = inverse_dynamics(x, v̇, externalWrenches)
     floatingBodyVertex = root_vertex(mechanism).children[1]
     floatingJoint = floatingBodyVertex.edgeToParentData
@@ -258,8 +257,7 @@ facts("dynamics / inverse dynamics") do
     rand!(x)
 
     js = joints(mechanism)
-    nonRootBodies = filter(b -> !isroot(b), bodies(mechanism))
-    externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in nonRootBodies)
+    externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
     stateVector = state_vector(x)
 
     result = DynamicsResult(Float64, mechanism)
