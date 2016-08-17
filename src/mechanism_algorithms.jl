@@ -82,18 +82,16 @@ function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
     com = Point3D(frame, zeros(SVector{3, C}))
     mass = zero(C)
     for body in itr
-        if !isroot(body)
-            inertia = body.inertia
-            bodyCom = Point3D(inertia.frame, convert(SVector{3, C}, center_of_mass(inertia)))
-            com += inertia.mass * transform(state, bodyCom, frame)
-            mass += inertia.mass
-        end
+        inertia = body.inertia
+        bodyCom = Point3D(inertia.frame, convert(SVector{3, C}, center_of_mass(inertia)))
+        com += inertia.mass * transform(state, bodyCom, frame)
+        mass += inertia.mass
     end
     com /= mass
     return com
 end
 
-center_of_mass(state::MechanismState) = center_of_mass(state, bodies(state.mechanism))
+center_of_mass(state::MechanismState) = center_of_mass(state, non_root_bodies(state.mechanism))
 
 function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{RigidBody{M}, Joint})
     copysign = (motionSubspace::GeometricJacobian, sign::Int64) -> sign < 0 ? -motionSubspace : motionSubspace
@@ -113,7 +111,7 @@ kinetic_energy{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = kinetic_
 function kinetic_energy{X, M}(state::MechanismState{X, M}, itr)
     return sum(body::RigidBody -> kinetic_energy(state, body), itr)
 end
-kinetic_energy(state::MechanismState) = kinetic_energy(state, filter(b -> !isroot(b), bodies(state.mechanism)))
+kinetic_energy(state::MechanismState) = kinetic_energy(state, non_root_bodies(state.mechanism))
 
 potential_energy{X, M, C}(state::MechanismState{X, M, C}) = -mass(state) * dot(convert(SVector{3, C}, state.mechanism.gravity), transform(state, center_of_mass(state), root_frame(state.mechanism)).v)
 
@@ -235,9 +233,9 @@ function joint_wrenches_and_torques!{T, X, M}(
         vertex = vertices[i]
         joint = vertex.edgeToParentData
         body = vertex.vertexData
-        parentBody = vertex.parent.vertexData
         jointWrench = netWrenchesInJointWrenchesOut[body]
-        if !isroot(parentBody)
+        if !isroot(vertex.parent)
+            parentBody = vertex.parent.vertexData
             netWrenchesInJointWrenchesOut[parentBody] = netWrenchesInJointWrenchesOut[parentBody] + jointWrench # action = -reaction
         end
         jointWrench = transform(state, jointWrench, joint.frameAfter)

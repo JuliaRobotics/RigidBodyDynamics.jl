@@ -1,19 +1,19 @@
 immutable RigidBody{T<:Real}
     name::String
     frame::CartesianFrame3D
-    isRoot::Bool
     inertia::SpatialInertia{T}
 
-    # world body
-    RigidBody(name::String) = new(name, CartesianFrame3D(name), true)
+    # inertia undefined; can e.g. be used for the root of a kinematic tree
+    RigidBody(name::String) = new(name, CartesianFrame3D(name))
 
     # other bodies
-    RigidBody(name::String, inertia::SpatialInertia{T}) = new(name, inertia.frame, false, inertia)
-    RigidBody(inertia::SpatialInertia{T}) = new(name(inertia.frame), inertia.frame, false, inertia) # TODO: deprecate?
+    RigidBody(inertia::SpatialInertia{T}) = new(name(inertia.frame), inertia.frame, inertia)
+    RigidBody(name::String, inertia::SpatialInertia{T}) = new(name, inertia.frame, inertia)
 end
+
 RigidBody{T}(name::String, inertia::SpatialInertia{T}) = RigidBody{T}(name, inertia)
-RigidBody{T}(inertia::SpatialInertia{T}) = RigidBody{T}(inertia) # TODO: deprecate?
+RigidBody{T}(inertia::SpatialInertia{T}) = RigidBody{T}(inertia)
 name(b::RigidBody) = b.name
-isroot(b::RigidBody) = b.isRoot
 show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(name(b))\"")
 showcompact(io::IO, b::RigidBody) = print(io, "$(name(b))")
+has_defined_inertia(b::RigidBody) = isdefined(b, :inertia)
