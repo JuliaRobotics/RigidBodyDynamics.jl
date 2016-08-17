@@ -103,7 +103,8 @@ function parse_urdf{T}(::Type{T}, filename)
     tree = roots[1]
 
     # create mechanism from tree structure of XML elements
-    mechanism = Mechanism{T}(attribute(tree.vertexData, "name"))
+    rootBody = RigidBody{T}(attribute(tree.vertexData, "name"))
+    mechanism = Mechanism(rootBody)
     for vertex in toposort(tree)[2 : end]
         parse_vertex(mechanism, vertex)
     end

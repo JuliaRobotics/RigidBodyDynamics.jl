@@ -7,8 +7,7 @@ type Mechanism{T<:Real}
     qRanges::Dict{Joint, UnitRange{Int64}}
     vRanges::Dict{Joint, UnitRange{Int64}}
 
-    function Mechanism(rootname::String; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
-        rootBody = RigidBody{T}(rootname)
+    function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
         tree = Tree{RigidBody{T}, Joint}(rootBody)
         bodyFixedFrameDefinitions = @compat OrderedDict(rootBody => Set([Transform3D(T, rootBody.frame)]))
         bodyFixedFrameToBody = @compat OrderedDict(rootBody.frame => rootBody)
@@ -18,6 +17,8 @@ type Mechanism{T<:Real}
         new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody, jointToJointTransforms, gravity, qRanges, vRanges)
     end
 end
+
+Mechanism{T}(rootBody::RigidBody{T}; kwargs...) = Mechanism{T}(rootBody; kwargs...)
 root_vertex(m::Mechanism) = m.toposortedTree[1]
 non_root_vertices(m::Mechanism) = view(m.toposortedTree, 2 : length(m.toposortedTree))
 tree(m::Mechanism) = m.toposortedTree[1]
@@ -78,7 +79,7 @@ num_positions(m::Mechanism) = num_positions(joints(m))
 num_velocities(m::Mechanism) = num_velocities(joints(m))
 
 function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
-    m = Mechanism{T}("world")
+    m = Mechanism(RigidBody{T}("world"))
     parentBody = root_body(m)
     for i = 1 : length(jointTypes)
         @assert jointTypes[i] <: JointType

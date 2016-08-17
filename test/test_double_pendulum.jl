@@ -11,7 +11,7 @@ facts("double pendulum") do
 
     axis = SVector(0., 1., 0.)
 
-    doublePendulum = Mechanism{Float64}("world"; gravity = SVector(0, 0, g))
+    doublePendulum = Mechanism(RigidBody{Float64}("world"); gravity = SVector(0, 0, g))
     world = root_body(doublePendulum)
 
     inertia1 = SpatialInertia(CartesianFrame3D("body1"), I1 * axis * axis', SVector(0, 0, lc1), m1)
