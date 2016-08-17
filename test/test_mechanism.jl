@@ -3,8 +3,8 @@ x = MechanismState(Float64, mechanism)
 rand!(x)
 
 facts("basic stuff") do
-    q = vcat([configuration(x, vertex.edgeToParentData) for vertex in mechanism.toposortedTree[2 : end]]...)
-    v = vcat([velocity(x, vertex.edgeToParentData) for vertex in mechanism.toposortedTree[2 : end]]...)
+    q = vcat([configuration(x, vertex.edgeToParentData) for vertex in non_root_vertices(mechanism)]...)
+    v = vcat([velocity(x, vertex.edgeToParentData) for vertex in non_root_vertices(mechanism)]...)
 
     @fact q --> configuration_vector(x)
     @fact v --> velocity_vector(x)
@@ -97,7 +97,7 @@ facts("relative_acceleration") do
 end
 
 facts("motion subspace / twist wrt world") do
-    for vertex in mechanism.toposortedTree[2 : end]
+    for vertex in non_root_vertices(mechanism)
         body = vertex.vertexData
         joint = vertex.edgeToParentData
         parentBody = vertex.parent.vertexData
@@ -106,7 +106,7 @@ facts("motion subspace / twist wrt world") do
 end
 
 facts("composite rigid body inertias") do
-    for vertex in mechanism.toposortedTree[2 : end]
+    for vertex in non_root_vertices(mechanism)
         body = vertex.vertexData
         crb = crb_inertia(x, body)
         subtree = toposort(vertex)
@@ -117,7 +117,7 @@ end
 facts("momentum_matrix / summing momenta") do
     A = momentum_matrix(x)
     Amat = Array(A)
-    for vertex in mechanism.toposortedTree[2 : end]
+    for vertex in non_root_vertices(mechanism)
         body = vertex.vertexData
         joint = vertex.edgeToParentData
         Ajoint = Amat[:, mechanism.vRanges[joint]]

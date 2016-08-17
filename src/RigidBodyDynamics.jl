@@ -62,6 +62,7 @@ export
     root_body,
     root_frame,
     root_vertex,
+    non_root_vertices,
     isroot,
     bodies,
     toposort,
