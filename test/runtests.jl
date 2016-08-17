@@ -4,7 +4,6 @@ using RigidBodyDynamics
 using Quaternions
 using StaticArrays
 using FactCheck
-using IJulia
 using Compat
 import ForwardDiff
 
@@ -17,6 +16,7 @@ include("test_spatial.jl")
 include("test_double_pendulum.jl")
 include("test_mechanism.jl")
 
+# using IJulia
 # run notebooks
 # jupyter = IJulia.jupyter
 # for f in filter(x -> endswith(x, "ipynb"), readdir("../examples"))
