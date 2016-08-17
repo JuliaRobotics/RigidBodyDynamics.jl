@@ -19,6 +19,7 @@ type Mechanism{T<:Real}
     end
 end
 root_vertex(m::Mechanism) = m.toposortedTree[1]
+non_root_vertices(m::Mechanism) = view(m.toposortedTree, 2 : length(m.toposortedTree))
 tree(m::Mechanism) = m.toposortedTree[1]
 root_body(m::Mechanism) = root_vertex(m).vertexData
 root_frame(m::Mechanism) = root_body(m).frame
@@ -69,8 +70,8 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     m
 end
 
-joints(m::Mechanism) = [vertex.edgeToParentData for vertex in m.toposortedTree[2 : end]] # TODO: make less expensive
-bodies(m::Mechanism) = [vertex.vertexData for vertex in m.toposortedTree] # TODO: make less expensive
+joints(m::Mechanism) = [vertex.edgeToParentData::Joint for vertex in non_root_vertices(m)] # TODO: make less expensive
+bodies{T}(m::Mechanism{T}) = [vertex.vertexData::RigidBody{T} for vertex in m.toposortedTree] # TODO: make less expensive
 default_frame(m::Mechanism, body::RigidBody) = first(m.bodyFixedFrameDefinitions[body]).to # allows standardization on a frame to reduce number of transformations required
 
 num_positions(m::Mechanism) = num_positions(joints(m))

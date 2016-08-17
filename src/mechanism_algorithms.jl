@@ -1,8 +1,7 @@
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
     mechanism = state.mechanism
-    vertices = mechanism.toposortedTree
-    for i = 2 : length(vertices)
-        joint = vertices[i].edgeToParentData
+    for vertex in non_root_vertices(mechanism)
+        joint = vertex.edgeToParentData
         qRange = mechanism.qRanges[joint]
         vRange = state.mechanism.vRanges[joint]
         @inbounds qjoint = view(state.q, qRange)
@@ -123,9 +122,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
     fill!(out.data, zero(C))
     mechanism = state.mechanism
 
-    for i = 2 : length(state.mechanism.toposortedTree)
-        vi = mechanism.toposortedTree[i]
-
+    for vi in non_root_vertices(mechanism)
         # Hii
         jointi = vi.edgeToParentData
         nvi = num_velocities(jointi)
@@ -164,15 +161,15 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
 end
 
 function momentum_matrix(state::MechanismState)
-    hcat([crb_inertia(state, vertex.vertexData) * motion_subspace(state, vertex.edgeToParentData) for vertex in state.mechanism.toposortedTree[2 : end]]...)
+    hcat([crb_inertia(state, vertex.vertexData) * motion_subspace(state, vertex.edgeToParentData) for vertex in non_root_vertices(state.mechanism)]...)
 end
 
 function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M})
     mechanism = state.mechanism
     vertices = mechanism.toposortedTree
     gravityBias = convert(SpatialAcceleration{T}, -gravitational_acceleration(mechanism))
-    for i = 2 : length(vertices)
-        body = vertices[i].vertexData
+    for vertex in non_root_vertices(mechanism)
+        body = vertex.vertexData
         out[body] = gravityBias + bias_acceleration(state, body)
     end
     nothing
@@ -185,8 +182,7 @@ function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialA
     # unbiased joint accelerations + gravity
     rootBody = vertices[1].vertexData
     out[rootBody] = convert(SpatialAcceleration{T}, -gravitational_acceleration(mechanism))
-    for i = 2 : length(vertices)
-        vertex = vertices[i]
+    for vertex in non_root_vertices(mechanism)
         body = vertex.vertexData
         joint = vertex.edgeToParentData
         S = motion_subspace(state, joint)
@@ -196,8 +192,8 @@ function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialA
     end
 
     # add bias acceleration - gravity
-    for i = 2 : length(vertices)
-        body = vertices[i].vertexData
+    for vertex in non_root_vertices(mechanism)
+        body = vertex.vertexData
         out[body] += bias_acceleration(state, body)
     end
     nothing
@@ -210,8 +206,7 @@ function newton_euler!{T, X, M, W}(
 
     mechanism = state.mechanism
     vertices = mechanism.toposortedTree
-    for i = 2 : length(vertices)
-        vertex = vertices[i]
+    for vertex in non_root_vertices(mechanism)
         body = vertex.vertexData
         joint = vertex.edgeToParentData
 
