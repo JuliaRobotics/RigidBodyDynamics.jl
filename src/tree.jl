@@ -4,9 +4,11 @@ type TreeVertex{V, E}
     parent::TreeVertex{V, E}
     edgeToParentData::E
 
-    TreeVertex{V}(vertexData::V) = new(vertexData, [])
+    TreeVertex(vertexData::V) = new(vertexData, [])
     TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = new(vertexData, [], parent, edgeData)
 end
+TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = TreeVertex{V, E}(vertexData, parent, edgeData)
+
 typealias Tree{V, E} TreeVertex{V, E}
 
 isroot{V, E}(v::TreeVertex{V, E}) = !isdefined(v, :parent)

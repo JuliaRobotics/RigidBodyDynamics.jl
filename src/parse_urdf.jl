@@ -58,14 +58,14 @@ function parse_inertia{T}(::Type{T}, xmlInertial::XMLElement, frame::CartesianFr
     mass = parse_scalar(T, find_element(xmlInertial, "mass"), "value", "0")
     inertia = SpatialInertia(urdfFrame, moment, com, mass)
     pose = parse_pose(T, find_element(xmlInertial, "origin"))
-    return transform(inertia, Transform3D(urdfFrame, frame, pose...))
+    transform(inertia, Transform3D(urdfFrame, frame, pose...))
 end
 
-function parse_body{T}(::Type{T}, xmlLink::XMLElement, frame::CartesianFrame3D)
+function parse_body{T}(::Type{T}, xmlLink::XMLElement, frame::CartesianFrame3D = CartesianFrame3D(attribute(xmlLink, "name")))
     xmlInertial = find_element(xmlLink, "inertial")
     inertia = xmlInertial == nothing ? zero(SpatialInertia{T}, frame) : parse_inertia(T, xmlInertial, frame)
     linkname = attribute(xmlLink, "name") # TODO: make sure link name is unique
-    return RigidBody(linkname, inertia)
+    RigidBody(linkname, inertia)
 end
 
 function parse_vertex{T}(mechanism::Mechanism{T}, vertex::TreeVertex{XMLElement, XMLElement})
@@ -103,7 +103,7 @@ function parse_urdf{T}(::Type{T}, filename)
     tree = roots[1]
 
     # create mechanism from tree structure of XML elements
-    rootBody = parse_body(T, tree.vertexData, CartesianFrame3D("world"))
+    rootBody = parse_body(T, tree.vertexData)
     mechanism = Mechanism(rootBody)
     for vertex in toposort(tree)[2 : end]
         parse_vertex(mechanism, vertex)
