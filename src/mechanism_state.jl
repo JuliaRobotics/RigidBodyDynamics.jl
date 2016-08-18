@@ -76,6 +76,7 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     end
 end
 
+show{X, M, C}(io::IO, ::MechanismState{X, M, C}) = print(io, "MechanismState{$X, $M, $C}(…)")
 num_positions(state::MechanismState) = length(state.q)
 num_velocities(state::MechanismState) = length(state.v)
 state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
