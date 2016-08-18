@@ -62,6 +62,7 @@ export
     joint_torque!,
     root_frame,
     root_vertex,
+    tree,
     non_root_vertices,
     root_body,
     non_root_bodies,

@@ -266,4 +266,43 @@ facts("dynamics / inverse dynamics") do
     @fact τ --> roughly(zeros(num_velocities(mechanism)); atol = 1e-12)
 end
 
+facts("attach mechanism") do
+    mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
+    nq = num_positions(mechanism)
+    nv = num_velocities(mechanism)
+    mechanism2 = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]]...)
+    connection = Joint("connection", rand(Revolute{Float64}))
+    parentBody = rand(bodies(mechanism))
+    attach!(mechanism, parentBody, connection, rand(Transform3D{Float64}, connection.frameBefore, parentBody.frame), mechanism2)
+    @fact num_positions(mechanism) --> nq + num_positions(mechanism2) + num_positions(connection)
+    @fact num_velocities(mechanism) --> nv + num_velocities(mechanism2) + num_velocities(connection)
+    vertex = findfirst(tree(mechanism), root_body(mechanism2))
+    @fact vertex.edgeToParentData --> connection
+    @fact vertex.parent.vertexData --> parentBody
+
+    # independent acrobots in the same configuration
+    # make sure mass matrix is block diagonal, and that blocks on diagonal are the same
+    doubleAcrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
+    acrobot2 = parse_urdf(Float64, "urdf/Acrobot.urdf")
+    xSingle = MechanismState(Float64, acrobot2)
+    rand!(xSingle)
+    qSingle = configuration_vector(xSingle)
+    nqSingle = length(qSingle)
+    connection = Joint("fixed", Fixed())
+    parentBody = root_body(doubleAcrobot)
+    jointToParent = Transform3D(connection.frameBefore, parentBody.frame, rand(SVector{3}))
+    childToJoint = Transform3D(root_body(acrobot2).frame, connection.frameAfter, rand(SVector{3}))
+    attach!(doubleAcrobot, parentBody, connection, jointToParent, acrobot2, childToJoint)
+    x = MechanismState(Float64, doubleAcrobot)
+    set_configuration!(x, [qSingle; qSingle])
+    H = mass_matrix(x)
+    H11 = H[1 : nqSingle, 1 : nqSingle]
+    H12 = H[1 : nqSingle, nqSingle + 1 : end]
+    H21 = H[nqSingle + 1 : end, 1 : nqSingle]
+    H22 = H[nqSingle + 1 : end, nqSingle + 1 : end]
+    @fact H11 --> roughly(H22)
+    @fact H12 --> roughly(zeros(H12))
+    @fact H21 --> roughly(zeros(H21))
+end
+
 nothing
