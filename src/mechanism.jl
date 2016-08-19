@@ -1,20 +1,20 @@
 type Mechanism{T<:Real}
-    toposortedTree::Vector{TreeVertex{RigidBody{T}, Joint}}
+    toposortedTree::Vector{TreeVertex{RigidBody{T}, Joint{T}}}
     bodyFixedFrameDefinitions::Dict{RigidBody{T}, Set{Transform3D{T}}}
     bodyFixedFrameToBody::Dict{CartesianFrame3D, RigidBody{T}}
-    jointToJointTransforms::Dict{Joint, Transform3D{T}}
+    jointToJointTransforms::Dict{Joint{T}, Transform3D{T}}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}}
-    qRanges::Dict{Joint, UnitRange{Int64}} # TODO: remove
-    vRanges::Dict{Joint, UnitRange{Int64}} # TODO: remove
+    qRanges::Dict{Joint{T}, UnitRange{Int64}} # TODO: remove
+    vRanges::Dict{Joint{T}, UnitRange{Int64}} # TODO: remove
 
     function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
-        tree = Tree{RigidBody{T}, Joint}(rootBody)
+        tree = Tree{RigidBody{T}, Joint{T}}(rootBody)
         bodyFixedFrameDefinitions = Dict(rootBody => Set([Transform3D(T, rootBody.frame)]))
         bodyFixedFrameToBody = Dict(rootBody.frame => rootBody)
-        jointToJointTransforms = Dict{Joint, Transform3D{T}}()
+        jointToJointTransforms = Dict{Joint{T}, Transform3D{T}}()
         gravitationalAcceleration = FreeVector3D(rootBody.frame, gravity)
-        qRanges = Dict{Joint, UnitRange{Int64}}()
-        vRanges = Dict{Joint, UnitRange{Int64}}()
+        qRanges = Dict{Joint{T}, UnitRange{Int64}}()
+        vRanges = Dict{Joint{T}, UnitRange{Int64}}()
         new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody, jointToJointTransforms, gravitationalAcceleration, qRanges, vRanges)
     end
 end
@@ -71,7 +71,7 @@ function recompute_ranges!(m::Mechanism)
     end
 end
 
-function set_up_frames!{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint},
+function set_up_frames!{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint{T}},
         jointToParent::Transform3D{T}, bodyToJoint::Transform3D{T})
     joint = vertex.edgeToParentData
     body = vertex.vertexData
@@ -204,7 +204,7 @@ function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
     parentBody = RigidBody{T}("world")
     m = Mechanism(parentBody)
     for i = 1 : length(jointTypes)
-        @assert jointTypes[i] <: JointType
+        @assert jointTypes[i] <: JointType{T}
         joint = Joint("joint$i", rand(jointTypes[i]))
         jointToParentBody = rand(Transform3D{T}, joint.frameBefore, parentBody.frame)
         body = RigidBody(rand(SpatialInertia{T}, CartesianFrame3D("body$i")))

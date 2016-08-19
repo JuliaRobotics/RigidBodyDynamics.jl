@@ -7,7 +7,7 @@ function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismSt
         @inbounds qjoint = view(state.q, qRange)
         @inbounds vjoint = view(state.v, vRange)
         @inbounds q̇joint = view(out, qRange)
-        copy!(q̇joint, velocity_to_configuration_derivative(joint, qjoint, vjoint))
+        velocity_to_configuration_derivative!(joint, q̇joint, qjoint, vjoint)
     end
 end
 
@@ -67,7 +67,7 @@ function transform(state::MechanismState, accel::SpatialAcceleration, to::Cartes
 end
 
 
-function subtree_mass{T}(base::Tree{RigidBody{T}, Joint})
+function subtree_mass{T}(base::Tree{RigidBody{T}, Joint{T}})
     result = isroot(base) ? zero(T) : spatial_inertia(base.vertexData).mass
     for child in base.children
         result += subtree_mass(child)
@@ -95,7 +95,7 @@ end
 
 center_of_mass(state::MechanismState) = center_of_mass(state, non_root_bodies(state.mechanism))
 
-function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{RigidBody{M}, Joint})
+function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{RigidBody{M}, Joint{M}})
     copysign = (motionSubspace::GeometricJacobian, sign::Int64) -> sign < 0 ? -motionSubspace : motionSubspace
     motionSubspaces = [copysign(motion_subspace(state, joint), sign)::GeometricJacobian for (joint, sign) in zip(path.edgeData, path.directions)]
     return hcat(motionSubspaces...)
@@ -110,9 +110,7 @@ function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::Rigid
 end
 
 kinetic_energy{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = kinetic_energy(spatial_inertia(state, body), twist_wrt_world(state, body))
-function kinetic_energy{X, M}(state::MechanismState{X, M}, itr)
-    return sum(body::RigidBody -> kinetic_energy(state, body), itr)
-end
+kinetic_energy{X, M}(state::MechanismState{X, M}, itr) = sum(body::RigidBody -> kinetic_energy(state, body), itr)
 kinetic_energy(state::MechanismState) = kinetic_energy(state, non_root_bodies(state.mechanism))
 
 function potential_energy{X, M, C}(state::MechanismState{X, M, C})
@@ -123,6 +121,7 @@ function potential_energy{X, M, C}(state::MechanismState{X, M, C})
  end
 
 function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
+    @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
     @assert out.uplo == 'U'
     fill!(out.data, zero(C))
     mechanism = state.mechanism
@@ -137,7 +136,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = Ii * Si
-            Hii = view(out.data, irange, irange)
+            @inbounds Hii = view(out.data, irange, irange)
             @inbounds Hii[:] = Si.angular' * F.angular + Si.linear' * F.linear
 
             # Hji, Hij
@@ -149,7 +148,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                     jrange = mechanism.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
                     framecheck(F.frame, Sj.frame)
-                    Hji = view(out.data, jrange, irange)
+                    @inbounds Hji = view(out.data, jrange, irange)
                     @inbounds Hji[:] = Sj.angular' * F.angular + Sj.linear' * F.linear
                 end
                 vj = vj.parent
@@ -191,7 +190,7 @@ function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialA
         body = vertex.vertexData
         joint = vertex.edgeToParentData
         S = motion_subspace(state, joint)
-        v̇joint = view(v̇, mechanism.vRanges[joint])
+        @inbounds v̇joint = view(v̇, mechanism.vRanges[joint])
         joint_accel = SpatialAcceleration(S, v̇joint)
         out[body] = out[vertex.parent.vertexData] + joint_accel
     end
@@ -233,7 +232,7 @@ function joint_wrenches_and_torques!{T, X, M}(
         torquesOut::AbstractVector{T},
         netWrenchesInJointWrenchesOut::Associative{RigidBody{M}, Wrench{T}},
         state::MechanismState{X, M})
-
+    @boundscheck length(torquesOut) == num_velocities(state) || error("torquesOut size is wrong")
     mechanism = state.mechanism
     vertices = mechanism.toposortedTree
     for i = length(vertices) : -1 : 2
@@ -246,7 +245,7 @@ function joint_wrenches_and_torques!{T, X, M}(
             netWrenchesInJointWrenchesOut[parentBody] = netWrenchesInJointWrenchesOut[parentBody] + jointWrench # action = -reaction
         end
         jointWrench = transform(state, jointWrench, joint.frameAfter)
-        τjoint = view(torquesOut, mechanism.vRanges[joint])
+        @inbounds τjoint = view(torquesOut, mechanism.vRanges[joint])
         joint_torque!(joint, τjoint, configuration(state, joint), jointWrench)
     end
 end
