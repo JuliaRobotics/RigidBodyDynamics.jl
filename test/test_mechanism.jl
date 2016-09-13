@@ -305,4 +305,16 @@ facts("attach mechanism") do
     @fact H21 --> roughly(zeros(H21))
 end
 
+facts("simulate") do
+    acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
+    x = MechanismState(Float64, acrobot)
+    rand!(x)
+    total_energy_before = potential_energy(x) + kinetic_energy(x)
+    tspan = [0.; 1.]
+    times, states = simulate(x, tspan)
+    set!(x, states[end])
+    total_energy_after = potential_energy(x) + kinetic_energy(x)
+    @fact total_energy_after --> roughly(total_energy_before, 1e-3) # fairly loose tolerance here
+end
+
 nothing

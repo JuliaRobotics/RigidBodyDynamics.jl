@@ -7,6 +7,7 @@ using StaticArrays
 using Quaternions
 using DataStructures
 using LightXML
+import ODE: ode45
 
 # Julia version compatibility
 using Compat
@@ -29,6 +30,7 @@ include("transform_cache.jl")
 include("mechanism_state.jl")
 include("mechanism_algorithms.jl")
 include("parse_urdf.jl")
+include("simulate.jl")
 
 export
     # types
@@ -120,5 +122,6 @@ export
     inverse_dynamics!,
     inverse_dynamics,
     dynamics!,
-    parse_urdf
+    parse_urdf,
+    simulate
 end
