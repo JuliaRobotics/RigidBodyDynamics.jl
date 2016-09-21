@@ -22,7 +22,7 @@ convert{T<:Matrix}(::Type{T}, inertia::SpatialInertia) = convert(T, convert(SMat
 
 Array{T}(inertia::SpatialInertia{T}) = convert(Matrix{T}, inertia)  # TODO: clean up
 
-center_of_mass(inertia::SpatialInertia) = inertia.crossPart / inertia.mass
+center_of_mass(inertia::SpatialInertia) = Point3D(inertia.frame, inertia.crossPart / inertia.mass)
 
 function show(io::IO, inertia::SpatialInertia)
     println(io, "SpatialInertia expressed in \"$(name(inertia.frame))\":")

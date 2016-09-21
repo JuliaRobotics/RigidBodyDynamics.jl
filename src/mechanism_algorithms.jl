@@ -83,7 +83,7 @@ function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
     mass = zero(C)
     for body in itr
         inertia = body.inertia
-        bodyCom = Point3D(inertia.frame, convert(SVector{3, C}, center_of_mass(inertia)))
+        bodyCom = center_of_mass(inertia)
         com += inertia.mass * transform(state, bodyCom, frame)
         mass += inertia.mass
     end
@@ -113,7 +113,12 @@ function kinetic_energy{X, M}(state::MechanismState{X, M}, itr)
 end
 kinetic_energy(state::MechanismState) = kinetic_energy(state, non_root_bodies(state.mechanism))
 
-potential_energy{X, M, C}(state::MechanismState{X, M, C}) = -mass(state) * dot(convert(SVector{3, C}, state.mechanism.gravity), transform(state, center_of_mass(state), root_frame(state.mechanism)).v)
+function potential_energy{X, M, C}(state::MechanismState{X, M, C})
+    m = mass(state.mechanism)
+    gravitationalForce = m * FreeVector3D(root_frame(state.mechanism), state.mechanism.gravity)
+    centerOfMass = transform(state, center_of_mass(state), gravitationalForce.frame)
+    -dot(gravitationalForce, centerOfMass)
+ end
 
 function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
     @assert out.uplo == 'U'
