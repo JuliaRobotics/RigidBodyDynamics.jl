@@ -115,7 +115,7 @@ kinetic_energy(state::MechanismState) = kinetic_energy(state, non_root_bodies(st
 
 function potential_energy{X, M, C}(state::MechanismState{X, M, C})
     m = mass(state.mechanism)
-    gravitationalForce = m * FreeVector3D(root_frame(state.mechanism), state.mechanism.gravity)
+    gravitationalForce = m * state.mechanism.gravitationalAcceleration
     centerOfMass = transform(state, center_of_mass(state), gravitationalForce.frame)
     -dot(gravitationalForce, centerOfMass)
  end
@@ -170,7 +170,7 @@ end
 function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M})
     mechanism = state.mechanism
     vertices = mechanism.toposortedTree
-    gravityBias = convert(SpatialAcceleration{T}, -gravitational_acceleration(mechanism))
+    gravityBias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
     for vertex in non_root_vertices(mechanism)
         body = vertex.vertexData
         out[body] = gravityBias + bias_acceleration(state, body)
@@ -184,7 +184,7 @@ function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialA
 
     # unbiased joint accelerations + gravity
     rootBody = vertices[1].vertexData
-    out[rootBody] = convert(SpatialAcceleration{T}, -gravitational_acceleration(mechanism))
+    out[rootBody] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
     for vertex in non_root_vertices(mechanism)
         body = vertex.vertexData
         joint = vertex.edgeToParentData

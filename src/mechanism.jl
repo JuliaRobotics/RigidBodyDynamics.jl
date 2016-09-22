@@ -3,7 +3,7 @@ type Mechanism{T<:Real}
     bodyFixedFrameDefinitions::Dict{RigidBody{T}, Set{Transform3D{T}}}
     bodyFixedFrameToBody::Dict{CartesianFrame3D, RigidBody{T}}
     jointToJointTransforms::Dict{Joint, Transform3D{T}}
-    gravity::SVector{3, T}
+    gravitationalAcceleration::FreeVector3D{T}
     qRanges::Dict{Joint, UnitRange{Int64}}
     vRanges::Dict{Joint, UnitRange{Int64}}
 
@@ -12,9 +12,10 @@ type Mechanism{T<:Real}
         bodyFixedFrameDefinitions = Dict(rootBody => Set([Transform3D(T, rootBody.frame)]))
         bodyFixedFrameToBody = Dict(rootBody.frame => rootBody)
         jointToJointTransforms = Dict{Joint, Transform3D{T}}()
+        gravitationalAcceleration = FreeVector3D(rootBody.frame, gravity)
         qRanges = Dict{Joint, UnitRange{Int64}}()
         vRanges = Dict{Joint, UnitRange{Int64}}()
-        new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody, jointToJointTransforms, gravity, qRanges, vRanges)
+        new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody, jointToJointTransforms, gravitationalAcceleration, qRanges, vRanges)
     end
 end
 
@@ -138,7 +139,7 @@ end
 rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> m.toposortedTree[end].vertexData, jointTypes...)
 rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> rand(collect(bodies(m))), jointTypes...)
 
-function gravitational_acceleration{M}(m::Mechanism{M})
-    rootBody = root_body(m)
-    SpatialAcceleration(rootBody.frame, rootBody.frame, rootBody.frame, zeros(SVector{3, M}), m.gravity)
+function gravitational_spatial_acceleration{M}(m::Mechanism{M})
+    frame = m.gravitationalAcceleration.frame
+    SpatialAcceleration(frame, frame, frame, zeros(SVector{3, M}), m.gravitationalAcceleration.v)
 end
