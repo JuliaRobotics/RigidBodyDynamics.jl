@@ -244,7 +244,7 @@ facts("inverse dynamics / external wrenches") do
     Ȧ = [ForwardDiff.partials(A_autodiff[i, j], 1)::Float64 for i = 1 : size(A_autodiff, 1), j = 1 : size(A_autodiff, 2)]
     ḣ = A * v̇ + Ȧ * v # rate of change of momentum
 
-    gravitational_force = FreeVector3D(root_frame(mechanism), mass(mechanism) * mechanism.gravity)
+    gravitational_force = mass(mechanism) * mechanism.gravitationalAcceleration
     com = center_of_mass(x)
     gravitational_wrench = Wrench(gravitational_force.frame, cross(com, gravitational_force).v, gravitational_force.v)
     total_wrench = floatingJointWrench + gravitational_wrench + sum((w) -> transform(x, w, root_frame(mechanism)), values(externalWrenches))
