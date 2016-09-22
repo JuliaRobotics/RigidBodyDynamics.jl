@@ -29,8 +29,8 @@ end
 function rpy_to_quaternion(rpy::Vector)
     length(rpy) != 3 && error("wrong size")
     rpy2 = rpy / 2
-    s = sin(rpy2)
-    c = cos(rpy2)
+    s = sin.(rpy2)
+    c = cos.(rpy2)
     @inbounds qs = c[1]*c[2]*c[3] + s[1]*s[2]*s[3]
     @inbounds qx = s[1]*c[2]*c[3] - c[1]*s[2]*s[3]
     @inbounds qy = c[1]*s[2]*c[3] + s[1]*c[2]*s[3]
