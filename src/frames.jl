@@ -49,7 +49,7 @@ for VectorType in (:FreeVector3D, :Point3D)
         (*){S<:Real}(s::S, p::$VectorType) = $VectorType(p.frame, s * p.v)
 
         rand{T}(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, rand(SVector{3, T}))
-        show(io::IO, p::$VectorType) = print(io, "$VectorType in \"$(name(p.frame))\": $(p.v)")
+        show(io::IO, p::$VectorType) = print(io, "$($(VectorType).name.name) in \"$(name(p.frame))\": $(p.v)")
         isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
     end
 end
