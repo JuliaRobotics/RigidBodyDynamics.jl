@@ -28,53 +28,46 @@ else
     framecheck(f1::CartesianFrame3D, f2::CartesianFrame3D) = f1 != f2 && throw(ArgumentError(("$f1 doesn't match $f2")))
 end
 
-immutable Point3D{T<:Real}
-    frame::CartesianFrame3D
-    v::SVector{3, T}
 
-    Point3D(frame::CartesianFrame3D, v::SVector{3, T}) = new(frame, v)
-    Point3D(frame::CartesianFrame3D) = new(frame, zeros(SVector{3, T}))
+for VectorType in (:FreeVector3D, :Point3D)
+    @eval begin
+        type $VectorType{V <:AbstractVector}
+            frame::CartesianFrame3D
+            v::V
+
+            $VectorType(frame::CartesianFrame3D, v::V) = begin @boundscheck length(v) == 3; new(frame, v) end
+        end
+
+        $VectorType{V}(frame::CartesianFrame3D, v::V) = $VectorType{V}(frame, v)
+        $VectorType{T<:Real}(::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, zeros(SVector{3, T}))
+
+        convert{V}(::Type{$VectorType{V}}, p::$VectorType{V}) = p
+        convert{V}(::Type{$VectorType{V}}, p::$VectorType) = $VectorType(p.frame, convert(V, p.v))
+
+        (/){S<:Real}(p::$VectorType, s::S) = $VectorType(p.frame, p.v / s)
+        (*){S<:Real}(p::$VectorType, s::S) = $VectorType(p.frame, p.v * s)
+        (*){S<:Real}(s::S, p::$VectorType) = $VectorType(p.frame, s * p.v)
+
+        rand{T}(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, rand(SVector{3, T}))
+        show(io::IO, p::$VectorType) = print(io, "$($(VectorType).name.name) in \"$(name(p.frame))\": $(p.v)")
+        isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
+    end
 end
-Point3D{T}(frame::CartesianFrame3D, v::SVector{3, T}) = Point3D{T}(frame, v)
-convert{T}(::Type{Point3D{T}}, p::Point3D{T}) = p
-convert{T}(::Type{Point3D{T}}, p::Point3D) = Point3D(p.frame, convert(SVector{3, T}, p.v))
 
-(+)(p1::Point3D, p2::Point3D) = begin framecheck(p1.frame, p2.frame); return Point3D(p1.frame, p1.v + p2.v) end
-(/)(p::Point3D, s::Real) = Point3D(p.frame, p.v / s)
-(*)(p::Point3D, s::Real) = Point3D(p.frame, p.v * s)
-(*)(s::Real, p::Point3D) = Point3D(p.frame, s * p.v)
-rand{T}(::Type{Point3D{T}}, frame::CartesianFrame3D) = Point3D(frame, rand(SVector{3, T}))
-show(io::IO, p::Point3D) = print(io, "Point3D in \"$(name(p.frame))\": $(p.v)")
-isapprox{T}(x::Point3D{T}, y::Point3D{T}; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
+# Point specific
+(-)(p1::Point3D, p2::Point3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v - p2.v) end
 
-immutable FreeVector3D{T<:Real}
-    frame::CartesianFrame3D
-    v::SVector{3, T}
-
-    FreeVector3D(frame::CartesianFrame3D, v::SVector{3, T}) = new(frame, v)
-    FreeVector3D(frame::CartesianFrame3D) = new(frame, zeros(SVector{3, T}))
-end
-FreeVector3D{T}(frame::CartesianFrame3D, v::SVector{3, T}) = FreeVector3D{T}(frame, v)
-convert{T}(::Type{FreeVector3D{T}}, v::FreeVector3D{T}) = v
-convert{T}(::Type{FreeVector3D{T}}, v::FreeVector3D) = FreeVector3D(v.frame, convert(SVector{3, T}, v.v))
-
-(+)(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); return FreeVector3D(v1.frame, v1.v + v2.v) end
-(-)(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); return FreeVector3D(v1.frame, v1.v - v2.v) end
-(/)(v::FreeVector3D, s::Real) = FreeVector3D(v.frame, v.v / s)
-(*)(v::FreeVector3D, s::Real) = FreeVector3D(v.frame, v.v * s)
-(*)(s::Real, v::FreeVector3D) = FreeVector3D(v.frame, s * v.v)
-rand{T}(::Type{FreeVector3D{T}}, frame::CartesianFrame3D) = FreeVector3D(frame, rand(SVector{3, T}))
-show(io::IO, v::FreeVector3D) = print(io, "FreeVector3D in \"$(name(v.frame))\": $(v.v)")
-isapprox{T}(x::FreeVector3D{T}, y::FreeVector3D{T}; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
+# FreeVector specific
+FreeVector3D(p::Point3D) = FreeVector3D(p.frame, p.v)
+cross(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
+dot(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
 
 # Mixed Point and FreeVector
-(+)(p1::Point3D, v2::FreeVector3D) = begin framecheck(p1.frame, v2.frame); return Point3D(p1.frame, p1.v + v2.v) end
-(+)(v1::FreeVector3D, p2::Point3D) = p2 + v1
-(-)(p1::Point3D, v2::FreeVector3D) = begin framecheck(p1.frame, v2.frame); return Point3D(p1.frame, p1.v - v2.v) end
-(-)(p1::FreeVector3D, p2::Point3D) = begin framecheck(p1.frame, p2.frame); return FreeVector3D(p1.frame, p1.v - p2.v) end
-cross(p1::Point3D, v2::FreeVector3D) = begin framecheck(p1.frame, v2.frame); return FreeVector3D(p1.frame, cross(p1.v, v2.v)) end
-dot(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); dot(p.v, v.v) end
-dot(v::FreeVector3D, p::Point3D) = dot(p, v)
+(+)(p1::FreeVector3D, p2::FreeVector3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v + p2.v) end
+(+)(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); Point3D(p.frame, p.v + v.v) end
+(+)(v::FreeVector3D, p::Point3D) = p + v
+(-)(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); Point3D(p.frame, p.v - v.v) end
+cross(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); FreeVector3D(p.frame, cross(p.v, v.v)) end
 
 immutable Transform3D{T<:Real}
     from::CartesianFrame3D

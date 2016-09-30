@@ -3,7 +3,7 @@ type Mechanism{T<:Real}
     bodyFixedFrameDefinitions::Dict{RigidBody{T}, Set{Transform3D{T}}}
     bodyFixedFrameToBody::Dict{CartesianFrame3D, RigidBody{T}}
     jointToJointTransforms::Dict{Joint, Transform3D{T}}
-    gravitationalAcceleration::FreeVector3D{T}
+    gravitationalAcceleration::FreeVector3D{SVector{3, T}}
     qRanges::Dict{Joint, UnitRange{Int64}}
     vRanges::Dict{Joint, UnitRange{Int64}}
 

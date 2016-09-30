@@ -84,7 +84,7 @@ function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
     for body in itr
         inertia = body.inertia
         bodyCom = center_of_mass(inertia)
-        com += inertia.mass * transform(state, bodyCom, frame)
+        com += inertia.mass * FreeVector3D(transform(state, bodyCom, frame))
         mass += inertia.mass
     end
     com /= mass
@@ -117,7 +117,7 @@ function potential_energy{X, M, C}(state::MechanismState{X, M, C})
     m = mass(state.mechanism)
     gravitationalForce = m * state.mechanism.gravitationalAcceleration
     centerOfMass = transform(state, center_of_mass(state), gravitationalForce.frame)
-    -dot(gravitationalForce, centerOfMass)
+    -dot(gravitationalForce, FreeVector3D(centerOfMass))
  end
 
 function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
