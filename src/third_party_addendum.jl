@@ -50,5 +50,5 @@ function (*){N, M, T, L, S}(m::SMatrix{N, M, T, L}, x::Union{Vector{S}, VectorSe
     ret
 end
 
-# TODO: notify StaticArrays maintainer
-@inline (::Type{SVector{0}}){T}(::VectorSegment{T}) = zeros(SVector{0, T})
+# # TODO: notify StaticArrays maintainer
+# @inline (::Type{SVector{0}}){T}(::VectorSegment{T}) = zeros(SVector{0, T})
