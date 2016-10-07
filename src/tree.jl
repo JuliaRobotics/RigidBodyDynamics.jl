@@ -77,12 +77,23 @@ function toposort{V, E}(tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
     return result
 end
 
+function insert!(parentVertex::TreeVertex, childVertex::TreeVertex)
+    @assert isroot(childVertex)
+    childVertex.parent = parentVertex
+    push!(parentVertex.children, childVertex)
+    childVertex
+end
+
+function insert!{V, E}(parentVertex::TreeVertex{V, E}, vertexData::V, edgeData::E)
+    vertex = TreeVertex{V, E}(vertexData, parentVertex, edgeData)
+    push!(parentVertex.children, vertex)
+    vertex
+end
+
 function insert!{V, E}(tree::Tree{V, E}, vertexData::V, edgeData::E, parentData::V)
     parentVertex = findfirst(tree, parentData)
     parentVertex == nothing && error("parent not found")
-    vertex = TreeVertex{V, E}(vertexData, parentVertex, edgeData)
-    push!(parentVertex.children, vertex)
-    return vertex
+    insert!(parentVertex, vertexData, edgeData)
 end
 
 function ancestors{V, E}(vertex::TreeVertex{V, E})
@@ -106,6 +117,50 @@ function map!{F, V, E}(f::F, tree::Tree{V, E})
         map!(f, child)
     end
     return tree
+end
+
+function insert_subtree!{V, E}(root::TreeVertex{V, E}, subtree_root::TreeVertex{V, E})
+    # modifies root, but doesn't modify subtree_root
+    inserted = insert!(root, subtree_root.vertexData, subtree_root.edgeToParentData)
+    for child in subtree_root.children
+        insert_subtree!(inserted, child)
+    end
+end
+
+function subtree{V, E}(vertex::TreeVertex{V, E})
+    ret = Tree{V, E}(vertex.vertexData)
+    for child in vertex.children
+        insert_subtree!(ret, child)
+    end
+    ret
+end
+
+function reroot{V, E, F}(newRoot::TreeVertex{V, E}, edgeDirectionChangeFunction::F = identity)
+    ret = Tree{V, E}(newRoot.vertexData)
+
+    currentVertexNewTree = ret
+    previousVertexOldTree = newRoot
+    currentVertexOldTree = newRoot
+
+    done = false
+    while !done
+        for child in currentVertexOldTree.children
+            if child != previousVertexOldTree
+                insert_subtree!(currentVertexNewTree, child)
+            end
+        end
+
+        done = isroot(currentVertexOldTree)
+
+        if !done
+            vertexData = currentVertexOldTree.parent.vertexData
+            edgeToParentData = edgeDirectionChangeFunction(currentVertexOldTree.edgeToParentData)
+            currentVertexNewTree = insert!(currentVertexNewTree, vertexData, edgeToParentData)
+            previousVertexOldTree = currentVertexOldTree
+            currentVertexOldTree = currentVertexOldTree.parent
+        end
+    end
+    ret
 end
 
 immutable Path{V, E}
