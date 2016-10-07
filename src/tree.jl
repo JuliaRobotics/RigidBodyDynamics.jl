@@ -125,6 +125,7 @@ function insert_subtree!{V, E}(root::TreeVertex{V, E}, subtree_root::TreeVertex{
     for child in subtree_root.children
         insert_subtree!(inserted, child)
     end
+    inserted
 end
 
 function subtree{V, E}(vertex::TreeVertex{V, E})
