@@ -107,8 +107,8 @@ function joint_torque!(j::Joint, jt::QuaternionFloating, τ::AbstractVector, q::
     framecheck(joint_wrench.frame, j.frameAfter)
     @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
     @boundscheck length(τ) == num_velocities(j, jt) || error("τ has wrong size")
-    @inbounds τ[1 : 3] = joint_wrench.angular
-    @inbounds τ[4 : 6] = joint_wrench.linear
+    @inbounds view(τ, 1 : 3)[:] = joint_wrench.angular
+    @inbounds view(τ, 4 : 6)[:] = joint_wrench.linear
     nothing
 end
 
