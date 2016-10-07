@@ -68,6 +68,7 @@ function runbenchmarks()
     tune!(suite)
     results = run(suite, verbose = true)
     showall(results)
+    println()
 end
 
 runbenchmarks()
