@@ -279,6 +279,7 @@ facts("attach mechanism") do
     vertex = findfirst(tree(mechanism), root_body(mechanism2))
     @fact vertex.edgeToParentData --> connection
     @fact vertex.parent.vertexData --> parentBody
+    state = MechanismState(Float64, mechanism)
 
     # independent acrobots in the same configuration
     # make sure mass matrix is block diagonal, and that blocks on diagonal are the same
