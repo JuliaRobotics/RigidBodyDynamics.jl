@@ -11,10 +11,11 @@ import FactCheck: roughly
 roughly{T}(x::T, atol) = y -> isapprox(y, x; atol = atol)
 roughly{T}(x::T; kvtols...) = y -> isapprox(y, x; kvtols...)
 
-include("test_frames.jl")
-include("test_spatial.jl")
-include("test_double_pendulum.jl")
-include("test_mechanism.jl")
+include("test_tree.jl")
+# include("test_frames.jl")
+# include("test_spatial.jl")
+# include("test_double_pendulum.jl")
+# include("test_mechanism.jl")
 
 # using IJulia
 # run notebooks

@@ -80,7 +80,7 @@ end
 function insert!(parentVertex::TreeVertex, childVertex::TreeVertex)
     @assert isroot(childVertex)
     childVertex.parent = parentVertex
-    push!(parentVertex.children, vertex)
+    push!(parentVertex.children, childVertex)
     nothing
 end
 
@@ -119,16 +119,24 @@ function map!{F, V, E}(f::F, tree::Tree{V, E})
     return tree
 end
 
-function subtree(vertex::TreeVertex)
-    ret = Tree(tree.vertexData)
+function insert_subtree!{V, E}(root::TreeVertex{V, E}, subtree_root::TreeVertex{V, E})
+    # modifies root, but doesn't modify subtree_root
+    inserted = insert!(root, subtree_root.vertexData, subtree_root.edgeToParentData)
+    for child in subtree_root.children
+        insert_subtree!(inserted, child)
+    end
+end
+
+function subtree{V, E}(vertex::TreeVertex{V, E})
+    ret = Tree{V, E}(vertex.vertexData)
     for child in vertex.children
-        insert!(ret, child.vertexData, child.edgeToParentData)
+        insert_subtree!(ret, child)
     end
     ret
 end
 
-function reroot{V, E, F}(tree::Tree{V, E}, newRoot::TreeVertex{V, E}, edgeDirectionChangeFunction::F = identity)
-    ret = Tree(newRoot.vertexData)
+function reroot{V, E, F}(newRoot::TreeVertex{V, E}, edgeDirectionChangeFunction::F = identity)
+    ret = Tree{V, E}(newRoot.vertexData)
 
     currentVertexNewTree = ret
     previousVertexOldTree = newRoot
@@ -138,7 +146,7 @@ function reroot{V, E, F}(tree::Tree{V, E}, newRoot::TreeVertex{V, E}, edgeDirect
     while !done
         for child in currentVertexOldTree.children
             if child != previousVertexOldTree
-                insert!(currentVertexNewTree, subtree(child))
+                insert_subtree!(currentVertexNewTree, child)
             end
         end
 
