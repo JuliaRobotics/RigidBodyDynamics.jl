@@ -17,8 +17,8 @@ if !isdefined(Base, :view)
     const view = slice
 end
 
-include("third_party_addendum.jl")
 include("util.jl")
+include("third_party_addendum.jl")
 include("frames.jl")
 include("spatial.jl")
 include("rigid_body.jl")

@@ -215,7 +215,7 @@ angular_part(jac::GeometricJacobian) = jac.angular
 linear_part(jac::GeometricJacobian) = jac.linear
 
 function Twist(jac::GeometricJacobian, v::AbstractVector)
-    Twist(jac.body, jac.base, jac.frame, convert(SVector{3}, jac.angular * v), convert(SVector{3}, jac.linear * v))
+    Twist(jac.body, jac.base, jac.frame, jac.angular * v, jac.linear * v)
 end
 
 (-)(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.angular, -jac.linear)
@@ -395,8 +395,7 @@ function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, fra
 end
 
 function SpatialAcceleration(jac::GeometricJacobian, v̇::AbstractVector)
-    v̇Fixed = SVector{num_cols(jac)}(v̇)
-    SpatialAcceleration(jac.body, jac.base, jac.frame, jac.angular * v̇Fixed, jac.linear * v̇Fixed)
+    SpatialAcceleration(jac.body, jac.base, jac.frame, jac.angular * v̇, jac.linear * v̇)
 end
 
 function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
