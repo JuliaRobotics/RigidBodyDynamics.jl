@@ -81,7 +81,7 @@ function insert!(parentVertex::TreeVertex, childVertex::TreeVertex)
     @assert isroot(childVertex)
     childVertex.parent = parentVertex
     push!(parentVertex.children, childVertex)
-    nothing
+    childVertex
 end
 
 function insert!{V, E}(parentVertex::TreeVertex{V, E}, vertexData::V, edgeData::E)
