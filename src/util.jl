@@ -8,3 +8,7 @@ start(::NullDict) = 0
 done(::NullDict, state) = true
 get(::NullDict, key, default) = default
 haskey(::NullDict, k) = false
+
+# type of a view of a vector
+# TODO: a bit too specific
+typealias VectorSegment{T} SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true}
