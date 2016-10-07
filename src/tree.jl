@@ -77,12 +77,23 @@ function toposort{V, E}(tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
     return result
 end
 
+function insert!(parentVertex::TreeVertex, childVertex::TreeVertex)
+    @assert isroot(childVertex)
+    childVertex.parent = parentVertex
+    push!(parentVertex.children, vertex)
+    nothing
+end
+
+function insert!{V, E}(parentVertex::TreeVertex{V, E}, vertexData::V, edgeData::E)
+    vertex = TreeVertex{V, E}(vertexData, parentVertex, edgeData)
+    push!(parentVertex.children, vertex)
+    vertex
+end
+
 function insert!{V, E}(tree::Tree{V, E}, vertexData::V, edgeData::E, parentData::V)
     parentVertex = findfirst(tree, parentData)
     parentVertex == nothing && error("parent not found")
-    vertex = TreeVertex{V, E}(vertexData, parentVertex, edgeData)
-    push!(parentVertex.children, vertex)
-    return vertex
+    insert!(parentVertex, vertexData, edgeData)
 end
 
 function ancestors{V, E}(vertex::TreeVertex{V, E})
@@ -106,6 +117,42 @@ function map!{F, V, E}(f::F, tree::Tree{V, E})
         map!(f, child)
     end
     return tree
+end
+
+function subtree(vertex::TreeVertex)
+    ret = Tree(tree.vertexData)
+    for child in vertex.children
+        insert!(ret, child.vertexData, child.edgeToParentData)
+    end
+    ret
+end
+
+function reroot{V, E, F}(tree::Tree{V, E}, newRoot::TreeVertex{V, E}, edgeDirectionChangeFunction::F = identity)
+    ret = Tree(newRoot.vertexData)
+
+    currentVertexNewTree = ret
+    previousVertexOldTree = newRoot
+    currentVertexOldTree = newRoot
+
+    done = false
+    while !done
+        for child in currentVertexOldTree.children
+            if child != previousVertexOldTree
+                insert!(currentVertexNewTree, subtree(child))
+            end
+        end
+
+        done = isroot(currentVertexOldTree)
+
+        if !done
+            vertexData = currentVertexOldTree.parent.vertexData
+            edgeToParentData = edgeDirectionChangeFunction(currentVertexOldTree.edgeToParentData)
+            currentVertexNewTree = insert!(currentVertexNewTree, vertexData, edgeToParentData)
+            previousVertexOldTree = currentVertexOldTree
+            currentVertexOldTree = currentVertexOldTree.parent
+        end
+    end
+    ret
 end
 
 immutable Path{V, E}
