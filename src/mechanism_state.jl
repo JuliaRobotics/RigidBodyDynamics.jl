@@ -39,7 +39,7 @@ immutable UpdateSpatialInertiaInWorld{M, C}
     transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
 end
 @compat function (functor::UpdateSpatialInertiaInWorld)()
-    transform(functor.body.inertia, get(functor.transformToRootCache))
+    transform(spatial_inertia(functor.body), get(functor.transformToRootCache))
 end
 
 immutable UpdateCompositeRigidBodyInertia{M, C}
@@ -193,7 +193,7 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
             parentBody = vertex.parent.vertexData
 
             # inertias
-            transformBodyToRootCache = state.transformCache.transformsToRoot[body.inertia.frame]
+            transformBodyToRootCache = state.transformCache.transformsToRoot[spatial_inertia(body).frame]
 
             state.spatialInertias[body] = CacheElement(SpatialInertia{C}, UpdateSpatialInertiaInWorld(body, transformBodyToRootCache))
         end
