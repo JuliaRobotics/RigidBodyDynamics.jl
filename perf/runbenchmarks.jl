@@ -18,11 +18,11 @@ end
 
 function create_floating_atlas()
     atlas = parse_urdf(Float64, get_atlas_urdf())
-    for child in root_vertex(atlas).children
-        joint = child.edgeToParentData
-        change_joint_type!(atlas, joint, QuaternionFloating())
-    end
-    atlas
+    world = RigidBody{Float64}("world")
+    floating_atlas = Mechanism(world)
+    floating_joint = Joint("floating", QuaternionFloating())
+    attach!(floating_atlas, world, floating_joint, Transform3D{Float64}(floating_joint.frameBefore, world.frame), atlas)
+    floating_atlas
 end
 
 function create_benchmark_suite()
