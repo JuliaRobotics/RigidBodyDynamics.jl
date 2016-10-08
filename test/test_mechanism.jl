@@ -267,18 +267,39 @@ facts("dynamics / inverse dynamics") do
 end
 
 facts("attach mechanism") do
-    mechanism = rand_tree_mechanism(Float64, QuaternionFloating)#; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
+    mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
     nq = num_positions(mechanism)
     nv = num_velocities(mechanism)
-    mechanism2 = rand_tree_mechanism(Float64, QuaternionFloating)#; [Revolute{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]]...)
+
+    mechanism2 = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]]...)
+    additionalFrames = Dict{CartesianFrame3D, RigidBody{Float64}}()
+    for body in bodies(mechanism2)
+        for i = 1 : 5
+            frame = CartesianFrame3D("frame_$i")
+            transform = rand(Transform3D{Float64}, frame, body.frame)
+            add_body_fixed_frame!(mechanism2, body, transform)
+            additionalFrames[frame] = body
+        end
+    end
+
     parentBody = rand(bodies(mechanism))
     attach!(mechanism, parentBody, mechanism2)
 
     @fact num_positions(mechanism) --> nq + num_positions(mechanism2)
     @fact num_velocities(mechanism) --> nv + num_velocities(mechanism2)
-    vertex = findfirst(tree(mechanism), root_body(mechanism2))
-    # TODO: more tests
-    state = MechanismState(Float64, mechanism)
+
+    # make sure all of the frame definitions got copied over
+    for frame in keys(additionalFrames)
+        body = additionalFrames[frame]
+        if body == root_body(mechanism2)
+            body = parentBody
+        end
+        @fact RigidBodyDynamics.is_fixed_to_body(mechanism, frame, body) --> true
+    end
+
+    state = MechanismState(Float64, mechanism) # issue 63
+    rand!(state)
+    M = mass_matrix(state)
 
     # independent acrobots in the same configuration
     # make sure mass matrix is block diagonal, and that blocks on diagonal are the same

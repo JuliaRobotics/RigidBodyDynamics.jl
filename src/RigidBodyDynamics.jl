@@ -87,6 +87,7 @@ export
     spatial_inertia,
     crb_inertia,
     setdirty!,
+    add_body_fixed_frame!,
     attach!,
     rand_mechanism,
     rand_chain_mechanism,

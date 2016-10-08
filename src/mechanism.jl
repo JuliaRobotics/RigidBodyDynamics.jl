@@ -27,7 +27,7 @@ root_body(m::Mechanism) = root_vertex(m).vertexData
 root_frame(m::Mechanism) = root_body(m).frame
 path(m::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(tree(m), from), findfirst(tree(m), to))
 show(io::IO, m::Mechanism) = print(io, m.toposortedTree[1])
-is_fixed_to_body{M}(m::Mechanism{M}, frame::CartesianFrame3D, body::RigidBody{M}) = body.frame == frame || any((t) -> t.from == frame, bodyFixedFrameDefinitions[body])
+is_fixed_to_body{M}(m::Mechanism{M}, frame::CartesianFrame3D, body::RigidBody{M}) = body.frame == frame || any((t) -> t.from == frame, m.bodyFixedFrameDefinitions[body])
 isinertial(m::Mechanism, frame::CartesianFrame3D) = is_fixed_to_body(m, frame, root_body(m))
 isroot{T}(m::Mechanism{T}, b::RigidBody{T}) = b == root_body(m)
 
