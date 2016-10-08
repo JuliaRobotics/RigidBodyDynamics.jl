@@ -69,15 +69,22 @@ function parse_body{T}(::Type{T}, xmlLink::XMLElement, frame::CartesianFrame3D =
 end
 
 function parse_vertex{T}(mechanism::Mechanism{T}, vertex::TreeVertex{XMLElement, XMLElement})
-    isroot(vertex) && error("unexpected non-root body")
-    xmlJoint, xmlLink = vertex.edgeToParentData, vertex.vertexData
-    parentName = attribute(find_element(xmlJoint, "parent"), "link")
-    parent = findfirst(v -> RigidBodyDynamics.name(v.vertexData) == parentName, tree(mechanism)).vertexData
-    joint = parse_joint(T, xmlJoint)
-    pose = parse_pose(T, find_element(xmlJoint, "origin"))
-    jointToParent = Transform3D(joint.frameBefore, default_frame(mechanism, parent), pose...)
-    child = parse_body(T, xmlLink, joint.frameAfter)
-    attach!(mechanism, parent, joint, jointToParent, child)
+    xmlLink = vertex.vertexData
+    if isroot(vertex)
+        parent = root_body(mechanism)
+        body = parse_body(T, xmlLink)
+        joint = Joint("$(name(body))_to_world", Fixed())
+        jointToParent = Transform3D{T}(joint.frameBefore, parent.frame)
+    else
+        xmlJoint = vertex.edgeToParentData
+        parentName = attribute(find_element(xmlJoint, "parent"), "link")
+        parent = findfirst(v -> RigidBodyDynamics.name(v.vertexData) == parentName, tree(mechanism)).vertexData
+        joint = parse_joint(T, xmlJoint)
+        pose = parse_pose(T, find_element(xmlJoint, "origin"))
+        jointToParent = Transform3D(joint.frameBefore, default_frame(mechanism, parent), pose...)
+        body = parse_body(T, xmlLink, joint.frameAfter)
+    end
+    attach!(mechanism, parent, joint, jointToParent, body)
 end
 
 function parse_urdf{T}(::Type{T}, filename)
@@ -103,9 +110,9 @@ function parse_urdf{T}(::Type{T}, filename)
     tree = roots[1]
 
     # create mechanism from tree structure of XML elements
-    rootBody = parse_body(T, tree.vertexData)
+    rootBody = RigidBody{T}("world")
     mechanism = Mechanism(rootBody)
-    for vertex in toposort(tree)[2 : end]
+    for vertex in toposort(tree)
         parse_vertex(mechanism, vertex)
     end
     mechanism
