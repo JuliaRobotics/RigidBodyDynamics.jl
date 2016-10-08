@@ -1,6 +1,6 @@
 abstract JointType
 
-immutable Joint
+type Joint
     name::String
     frameBefore::CartesianFrame3D
     frameAfter::CartesianFrame3D

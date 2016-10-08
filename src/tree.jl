@@ -121,9 +121,9 @@ function map!{F, V, E}(f::F, tree::Tree{V, E})
     return tree
 end
 
-function insert_subtree!{V, E}(root::TreeVertex{V, E}, subtree_root::TreeVertex{V, E}, edgeToParentData = subtree_root.edgeToParentData)
+function insert_subtree!{V, E}(root::TreeVertex{V, E}, subtree_root::TreeVertex{V, E})
     # modifies root, but doesn't modify subtree_root
-    inserted = insert!(root, subtree_root.vertexData, edgeToParentData)
+    inserted = insert!(root, subtree_root.vertexData, subtree_root.edgeToParentData)
     for child in subtree_root.children
         insert_subtree!(inserted, child)
     end
