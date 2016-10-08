@@ -35,6 +35,7 @@ function show(io::IO, vertex::TreeVertex, level = 0)
     end
 end
 
+# TODO: not type stable
 function findfirst{V, E}(pred::Function, tree::Tree{V, E})
     # depth first search
     root = tree
@@ -47,6 +48,7 @@ function findfirst{V, E}(pred::Function, tree::Tree{V, E})
     return nothing
 end
 
+# TODO: not type stable
 function findfirst{V, E}(tree::Tree{V, E}, vertexData::V)
     # depth first search
     root = tree
@@ -119,9 +121,9 @@ function map!{F, V, E}(f::F, tree::Tree{V, E})
     return tree
 end
 
-function insert_subtree!{V, E}(root::TreeVertex{V, E}, subtree_root::TreeVertex{V, E})
+function insert_subtree!{V, E}(root::TreeVertex{V, E}, subtree_root::TreeVertex{V, E}, edgeToParentData = subtree_root.edgeToParentData)
     # modifies root, but doesn't modify subtree_root
-    inserted = insert!(root, subtree_root.vertexData, subtree_root.edgeToParentData)
+    inserted = insert!(root, subtree_root.vertexData, edgeToParentData)
     for child in subtree_root.children
         insert_subtree!(inserted, child)
     end

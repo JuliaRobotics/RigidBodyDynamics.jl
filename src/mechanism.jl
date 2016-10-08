@@ -61,58 +61,49 @@ function recompute_ranges!(m::Mechanism)
     end
 end
 
-function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
-    childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(childBody.frame, joint.frameAfter))
+function set_up_frames!{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint},
+        jointToParent::Transform3D{T}, bodyToJoint::Transform3D{T})
+    joint = vertex.edgeToParentData
+    body = vertex.vertexData
+    parentBody = vertex.parent.vertexData
 
-    vertex = insert!(tree(m), childBody, joint, parentBody)
+    # add transform from frame before joint to parent body's default frame
     m.jointToJointTransforms[joint] = add_body_fixed_frame!(m, parentBody, jointToParent)
-    framecheck(childToJoint.from, childBody.frame)
-    framecheck(childToJoint.to, joint.frameAfter)
-    m.bodyFixedFrameToBody[joint.frameAfter] = childBody
-    m.bodyFixedFrameDefinitions[childBody] = Set([Transform3D(T, joint.frameAfter)])
-    if childToJoint.from != childToJoint.to
-        push!(m.bodyFixedFrameDefinitions[childBody], childToJoint)
-        m.bodyFixedFrameToBody[childToJoint.from] = childBody
+
+    # add transform from body to frame after joint to body fixed frame definitions
+    framecheck(bodyToJoint.from, body.frame)
+    framecheck(bodyToJoint.to, joint.frameAfter)
+    m.bodyFixedFrameToBody[joint.frameAfter] = body
+    m.bodyFixedFrameDefinitions[body] = Set([Transform3D(T, joint.frameAfter)])
+    if bodyToJoint.from != bodyToJoint.to
+        push!(m.bodyFixedFrameDefinitions[body], bodyToJoint)
+        m.bodyFixedFrameToBody[bodyToJoint.from] = body
     end
-    # m.toposortedTree = toposort(tree(m))
+end
+
+function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
+        childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(childBody.frame, joint.frameAfter))
+    vertex = insert!(tree(m), childBody, joint, parentBody)
+    set_up_frames!(m, vertex, jointToParent, childToJoint)
     push!(m.toposortedTree, vertex)
     recompute_ranges!(m)
     m
 end
 
 function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
-    childMechanism::Mechanism{T}, childToJoint::Transform3D{T} = Transform3D{T}(root_frame(childMechanism), joint.frameAfter))
-    # create new vertex that connects child mechanism root to parent body
+        childMechanism::Mechanism{T}, childToJoint::Transform3D{T} = Transform3D{T}(root_frame(childMechanism), joint.frameAfter))
+    # insert copy of child mechanism's tree into our tree
     parentVertex = findfirst(tree(m), parentBody)
-    childRoot = insert_subtree!(parentVertex, root_vertex(childMechanism))
-
-    #childRoot.edgeToParentData = joint
-    #TODO: make this work:
-    attach!(m, parentBody, joint, jointToParent, childRoot.vertexData, childToJoint)
-
+    vertex = insert_subtree!(parentVertex, root_vertex(childMechanism), joint)
+    set_up_frames!(m, vertex, jointToParent, childToJoint)
     m.toposortedTree = toposort(tree(m))
+    recompute_ranges!(m)
 
     # merge frame information
     merge!(m.bodyFixedFrameDefinitions, childMechanism.bodyFixedFrameDefinitions)
     merge!(m.bodyFixedFrameToBody, childMechanism.bodyFixedFrameToBody)
     merge!(m.jointToJointTransforms, childMechanism.jointToJointTransforms)
 
-    # # set up / modify frame information for root of child mechanism
-    # m.jointToJointTransforms[joint] = add_body_fixed_frame!(m, parentBody, jointToParent)
-    # childRootBody = childRoot.vertexData
-    # m.bodyFixedFrameToBody[joint.frameAfter] = childRootBody
-    # m.bodyFixedFrameDefinitions[childRootBody] = Set([Transform3D(T, joint.frameAfter)]) # overwrite and recreate
-    # if childToJoint.from != childToJoint.to
-    #     push!(m.bodyFixedFrameDefinitions[childRootBody], childToJoint)
-    #     m.bodyFixedFrameToBody[childToJoint.from] = childRootBody
-    # end
-    # for transform in childMechanism.bodyFixedFrameDefinitions[childRootBody]
-    #     if transform.from != root_frame(childMechanism) # redefined
-    #         add_body_fixed_frame!(m, childRootBody, transform)
-    #     end
-    # end
-
-    recompute_ranges!(m)
     m
 end
 
