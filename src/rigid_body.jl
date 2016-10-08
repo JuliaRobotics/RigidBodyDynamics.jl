@@ -1,10 +1,10 @@
-immutable RigidBody{T<:Real}
+type RigidBody{T<:Real}
     name::String
     frame::CartesianFrame3D
     inertia::SpatialInertia{T}
 
     # inertia undefined; can e.g. be used for the root of a kinematic tree
-    RigidBody(name::String) = new(name, CartesianFrame3D(name))
+    RigidBody(name::String) = new(name, CartesianFrame3D(name)) #FIXME: inertia won't actually be undefined because it's immutable!
 
     # other bodies
     RigidBody(inertia::SpatialInertia{T}) = new(name(inertia.frame), inertia.frame, inertia)

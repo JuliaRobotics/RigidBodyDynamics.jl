@@ -270,15 +270,36 @@ facts("attach mechanism") do
     mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
     nq = num_positions(mechanism)
     nv = num_velocities(mechanism)
+
     mechanism2 = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]]...)
-    connection = Joint("connection", rand(Revolute{Float64}))
+    additionalFrames = Dict{CartesianFrame3D, RigidBody{Float64}}()
+    for body in bodies(mechanism2)
+        for i = 1 : 5
+            frame = CartesianFrame3D("frame_$i")
+            transform = rand(Transform3D{Float64}, frame, body.frame)
+            add_body_fixed_frame!(mechanism2, body, transform)
+            additionalFrames[frame] = body
+        end
+    end
+
     parentBody = rand(bodies(mechanism))
-    attach!(mechanism, parentBody, connection, rand(Transform3D{Float64}, connection.frameBefore, parentBody.frame), mechanism2)
-    @fact num_positions(mechanism) --> nq + num_positions(mechanism2) + num_positions(connection)
-    @fact num_velocities(mechanism) --> nv + num_velocities(mechanism2) + num_velocities(connection)
-    vertex = findfirst(tree(mechanism), root_body(mechanism2))
-    @fact vertex.edgeToParentData --> connection
-    @fact vertex.parent.vertexData --> parentBody
+    attach!(mechanism, parentBody, mechanism2)
+
+    @fact num_positions(mechanism) --> nq + num_positions(mechanism2)
+    @fact num_velocities(mechanism) --> nv + num_velocities(mechanism2)
+
+    # make sure all of the frame definitions got copied over
+    for frame in keys(additionalFrames)
+        body = additionalFrames[frame]
+        if body == root_body(mechanism2)
+            body = parentBody
+        end
+        @fact RigidBodyDynamics.is_fixed_to_body(mechanism, frame, body) --> true
+    end
+
+    state = MechanismState(Float64, mechanism) # issue 63
+    rand!(state)
+    M = mass_matrix(state)
 
     # independent acrobots in the same configuration
     # make sure mass matrix is block diagonal, and that blocks on diagonal are the same
@@ -288,11 +309,8 @@ facts("attach mechanism") do
     rand!(xSingle)
     qSingle = configuration_vector(xSingle)
     nqSingle = length(qSingle)
-    connection = Joint("fixed", Fixed())
     parentBody = root_body(doubleAcrobot)
-    jointToParent = Transform3D(connection.frameBefore, parentBody.frame, rand(SVector{3}))
-    childToJoint = Transform3D(root_body(acrobot2).frame, connection.frameAfter, rand(SVector{3}))
-    attach!(doubleAcrobot, parentBody, connection, jointToParent, acrobot2, childToJoint)
+    attach!(doubleAcrobot, parentBody, acrobot2)
     x = MechanismState(Float64, doubleAcrobot)
     set_configuration!(x, [qSingle; qSingle])
     H = mass_matrix(x)
