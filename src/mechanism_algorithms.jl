@@ -68,7 +68,7 @@ end
 
 
 function subtree_mass{T}(base::Tree{RigidBody{T}, Joint})
-    result = isroot(base) ? zero(T) : base.vertexData.inertia.mass
+    result = isroot(base) ? zero(T) : spatial_inertia(base.vertexData).mass
     for child in base.children
         result += subtree_mass(child)
     end
@@ -82,7 +82,7 @@ function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
     com = Point3D(frame, zeros(SVector{3, C}))
     mass = zero(C)
     for body in itr
-        inertia = body.inertia
+        inertia = spatial_inertia(body)
         bodyCom = center_of_mass(inertia)
         com += inertia.mass * FreeVector3D(transform(state, bodyCom, frame))
         mass += inertia.mass
