@@ -266,63 +266,6 @@ facts("dynamics / inverse dynamics") do
     @fact τ --> roughly(zeros(num_velocities(mechanism)); atol = 1e-12)
 end
 
-facts("attach mechanism") do
-    mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
-    nq = num_positions(mechanism)
-    nv = num_velocities(mechanism)
-
-    mechanism2 = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]]...)
-    additionalFrames = Dict{CartesianFrame3D, RigidBody{Float64}}()
-    for body in bodies(mechanism2)
-        for i = 1 : 5
-            frame = CartesianFrame3D("frame_$i")
-            transform = rand(Transform3D{Float64}, frame, body.frame)
-            add_body_fixed_frame!(mechanism2, body, transform)
-            additionalFrames[frame] = body
-        end
-    end
-
-    parentBody = rand(bodies(mechanism))
-    attach!(mechanism, parentBody, mechanism2)
-
-    @fact num_positions(mechanism) --> nq + num_positions(mechanism2)
-    @fact num_velocities(mechanism) --> nv + num_velocities(mechanism2)
-
-    # make sure all of the frame definitions got copied over
-    for frame in keys(additionalFrames)
-        body = additionalFrames[frame]
-        if body == root_body(mechanism2)
-            body = parentBody
-        end
-        @fact RigidBodyDynamics.is_fixed_to_body(mechanism, frame, body) --> true
-    end
-
-    state = MechanismState(Float64, mechanism) # issue 63
-    rand!(state)
-    M = mass_matrix(state)
-
-    # independent acrobots in the same configuration
-    # make sure mass matrix is block diagonal, and that blocks on diagonal are the same
-    doubleAcrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
-    acrobot2 = parse_urdf(Float64, "urdf/Acrobot.urdf")
-    xSingle = MechanismState(Float64, acrobot2)
-    rand!(xSingle)
-    qSingle = configuration_vector(xSingle)
-    nqSingle = length(qSingle)
-    parentBody = root_body(doubleAcrobot)
-    attach!(doubleAcrobot, parentBody, acrobot2)
-    x = MechanismState(Float64, doubleAcrobot)
-    set_configuration!(x, [qSingle; qSingle])
-    H = mass_matrix(x)
-    H11 = H[1 : nqSingle, 1 : nqSingle]
-    H12 = H[1 : nqSingle, nqSingle + 1 : end]
-    H21 = H[nqSingle + 1 : end, 1 : nqSingle]
-    H22 = H[nqSingle + 1 : end, nqSingle + 1 : end]
-    @fact H11 --> roughly(H22)
-    @fact H12 --> roughly(zeros(H12))
-    @fact H21 --> roughly(zeros(H21))
-end
-
 facts("simulate") do
     acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
     x = MechanismState(Float64, acrobot)

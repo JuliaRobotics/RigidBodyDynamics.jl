@@ -90,6 +90,7 @@ export
     add_body_fixed_frame!,
     attach!,
     change_joint_type!,
+    remove_fixed_joints!,
     rand_mechanism,
     rand_chain_mechanism,
     rand_tree_mechanism,

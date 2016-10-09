@@ -66,6 +66,7 @@ facts("double pendulum") do
 
     # compare against URDF
     doublePendulumUrdf = parse_urdf(Float64, "urdf/Acrobot.urdf")
+    remove_fixed_joints!(doublePendulumUrdf)
     x_urdf = MechanismState(Float64, doublePendulumUrdf)
     for (i, j) in enumerate(joints(doublePendulum))
         urdf_joints = joints(doublePendulumUrdf)

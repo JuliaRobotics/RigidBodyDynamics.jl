@@ -1,7 +1,7 @@
 type TreeVertex{V, E}
     vertexData::V
     children::Vector{TreeVertex{V, E}}
-    parent::TreeVertex{V, E}
+    parent::TreeVertex{V, E} # TODO: consider making this Nullable again
     edgeToParentData::E
 
     TreeVertex(vertexData::V) = new(vertexData, [])
@@ -80,7 +80,11 @@ function toposort{V, E}(tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
 end
 
 function insert!(parentVertex::TreeVertex, childVertex::TreeVertex)
-    @assert isroot(childVertex)
+    # Note: removes any previously existing parent/child relationship for childVertex
+    if !isroot(vertex)
+        parentsChildren = vertex.parent.children
+        deleteat!(parentsChildren, findfirst(parentsChildren, vertex))
+    end
     childVertex.parent = parentVertex
     push!(parentVertex.children, childVertex)
     childVertex
@@ -164,6 +168,18 @@ function reroot{V, E, F}(newRoot::TreeVertex{V, E}, edgeDirectionChangeFunction:
         end
     end
     ret
+end
+
+function merge_into_parent!(vertex::TreeVertex)
+    # splice vertex's children into parent's children at vertex's location
+    @assert !isroot(vertex)
+    for child in vertex.children
+        child.parent = vertex.parent
+    end
+    parentsChildren = vertex.parent.children
+    splice!(parentsChildren, findfirst(parentsChildren, vertex), vertex.children)
+    # TODO: would be nice to set vertex's parent to null
+    nothing
 end
 
 immutable Path{V, E}
