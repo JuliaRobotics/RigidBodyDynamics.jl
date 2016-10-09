@@ -30,53 +30,56 @@ function check_num_velocities(joint::Joint, vec::AbstractVector)
     nothing
 end
 
-function joint_transform(joint::Joint, q::AbstractVector)
+# Return type annotations below because of https://groups.google.com/forum/#!topic/julia-users/OBs0fmNmjCU
+# They might not be completely necessary at this point.
+function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform3D{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     _joint_transform(joint, joint.jointType, q)
 end
 
+# TODO: currently not type stable (should probably return a fixed-maximum-size GeometricJacobian)
 function motion_subspace(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     _motion_subspace(joint, joint.jointType, q)
 end
 
-function bias_acceleration(joint::Joint, q::AbstractVector, v::AbstractVector)
+function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::SpatialAcceleration{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
     _bias_acceleration(joint, joint.jointType, q, v)
 end
 
-function configuration_derivative_to_velocity!(joint::Joint, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
+function configuration_derivative_to_velocity!(joint::Joint, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)::Void
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q̇)
     _configuration_derivative_to_velocity!(joint.jointType, v, q, q̇)
 end
 
-function velocity_to_configuration_derivative!(joint::Joint, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
+function velocity_to_configuration_derivative!(joint::Joint, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)::Void
     @boundscheck check_num_positions(joint, q̇)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
     _velocity_to_configuration_derivative!(joint.jointType, q̇, q, v)
 end
 
-function zero_configuration!(joint::Joint, q::AbstractVector)
+function zero_configuration!(joint::Joint, q::AbstractVector)::Void
     @boundscheck check_num_positions(joint, q)
     _zero_configuration!(joint.jointType, q)
 end
 
-function rand_configuration!(joint::Joint, q::AbstractVector)
+function rand_configuration!(joint::Joint, q::AbstractVector)::Void
     @boundscheck check_num_positions(joint, q)
     _rand_configuration!(joint.jointType, q)
 end
 
-function joint_twist(joint::Joint, q::AbstractVector, v::AbstractVector)
+function joint_twist{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::Twist{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
     _joint_twist(joint, joint.jointType, q, v)
 end
 
-function joint_torque!(joint::Joint, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
+function joint_torque!(joint::Joint, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)::Void
     @boundscheck check_num_velocities(joint, τ)
     @boundscheck check_num_positions(joint, q)
     framecheck(joint_wrench.frame, joint.frameAfter)
@@ -194,10 +197,12 @@ end
 
 function _configuration_derivative_to_velocity!(::OneDegreeOfFreedomFixedAxis, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
     v[:] = q̇
+    nothing
 end
 
 function _velocity_to_configuration_derivative!(::OneDegreeOfFreedomFixedAxis, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
     q̇[:] = v
+    nothing
 end
 
 
