@@ -73,4 +73,35 @@
         M_no_fixed_joints = mass_matrix(state)
         @test isapprox(M_no_fixed_joints, M, atol = 1e-12)
     end
+
+    @testset "submechanism" begin
+        for testnum = 1 : 10
+            jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
+            shuffle!(jointTypes)
+            mechanism = rand_tree_mechanism(Float64, jointTypes...)
+            state = MechanismState(Float64, mechanism)
+            rand!(state)
+            M = mass_matrix(state)
+
+            submechanismRoot = rand(bodies(mechanism))
+            mechanismPart = submechanism(mechanism, submechanismRoot)
+            @test root_body(mechanismPart) == submechanismRoot
+            @test mechanism.gravitationalAcceleration.v == mechanismPart.gravitationalAcceleration.v
+
+            substate = MechanismState(Float64, mechanismPart)
+            for joint in joints(mechanismPart)
+                set_configuration!(substate, joint, configuration(state, joint))
+                set_velocity!(substate, joint, velocity(state, joint))
+            end
+            Msub = mass_matrix(substate)
+            if !isleaf(root_vertex(mechanismPart))
+
+                firstJoint = root_vertex(mechanismPart).children[1].edgeToParentData
+                offset = first(mechanism.vRanges[firstJoint]) - 1
+
+                vRange = (1 : num_velocities(mechanismPart)) + offset
+                @test isapprox(M[vRange, vRange] - Msub, zeros(Msub.data), atol = 1e-10)
+            end
+        end
+    end
 end

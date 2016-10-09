@@ -136,6 +136,34 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     m
 end
 
+function submechanism{T}(m::Mechanism{T}, submechanismRoot::RigidBody{T})
+    # Create mechanism and set up tree
+    ret = Mechanism{T}(submechanismRoot; gravity = m.gravitationalAcceleration.v)
+    for child in findfirst(tree(m), submechanismRoot).children
+        insert_subtree!(root_vertex(ret), child)
+    end
+    ret.toposortedTree = toposort(tree(ret))
+    recompute_ranges!(ret)
+
+    # copy frame information over
+    merge!(ret.bodyFixedFrameDefinitions, filter((k, v) -> k ∈ bodies(ret), m.bodyFixedFrameDefinitions))
+    merge!(ret.bodyFixedFrameToBody, filter((k, v) -> v ∈ bodies(ret), m.bodyFixedFrameToBody))
+    merge!(ret.jointToJointTransforms, filter((k, v) -> k ∈ joints(ret), m.jointToJointTransforms))
+
+    # update frame definitions associated with root
+    formerJointToRootBody = inv(find_body_fixed_frame_definition(ret, submechanismRoot, submechanismRoot.frame))
+    newFrameDefinitions = map(t -> formerJointToRootBody * t, ret.bodyFixedFrameDefinitions[submechanismRoot])
+    push!(newFrameDefinitions, formerJointToRootBody)
+    ret.bodyFixedFrameDefinitions[submechanismRoot] = newFrameDefinitions
+
+    for child in findfirst(tree(m), submechanismRoot).children
+        joint = child.edgeToParentData
+        ret.jointToJointTransforms[joint] = formerJointToRootBody * ret.jointToJointTransforms[joint]
+    end
+
+    ret
+end
+
 function change_joint_type!(m::Mechanism, joint::Joint, newType::JointType)
     # TODO: remove ranges from mechanism so that this function isn't necessary
     joint.jointType = newType
