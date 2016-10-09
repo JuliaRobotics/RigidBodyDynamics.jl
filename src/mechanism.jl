@@ -4,8 +4,8 @@ type Mechanism{T<:Real}
     bodyFixedFrameToBody::Dict{CartesianFrame3D, RigidBody{T}}
     jointToJointTransforms::Dict{Joint, Transform3D{T}}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}}
-    qRanges::Dict{Joint, UnitRange{Int64}}
-    vRanges::Dict{Joint, UnitRange{Int64}}
+    qRanges::Dict{Joint, UnitRange{Int64}} # TODO: remove
+    vRanges::Dict{Joint, UnitRange{Int64}} # TODO: remove
 
     function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
         tree = Tree{RigidBody{T}, Joint}(rootBody)
@@ -20,6 +20,7 @@ type Mechanism{T<:Real}
 end
 
 Mechanism{T}(rootBody::RigidBody{T}; kwargs...) = Mechanism{T}(rootBody; kwargs...)
+eltype{T}(::Mechanism{T}) = T
 root_vertex(m::Mechanism) = m.toposortedTree[1]
 non_root_vertices(m::Mechanism) = view(m.toposortedTree, 2 : length(m.toposortedTree))
 tree(m::Mechanism) = m.toposortedTree[1]
@@ -30,6 +31,13 @@ show(io::IO, m::Mechanism) = print(io, m.toposortedTree[1])
 is_fixed_to_body{M}(m::Mechanism{M}, frame::CartesianFrame3D, body::RigidBody{M}) = body.frame == frame || any((t) -> t.from == frame, m.bodyFixedFrameDefinitions[body])
 isinertial(m::Mechanism, frame::CartesianFrame3D) = is_fixed_to_body(m, frame, root_body(m))
 isroot{T}(m::Mechanism{T}, b::RigidBody{T}) = b == root_body(m)
+
+function find_body_fixed_frame_definition{T}(m::Mechanism{T}, body::RigidBody{T}, frame::CartesianFrame3D)::Transform3D{T}
+    for transform in m.bodyFixedFrameDefinitions[body]
+        transform.from == frame && return transform
+    end
+    error("$frame not found among body fixed frame definitions for $body")
+end
 
 function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T})
     fixedFrameDefinitions = m.bodyFixedFrameDefinitions[body]
@@ -53,6 +61,8 @@ function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform
 end
 
 function recompute_ranges!(m::Mechanism)
+    empty!(m.qRanges)
+    empty!(m.vRanges)
     qStart, vStart = 1, 1
     for joint in joints(m)
         qEnd, vEnd = qStart + num_positions(joint) - 1, vStart + num_velocities(joint) - 1
@@ -129,8 +139,62 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
 end
 
 function change_joint_type!(m::Mechanism, joint::Joint, newType::JointType)
+    # TODO: remove ranges from mechanism so that this function isn't necessary
     joint.jointType = newType
     recompute_ranges!(m::Mechanism)
+    m
+end
+
+function remove_fixed_joints!(m::Mechanism)
+    T = eltype(m)
+    vertexStack = [root_vertex(m)]
+    while !isempty(vertexStack)
+        vertex = pop!(vertexStack)
+        if !isroot(vertex)
+            body = vertex.vertexData
+            joint = vertex.edgeToParentData
+            parentVertex = vertex.parent
+            if isa(joint.jointType, Fixed)
+                jointTransform = Transform3D{T}(joint.frameAfter, joint.frameBefore)
+                afterJointToParentJoint = m.jointToJointTransforms[joint] * jointTransform
+
+                # add inertia to parent body
+                parentBody = vertex.parent.vertexData
+                if has_defined_inertia(parentBody)
+                    inertia = spatial_inertia(body)
+                    inertiaFrameToFrameAfterJoint = find_body_fixed_frame_definition(inertia.frame)
+
+                    parentInertia = spatial_inertia(parentBody)
+                    parentInertiaFrameToParentJoint = find_body_fixed_frame_definition(parentInertia.frame)
+
+                    inertiaToParentInertia = inertiaFrameToFrameAfterJoint * afterJointToParentJoint * inv(parentInertiaFrameToParentJoint)
+                    parentBody.inertia = parentInertia + transform(inertia, inertiaToParentInertia)
+                end
+
+                # update children
+                for child in copy(vertex.children)
+                    insert!(parentVertex, child)
+                    childJoint = child.edgeToParentData
+                    m.jointToJointTransforms[childJoint] = afterJointToParentJoint * m.jointToJointTransforms[childJoint]
+                end
+                delete!(m.jointToJointTransforms, joint)
+
+                # add body fixed frames to parent body
+                for transform in m.bodyFixedFrameDefinitions[body]
+                    transform = afterJointToParentJoint * transform
+                    add_body_fixed_frame!(m, parentBody, transform)
+                end
+                delete!(m.bodyFixedFrameDefinitions, body)
+                delete!(m.bodyFixedFrameToBody, body)
+
+                # remove vertex from tree
+                disown!(vertex)
+            end
+        end
+        append!(vertexStack, vertex.children)
+    end
+    m.toposortedTree = toposort(tree(m))
+    recompute_ranges!(m)
     m
 end
 

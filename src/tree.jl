@@ -1,7 +1,7 @@
 type TreeVertex{V, E}
     vertexData::V
     children::Vector{TreeVertex{V, E}}
-    parent::TreeVertex{V, E}
+    parent::TreeVertex{V, E} # TODO: consider making this Nullable again
     edgeToParentData::E
 
     TreeVertex(vertexData::V) = new(vertexData, [])
@@ -79,8 +79,17 @@ function toposort{V, E}(tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
     return result
 end
 
+function disown!(vertex::TreeVertex)
+    if !isroot(vertex)
+        parentsChildren = vertex.parent.children
+        deleteat!(parentsChildren, findfirst(parentsChildren, vertex))
+    end
+    vertex
+end
+
 function insert!(parentVertex::TreeVertex, childVertex::TreeVertex)
-    @assert isroot(childVertex)
+    # Note: removes any previously existing parent/child relationship for childVertex
+    disown!(childVertex)
     childVertex.parent = parentVertex
     push!(parentVertex.children, childVertex)
     childVertex
