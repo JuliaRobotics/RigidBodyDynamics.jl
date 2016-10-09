@@ -14,8 +14,8 @@ Joint{T<:Real}(name::String, jointType::JointType{T}) = Joint{T}(name, jointType
 show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
 showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
 
-num_positions(joint::Joint) = num_positions(joint.jointType)
-num_velocities(joint::Joint) = num_velocities(joint.jointType)
+num_positions(joint::Joint) = num_positions(joint.jointType)::Int64
+num_velocities(joint::Joint) = num_velocities(joint.jointType)::Int64
 
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
 num_velocities(itr) = reduce((val, joint) -> val + num_velocities(joint), 0, itr)
@@ -143,7 +143,7 @@ function _velocity_to_configuration_derivative!(jt::QuaternionFloating, q̇::Abs
     @inbounds q̇[2] = quatdot.v1
     @inbounds q̇[3] = quatdot.v2
     @inbounds q̇[4] = quatdot.v3
-    @inbounds q̇[5 : 7] = posdot
+    @inbounds copy!(view(q̇, 5 : 7), posdot)
     nothing
 end
 
@@ -182,7 +182,7 @@ num_positions(::OneDegreeOfFreedomFixedAxis) = 1
 num_velocities(::OneDegreeOfFreedomFixedAxis) = 1
 
 function _zero_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
-    fill!(q, 0)
+    fill!(q, zero(eltype(q)))
     nothing
 end
 
