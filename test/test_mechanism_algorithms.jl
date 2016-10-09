@@ -1,5 +1,5 @@
 @testset "mechanism algorithms" begin
-    mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Fixed for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...)
+    mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...)
     x = MechanismState(Float64, mechanism)
     rand!(x)
 
@@ -44,9 +44,12 @@
         q̇ = configuration_derivative(x)
         v = velocity_vector(x)
         for joint in joints(mechanism)
-            qjoint = q[mechanism.qRanges[joint]]
-            q̇joint = q̇[mechanism.qRanges[joint]]
-            @test isapprox(velocity(x, joint), configuration_derivative_to_velocity(joint, qjoint, q̇joint); atol = 1e-12)
+            qJoint = q[mechanism.qRanges[joint]]
+            q̇Joint = q̇[mechanism.qRanges[joint]]
+            vJoint = velocity(x, joint)
+            vJointFromq̇ = similar(vJoint)
+            configuration_derivative_to_velocity!(joint, vJointFromq̇, qJoint, q̇Joint)
+            @test isapprox(vJoint, vJointFromq̇; atol = 1e-12)
         end
     end
 
@@ -218,7 +221,7 @@
     end
 
     @testset "inverse dynamics / external wrenches" begin
-        mechanism = rand_chain_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
+        mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
         x = MechanismState(Float64, mechanism)
         rand_configuration!(x)
         rand_velocity!(x)
@@ -253,7 +256,7 @@
     end
 
     @testset "dynamics / inverse dynamics" begin
-        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
+        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
         x = MechanismState(Float64, mechanism)
         rand!(x)
 

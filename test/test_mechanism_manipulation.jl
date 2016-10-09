@@ -1,10 +1,10 @@
 @testset "mechanism manipulation" begin
     @testset "attach mechanism" begin
-        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
+        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
 
-        mechanism2 = rand_tree_mechanism(Float64, [QuaternionFloating; [Revolute{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]]...)
+        mechanism2 = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]]...)
         additionalFrames = Dict{CartesianFrame3D, RigidBody{Float64}}()
         for body in bodies(mechanism2)
             for i = 1 : 5
@@ -57,7 +57,7 @@
     end
 
     @testset "remove fixed joints" begin
-        jointTypes = [QuaternionFloating; [Revolute{Float64} for i = 1 : 10]; [Fixed for i = 1 : 10]]
+        jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
         shuffle!(jointTypes)
         mechanism = rand_tree_mechanism(Float64, jointTypes...)
         state = MechanismState(Float64, mechanism)
