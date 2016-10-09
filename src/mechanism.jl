@@ -114,9 +114,7 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
         body = vertex.vertexData
         joint = vertex.edgeToParentData
         jointToParent = childRootBodyToParentBody * childMechanism.jointToJointTransforms[joint]
-        bodyToJointSet = filter(transform -> transform.from == body.frame, childMechanism.bodyFixedFrameDefinitions[body])
-        @assert length(bodyToJointSet) == 1
-        bodyToJoint = first(bodyToJointSet)
+        bodyToJoint = find_body_fixed_frame_definition(childMechanism, body, body.frame)
         set_up_frames!(m, vertex, jointToParent, bodyToJoint)
     end
     m.toposortedTree = toposort(tree(m))
