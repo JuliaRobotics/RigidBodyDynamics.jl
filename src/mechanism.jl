@@ -128,6 +128,12 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     m
 end
 
+function change_joint_type!(m::Mechanism, joint::Joint, newType::JointType)
+    joint.jointType = newType
+    recompute_ranges!(m::Mechanism)
+    m
+end
+
 joints(m::Mechanism) = [vertex.edgeToParentData::Joint for vertex in non_root_vertices(m)] # TODO: make less expensive
 bodies{T}(m::Mechanism{T}) = [vertex.vertexData::RigidBody{T} for vertex in m.toposortedTree] # TODO: make less expensive
 non_root_bodies{T}(m::Mechanism{T}) = [vertex.vertexData::RigidBody{T} for vertex in non_root_vertices(m)] # TODO: make less expensive

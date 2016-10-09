@@ -83,9 +83,11 @@ function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
     mass = zero(C)
     for body in itr
         inertia = spatial_inertia(body)
-        bodyCom = center_of_mass(inertia)
-        com += inertia.mass * FreeVector3D(transform(state, bodyCom, frame))
-        mass += inertia.mass
+        if inertia.mass > zero(C)
+            bodyCom = center_of_mass(inertia)
+            com += inertia.mass * FreeVector3D(transform(state, bodyCom, frame))
+            mass += inertia.mass
+        end
     end
     com /= mass
     return com
