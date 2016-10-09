@@ -129,7 +129,7 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
 end
 
 function change_joint_type!(m::Mechanism, joint::Joint, newType::JointType)
-    joint.jointType = QuaternionFloating()
+    joint.jointType = newType
     recompute_ranges!(m::Mechanism)
     m
 end

@@ -14,15 +14,15 @@ facts("double pendulum") do
     doublePendulum = Mechanism(RigidBody{Float64}("world"); gravity = SVector(0, 0, g))
     world = root_body(doublePendulum)
 
-    inertia1 = SpatialInertia(CartesianFrame3D("body1"), I1 * axis * axis', SVector(0, 0, lc1), m1)
+    inertia1 = SpatialInertia(CartesianFrame3D("upper_link"), I1 * axis * axis', SVector(0, 0, lc1), m1)
     body1 = RigidBody(inertia1)
-    joint1 = Joint("1", Revolute(axis))
+    joint1 = Joint("shoulder", Revolute(axis))
     joint1ToWorld = Transform3D{Float64}(joint1.frameBefore, world.frame)
     attach!(doublePendulum, world, joint1, joint1ToWorld, body1)
 
-    inertia2 = SpatialInertia(CartesianFrame3D("body2"), I2 * axis * axis', SVector(0, 0, lc2), m2)
+    inertia2 = SpatialInertia(CartesianFrame3D("lower_link"), I2 * axis * axis', SVector(0, 0, lc2), m2)
     body2 = RigidBody(inertia2)
-    joint2 = Joint("2", Revolute(axis))
+    joint2 = Joint("elbow", Revolute(axis))
     joint2ToBody1 = Transform3D(joint2.frameBefore, body1.frame, SVector(0, 0, l1))
     attach!(doublePendulum, body1, joint2, joint2ToBody1, body2)
 
@@ -67,16 +67,20 @@ facts("double pendulum") do
     # compare against URDF
     doublePendulumUrdf = parse_urdf(Float64, "urdf/Acrobot.urdf")
     x_urdf = MechanismState(Float64, doublePendulumUrdf)
-    for i in 1 : length(joints(doublePendulum))
-        j = joints(doublePendulum)[i]
-        j_urdf = joints(doublePendulumUrdf)[i]
+    for (i, j) in enumerate(joints(doublePendulum))
+        urdf_joints = joints(doublePendulumUrdf)
+        index = findfirst(joint -> joint.name == j.name, urdf_joints)
+        j_urdf = urdf_joints[index]
         set_configuration!(x_urdf, j_urdf, configuration(x, j))
         set_velocity!(x_urdf, j_urdf, velocity(x, j))
     end
     v̇ = rand(num_velocities(x_urdf))
     τ = inverse_dynamics(x_urdf, v̇)
-    @fact T1 --> roughly(kinetic_energy(x_urdf, bodies(doublePendulumUrdf)[2]); atol = 1e-12)
-    @fact T2 --> roughly(kinetic_energy(x_urdf, bodies(doublePendulumUrdf)[3]); atol = 1e-12)
+    urdfBodies = bodies(doublePendulumUrdf)
+    urdfUpperLink = urdfBodies[findfirst(b -> name(b) == name(body1), urdfBodies)]
+    urdfLowerLink = urdfBodies[findfirst(b -> name(b) == name(body2), urdfBodies)]
+    @fact T1 --> roughly(kinetic_energy(x_urdf, urdfUpperLink); atol = 1e-12)
+    @fact T2 --> roughly(kinetic_energy(x_urdf, urdfLowerLink); atol = 1e-12)
     @fact M --> roughly(mass_matrix(x_urdf); atol = 1e-12)
     @fact τ --> roughly(M * v̇ + C * v + G; atol = 1e-12)
 
