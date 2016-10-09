@@ -28,6 +28,7 @@ end
 function create_benchmark_suite()
     suite = BenchmarkGroup()
     mechanism = create_floating_atlas()
+    remove_fixed_joints!(mechanism)
 
     let
         state = MechanismState(Float64, mechanism)
