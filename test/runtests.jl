@@ -3,13 +3,8 @@ using Base.Test
 using RigidBodyDynamics
 using Quaternions
 using StaticArrays
-using FactCheck
 using Compat
 import ForwardDiff
-
-import FactCheck: roughly
-roughly{T}(x::T, atol) = y -> isapprox(y, x; atol = atol)
-roughly{T}(x::T; kvtols...) = y -> isapprox(y, x; kvtols...)
 
 include("test_tree.jl")
 include("test_frames.jl")
