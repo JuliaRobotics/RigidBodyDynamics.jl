@@ -1,4 +1,4 @@
-facts("double pendulum") do
+@testset "double pendulum" begin
     lc1 = -0.5
     l1 = -1.
     m1 = 1.
@@ -59,10 +59,10 @@ facts("double pendulum") do
     τ = inverse_dynamics(x, v̇)
     v = velocity_vector(x)
 
-    @fact T1 --> roughly(kinetic_energy(x, body1); atol = 1e-12)
-    @fact T2 --> roughly(kinetic_energy(x, body2); atol = 1e-12)
-    @fact M --> roughly(mass_matrix(x); atol = 1e-12)
-    @fact τ --> roughly(M * v̇ + C * v + G; atol = 1e-12)
+    @test isapprox(T1, kinetic_energy(x, body1), atol = 1e-12)
+    @test isapprox(T2, kinetic_energy(x, body2), atol = 1e-12)
+    @test isapprox(M, mass_matrix(x), atol = 1e-12)
+    @test isapprox(τ, M * v̇ + C * v + G, atol = 1e-12)
 
     # compare against URDF
     doublePendulumUrdf = parse_urdf(Float64, "urdf/Acrobot.urdf")
@@ -80,9 +80,8 @@ facts("double pendulum") do
     urdfBodies = bodies(doublePendulumUrdf)
     urdfUpperLink = urdfBodies[findfirst(b -> name(b) == name(body1), urdfBodies)]
     urdfLowerLink = urdfBodies[findfirst(b -> name(b) == name(body2), urdfBodies)]
-    @fact T1 --> roughly(kinetic_energy(x_urdf, urdfUpperLink); atol = 1e-12)
-    @fact T2 --> roughly(kinetic_energy(x_urdf, urdfLowerLink); atol = 1e-12)
-    @fact M --> roughly(mass_matrix(x_urdf); atol = 1e-12)
-    @fact τ --> roughly(M * v̇ + C * v + G; atol = 1e-12)
-
+    @test isapprox(T1, kinetic_energy(x_urdf, urdfUpperLink), atol = 1e-12)
+    @test isapprox(T2, kinetic_energy(x_urdf, urdfLowerLink), atol = 1e-12)
+    @test isapprox(M, mass_matrix(x_urdf), atol = 1e-12)
+    @test isapprox(τ, M * v̇ + C * v + G, atol = 1e-12)
 end
