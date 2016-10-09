@@ -15,7 +15,8 @@ include("test_tree.jl")
 include("test_frames.jl")
 include("test_spatial.jl")
 include("test_double_pendulum.jl")
-include("test_mechanism.jl")
+include("test_mechanism_algorithms.jl")
+include("test_mechanism_manipulation.jl")
 
 # using IJulia
 # run notebooks

@@ -95,7 +95,7 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
         childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(childBody.frame, joint.frameAfter))
     vertex = insert!(tree(m), childBody, joint, parentBody)
     set_up_frames!(m, vertex, jointToParent, childToJoint)
-    push!(m.toposortedTree, vertex)
+    m.toposortedTree = toposort(tree(m))
     recompute_ranges!(m)
     m
 end
@@ -147,13 +147,11 @@ end
 
 function remove_fixed_joints!(m::Mechanism)
     T = eltype(m)
-    vertexStack = [root_vertex(m)]
-    while !isempty(vertexStack)
-        vertex = pop!(vertexStack)
+    for vertex in copy(m.toposortedTree)
         if !isroot(vertex)
+            parentVertex = vertex.parent
             body = vertex.vertexData
             joint = vertex.edgeToParentData
-            parentVertex = vertex.parent
             if isa(joint.jointType, Fixed)
                 jointTransform = Transform3D{T}(joint.frameAfter, joint.frameBefore)
                 afterJointToParentJoint = m.jointToJointTransforms[joint] * jointTransform
@@ -162,18 +160,17 @@ function remove_fixed_joints!(m::Mechanism)
                 parentBody = vertex.parent.vertexData
                 if has_defined_inertia(parentBody)
                     inertia = spatial_inertia(body)
-                    inertiaFrameToFrameAfterJoint = find_body_fixed_frame_definition(inertia.frame)
+                    inertiaFrameToFrameAfterJoint = find_body_fixed_frame_definition(m, body, inertia.frame)
 
                     parentInertia = spatial_inertia(parentBody)
-                    parentInertiaFrameToParentJoint = find_body_fixed_frame_definition(parentInertia.frame)
+                    parentInertiaFrameToParentJoint = find_body_fixed_frame_definition(m, parentBody, parentInertia.frame)
 
-                    inertiaToParentInertia = inertiaFrameToFrameAfterJoint * afterJointToParentJoint * inv(parentInertiaFrameToParentJoint)
+                    inertiaToParentInertia = inv(parentInertiaFrameToParentJoint) * afterJointToParentJoint * inertiaFrameToFrameAfterJoint
                     parentBody.inertia = parentInertia + transform(inertia, inertiaToParentInertia)
                 end
 
-                # update children
+                # update children's joint to parent transforms
                 for child in copy(vertex.children)
-                    insert!(parentVertex, child)
                     childJoint = child.edgeToParentData
                     m.jointToJointTransforms[childJoint] = afterJointToParentJoint * m.jointToJointTransforms[childJoint]
                 end
@@ -187,11 +184,10 @@ function remove_fixed_joints!(m::Mechanism)
                 delete!(m.bodyFixedFrameDefinitions, body)
                 delete!(m.bodyFixedFrameToBody, body)
 
-                # remove vertex from tree
-                disown!(vertex)
+                # merge vertex into parent
+                merge_into_parent!(vertex)
             end
         end
-        append!(vertexStack, vertex.children)
     end
     m.toposortedTree = toposort(tree(m))
     recompute_ranges!(m)
