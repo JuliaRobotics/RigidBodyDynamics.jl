@@ -8,72 +8,111 @@ type Joint{T<:Real}
 
     Joint(name::String, jointType::JointType{T}) = new(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
 end
+
 Joint{T<:Real}(name::String, jointType::JointType{T}) = Joint{T}(name, jointType)
 
 show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
 showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
 
-"""
-Given a function signature f(args...), generates a function
-f(joint::Joint, args...) that delegates to a function
-f(joint::Joint, jointType::JointType, args...)
-which should be implemented by the implementor of a joint type
-"""
-macro joint_type_dependent_function(signature)
-    functionName = signature.args[1]
-    functionArgs = signature.args[2:end]
-    eval(quote
-        function $(functionName)(joint::Joint, $(functionArgs...))
-            $(functionName)(joint, joint.jointType, $(functionArgs...))
-        end
-    end)
+num_positions(joint::Joint) = num_positions(joint.jointType)
+num_velocities(joint::Joint) = num_velocities(joint.jointType)
+
+num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
+num_velocities(itr) = reduce((val, joint) -> val + num_velocities(joint), 0, itr)
+
+function check_num_positions(joint::Joint, vec::AbstractVector)
+    length(vec) == num_positions(joint) || error("wrong size")
+    nothing
 end
 
-@joint_type_dependent_function joint_transform(q::AbstractVector)
-@joint_type_dependent_function motion_subspace(q::AbstractVector)
-@joint_type_dependent_function num_positions()
-@joint_type_dependent_function num_velocities()
-@joint_type_dependent_function bias_acceleration(q::AbstractVector, v::AbstractVector)
-@joint_type_dependent_function configuration_derivative_to_velocity!(v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
-@joint_type_dependent_function velocity_to_configuration_derivative!(q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
-@joint_type_dependent_function zero_configuration!(q::AbstractVector)
-@joint_type_dependent_function rand_configuration!(q::AbstractVector)
-@joint_type_dependent_function joint_twist(q::AbstractVector, v::AbstractVector)
-@joint_type_dependent_function joint_torque!(τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
+function check_num_velocities(joint::Joint, vec::AbstractVector)
+    length(vec) == num_velocities(joint) || error("wrong size")
+    nothing
+end
+
+function joint_transform(joint::Joint, q::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
+    _joint_transform(joint, joint.jointType, q)
+end
+
+function motion_subspace(joint::Joint, q::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
+    _motion_subspace(joint, joint.jointType, q)
+end
+
+function bias_acceleration(joint::Joint, q::AbstractVector, v::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
+    @boundscheck check_num_velocities(joint, v)
+    _bias_acceleration(joint, joint.jointType, q, v)
+end
+
+function configuration_derivative_to_velocity!(joint::Joint, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
+    @boundscheck check_num_velocities(joint, v)
+    @boundscheck check_num_positions(joint, q)
+    @boundscheck check_num_positions(joint, q̇)
+    _configuration_derivative_to_velocity!(joint.jointType, v, q, q̇)
+end
+
+function velocity_to_configuration_derivative!(joint::Joint, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
+    @boundscheck check_num_positions(joint, q̇)
+    @boundscheck check_num_positions(joint, q)
+    @boundscheck check_num_velocities(joint, v)
+    _velocity_to_configuration_derivative!(joint.jointType, q̇, q, v)
+end
+
+function zero_configuration!(joint::Joint, q::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
+    _zero_configuration!(joint.jointType, q)
+end
+
+function rand_configuration!(joint::Joint, q::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
+    _rand_configuration!(joint.jointType, q)
+end
+
+function joint_twist(joint::Joint, q::AbstractVector, v::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
+    @boundscheck check_num_velocities(joint, v)
+    _joint_twist(joint, joint.jointType, q, v)
+end
+
+function joint_torque!(joint::Joint, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
+    @boundscheck check_num_velocities(joint, τ)
+    @boundscheck check_num_positions(joint, q)
+    framecheck(joint_wrench.frame, joint.frameAfter)
+    _joint_torque!(joint.jointType, τ, q, joint_wrench)
+end
 
 immutable QuaternionFloating{T} <: JointType{T}
 end
+
 show(io::IO, jt::QuaternionFloating) = print(io, "Quaternion floating joint")
 rand{T}(::Type{QuaternionFloating{T}}) = QuaternionFloating{T}()
 
-function joint_transform{T<:Real, X<:Real}(j::Joint{T}, jt::QuaternionFloating{T}, q::AbstractVector{X})
+num_positions(::QuaternionFloating) = 7
+num_velocities(::QuaternionFloating) = 6
+
+function _joint_transform{T<:Real, X<:Real}(j::Joint{T}, jt::QuaternionFloating{T}, q::AbstractVector{X})
     S = promote_type(T, X)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
     @inbounds rot = Quaternion(q[1], q[2], q[3], q[4])
     Quaternions.normalize(rot)
     @inbounds trans = SVector{3}(q[5], q[6], q[7])
     Transform3D(j.frameAfter, j.frameBefore, convert(Quaternion{S}, rot), convert(SVector{3, S}, trans))
 end
 
-function motion_subspace{T<:Real, X<:Real}(j::Joint{T}, jt::QuaternionFloating{T}, q::AbstractVector{X})
+function _motion_subspace{T<:Real, X<:Real}(j::Joint{T}, jt::QuaternionFloating{T}, q::AbstractVector{X})
     S = promote_type(T, X)
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
     GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, linear)
 end
 
-num_positions(j::Joint, jt::QuaternionFloating) = 7
-num_velocities(j::Joint, jt::QuaternionFloating) = 6
-
-function bias_acceleration{T<:Real, X<:Real}(j::Joint{T}, jt::QuaternionFloating{T}, q::AbstractVector{X}, v::AbstractVector{X})
+function _bias_acceleration{T<:Real, X<:Real}(j::Joint{T}, jt::QuaternionFloating{T}, q::AbstractVector{X}, v::AbstractVector{X})
     S = promote_type(T, X)
     zero(SpatialAcceleration{S}, j.frameAfter, j.frameBefore, j.frameAfter)
 end
 
-function configuration_derivative_to_velocity!(j::Joint, jt::QuaternionFloating, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(q̇) == num_positions(j, jt) || error("q̇ has wrong size")
+function _configuration_derivative_to_velocity!(jt::QuaternionFloating, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
     @inbounds quat = Quaternion(q[1], q[2], q[3], q[4])
     invquat = inv(quat)
     Quaternions.normalize(quat)
@@ -90,10 +129,7 @@ function configuration_derivative_to_velocity!(j::Joint, jt::QuaternionFloating,
     nothing
 end
 
-function velocity_to_configuration_derivative!(j::Joint, jt::QuaternionFloating, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
-    @boundscheck length(q̇) == num_positions(j, jt) || error("q̇ has wrong size")
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
+function _velocity_to_configuration_derivative!(jt::QuaternionFloating, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
     @inbounds quat = Quaternion(q[1], q[2], q[3], q[4])
     Quaternions.normalize(quat)
     @inbounds ωQuat = Quaternion(0, v[1], v[2], v[3])
@@ -108,15 +144,13 @@ function velocity_to_configuration_derivative!(j::Joint, jt::QuaternionFloating,
     nothing
 end
 
-function zero_configuration!(j::Joint, jt::QuaternionFloating, q::AbstractVector)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
+function _zero_configuration!(jt::QuaternionFloating, q::AbstractVector)
     @inbounds q[1] = 1
     @inbounds fill!(view(q, 2 : 7), 0)
     nothing
 end
 
-function rand_configuration!(j::Joint, jt::QuaternionFloating, q::AbstractVector)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
+function _rand_configuration!(jt::QuaternionFloating, q::AbstractVector)
     quat = nquatrand()
     @inbounds q[1] = quat.s
     @inbounds q[2] = quat.v1
@@ -126,58 +160,43 @@ function rand_configuration!(j::Joint, jt::QuaternionFloating, q::AbstractVector
     nothing
 end
 
-function joint_twist{T<:Real, X<:Real}(j::Joint{T}, jt::QuaternionFloating{T}, q::AbstractVector{X}, v::AbstractVector{X})
+function _joint_twist{T<:Real, X<:Real}(j::Joint{T}, jt::QuaternionFloating{T}, q::AbstractVector{X}, v::AbstractVector{X})
     S = promote_type(T, X)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
     @inbounds ret = Twist(j.frameAfter, j.frameBefore, j.frameAfter, SVector{3, S}(v[1], v[2], v[3]), SVector{3, S}(v[4], v[5], v[6]))
     ret
 end
 
-function joint_torque!(j::Joint, jt::QuaternionFloating, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
-    framecheck(joint_wrench.frame, j.frameAfter)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(τ) == num_velocities(j, jt) || error("τ has wrong size")
-    @inbounds view(τ, 1 : 3)[:] = joint_wrench.angular
-    @inbounds view(τ, 4 : 6)[:] = joint_wrench.linear
+function _joint_torque!(jt::QuaternionFloating, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
+    @inbounds copy!(view(τ, 1 : 3), joint_wrench.angular)
+    @inbounds copy!(view(τ, 4 : 6), joint_wrench.linear)
     nothing
 end
 
 
 abstract OneDegreeOfFreedomFixedAxis{T<:Real} <: JointType{T}
 
-num_positions(j::Joint, jt::OneDegreeOfFreedomFixedAxis) = 1
-num_velocities(j::Joint, jt::OneDegreeOfFreedomFixedAxis) = 1
+num_positions(::OneDegreeOfFreedomFixedAxis) = 1
+num_velocities(::OneDegreeOfFreedomFixedAxis) = 1
 
-function zero_configuration!(j::Joint, jt::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
+function _zero_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
     fill!(q, 0)
     nothing
 end
 
-function rand_configuration!(j::Joint, jt::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
+function _rand_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
     randn!(q)
     nothing
  end
 
-function bias_acceleration{T<:Real, X<:Real}(j::Joint{T}, jt::OneDegreeOfFreedomFixedAxis{T}, q::AbstractVector{X}, v::AbstractVector{X})
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
+function _bias_acceleration{T<:Real, X<:Real}(j::Joint{T}, jt::OneDegreeOfFreedomFixedAxis{T}, q::AbstractVector{X}, v::AbstractVector{X})
     zero(SpatialAcceleration{promote_type(T, X)}, j.frameAfter, j.frameBefore, j.frameAfter)
 end
 
-function configuration_derivative_to_velocity!(j::Joint, jt::OneDegreeOfFreedomFixedAxis, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(q̇) == num_positions(j, jt) || error("q̇ has wrong size")
+function _configuration_derivative_to_velocity!(::OneDegreeOfFreedomFixedAxis, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
     v[:] = q̇
 end
 
-function velocity_to_configuration_derivative!(j::Joint, jt::OneDegreeOfFreedomFixedAxis, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
-    @boundscheck length(q̇) == num_positions(j, jt) || error("q̇ has wrong size")
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
+function _velocity_to_configuration_derivative!(::OneDegreeOfFreedomFixedAxis, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
     q̇[:] = v
 end
 
@@ -185,38 +204,31 @@ end
 immutable Prismatic{T<:Real} <: OneDegreeOfFreedomFixedAxis{T}
     translation_axis::SVector{3, T}
 end
-# Prismatic{T}(rotation_axis::SVector{3, T}) = Prismatic{T}(rotation_axis)
+
 show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.translation_axis)")
 function rand{T}(::Type{Prismatic{T}})
     axis = rand(SVector{3, T})
     Prismatic(axis / norm(axis))
 end
 
-function joint_transform(j::Joint, jt::Prismatic, q::AbstractVector)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
+function _joint_transform(j::Joint, jt::Prismatic, q::AbstractVector)
     @inbounds translation = q[1] * jt.translation_axis
     Transform3D(j.frameAfter, j.frameBefore, translation)
 end
 
-function joint_twist(j::Joint, jt::Prismatic, q::AbstractVector, v::AbstractVector)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
+function _joint_twist(j::Joint, jt::Prismatic, q::AbstractVector, v::AbstractVector)
     @inbounds linear = jt.translation_axis * v[1]
     Twist(j.frameAfter, j.frameBefore, j.frameAfter, zeros(linear), linear)
 end
 
-function motion_subspace{T<:Real, X<:Real}(j::Joint{T}, jt::Prismatic{T}, q::AbstractVector{X})
+function _motion_subspace{T<:Real, X<:Real}(j::Joint{T}, jt::Prismatic{T}, q::AbstractVector{X})
     S = promote_type(T, X)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
     angular = zeros(SMatrix{3, 1, X})
     linear = SMatrix{3, 1, X}(jt.translation_axis)
     GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, linear)
 end
 
-function joint_torque!(j::Joint, jt::Prismatic, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
-    framecheck(joint_wrench.frame, j.frameAfter)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(τ) == num_velocities(j, jt) || error("τ has wrong size")
+function _joint_torque!(jt::Prismatic, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
     @inbounds τ[1] = dot(joint_wrench.linear, jt.translation_axis)
     nothing
 end
@@ -232,9 +244,8 @@ function rand{T}(::Type{Revolute{T}})
     Revolute(axis / norm(axis))
 end
 
-function joint_transform{T<:Real, X<:Real}(j::Joint{T}, jt::Revolute{T}, q::AbstractVector{X})
+function _joint_transform{T<:Real, X<:Real}(j::Joint{T}, jt::Revolute{T}, q::AbstractVector{X})
     S = promote_type(T, X)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
     @inbounds arg = q[1] / X(2)
     s = sin(arg)
     axis = jt.rotation_axis
@@ -242,25 +253,19 @@ function joint_transform{T<:Real, X<:Real}(j::Joint{T}, jt::Revolute{T}, q::Abst
     Transform3D(j.frameAfter, j.frameBefore, rot)
 end
 
-function joint_twist(j::Joint, jt::Revolute, q::AbstractVector, v::AbstractVector)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
+function _joint_twist(j::Joint, jt::Revolute, q::AbstractVector, v::AbstractVector)
     @inbounds angular_velocity = jt.rotation_axis * v[1]
     Twist(j.frameAfter, j.frameBefore, j.frameAfter, angular_velocity, zeros(angular_velocity))
 end
 
-function motion_subspace{T<:Real, X<:Real}(j::Joint{T}, jt::Revolute{T}, q::AbstractVector{X})
+function _motion_subspace{T<:Real, X<:Real}(j::Joint{T}, jt::Revolute{T}, q::AbstractVector{X})
     S = promote_type(T, X)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
     angular = SMatrix{3, 1, S}(jt.rotation_axis)
     linear = zeros(SMatrix{3, 1, S})
     GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, angular, linear)
 end
 
-function joint_torque!(j::Joint, jt::Revolute, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
-    framecheck(joint_wrench.frame, j.frameAfter)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(τ) == num_velocities(j, jt) || error("τ has wrong size")
+function _joint_torque!(jt::Revolute, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
     @inbounds τ[1] = dot(joint_wrench.angular, jt.rotation_axis)
     nothing
 end
@@ -270,62 +275,29 @@ end
 show(io::IO, jt::Fixed) = print(io, "Fixed joint")
 rand{T}(::Type{Fixed{T}}) = Fixed{T}()
 
-function joint_transform{T<:Real, X<:Real}(j::Joint{T}, jt::Fixed{T}, q::AbstractVector{X})
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
+num_positions(::Fixed) = 0
+num_velocities(::Fixed) = 0
+
+function _joint_transform{T<:Real, X<:Real}(j::Joint{T}, jt::Fixed{T}, q::AbstractVector{X})
     Transform3D(promote_type(T, X), j.frameAfter, j.frameBefore)
 end
 
-function joint_twist{T<:Real, X<:Real}(j::Joint{T}, jt::Fixed{T}, q::AbstractVector{X}, v::AbstractVector{X})
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
+function _joint_twist{T<:Real, X<:Real}(j::Joint{T}, jt::Fixed{T}, q::AbstractVector{X}, v::AbstractVector{X})
     zero(Twist{promote_type(T, X)}, j.frameAfter, j.frameBefore, j.frameAfter)
 end
 
-function motion_subspace{T<:Real, X<:Real}(j::Joint{T}, jt::Fixed{T}, q::AbstractVector{X})
+function _motion_subspace{T<:Real, X<:Real}(j::Joint{T}, jt::Fixed{T}, q::AbstractVector{X})
     S = promote_type(T, X)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
     GeometricJacobian(j.frameAfter, j.frameBefore, j.frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
-num_positions(j::Joint, jt::Fixed) = 0
-num_velocities(j::Joint, jt::Fixed) = 0
+_zero_configuration!(::Fixed, q::AbstractVector) = nothing
+_rand_configuration!(::Fixed, q::AbstractVector) = nothing
 
-function zero_configuration!(j::Joint, jt::Fixed, q::AbstractVector)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    nothing
-end
-
-function rand_configuration!(j::Joint, jt::Fixed, q::AbstractVector)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    nothing
-end
-
-function bias_acceleration{T<:Real, X<:Real}(j::Joint{T}, jt::Fixed{T}, q::AbstractVector{X}, v::AbstractVector{X})
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
+function _bias_acceleration{T<:Real, X<:Real}(j::Joint{T}, jt::Fixed{T}, q::AbstractVector{X}, v::AbstractVector{X})
     zero(SpatialAcceleration{promote_type(T, X)}, j.frameAfter, j.frameBefore, j.frameAfter)
 end
 
-function configuration_derivative_to_velocity!(j::Joint, jt::Fixed, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(q̇) == num_positions(j, jt) || error("q̇ has wrong size")
-    nothing
-end
-
-function velocity_to_configuration_derivative!(j::Joint, jt::Fixed, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
-    @boundscheck length(q̇) == num_positions(j, jt) || error("q̇ has wrong size")
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(v) == num_velocities(j, jt) || error("v has wrong size")
-    nothing
-end
-
-function joint_torque!(j::Joint, jt::Fixed, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
-    @boundscheck length(q) == num_positions(j, jt) || error("q has wrong size")
-    @boundscheck length(τ) == num_velocities(j, jt) || error("τ has wrong size")
-    nothing
-end
-
-
-num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
-num_velocities(itr) = reduce((val, joint) -> val + num_velocities(joint), 0, itr)
+_configuration_derivative_to_velocity!(::Fixed, v::AbstractVector, q::AbstractVector, q̇::AbstractVector) = nothing
+_velocity_to_configuration_derivative!(::Fixed, q̇::AbstractVector, q::AbstractVector, v::AbstractVector) = nothing
+_joint_torque!(jt::Fixed, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench) = nothing
