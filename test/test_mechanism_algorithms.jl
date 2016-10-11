@@ -102,19 +102,19 @@
 
     @testset "motion subspace / twist wrt world" begin
         for vertex in non_root_vertices(mechanism)
-            body = vertex.vertexData
+            body = vertex_data(vertex)
             joint = vertex.edgeToParentData
-            parentBody = vertex.parent.vertexData
+            parentBody = vertex_data(vertex.parent)
             @test isapprox(relative_twist(x, body, parentBody), Twist(motion_subspace(x, joint), velocity(x, joint)); atol = 1e-12)
         end
     end
 
     @testset "composite rigid body inertias" begin
         for vertex in non_root_vertices(mechanism)
-            body = vertex.vertexData
+            body = vertex_data(vertex)
             crb = crb_inertia(x, body)
             subtree = toposort(vertex)
-            @test isapprox(sum((b::RigidBody) -> spatial_inertia(x, b), [v.vertexData for v in subtree]), crb; atol = 1e-12)
+            @test isapprox(sum((b::RigidBody) -> spatial_inertia(x, b), [vertex_data(v) for v in subtree]), crb; atol = 1e-12)
         end
     end
 
@@ -122,7 +122,7 @@
         A = momentum_matrix(x)
         Amat = Array(A)
         for vertex in non_root_vertices(mechanism)
-            body = vertex.vertexData
+            body = vertex_data(vertex)
             joint = vertex.edgeToParentData
             Ajoint = Amat[:, mechanism.vRanges[joint]]
             @test isapprox(Array(crb_inertia(x, body) * motion_subspace(x, joint)), Ajoint; atol = 1e-12)
@@ -232,7 +232,7 @@
         v̇ = rand(num_velocities(mechanism))
         externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
         τ = inverse_dynamics(x, v̇, externalWrenches)
-        floatingBodyVertex = root_vertex(mechanism).children[1]
+        floatingBodyVertex = children(root_vertex(mechanism))[1]
         floatingJoint = floatingBodyVertex.edgeToParentData
         floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[mechanism.vRanges[floatingJoint]])
         floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))

@@ -95,8 +95,7 @@
             end
             Msub = mass_matrix(substate)
             if !isleaf(root_vertex(mechanismPart))
-
-                firstJoint = root_vertex(mechanismPart).children[1].edgeToParentData
+                firstJoint = children(root_vertex(mechanismPart))[1].edgeToParentData
                 offset = first(mechanism.vRanges[firstJoint]) - 1
 
                 vRange = (1 : num_velocities(mechanismPart)) + offset

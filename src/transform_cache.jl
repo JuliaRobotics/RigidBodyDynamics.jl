@@ -54,7 +54,7 @@ function TransformCache{M, Q}(m::Mechanism{M}, q::Vector{Q})
     cache = TransformCache{C}()
 
     for vertex in m.toposortedTree
-        body = vertex.vertexData
+        body = vertex_data(vertex)
         if !isroot(vertex)
             joint = vertex.edgeToParentData
             add_frame!(cache, m.jointToJointTransforms[joint])

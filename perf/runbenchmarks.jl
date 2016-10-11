@@ -18,7 +18,7 @@ end
 
 function create_floating_atlas()
     atlas = parse_urdf(Float64, get_atlas_urdf())
-    for child in root_vertex(atlas).children
+    for child in children(root_vertex(atlas))
         joint = child.edgeToParentData
         change_joint_type!(atlas, joint, QuaternionFloating{Float64}())
     end

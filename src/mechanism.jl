@@ -24,7 +24,7 @@ eltype{T}(::Mechanism{T}) = T
 root_vertex(m::Mechanism) = m.toposortedTree[1]
 non_root_vertices(m::Mechanism) = view(m.toposortedTree, 2 : length(m.toposortedTree))
 tree(m::Mechanism) = m.toposortedTree[1]
-root_body(m::Mechanism) = root_vertex(m).vertexData
+root_body(m::Mechanism) = vertex_data(root_vertex(m))
 root_frame(m::Mechanism) = root_body(m).frame
 path(m::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(tree(m), from), findfirst(tree(m), to))
 show(io::IO, m::Mechanism) = print(io, m.toposortedTree[1])
@@ -74,8 +74,8 @@ end
 function set_up_frames!{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint{T}},
         jointToParent::Transform3D{T}, bodyToJoint::Transform3D{T})
     joint = vertex.edgeToParentData
-    body = vertex.vertexData
-    parentBody = vertex.parent.vertexData
+    body = vertex_data(vertex)
+    parentBody = vertex_data(vertex.parent)
 
     # add transform from frame before joint to parent body's default frame
     m.jointToJointTransforms[joint] = add_body_fixed_frame!(m, parentBody, jointToParent)
@@ -107,11 +107,11 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     # merge trees and set up frames for children of childMechanism's root
     parentVertex = findfirst(tree(m), parentBody)
     childRootVertex = root_vertex(childMechanism)
-    childRootBody = childRootVertex.vertexData
+    childRootBody = vertex_data(childRootVertex)
     childRootBodyToParentBody = Transform3D{T}(childRootBody.frame, parentBody.frame) # identity
-    for child in childRootVertex.children
+    for child in children(childRootVertex)
         vertex = insert_subtree!(parentVertex, child)
-        body = vertex.vertexData
+        body = vertex_data(vertex)
         joint = vertex.edgeToParentData
         jointToParent = childRootBodyToParentBody * childMechanism.jointToJointTransforms[joint]
         bodyToJoint = find_body_fixed_frame_definition(childMechanism, body, body.frame)
@@ -128,7 +128,7 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     end
 
     # merge frame info for vertices whose parents haven't changed
-    childRootJoints = Joint[child.edgeToParentData for child in childRootVertex.children]
+    childRootJoints = Joint[child.edgeToParentData for child in children(childRootVertex)]
     merge!(m.bodyFixedFrameDefinitions, filter((k, v) -> k != childRootBody, childMechanism.bodyFixedFrameDefinitions))
     merge!(m.bodyFixedFrameToBody, filter((k, v) -> v != childRootBody, childMechanism.bodyFixedFrameToBody))
     merge!(m.jointToJointTransforms, filter((k, v) -> k ∉ childRootJoints, childMechanism.jointToJointTransforms))
@@ -139,7 +139,7 @@ end
 function submechanism{T}(m::Mechanism{T}, submechanismRoot::RigidBody{T})
     # Create mechanism and set up tree
     ret = Mechanism{T}(submechanismRoot; gravity = m.gravitationalAcceleration.v)
-    for child in findfirst(tree(m), submechanismRoot).children
+    for child in children(findfirst(tree(m), submechanismRoot))
         insert_subtree!(root_vertex(ret), child)
     end
     ret.toposortedTree = toposort(tree(ret))
@@ -156,7 +156,7 @@ function submechanism{T}(m::Mechanism{T}, submechanismRoot::RigidBody{T})
     push!(newFrameDefinitions, formerJointToRootBody)
     ret.bodyFixedFrameDefinitions[submechanismRoot] = newFrameDefinitions
 
-    for child in findfirst(tree(m), submechanismRoot).children
+    for child in children(findfirst(tree(m), submechanismRoot))
         joint = child.edgeToParentData
         ret.jointToJointTransforms[joint] = formerJointToRootBody * ret.jointToJointTransforms[joint]
     end
@@ -176,14 +176,14 @@ function remove_fixed_joints!(m::Mechanism)
     for vertex in copy(m.toposortedTree)
         if !isroot(vertex)
             parentVertex = vertex.parent
-            body = vertex.vertexData
+            body = vertex_data(vertex)
             joint = vertex.edgeToParentData
             if isa(joint.jointType, Fixed)
                 jointTransform = Transform3D{T}(joint.frameAfter, joint.frameBefore)
                 afterJointToParentJoint = m.jointToJointTransforms[joint] * jointTransform
 
                 # add inertia to parent body
-                parentBody = vertex.parent.vertexData
+                parentBody = vertex_data(vertex.parent)
                 if has_defined_inertia(parentBody)
                     inertia = spatial_inertia(body)
                     inertiaFrameToFrameAfterJoint = find_body_fixed_frame_definition(m, body, inertia.frame)
@@ -196,7 +196,7 @@ function remove_fixed_joints!(m::Mechanism)
                 end
 
                 # update children's joint to parent transforms
-                for child in copy(vertex.children)
+                for child in copy(children(vertex))
                     childJoint = child.edgeToParentData
                     m.jointToJointTransforms[childJoint] = afterJointToParentJoint * m.jointToJointTransforms[childJoint]
                 end
@@ -221,8 +221,8 @@ function remove_fixed_joints!(m::Mechanism)
 end
 
 joints(m::Mechanism) = [vertex.edgeToParentData::Joint for vertex in non_root_vertices(m)] # TODO: make less expensive
-bodies{T}(m::Mechanism{T}) = [vertex.vertexData::RigidBody{T} for vertex in m.toposortedTree] # TODO: make less expensive
-non_root_bodies{T}(m::Mechanism{T}) = [vertex.vertexData::RigidBody{T} for vertex in non_root_vertices(m)] # TODO: make less expensive
+bodies{T}(m::Mechanism{T}) = [vertex_data(vertex)::RigidBody{T} for vertex in m.toposortedTree] # TODO: make less expensive
+non_root_bodies{T}(m::Mechanism{T}) = [vertex_data(vertex)::RigidBody{T} for vertex in non_root_vertices(m)] # TODO: make less expensive
 default_frame(m::Mechanism, body::RigidBody) = first(m.bodyFixedFrameDefinitions[body]).to # allows standardization on a frame to reduce number of transformations required
 
 num_positions(m::Mechanism) = num_positions(joints(m))
@@ -243,7 +243,7 @@ function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
     return m
 end
 
-rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> m.toposortedTree[end].vertexData, jointTypes...)
+rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> vertex_data(m.toposortedTree[end]), jointTypes...)
 rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> rand(collect(bodies(m))), jointTypes...)
 
 function gravitational_spatial_acceleration{M}(m::Mechanism{M})
