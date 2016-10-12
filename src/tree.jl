@@ -109,12 +109,20 @@ function toposort{V, E}(tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
     return result
 end
 
+function detach!{V, E}(vertex::TreeVertex{V, E})
+    if !isroot(vertex)
+        index = findfirst(parent(vertex).children, vertex)
+        if index > 0
+            deleteat!(parent(vertex).children, index)
+        end
+    end
+    vertex.parentAndEdgeData = Nullable{Pair{TreeVertex{V, E}, E}}()
+    vertex
+end
+
 function insert!{V, E}(parentVertex::TreeVertex{V, E}, childVertex::TreeVertex{V, E}, edgeData::E = edge_to_parent_data(childVertex))
     # Note: removes any previously existing parent/child relationship for childVertex
-    if !isroot(childVertex)
-        parentsChildren = children(parent(vertex))
-        deleteat!(parentsChildren, findfirst(parentsChildren, vertex))
-    end
+    detach!(childVertex)
     childVertex.parentAndEdgeData = parentVertex => edgeData
     push!(children(parentVertex), childVertex)
     childVertex
@@ -130,17 +138,6 @@ function insert!{V, E}(tree::Tree{V, E}, vertexData::V, edgeData::E, parentData:
     parentVertex = findfirst(tree, parentData)
     parentVertex == nothing && error("parent not found")
     insert!(parentVertex, vertexData, edgeData)
-end
-
-function detach!{V, E}(vertex::TreeVertex{V, E})
-    if !isroot(vertex)
-        index = findfirst(parent(vertex).children, vertex)
-        if index > 0
-            deleteat!(parent(vertex).children, index)
-        end
-    end
-    vertex.parentAndEdgeData = Nullable{Pair{TreeVertex{V, E}, E}}()
-    vertex
 end
 
 function ancestors{V, E}(vertex::TreeVertex{V, E})
