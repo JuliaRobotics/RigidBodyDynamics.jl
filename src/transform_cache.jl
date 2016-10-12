@@ -6,7 +6,7 @@ immutable UpdateTransformToRoot{C}
         new(parentToRootCache, toParentCache)
     end
 end
-@compat function (functor::UpdateTransformToRoot)()
+function (functor::UpdateTransformToRoot)()
     get(functor.parentToRootCache) * get(functor.toParentCache)
 end
 

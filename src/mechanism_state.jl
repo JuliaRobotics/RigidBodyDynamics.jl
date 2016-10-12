@@ -11,7 +11,7 @@ immutable UpdateTwistAndBias{M, C}
         new(parentFrame, joint, qJoint, vJoint, transformToRootCache, parentCache)
     end
 end
-@compat function (functor::UpdateTwistAndBias)()
+function (functor::UpdateTwistAndBias)()
     parentFrame = functor.parentFrame
     joint = functor.joint
     qJoint = functor.qJoint
@@ -38,7 +38,7 @@ immutable UpdateSpatialInertiaInWorld{M, C}
     body::RigidBody{M}
     transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
 end
-@compat function (functor::UpdateSpatialInertiaInWorld)()
+function (functor::UpdateSpatialInertiaInWorld)()
     transform(spatial_inertia(functor.body), get(functor.transformToRootCache))
 end
 
@@ -46,7 +46,7 @@ immutable UpdateCompositeRigidBodyInertia{M, C}
     this::CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{M, C}}
     children::Vector{CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}
 end
-@compat function (functor::UpdateCompositeRigidBodyInertia)()
+function (functor::UpdateCompositeRigidBodyInertia)()
     ret = get(functor.this)
     for child in functor.children
         ret += get(child)

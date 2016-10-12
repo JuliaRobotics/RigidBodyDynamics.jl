@@ -2,30 +2,26 @@
 
 module RigidBodyDynamics
 
-import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype, parent
+include("tree.jl")
+
+import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype
 using StaticArrays
 using Quaternions
 using DataStructures
 using LightXML
 import ODE: ode45
 
-# Julia version compatibility
-using Compat
-import Compat.String
-
-if !isdefined(Base, :view)
-    const view = slice
-end
-
 include("util.jl")
 include("third_party_addendum.jl")
+
 include("frames.jl")
 include("spatial.jl")
 include("rigid_body.jl")
 include("joint.jl")
-include("tree.jl")
-include("mechanism.jl")
 include("cache_element.jl")
+
+importall .TreeDataStructure
+include("mechanism.jl")
 include("transform_cache.jl")
 include("mechanism_state.jl")
 include("mechanism_algorithms.jl")
@@ -127,4 +123,5 @@ export
     dynamics!,
     parse_urdf,
     simulate
-end
+
+end # module

@@ -6,8 +6,6 @@ using StaticArrays
 using Compat
 import ForwardDiff
 
-import RigidBodyDynamics: Tree, insert!, toposort, leaves, ancestors, path, subtree, reroot, vertex_data, edge_to_parent_data, children
-
 include("test_tree.jl")
 include("test_frames.jl")
 include("test_spatial.jl")

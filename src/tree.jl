@@ -1,3 +1,29 @@
+module TreeDataStructure
+
+import Base: showcompact, show, parent, findfirst, map!, insert!
+
+export
+    # types
+    Tree,
+    TreeVertex,
+    Path,
+
+    # functions
+    isroot,
+    isleaf,
+    toposort,
+    detach!,
+    ancestors,
+    leaves,
+    path,
+    insert_subtree!,
+    subtree,
+    reroot,
+    merge_into_parent!,
+    vertex_data,
+    children,
+    edge_to_parent_data
+
 type TreeVertex{V, E}
     vertexData::V
     children::Vector{TreeVertex{V, E}}
@@ -247,3 +273,5 @@ function path{V, E}(from::TreeVertex{V, E}, to::TreeVertex{V, E})
     end
     return Path(vertexData, edgeData, directions)
 end
+
+end # module TreeDataStructure
