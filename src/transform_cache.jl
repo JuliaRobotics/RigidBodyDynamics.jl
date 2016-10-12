@@ -56,7 +56,7 @@ function TransformCache{M, Q}(m::Mechanism{M}, q::Vector{Q})
     for vertex in m.toposortedTree
         body = vertex_data(vertex)
         if !isroot(vertex)
-            joint = vertex.edgeToParentData
+            joint = edge_to_parent_data(vertex)
             add_frame!(cache, m.jointToJointTransforms[joint])
             qJoint = view(q, m.qRanges[joint])
             add_frame!(cache, () -> joint_transform(joint, qJoint))

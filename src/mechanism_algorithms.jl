@@ -1,7 +1,7 @@
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
     mechanism = state.mechanism
     for vertex in non_root_vertices(mechanism)
-        joint = vertex.edgeToParentData
+        joint = edge_to_parent_data(vertex)
         qRange = mechanism.qRanges[joint]
         vRange = state.mechanism.vRanges[joint]
         @inbounds qjoint = view(state.q, qRange)
@@ -128,7 +128,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
 
     for vi in non_root_vertices(mechanism)
         # Hii
-        jointi = vi.edgeToParentData
+        jointi = edge_to_parent_data(vi)
         nvi = num_velocities(jointi)
         if nvi > 0
             bodyi = vertex_data(vi)
@@ -140,9 +140,9 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             @inbounds Hii[:] = Si.angular' * F.angular + Si.linear' * F.linear
 
             # Hji, Hij
-            vj = vi.parent
+            vj = parent(vi)
             while (!isroot(vj))
-                jointj = vj.edgeToParentData
+                jointj = edge_to_parent_data(vj)
                 nvj = num_velocities(jointj)
                 if nvj > 0
                     jrange = mechanism.vRanges[jointj]
@@ -151,7 +151,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                     @inbounds Hji = view(out.data, jrange, irange)
                     @inbounds Hji[:] = Sj.angular' * F.angular + Sj.linear' * F.linear
                 end
-                vj = vj.parent
+                vj = parent(vj)
             end
         end
     end
@@ -165,7 +165,7 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
 end
 
 function momentum_matrix(state::MechanismState)
-    hcat([crb_inertia(state, vertex_data(vertex)) * motion_subspace(state, vertex.edgeToParentData) for vertex in non_root_vertices(state.mechanism)]...)
+    hcat([crb_inertia(state, vertex_data(vertex)) * motion_subspace(state, edge_to_parent_data(vertex)) for vertex in non_root_vertices(state.mechanism)]...)
 end
 
 function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M})
@@ -188,11 +188,11 @@ function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialA
     out[rootBody] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
     for vertex in non_root_vertices(mechanism)
         body = vertex_data(vertex)
-        joint = vertex.edgeToParentData
+        joint = edge_to_parent_data(vertex)
         S = motion_subspace(state, joint)
         @inbounds v̇joint = view(v̇, mechanism.vRanges[joint])
         joint_accel = SpatialAcceleration(S, v̇joint)
-        out[body] = out[vertex_data(vertex.parent)] + joint_accel
+        out[body] = out[vertex_data(parent(vertex))] + joint_accel
     end
 
     # add bias acceleration - gravity
@@ -212,7 +212,7 @@ function newton_euler!{T, X, M, W}(
     vertices = mechanism.toposortedTree
     for vertex in non_root_vertices(mechanism)
         body = vertex_data(vertex)
-        joint = vertex.edgeToParentData
+        joint = edge_to_parent_data(vertex)
 
         Ṫbody = accelerations[body]
         I = spatial_inertia(state, body)
@@ -237,11 +237,11 @@ function joint_wrenches_and_torques!{T, X, M}(
     vertices = mechanism.toposortedTree
     for i = length(vertices) : -1 : 2
         vertex = vertices[i]
-        joint = vertex.edgeToParentData
+        joint = edge_to_parent_data(vertex)
         body = vertex_data(vertex)
         jointWrench = netWrenchesInJointWrenchesOut[body]
-        if !isroot(vertex.parent)
-            parentBody = vertex_data(vertex.parent)
+        if !isroot(parent(vertex))
+            parentBody = vertex_data(parent(vertex))
             netWrenchesInJointWrenchesOut[parentBody] = netWrenchesInJointWrenchesOut[parentBody] + jointWrench # action = -reaction
         end
         jointWrench = transform(state, jointWrench, joint.frameAfter)

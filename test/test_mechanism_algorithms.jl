@@ -4,8 +4,8 @@
     rand!(x)
 
     @testset "basic stuff" begin
-        q = vcat([configuration(x, vertex.edgeToParentData) for vertex in non_root_vertices(mechanism)]...)
-        v = vcat([velocity(x, vertex.edgeToParentData) for vertex in non_root_vertices(mechanism)]...)
+        q = vcat([configuration(x, edge_to_parent_data(vertex)) for vertex in non_root_vertices(mechanism)]...)
+        v = vcat([velocity(x, edge_to_parent_data(vertex)) for vertex in non_root_vertices(mechanism)]...)
 
         @test q == configuration_vector(x)
         @test v == velocity_vector(x)
@@ -103,8 +103,8 @@
     @testset "motion subspace / twist wrt world" begin
         for vertex in non_root_vertices(mechanism)
             body = vertex_data(vertex)
-            joint = vertex.edgeToParentData
-            parentBody = vertex_data(vertex.parent)
+            joint = edge_to_parent_data(vertex)
+            parentBody = vertex_data(parent(vertex))
             @test isapprox(relative_twist(x, body, parentBody), Twist(motion_subspace(x, joint), velocity(x, joint)); atol = 1e-12)
         end
     end
@@ -123,7 +123,7 @@
         Amat = Array(A)
         for vertex in non_root_vertices(mechanism)
             body = vertex_data(vertex)
-            joint = vertex.edgeToParentData
+            joint = edge_to_parent_data(vertex)
             Ajoint = Amat[:, mechanism.vRanges[joint]]
             @test isapprox(Array(crb_inertia(x, body) * motion_subspace(x, joint)), Ajoint; atol = 1e-12)
         end
@@ -233,8 +233,8 @@
         externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
         τ = inverse_dynamics(x, v̇, externalWrenches)
         floatingBodyVertex = children(root_vertex(mechanism))[1]
-        floatingJoint = floatingBodyVertex.edgeToParentData
-        floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[mechanism.vRanges[floatingJoint]])
+        floatingJoint = edge_to_parent_data(floatingBodyVertex)
+        floatingJointWrench = Wrench(edge_to_parent_data(floatingBodyVertex).frameAfter, τ[mechanism.vRanges[floatingJoint]])
         floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
 
         create_autodiff = (z, dz) -> [ForwardDiff.Dual(z[i]::Float64, dz[i]::Float64) for i in 1 : length(z)]

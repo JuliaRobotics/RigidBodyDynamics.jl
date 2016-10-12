@@ -76,7 +76,7 @@ function parse_vertex{T}(mechanism::Mechanism{T}, vertex::TreeVertex{XMLElement,
         joint = Joint("$(name(body))_to_world", Fixed{T}())
         jointToParent = Transform3D{T}(joint.frameBefore, parent.frame)
     else
-        xmlJoint = vertex.edgeToParentData
+        xmlJoint = edge_to_parent_data(vertex)
         parentName = attribute(find_element(xmlJoint, "parent"), "link")
         parent = vertex_data(findfirst(v -> RigidBodyDynamics.name(vertex_data(v)) == parentName, tree(mechanism)))
         joint = parse_joint(T, xmlJoint)
@@ -101,8 +101,7 @@ function parse_urdf{T}(::Type{T}, filename)
     for xmlJoint in xmlJoints
         parent = nameToVertex[attribute(find_element(xmlJoint, "parent"), "link")]
         child = nameToVertex[attribute(find_element(xmlJoint, "child"), "link")]
-        child.edgeToParentData = xmlJoint
-        insert!(parent, child)
+        insert!(parent, child, xmlJoint)
     end
     roots = filter(isroot, vertices)
     length(roots) != 1 && error("Can only handle a single root")

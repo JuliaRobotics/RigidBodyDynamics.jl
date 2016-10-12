@@ -1,5 +1,3 @@
-import RigidBodyDynamics: Tree, insert!, toposort, leaves, ancestors, path, subtree, reroot
-
 @testset "tree" begin
     let
         tree = v1 = Tree{Int64, Int32}(1);
@@ -17,7 +15,7 @@ import RigidBodyDynamics: Tree, insert!, toposort, leaves, ancestors, path, subt
                 if isroot(vertex)
                     @test index == 1
                 else
-                    @test index > findfirst(toposortedTree, vertex.parent)
+                    @test index > findfirst(toposortedTree, parent(vertex))
                 end
             end
         end
@@ -49,7 +47,7 @@ import RigidBodyDynamics: Tree, insert!, toposort, leaves, ancestors, path, subt
             for oldNonAncestor in oldNonAncestors
                 newTreeVertex = findfirst(rerooted, vertex_data(oldNonAncestor))
                 if !isroot(newTreeVertex)
-                    @test newTreeVertex.edgeToParentData > 0
+                    @test edge_to_parent_data(newTreeVertex) > 0
                 end
             end
         end
