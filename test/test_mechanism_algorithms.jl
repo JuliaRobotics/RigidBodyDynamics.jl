@@ -1,11 +1,13 @@
 @testset "mechanism algorithms" begin
+    import RigidBodyDynamics.TreeDataStructure: edge_to_parent_data, vertex_data, children
+
     mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...)
     x = MechanismState(Float64, mechanism)
     rand!(x)
 
     @testset "basic stuff" begin
-        q = vcat([configuration(x, vertex.edgeToParentData) for vertex in non_root_vertices(mechanism)]...)
-        v = vcat([velocity(x, vertex.edgeToParentData) for vertex in non_root_vertices(mechanism)]...)
+        q = vcat([configuration(x, edge_to_parent_data(vertex)) for vertex in non_root_vertices(mechanism)]...)
+        v = vcat([velocity(x, edge_to_parent_data(vertex)) for vertex in non_root_vertices(mechanism)]...)
 
         @test q == configuration_vector(x)
         @test v == velocity_vector(x)
@@ -102,19 +104,19 @@
 
     @testset "motion subspace / twist wrt world" begin
         for vertex in non_root_vertices(mechanism)
-            body = vertex.vertexData
-            joint = vertex.edgeToParentData
-            parentBody = vertex.parent.vertexData
+            body = vertex_data(vertex)
+            joint = edge_to_parent_data(vertex)
+            parentBody = vertex_data(parent(vertex))
             @test isapprox(relative_twist(x, body, parentBody), Twist(motion_subspace(x, joint), velocity(x, joint)); atol = 1e-12)
         end
     end
 
     @testset "composite rigid body inertias" begin
         for vertex in non_root_vertices(mechanism)
-            body = vertex.vertexData
+            body = vertex_data(vertex)
             crb = crb_inertia(x, body)
             subtree = toposort(vertex)
-            @test isapprox(sum((b::RigidBody) -> spatial_inertia(x, b), [v.vertexData for v in subtree]), crb; atol = 1e-12)
+            @test isapprox(sum((b::RigidBody) -> spatial_inertia(x, b), [vertex_data(v) for v in subtree]), crb; atol = 1e-12)
         end
     end
 
@@ -122,8 +124,8 @@
         A = momentum_matrix(x)
         Amat = Array(A)
         for vertex in non_root_vertices(mechanism)
-            body = vertex.vertexData
-            joint = vertex.edgeToParentData
+            body = vertex_data(vertex)
+            joint = edge_to_parent_data(vertex)
             Ajoint = Amat[:, mechanism.vRanges[joint]]
             @test isapprox(Array(crb_inertia(x, body) * motion_subspace(x, joint)), Ajoint; atol = 1e-12)
         end
@@ -232,9 +234,9 @@
         v̇ = rand(num_velocities(mechanism))
         externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
         τ = inverse_dynamics(x, v̇, externalWrenches)
-        floatingBodyVertex = root_vertex(mechanism).children[1]
-        floatingJoint = floatingBodyVertex.edgeToParentData
-        floatingJointWrench = Wrench(floatingBodyVertex.edgeToParentData.frameAfter, τ[mechanism.vRanges[floatingJoint]])
+        floatingBodyVertex = children(root_vertex(mechanism))[1]
+        floatingJoint = edge_to_parent_data(floatingBodyVertex)
+        floatingJointWrench = Wrench(edge_to_parent_data(floatingBodyVertex).frameAfter, τ[mechanism.vRanges[floatingJoint]])
         floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
 
         create_autodiff = (z, dz) -> [ForwardDiff.Dual(z[i]::Float64, dz[i]::Float64) for i in 1 : length(z)]

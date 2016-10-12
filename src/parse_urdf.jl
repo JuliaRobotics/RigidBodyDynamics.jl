@@ -69,16 +69,16 @@ function parse_body{T}(::Type{T}, xmlLink::XMLElement, frame::CartesianFrame3D =
 end
 
 function parse_vertex{T}(mechanism::Mechanism{T}, vertex::TreeVertex{XMLElement, XMLElement})
-    xmlLink = vertex.vertexData
+    xmlLink = vertex_data(vertex)
     if isroot(vertex)
         parent = root_body(mechanism)
         body = parse_body(T, xmlLink)
         joint = Joint("$(name(body))_to_world", Fixed{T}())
         jointToParent = Transform3D{T}(joint.frameBefore, parent.frame)
     else
-        xmlJoint = vertex.edgeToParentData
+        xmlJoint = edge_to_parent_data(vertex)
         parentName = attribute(find_element(xmlJoint, "parent"), "link")
-        parent = findfirst(v -> RigidBodyDynamics.name(v.vertexData) == parentName, tree(mechanism)).vertexData
+        parent = vertex_data(findfirst(v -> RigidBodyDynamics.name(vertex_data(v)) == parentName, tree(mechanism)))
         joint = parse_joint(T, xmlJoint)
         pose = parse_pose(T, find_element(xmlJoint, "origin"))
         jointToParent = Transform3D(joint.frameBefore, default_frame(mechanism, parent), pose...)
@@ -97,13 +97,11 @@ function parse_urdf{T}(::Type{T}, filename)
 
     # create tree structure of XML elements
     vertices = [TreeVertex{XMLElement, XMLElement}(e) for e in xmlLinks]
-    nameToVertex = Dict(attribute(v.vertexData, "name") => v for v in vertices)
+    nameToVertex = Dict(attribute(vertex_data(v), "name") => v for v in vertices)
     for xmlJoint in xmlJoints
         parent = nameToVertex[attribute(find_element(xmlJoint, "parent"), "link")]
         child = nameToVertex[attribute(find_element(xmlJoint, "child"), "link")]
-        push!(parent.children, child)
-        child.parent = parent
-        child.edgeToParentData = xmlJoint
+        insert!(parent, child, xmlJoint)
     end
     roots = filter(isroot, vertices)
     length(roots) != 1 && error("Can only handle a single root")

@@ -64,7 +64,7 @@
         rand!(state)
         q = configuration_vector(state)
         M = mass_matrix(state)
-        nonFixedJointVertices = filter(v -> !isa(v.edgeToParentData.jointType, Fixed), non_root_vertices(mechanism))
+        nonFixedJointVertices = filter(v -> !isa(edge_to_parent_data(v).jointType, Fixed), non_root_vertices(mechanism))
 
         remove_fixed_joints!(mechanism)
         @test non_root_vertices(mechanism) == nonFixedJointVertices
@@ -95,8 +95,7 @@
             end
             Msub = mass_matrix(substate)
             if !isleaf(root_vertex(mechanismPart))
-
-                firstJoint = root_vertex(mechanismPart).children[1].edgeToParentData
+                firstJoint = edge_to_parent_data(children(root_vertex(mechanismPart))[1])
                 offset = first(mechanism.vRanges[firstJoint]) - 1
 
                 vRange = (1 : num_velocities(mechanismPart)) + offset

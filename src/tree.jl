@@ -1,35 +1,65 @@
+module TreeDataStructure
+
+import Base: showcompact, show, parent, findfirst, map!, insert!
+
+export
+    # types
+    Tree,
+    TreeVertex,
+    Path,
+
+    # functions
+    isroot,
+    isleaf,
+    toposort,
+    detach!,
+    ancestors,
+    leaves,
+    path,
+    insert_subtree!,
+    subtree,
+    reroot,
+    merge_into_parent!,
+    vertex_data,
+    children,
+    edge_to_parent_data
+
 type TreeVertex{V, E}
     vertexData::V
     children::Vector{TreeVertex{V, E}}
-    parent::TreeVertex{V, E} # TODO: consider making this Nullable again
-    edgeToParentData::E
+    parentAndEdgeData::Nullable{Pair{TreeVertex{V, E}, E}}
 
-    TreeVertex(vertexData::V) = new(vertexData, [])
-    TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = new(vertexData, [], parent, edgeData)
+    TreeVertex(vertexData::V) = new(vertexData, [], Nullable{Pair{TreeVertex{V, E}, E}}())
+    TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = new(vertexData, [], parent => edgeData)
 end
 TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = TreeVertex{V, E}(vertexData, parent, edgeData)
 
 typealias Tree{V, E} TreeVertex{V, E}
 
-isroot{V, E}(v::TreeVertex{V, E}) = !isdefined(v, :parent)
-isleaf{V, E}(v::TreeVertex{V, E}) = isempty(v.children)
+vertex_data(v::TreeVertex) = v.vertexData
+children(v::TreeVertex) = v.children
+parent(v::TreeVertex) = get(v.parentAndEdgeData)[1]
+edge_to_parent_data(v::TreeVertex) = get(v.parentAndEdgeData)[2]
+
+isroot{V, E}(v::TreeVertex{V, E}) = isnull(v.parentAndEdgeData)
+isleaf{V, E}(v::TreeVertex{V, E}) = isempty(children(v))
 
 function showcompact(io::IO, vertex::TreeVertex)
     print(io, "Vertex: ")
-    showcompact(io, vertex.vertexData)
+    showcompact(io, vertex_data(vertex))
     if isroot(vertex)
         print(io, " (root)")
     else
         print(io, ", ")
         print(io, "Edge: ")
-        showcompact(io, vertex.edgeToParentData)
+        showcompact(io, edge_to_parent_data(vertex))
     end
 end
 
 function show(io::IO, vertex::TreeVertex, level = 0)
     for i = 1 : level print(io, "  ") end
     showcompact(io, vertex)
-    for child in vertex.children
+    for child in children(vertex)
         print(io, "\n")
         show(io, child, level + 1)
     end
@@ -41,7 +71,7 @@ function findfirst{V, E}(pred::Function, tree::Tree{V, E})
     root = tree
     pred(root) && return root
 
-    for child in root.children
+    for child in children(root)
         vertex = findfirst(pred, child)
         vertex != nothing && return vertex
     end
@@ -52,9 +82,9 @@ end
 function findfirst{V, E}(tree::Tree{V, E}, vertexData::V)
     # depth first search
     root = tree
-    root.vertexData == vertexData && return root
+    vertex_data(root) == vertexData && return root
 
-    for child in root.children
+    for child in children(root)
         vertex = findfirst(child, vertexData)
         vertex != nothing && return vertex
     end
@@ -64,7 +94,7 @@ end
 function find{V, E}(pred::Function, tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
     root = tree
     pred(root) && push!(result, root)
-    for child in root.children
+    for child in children(root)
         find(pred, child, result)
     end
     return result
@@ -73,20 +103,28 @@ end
 function toposort{V, E}(tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
     root = tree
     push!(result, root)
-    for child in root.children
+    for child in children(root)
         toposort(child, result)
     end
     return result
 end
 
-function insert!(parentVertex::TreeVertex, childVertex::TreeVertex)
-    # Note: removes any previously existing parent/child relationship for childVertex
+function detach!{V, E}(vertex::TreeVertex{V, E})
     if !isroot(vertex)
-        parentsChildren = vertex.parent.children
-        deleteat!(parentsChildren, findfirst(parentsChildren, vertex))
+        index = findfirst(parent(vertex).children, vertex)
+        if index > 0
+            deleteat!(parent(vertex).children, index)
+        end
     end
-    childVertex.parent = parentVertex
-    push!(parentVertex.children, childVertex)
+    vertex.parentAndEdgeData = Nullable{Pair{TreeVertex{V, E}, E}}()
+    vertex
+end
+
+function insert!{V, E}(parentVertex::TreeVertex{V, E}, childVertex::TreeVertex{V, E}, edgeData::E = edge_to_parent_data(childVertex))
+    # Note: removes any previously existing parent/child relationship for childVertex
+    detach!(childVertex)
+    childVertex.parentAndEdgeData = parentVertex => edgeData
+    push!(children(parentVertex), childVertex)
     childVertex
 end
 
@@ -106,8 +144,8 @@ function ancestors{V, E}(vertex::TreeVertex{V, E})
     current = vertex
     result = Vector{TreeVertex{V, E}}()
     while !isroot(current)
-        push!(result, current.parent)
-        current = current.parent
+        push!(result, parent(current))
+        current = parent(current)
     end
     return result
 end
@@ -119,7 +157,7 @@ end
 function map!{F, V, E}(f::F, tree::Tree{V, E})
     root = tree
     f(root)
-    for child in root.children
+    for child in children(root)
         map!(f, child)
     end
     return tree
@@ -127,23 +165,23 @@ end
 
 function insert_subtree!{V, E}(root::TreeVertex{V, E}, subtree_root::TreeVertex{V, E})
     # modifies root, but doesn't modify subtree_root
-    inserted = insert!(root, subtree_root.vertexData, subtree_root.edgeToParentData)
-    for child in subtree_root.children
+    inserted = insert!(root, vertex_data(subtree_root), edge_to_parent_data(subtree_root))
+    for child in children(subtree_root)
         insert_subtree!(inserted, child)
     end
     inserted
 end
 
 function subtree{V, E}(vertex::TreeVertex{V, E})
-    ret = Tree{V, E}(vertex.vertexData)
-    for child in vertex.children
+    ret = Tree{V, E}(vertex_data(vertex))
+    for child in children(vertex)
         insert_subtree!(ret, child)
     end
     ret
 end
 
 function reroot{V, E, F}(newRoot::TreeVertex{V, E}, edgeDirectionChangeFunction::F = identity)
-    ret = Tree{V, E}(newRoot.vertexData)
+    ret = Tree{V, E}(vertex_data(newRoot))
 
     currentVertexNewTree = ret
     previousVertexOldTree = newRoot
@@ -151,7 +189,7 @@ function reroot{V, E, F}(newRoot::TreeVertex{V, E}, edgeDirectionChangeFunction:
 
     done = false
     while !done
-        for child in currentVertexOldTree.children
+        for child in children(currentVertexOldTree)
             if child != previousVertexOldTree
                 insert_subtree!(currentVertexNewTree, child)
             end
@@ -160,11 +198,11 @@ function reroot{V, E, F}(newRoot::TreeVertex{V, E}, edgeDirectionChangeFunction:
         done = isroot(currentVertexOldTree)
 
         if !done
-            vertexData = currentVertexOldTree.parent.vertexData
-            edgeToParentData = edgeDirectionChangeFunction(currentVertexOldTree.edgeToParentData)
+            vertexData = vertex_data(parent(currentVertexOldTree))
+            edgeToParentData = edgeDirectionChangeFunction(edge_to_parent_data(currentVertexOldTree))
             currentVertexNewTree = insert!(currentVertexNewTree, vertexData, edgeToParentData)
             previousVertexOldTree = currentVertexOldTree
-            currentVertexOldTree = currentVertexOldTree.parent
+            currentVertexOldTree = parent(currentVertexOldTree)
         end
     end
     ret
@@ -173,12 +211,12 @@ end
 function merge_into_parent!(vertex::TreeVertex)
     # splice vertex's children into parent's children at vertex's location
     @assert !isroot(vertex)
-    for child in vertex.children
-        child.parent = vertex.parent
+    for child in children(vertex)
+        child.parentAndEdgeData = parent(vertex) => edge_to_parent_data(child)
     end
-    parentsChildren = vertex.parent.children
-    splice!(parentsChildren, findfirst(parentsChildren, vertex), vertex.children)
-    # TODO: would be nice to set vertex's parent to null
+    parentsChildren = parent(vertex).children
+    splice!(parentsChildren, findfirst(parentsChildren, vertex), children(vertex))
+    detach!(vertex)
     nothing
 end
 
@@ -220,15 +258,17 @@ function path{V, E}(from::TreeVertex{V, E}, to::TreeVertex{V, E})
     edgeData = Vector{E}()
     directions = Vector{Int64}()
     for j = 1 : fromIndex - 1
-        push!(vertexData, ancestorsFrom[j].vertexData)
-        push!(edgeData, ancestorsFrom[j].edgeToParentData)
+        push!(vertexData, vertex_data(ancestorsFrom[j]))
+        push!(edgeData, edge_to_parent_data(ancestorsFrom[j]))
         push!(directions, -1)
     end
-    push!(vertexData, ancestorsFrom[fromIndex].vertexData)
+    push!(vertexData, vertex_data(ancestorsFrom[fromIndex]))
     for j = toIndex - 1 : -1 : 1
-        push!(vertexData, ancestorsTo[j].vertexData)
-        push!(edgeData, ancestorsTo[j].edgeToParentData)
+        push!(vertexData, vertex_data(ancestorsTo[j]))
+        push!(edgeData, edge_to_parent_data(ancestorsTo[j]))
         push!(directions, 1)
     end
     return Path(vertexData, edgeData, directions)
 end
+
+end # module TreeDataStructure

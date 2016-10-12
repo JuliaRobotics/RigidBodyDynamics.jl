@@ -11,7 +11,7 @@ immutable UpdateTwistAndBias{M, C}
         new(parentFrame, joint, qJoint, vJoint, transformToRootCache, parentCache)
     end
 end
-@compat function (functor::UpdateTwistAndBias)()
+function (functor::UpdateTwistAndBias)()
     parentFrame = functor.parentFrame
     joint = functor.joint
     qJoint = functor.qJoint
@@ -38,7 +38,7 @@ immutable UpdateSpatialInertiaInWorld{M, C}
     body::RigidBody{M}
     transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
 end
-@compat function (functor::UpdateSpatialInertiaInWorld)()
+function (functor::UpdateSpatialInertiaInWorld)()
     transform(spatial_inertia(functor.body), get(functor.transformToRootCache))
 end
 
@@ -46,7 +46,7 @@ immutable UpdateCompositeRigidBodyInertia{M, C}
     this::CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{M, C}}
     children::Vector{CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}
 end
-@compat function (functor::UpdateCompositeRigidBodyInertia)()
+function (functor::UpdateCompositeRigidBodyInertia)()
     ret = get(functor.this)
     for child in functor.children
         ret += get(child)
@@ -167,11 +167,11 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
     zero!(state)
 
     for vertex in m.toposortedTree
-        body = vertex.vertexData
+        body = vertex_data(vertex)
         if !isroot(vertex)
-            parentVertex = vertex.parent
-            parentBody = parentVertex.vertexData
-            joint = vertex.edgeToParentData
+            parentVertex = parent(vertex)
+            parentBody = vertex_data(parentVertex)
+            joint = edge_to_parent_data(vertex)
             parentFrame = default_frame(m, parentBody)
 
             qJoint = view(state.q, state.mechanism.qRanges[joint])
@@ -198,7 +198,7 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
         if !isroot(vertex)
             # spatial inertias needs to be done after adding additional body fixed frames
             # because they may be expressed in one of those frames
-            parentBody = vertex.parent.vertexData
+            parentBody = vertex_data(parent(vertex))
 
             # inertias
             transformBodyToRootCache = state.transformCache.transformsToRoot[spatial_inertia(body).frame]
@@ -210,9 +210,9 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
     # crb inertias
     for i = length(m.toposortedTree) : -1 : 2
         vertex = m.toposortedTree[i]
-        body = vertex.vertexData
-        children = [state.crbInertias[v.vertexData] for v in vertex.children]
-        state.crbInertias[body] = CacheElement(SpatialInertia{C}, UpdateCompositeRigidBodyInertia(state.spatialInertias[body], children))
+        body = vertex_data(vertex)
+        childCrbs = [state.crbInertias[vertex_data(v)] for v in children(vertex)]
+        state.crbInertias[body] = CacheElement(SpatialInertia{C}, UpdateCompositeRigidBodyInertia(state.spatialInertias[body], childCrbs))
     end
 
     setdirty!(state)

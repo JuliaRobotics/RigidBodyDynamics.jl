@@ -1,6 +1,6 @@
-import RigidBodyDynamics: Tree, insert!, toposort, leaves, ancestors, path, subtree, reroot
-
 @testset "tree" begin
+    using RigidBodyDynamics.TreeDataStructure
+
     let
         tree = v1 = Tree{Int64, Int32}(1);
         v2 = insert!(tree, 2, Int32(2), 1)
@@ -17,7 +17,7 @@ import RigidBodyDynamics: Tree, insert!, toposort, leaves, ancestors, path, subt
                 if isroot(vertex)
                     @test index == 1
                 else
-                    @test index > findfirst(toposortedTree, vertex.parent)
+                    @test index > findfirst(toposortedTree, parent(vertex))
                 end
             end
         end
@@ -32,7 +32,7 @@ import RigidBodyDynamics: Tree, insert!, toposort, leaves, ancestors, path, subt
         @testset "reroot" begin
             oldRoot = tree
             newRoot = rerooted = reroot(v7, -)
-            @test rerooted.vertexData == v7.vertexData
+            @test vertex_data(rerooted) == vertex_data(v7)
             @test length(toposort(rerooted)) == length(toposort(tree))
             for vertex in toposort(rerooted)
                 @test all(path(newRoot, vertex).directions .== 1)
@@ -41,15 +41,15 @@ import RigidBodyDynamics: Tree, insert!, toposort, leaves, ancestors, path, subt
             # ensure that edgeDirectionChangeFunction was applied correctly
             oldAncestors = ancestors(v7)
             for oldTreeVertex in oldAncestors
-                newTreeVertex = findfirst(rerooted, oldTreeVertex.vertexData)
+                newTreeVertex = findfirst(rerooted, vertex_data(oldTreeVertex))
                 @test all(path(newRoot, newTreeVertex).edgeData .< 0)
             end
 
             oldNonAncestors = setdiff(toposort(tree), oldAncestors)
             for oldNonAncestor in oldNonAncestors
-                newTreeVertex = findfirst(rerooted, oldNonAncestor.vertexData)
+                newTreeVertex = findfirst(rerooted, vertex_data(oldNonAncestor))
                 if !isroot(newTreeVertex)
-                    @test newTreeVertex.edgeToParentData > 0
+                    @test edge_to_parent_data(newTreeVertex) > 0
                 end
             end
         end

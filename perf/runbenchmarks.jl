@@ -1,5 +1,6 @@
 using RigidBodyDynamics
 using BenchmarkTools
+import RigidBodyDynamics.TreeDataStructure: children, edge_to_parent_data
 
 function get_atlas_urdf()
     atlas_urdf_filename = "atlas.urdf"
@@ -18,8 +19,8 @@ end
 
 function create_floating_atlas()
     atlas = parse_urdf(Float64, get_atlas_urdf())
-    for child in root_vertex(atlas).children
-        joint = child.edgeToParentData
+    for child in children(root_vertex(atlas))
+        joint = edge_to_parent_data(child)
         change_joint_type!(atlas, joint, QuaternionFloating{Float64}())
     end
     atlas
