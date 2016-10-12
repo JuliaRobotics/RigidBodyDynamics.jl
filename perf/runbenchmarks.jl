@@ -2,23 +2,10 @@ using RigidBodyDynamics
 using BenchmarkTools
 import RigidBodyDynamics.TreeDataStructure: children, edge_to_parent_data
 
-function get_atlas_urdf()
-    atlas_urdf_filename = "atlas.urdf"
-    atlas_urdf_dir = Base.tempdir() * "/RigidBodyDynamics/urdf/"
-    atlas_urdf_local = atlas_urdf_dir * atlas_urdf_filename
-    if !isfile(atlas_urdf_local)
-        atlas_urdf_remote = "https://raw.githubusercontent.com/RobotLocomotion/drake/6e3ca768cbaabf15d0f2bed0fb5bd703fa022aa5/drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"
-        download(atlas_urdf_remote, atlas_urdf_filename)
-        if !isdir(atlas_urdf_dir)
-            mkpath(atlas_urdf_dir)
-        end
-        mv(atlas_urdf_filename, atlas_urdf_local)
-    end
-    atlas_urdf_local
-end
-
 function create_floating_atlas()
-    atlas = parse_urdf(Float64, get_atlas_urdf())
+    atlasUrdfUrl = "https://raw.githubusercontent.com/RobotLocomotion/drake/6e3ca768cbaabf15d0f2bed0fb5bd703fa022aa5/drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"
+    atlasUrdf = RigidBodyDynamics.cached_download(atlasUrdfUrl, "atlas.urdf")
+    atlas = parse_urdf(Float64, atlasUrdf)
     for child in children(root_vertex(atlas))
         joint = edge_to_parent_data(child)
         change_joint_type!(atlas, joint, QuaternionFloating{Float64}())
