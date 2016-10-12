@@ -1,5 +1,6 @@
 using RigidBodyDynamics
 using BenchmarkTools
+import RigidBodyDynamics.TreeDataStructure: children, edge_to_parent_data
 
 function get_atlas_urdf()
     atlas_urdf_filename = "atlas.urdf"
