@@ -231,7 +231,7 @@ end
 
 function show(io::IO, p::Path)
     println(io, "Path:")
-    println(io, "Vertices: $(vertex_data(p))")
+    println(io, "Vertices: $(p.vertexData)")
     println(io, "Edges: $(p.edgeData)")
     print(io, "Directions: $(p.directions)")
 end
