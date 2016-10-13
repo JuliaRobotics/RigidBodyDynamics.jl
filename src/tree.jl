@@ -75,7 +75,7 @@ function findfirst{V, E}(pred::Function, tree::Tree{V, E})
         vertex = findfirst(pred, child)
         vertex != nothing && return vertex
     end
-    return nothing
+    return nothing # TODO: turn into error
 end
 
 # TODO: not type stable
@@ -88,7 +88,7 @@ function findfirst{V, E}(tree::Tree{V, E}, vertexData::V)
         vertex = findfirst(child, vertexData)
         vertex != nothing && return vertex
     end
-    return nothing
+    return nothing # TODO: turn into error
 end
 
 function find{V, E}(pred::Function, tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())

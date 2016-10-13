@@ -32,6 +32,13 @@ is_fixed_to_body{M}(m::Mechanism{M}, frame::CartesianFrame3D, body::RigidBody{M}
 isinertial(m::Mechanism, frame::CartesianFrame3D) = is_fixed_to_body(m, frame, root_body(m))
 isroot{T}(m::Mechanism{T}, b::RigidBody{T}) = b == root_body(m)
 
+function default_frame{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint{T}})
+     # allows standardization on a frame to reduce number of transformations required
+    isroot(vertex) ? vertex_data(vertex).frame : edge_to_parent_data(vertex).frameAfter
+end
+
+default_frame(m::Mechanism, body::RigidBody) = default_frame(m, findfirst(tree(m), body)) # TODO: potentially slow due to findfirst type instability
+
 function find_body_fixed_frame_definition{T}(m::Mechanism{T}, body::RigidBody{T}, frame::CartesianFrame3D)::Transform3D{T}
     for transform in m.bodyFixedFrameDefinitions[body]
         transform.from == frame && return transform
@@ -39,25 +46,56 @@ function find_body_fixed_frame_definition{T}(m::Mechanism{T}, body::RigidBody{T}
     error("$frame not found among body fixed frame definitions for $body")
 end
 
-function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T})
-    fixedFrameDefinitions = m.bodyFixedFrameDefinitions[body]
-    any((t) -> t.from == transform.from, fixedFrameDefinitions) && error("frame $(transform.from) was already defined")
-    vertex = findfirst(tree(m), body)
-    defaultFrame = isroot(vertex) ? body.frame : edge_to_parent_data(vertex).frameAfter
-    if transform.to != defaultFrame
-        found = false
-        for t in fixedFrameDefinitions
-            if t.from == transform.to
-                found = true
-                transform = t * transform
-                break
-            end
-        end
-        !found && error("failed to add frame because transform doesn't connect to any known transforms")
+function find_body_fixed_frame_definition(m::Mechanism, frame::CartesianFrame3D)
+    find_body_fixed_frame_definition(m, m.bodyFixedFrameToBody[frame], frame)
+end
+
+function find_fixed_transform(m::Mechanism, from::CartesianFrame3D, to::CartesianFrame3D)
+    body = m.bodyFixedFrameToBody[from]
+    transform = find_body_fixed_frame_definition(m, body, from)
+    if transform.to != to
+        transform = inv(find_body_fixed_frame_definition(m, body, to)) * transform
     end
-    push!(fixedFrameDefinitions, transform)
+    transform
+end
+
+function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T})
+    definitions = get!(Set{Transform3D{T}}, m.bodyFixedFrameDefinitions, body)
+    any((t) -> t.from == transform.from, definitions) && error("frame $(transform.from) was already defined")
+    if transform.to != default_frame(m, body)
+        transform = find_body_fixed_frame_definition(m, body, transform.to) * transform
+    end
+    push!(definitions, transform)
     m.bodyFixedFrameToBody[transform.from] = body
     return transform
+end
+
+function add_body_fixed_frame!{T}(m::Mechanism{T}, transform::Transform3D{T})
+    body = m.bodyFixedFrameToBody[transform.to]
+    body == nothing && error("unable to determine to what body $(transform.to) is attached")
+    add_body_fixed_frame!(m, body, transform)
+end
+
+function canonicalize_frame_definitions!{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint{T}})
+    defaultFrame = default_frame(m, vertex)
+    body = vertex_data(vertex)
+
+    # set transform from joint to parent body's default frame
+    if !isroot(vertex)
+        parentDefaultFrame = default_frame(m, parent(vertex))
+        joint = edge_to_parent_data(vertex)
+        m.jointToJointTransforms[joint] = find_fixed_transform(m, joint.frameBefore, parentDefaultFrame)
+    end
+
+    # ensure that all body-fixed frame definitions map to default frame
+    oldDefinitions = m.bodyFixedFrameDefinitions[body]
+    newDefinitions = Set{Transform3D{T}}()
+    for transform in oldDefinitions
+        transform = transform.to == defaultFrame ? transform : find_fixed_transform(m, transform.to, default_frame(m, vertex)) * transform
+        push!(newDefinitions, transform)
+    end
+    m.bodyFixedFrameDefinitions[body] = newDefinitions
+    nothing
 end
 
 function recompute_ranges!(m::Mechanism)
@@ -71,30 +109,24 @@ function recompute_ranges!(m::Mechanism)
     end
 end
 
-function set_up_frames!{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint{T}},
-        jointToParent::Transform3D{T}, bodyToJoint::Transform3D{T})
-    joint = edge_to_parent_data(vertex)
-    body = vertex_data(vertex)
-    parentBody = vertex_data(parent(vertex))
-
-    # add transform from frame before joint to parent body's default frame
-    m.jointToJointTransforms[joint] = add_body_fixed_frame!(m, parentBody, jointToParent)
-
-    # add transform from body to frame after joint to body fixed frame definitions
-    framecheck(bodyToJoint.from, body.frame)
-    framecheck(bodyToJoint.to, joint.frameAfter)
-    m.bodyFixedFrameToBody[joint.frameAfter] = body
-    m.bodyFixedFrameDefinitions[body] = Set([Transform3D(T, joint.frameAfter)])
-    if bodyToJoint.from != bodyToJoint.to
-        push!(m.bodyFixedFrameDefinitions[body], bodyToJoint)
-        m.bodyFixedFrameToBody[bodyToJoint.from] = body
-    end
-end
-
 function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
         childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(childBody.frame, joint.frameAfter))
     vertex = insert!(tree(m), childBody, joint, parentBody)
-    set_up_frames!(m, vertex, jointToParent, childToJoint)
+
+    # define where joint is attached on parent body
+    framecheck(jointToParent.from, joint.frameBefore)
+    add_body_fixed_frame!(m, parentBody, jointToParent)
+
+    # add identity transform from frame after joint to itself
+    add_body_fixed_frame!(m, childBody, Transform3D{T}(joint.frameAfter, joint.frameAfter))
+
+    # define where child is attached to joint
+    framecheck(childToJoint.from, childBody.frame)
+    if childToJoint.from != joint.frameAfter # we've already defined it
+        add_body_fixed_frame!(m, childBody, childToJoint)
+    end
+
+    canonicalize_frame_definitions!(m, vertex)
     m.toposortedTree = toposort(tree(m))
     recompute_ranges!(m)
     m
@@ -108,24 +140,22 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     parentVertex = findfirst(tree(m), parentBody)
     childRootVertex = root_vertex(childMechanism)
     childRootBody = vertex_data(childRootVertex)
-    childRootBodyToParentBody = Transform3D{T}(childRootBody.frame, parentBody.frame) # identity
+
     for child in children(childRootVertex)
         vertex = insert_subtree!(parentVertex, child)
-        body = vertex_data(vertex)
-        joint = edge_to_parent_data(vertex)
-        jointToParent = childRootBodyToParentBody * childMechanism.jointToJointTransforms[joint]
-        bodyToJoint = find_body_fixed_frame_definition(childMechanism, body, body.frame)
-        set_up_frames!(m, vertex, jointToParent, bodyToJoint)
     end
-    m.toposortedTree = toposort(tree(m))
-    recompute_ranges!(m)
+
+    # define where child root body is located w.r.t parent body
+    add_body_fixed_frame!(m, parentBody, Transform3D{T}(childRootBody.frame, parentBody.frame)) # TODO: add optional function argument
 
     # add frames that were attached to childRootBody to parentBody
     for transform in childMechanism.bodyFixedFrameDefinitions[childRootBody]
-        if isempty(filter(t -> t.from == transform.from, m.bodyFixedFrameDefinitions[parentBody]))
-            add_body_fixed_frame!(m, parentBody, childRootBodyToParentBody * transform)
-        end
+        add_body_fixed_frame!(m, parentBody, transform)
     end
+
+    canonicalize_frame_definitions!(m, parentVertex)
+    m.toposortedTree = toposort(tree(m))
+    recompute_ranges!(m)
 
     # merge frame info for vertices whose parents haven't changed
     childRootJoints = Joint[edge_to_parent_data(child) for child in children(childRootVertex)]
@@ -162,6 +192,57 @@ function submechanism{T}(m::Mechanism{T}, submechanismRoot::RigidBody{T})
     end
 
     ret
+end
+
+#=
+Reroots the subtree of the root body to which newSubtreeRootBody belongs so that newSubtreeRootBody is attached to
+the root body with the given joint.
+=#
+function reroot_subtree!{T}(mechanism::Mechanism{T}, newSubtreeRootBody::RigidBody{T}, joint::Joint{T},
+        jointToWorld::Transform3D{T}, newSubTreeRootBodyToJoint::Transform3D{T})
+    # TODO: add option to prune frames related to old joints
+
+    newSubtreeRootBody == root_body(mechanism) && error("new subtree root must be part of a subtree of mechanism root")
+    newSubtreeRoot = findfirst(tree(mechanism), newSubtreeRootBody)
+
+    # modify tree
+    oldSubtreeRoot = newSubtreeRoot
+    while !isroot(parent(oldSubtreeRoot))
+        oldSubtreeRoot = parent(oldSubtreeRoot)
+    end
+    oldRootJoint = edge_to_parent_data(oldSubtreeRoot)
+    delete!(mechanism.jointToJointTransforms, oldRootJoint)
+    detach!(oldSubtreeRoot)
+    flippedJoints = Pair{Joint{T}, Joint{T}}[]
+    flipDirectionFunction = joint -> begin
+        flipped = Joint(joint.name * "Flipped", joint.jointType) # TODO
+        push!(flippedJoints, joint => flipped)
+        flipped
+    end
+    subtreeRerooted = reroot(newSubtreeRoot, flipDirectionFunction)
+    insert!(root_vertex(mechanism), subtreeRerooted, joint)
+
+    # define frames related to new joint
+    # TODO: replace with call to attach!
+    add_body_fixed_frame!(mechanism, root_body(mechanism), jointToWorld)
+#     add_body_fixed_frame!(mechanism, newSubtreeRootBody, Transform3D{T}(joint.frameAfter, joint.frameAfter)) TODO
+    add_body_fixed_frame!(mechanism, newSubtreeRootBody, inv(newSubTreeRootBodyToJoint))
+
+    # define identities between new frames and old frames
+    for pair in flippedJoints
+        oldJoint, newJoint = first(pair), last(pair)
+        add_body_fixed_frame!(mechanism, Transform3D{T}(newJoint.frameBefore, oldJoint.frameAfter))
+        add_body_fixed_frame!(mechanism, Transform3D{T}(newJoint.frameAfter, oldJoint.frameBefore))
+    end
+
+    # canonicalize frame definitions
+    for vertex in toposort(tree(mechanism))
+        canonicalize_frame_definitions!(mechanism, vertex)
+    end
+
+    mechanism.toposortedTree = toposort(tree(mechanism))
+    recompute_ranges!(mechanism)
+    mechanism
 end
 
 function change_joint_type!(m::Mechanism, joint::Joint, newType::JointType)
@@ -223,7 +304,6 @@ end
 joints(m::Mechanism) = [edge_to_parent_data(vertex) for vertex in non_root_vertices(m)] # TODO: make less expensive
 bodies{T}(m::Mechanism{T}) = [vertex_data(vertex)::RigidBody{T} for vertex in m.toposortedTree] # TODO: make less expensive
 non_root_bodies{T}(m::Mechanism{T}) = [vertex_data(vertex)::RigidBody{T} for vertex in non_root_vertices(m)] # TODO: make less expensive
-default_frame(m::Mechanism, body::RigidBody) = first(m.bodyFixedFrameDefinitions[body]).to # allows standardization on a frame to reduce number of transformations required
 
 num_positions(m::Mechanism) = num_positions(joints(m))
 num_velocities(m::Mechanism) = num_velocities(joints(m))
