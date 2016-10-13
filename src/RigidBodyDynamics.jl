@@ -94,6 +94,7 @@ export
     rand_mechanism,
     rand_chain_mechanism,
     rand_tree_mechanism,
+    rand_floating_tree_mechanism,
     configuration_vector,
     velocity_vector,
     state_vector,

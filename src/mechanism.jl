@@ -334,6 +334,13 @@ end
 
 rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> vertex_data(m.toposortedTree[end]), jointTypes...)
 rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> rand(collect(bodies(m))), jointTypes...)
+function rand_floating_tree_mechanism{T}(t::Type{T}, nonFloatingJointTypes...)
+    parentSelector = (m::Mechanism) -> begin
+        only_root = length(bodies(m)) == 1
+        only_root ? root_body(m) : rand(collect(non_root_bodies(m)))
+    end
+    rand_mechanism(t, parentSelector, [QuaternionFloating{T}; nonFloatingJointTypes...]...)
+end
 
 function gravitational_spatial_acceleration{M}(m::Mechanism{M})
     frame = m.gravitationalAcceleration.frame
