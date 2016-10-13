@@ -86,7 +86,7 @@ export
     setdirty!,
     add_body_fixed_frame!,
     attach!,
-    reroot_subtree!,
+    reattach!,
     submechanism,
     change_joint_type!,
     remove_fixed_joints!,

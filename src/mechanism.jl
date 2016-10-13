@@ -202,50 +202,53 @@ function submechanism{T}(m::Mechanism{T}, submechanismRoot::RigidBody{T})
 end
 
 #=
-Reroots the subtree of the root body to which newSubtreeRootBody belongs so that newSubtreeRootBody is attached to
-the root body with the given joint.
+Detaches the subtree rooted at oldSubtreeRootBody, reroots it so that newSubtreeRootBody is the new root, and then attaches
+newSubtreeRootBody to parentBody using the specified joint.
 =#
-function reroot_subtree!{T}(mechanism::Mechanism{T}, newSubtreeRootBody::RigidBody{T}, joint::Joint{T},
-        jointToWorld::Transform3D{T}, newSubTreeRootBodyToJoint::Transform3D{T})
+function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
+        parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
+        newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D{T} = Transform3D{T}(newSubtreeRootBody.frame, joint.frameAfter))
     # TODO: add option to prune frames related to old joints
 
-    newSubtreeRootBody == root_body(mechanism) && error("new subtree root must be part of a subtree of mechanism root")
     newSubtreeRoot = findfirst(tree(mechanism), newSubtreeRootBody)
+    oldSubtreeRoot = findfirst(tree(mechanism), oldSubtreeRootBody)
+    parentVertex = findfirst(tree(mechanism), parentBody)
+    @assert newSubtreeRoot ∈ toposort(oldSubtreeRoot)
+    @assert parentVertex ∉ toposort(oldSubtreeRoot)
 
-    # modify tree
-    oldSubtreeRoot = newSubtreeRoot
-    while !isroot(parent(oldSubtreeRoot))
-        oldSubtreeRoot = parent(oldSubtreeRoot)
-    end
+    # detach oldSubtreeRoot
+    # TODO: should probably have a detach!(mechanism, ...) and call it here
     oldRootJoint = edge_to_parent_data(oldSubtreeRoot)
     delete!(mechanism.jointToJointTransforms, oldRootJoint)
     detach!(oldSubtreeRoot)
+
+    # reroot
     flippedJoints = Pair{Joint{T}, Joint{T}}[]
     flipDirectionFunction = joint -> begin
-        flipped = Joint(joint.name * "Flipped", joint.jointType) # TODO
+        flipped = Joint(joint.name * "Flipped", joint.jointType) # TODO: flip direction of joint (probably?)
         push!(flippedJoints, joint => flipped)
         flipped
     end
     subtreeRerooted = reroot(newSubtreeRoot, flipDirectionFunction)
-    insert!(root_vertex(mechanism), subtreeRerooted, joint)
+
+    # attach newSubtreeRoot using joint
+    insert!(parentVertex, subtreeRerooted, joint)
+    mechanism.toposortedTree = toposort(tree(mechanism))
 
     # define frames related to new joint
-    add_body_fixed_frame!(mechanism, root_body(mechanism), jointToWorld)
+    add_body_fixed_frame!(mechanism, parentBody, jointToParent)
     add_body_fixed_frame!(mechanism, newSubtreeRootBody, inv(newSubTreeRootBodyToJoint))
 
-    # define identities between new frames and old frames
+    # define identities between new frames and old frames and recanonicalize frame definitions
     for pair in flippedJoints
         oldJoint, newJoint = first(pair), last(pair)
         add_body_fixed_frame!(mechanism, Transform3D{T}(newJoint.frameBefore, oldJoint.frameAfter))
         add_body_fixed_frame!(mechanism, Transform3D{T}(newJoint.frameAfter, oldJoint.frameBefore))
     end
-
-    # canonicalize frame definitions
-    for vertex in toposort(tree(mechanism))
+    for vertex in mechanism.toposortedTree
         canonicalize_frame_definitions!(mechanism, vertex)
     end
 
-    mechanism.toposortedTree = toposort(tree(mechanism))
     recompute_ranges!(mechanism)
     mechanism
 end
