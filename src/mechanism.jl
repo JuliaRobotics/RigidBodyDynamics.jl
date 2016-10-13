@@ -15,11 +15,19 @@ type Mechanism{T<:Real}
         gravitationalAcceleration = FreeVector3D(rootBody.frame, gravity)
         qRanges = Dict{Joint{T}, UnitRange{Int64}}()
         vRanges = Dict{Joint{T}, UnitRange{Int64}}()
-        new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody, jointToJointTransforms, gravitationalAcceleration, qRanges, vRanges)
+        new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody,
+            jointToJointTransforms, gravitationalAcceleration, qRanges, vRanges)
+    end
+
+    function Mechanism(m::Mechanism{T})
+        new(toposort(copy(tree(m))), Dict(k => copy(v) for (k, v) in m.bodyFixedFrameDefinitions), copy(m.bodyFixedFrameToBody),
+            copy(m.jointToJointTransforms), copy(m.gravitationalAcceleration), copy(m.qRanges), copy(m.vRanges))
     end
 end
 
 Mechanism{T}(rootBody::RigidBody{T}; kwargs...) = Mechanism{T}(rootBody; kwargs...)
+Mechanism{T}(m::Mechanism{T}) = Mechanism{T}(m)
+copy(m::Mechanism) = Mechanism(m)
 eltype{T}(::Mechanism{T}) = T
 root_vertex(m::Mechanism) = m.toposortedTree[1]
 non_root_vertices(m::Mechanism) = view(m.toposortedTree, 2 : length(m.toposortedTree))
