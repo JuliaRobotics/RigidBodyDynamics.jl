@@ -4,7 +4,8 @@ module RigidBodyDynamics
 
 include("tree.jl")
 
-import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!, hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype
+import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!
+import Base: hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype, copy
 using StaticArrays
 using Quaternions
 using DataStructures
@@ -86,12 +87,14 @@ export
     setdirty!,
     add_body_fixed_frame!,
     attach!,
+    reattach!,
     submechanism,
     change_joint_type!,
     remove_fixed_joints!,
     rand_mechanism,
     rand_chain_mechanism,
     rand_tree_mechanism,
+    rand_floating_tree_mechanism,
     configuration_vector,
     velocity_vector,
     state_vector,

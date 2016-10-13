@@ -1,6 +1,4 @@
 @testset "tree" begin
-    using RigidBodyDynamics.TreeDataStructure
-
     let
         tree = v1 = Tree{Int64, Int32}(1);
         v2 = insert!(tree, 2, Int32(2), 1)

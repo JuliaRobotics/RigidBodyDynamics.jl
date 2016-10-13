@@ -103,4 +103,69 @@
             end
         end
     end
-end
+
+    @testset "reattach" begin
+        for testnum = 1 : 10
+            # create random floating mechanism
+            jointTypes = [[Prismatic{Float64} for i = 1 : 10]; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
+            shuffle!(jointTypes)
+            mechanism = rand_floating_tree_mechanism(Float64, jointTypes)
+            subtreeRootVertex = children(root_vertex(mechanism))[1]
+            floatingJoint = edge_to_parent_data(subtreeRootVertex)
+            floatingBody = vertex_data(subtreeRootVertex)
+
+            # reattach at different body
+            newFloatingBody = rand(non_root_bodies(mechanism))
+            newFloatingJoint = Joint("newFloating", QuaternionFloating{Float64}())
+            world = root_body(mechanism)
+            jointToWorld = Transform3D{Float64}(newFloatingJoint.frameBefore, world.frame)
+            bodyToJoint = Transform3D{Float64}(newFloatingBody.frame, newFloatingJoint.frameAfter)
+            rerooted = copy(mechanism)
+            flippedJointMapping = reattach!(rerooted, floatingBody, world, newFloatingJoint, jointToWorld, newFloatingBody, bodyToJoint)
+
+            # create random mechanism state
+            x = MechanismState(Float64, mechanism)
+            rand!(x)
+
+            # mimic the same state for the rerooted mechanism
+            # copy non-floating joint configurations and velocities
+            xRerooted = MechanismState(Float64, rerooted)
+            for joint in filter(j -> j != floatingJoint, joints(mechanism))
+                jointRerooted = get(flippedJointMapping, joint, joint)
+                set_configuration!(xRerooted, jointRerooted, configuration(x, joint))
+                set_velocity!(xRerooted, jointRerooted, velocity(x, joint))
+            end
+
+            # set configuration and velocity of new floating joint
+            newFloatingJointTransform = newFloatingJointTransform = inv(jointToWorld) * relative_transform(x, bodyToJoint.from, jointToWorld.to) * inv(bodyToJoint)
+            quat = newFloatingJointTransform.rot
+            trans = newFloatingJointTransform.trans
+            set_configuration!(xRerooted, newFloatingJoint, [quat.s; quat.v1; quat.v2; quat.v3; trans])# TODO: add Joint function that does mapping
+
+            newFloatingJointTwist = transform(x, relative_twist(x, newFloatingBody, world), bodyToJoint.from)
+            newFloatingJointTwist = transform(newFloatingJointTwist, bodyToJoint)
+            set_velocity!(xRerooted, newFloatingJoint, [newFloatingJointTwist.angular; newFloatingJointTwist.linear]) # TODO: add Joint function that does mapping
+
+            # make sure that joint accelerations for non-floating joints are the same
+            result = DynamicsResult(Float64, mechanism)
+            dynamics!(result, x)
+
+            resultRerooted = DynamicsResult(Float64, rerooted)
+            dynamics!(resultRerooted, xRerooted)
+
+            for joint in filter(j -> j != floatingJoint, joints(mechanism))
+                jointRerooted = get(flippedJointMapping, joint, joint)
+                v̇Mechanism = view(result.v̇, mechanism.vRanges[joint])
+                v̇Rerooted = view(resultRerooted.v̇, rerooted.vRanges[jointRerooted])
+                @test isapprox(v̇Mechanism, v̇Rerooted)
+            end
+
+            for body in non_root_bodies(mechanism)
+                accel = relative_acceleration(x, body, world, result.v̇)
+                accel_rerooted = relative_acceleration(xRerooted, body, world, resultRerooted.v̇)
+                @test isapprox(accel.angular, accel_rerooted.angular)
+                @test isapprox(accel.linear, accel_rerooted.linear)
+            end
+        end # for
+    end # reattach
+end # mechanism manipulation

@@ -1,4 +1,5 @@
 abstract JointType{T<:Real}
+flip_direction{T}(jt::JointType{T}) = deepcopy(jt) # default behavior for flipping the direction of a joint
 
 type Joint{T<:Real}
     name::String
@@ -216,6 +217,8 @@ function rand{T}(::Type{Prismatic{T}})
     Prismatic(axis / norm(axis))
 end
 
+flip_direction(jt::Prismatic) = Prismatic(-jt.translation_axis)
+
 function _joint_transform(j::Joint, jt::Prismatic, q::AbstractVector)
     @inbounds translation = q[1] * jt.translation_axis
     Transform3D(j.frameAfter, j.frameBefore, translation)
@@ -248,6 +251,8 @@ function rand{T}(::Type{Revolute{T}})
     axis = rand(SVector{3, T})
     Revolute(axis / norm(axis))
 end
+
+flip_direction(jt::Revolute) = Revolute(-jt.rotation_axis)
 
 function _joint_transform{T<:Real, X<:Real}(j::Joint{T}, jt::Revolute{T}, q::AbstractVector{X})
     S = promote_type(T, X)

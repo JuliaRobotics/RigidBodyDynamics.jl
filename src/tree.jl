@@ -1,6 +1,6 @@
 module TreeDataStructure
 
-import Base: showcompact, show, parent, findfirst, map!, insert!
+import Base: showcompact, show, parent, findfirst, map!, insert!, copy
 
 export
     # types
@@ -75,7 +75,7 @@ function findfirst{V, E}(pred::Function, tree::Tree{V, E})
         vertex = findfirst(pred, child)
         vertex != nothing && return vertex
     end
-    return nothing
+    return nothing # TODO: turn into error
 end
 
 # TODO: not type stable
@@ -88,7 +88,7 @@ function findfirst{V, E}(tree::Tree{V, E}, vertexData::V)
         vertex = findfirst(child, vertexData)
         vertex != nothing && return vertex
     end
-    return nothing
+    return nothing # TODO: turn into error
 end
 
 function find{V, E}(pred::Function, tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
@@ -138,6 +138,14 @@ function insert!{V, E}(tree::Tree{V, E}, vertexData::V, edgeData::E, parentData:
     parentVertex = findfirst(tree, parentData)
     parentVertex == nothing && error("parent not found")
     insert!(parentVertex, vertexData, edgeData)
+end
+
+function copy{V, E}(v::TreeVertex{V, E})
+    ret = isroot(v) ? TreeVertex{V, E}(vertex_data(v)) : TreeVertex(vertex_data(v), parent(v), edge_to_parent_data(v))
+    for child in children(v)
+        insert!(ret, copy(child))
+    end
+    ret
 end
 
 function ancestors{V, E}(vertex::TreeVertex{V, E})
