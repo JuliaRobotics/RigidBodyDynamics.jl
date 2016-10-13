@@ -88,12 +88,19 @@ function canonicalize_frame_definitions!{T}(m::Mechanism{T}, vertex::TreeVertex{
     end
 
     # ensure that all body-fixed frame definitions map to default frame
+    # and that there is a transform from the default frame to itself # TODO: reconsider requiring this
     oldDefinitions = m.bodyFixedFrameDefinitions[body]
     newDefinitions = Set{Transform3D{T}}()
+    identityFound = false
     for transform in oldDefinitions
         transform = transform.to == defaultFrame ? transform : find_fixed_transform(m, transform.to, default_frame(m, vertex)) * transform
+        identityFound = identityFound || transform.from == defaultFrame
         push!(newDefinitions, transform)
     end
+    if !identityFound
+        push!(newDefinitions, Transform3D{T}(defaultFrame, defaultFrame))
+    end
+
     m.bodyFixedFrameDefinitions[body] = newDefinitions
     nothing
 end
@@ -223,9 +230,7 @@ function reroot_subtree!{T}(mechanism::Mechanism{T}, newSubtreeRootBody::RigidBo
     insert!(root_vertex(mechanism), subtreeRerooted, joint)
 
     # define frames related to new joint
-    # TODO: replace with call to attach!
     add_body_fixed_frame!(mechanism, root_body(mechanism), jointToWorld)
-#     add_body_fixed_frame!(mechanism, newSubtreeRootBody, Transform3D{T}(joint.frameAfter, joint.frameAfter)) TODO
     add_body_fixed_frame!(mechanism, newSubtreeRootBody, inv(newSubTreeRootBodyToJoint))
 
     # define identities between new frames and old frames
