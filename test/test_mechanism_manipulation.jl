@@ -103,4 +103,36 @@
             end
         end
     end
+
+    @testset "reattach" begin
+    for testnum = 1 : 10
+        # create random floating mechanism
+        jointTypes = [[Prismatic{Float64} for i = 1 : 10]; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
+        shuffle!(jointTypes)
+        mechanism = rand_floating_tree_mechanism(Float64, jointTypes)
+        subtreeRootVertex = children(root_vertex(mechanism))[1]
+        floatingJoint = edge_to_parent_data(subtreeRootVertex)
+        floatingBody = vertex_data(subtreeRootVertex)
+
+
+        # reattach at different body
+        newFloatingBody = rand(non_root_bodies(mechanism))
+        newFloatingJoint = Joint("newFloating", QuaternionFloating{Float64}())
+        world = root_body(mechanism)
+        jointToWorld = Transform3D{Float64}(newFloatingJoint.frameBefore, world.frame)
+        rerooted = reattach!(copy(mechanism), floatingBody, world, newFloatingJoint, jointToWorld, newFloatingBody)
+
+        # put mechanisms in the same state
+        x = MechanismState(Float64, mechanism)
+        rand!(x)
+        xRerooted = MechanismState(Float64, rerooted)
+        for joint in filter(j -> j != floatingJoint, joints(mechanism))
+            set_configuration!(xRerooted, joint, configuration(x, joint))
+        end
+
+        # make sure that joint accelerations for non-floating joints are the same
+        # result = DynamicsResult(Float64, mechanism)
+        # dynamics!(result, x)
+    end
+
 end
