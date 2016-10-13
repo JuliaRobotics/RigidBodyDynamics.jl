@@ -221,27 +221,11 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     detach!(oldSubtreeRoot)
 
     # reroot
-    newFrameDefinitions = Transform3D{T}[]
+    flippedJoints = Pair{Joint{T}, Joint{T}}[]
     flipDirectionFunction = joint -> begin
-        # flip joint direction
-        joint.jointType = flip_direction(joint.jointType)
-
-        # create new frames and rename old frames
-        oldFrameBefore = joint.frameBefore
-        newFrameBefore = CartesianFrame3D(name(joint.frameBefore))
-        oldFrameAfter = joint.frameAfter
-        newFrameAfter = CartesianFrame3D(name(joint.frameAfter))
-        for frame in (oldFrameBefore, oldFrameAfter)
-            rename(frame, name(frame) * " (before being flipped)")
-        end
-        joint.frameBefore = newFrameBefore
-        joint.frameAfter = newFrameAfter
-
-        # define identities between new frames and old frames and recanonicalize frame definitions
-        push!(newFrameDefinitions, Transform3D{T}(newFrameBefore, oldFrameAfter))
-        push!(newFrameDefinitions, Transform3D{T}(newFrameAfter, oldFrameBefore))
-
-        joint
+        flipped = Joint(joint.name * "_flipped", flip_direction(joint.jointType))
+        push!(flippedJoints, joint => flipped)
+        flipped
     end
     subtreeRerooted = reroot(newSubtreeRoot, flipDirectionFunction)
 
@@ -253,9 +237,11 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     add_body_fixed_frame!(mechanism, parentBody, jointToParent)
     add_body_fixed_frame!(mechanism, newSubtreeRootBody, inv(newSubTreeRootBodyToJoint))
 
-    # add identities between new frames and old frames and recanonicalize frame definitions
-    for transform in newFrameDefinitions
-        add_body_fixed_frame!(mechanism, transform)
+    # define identities between new frames and old frames and recanonicalize frame definitions
+    for pair in flippedJoints
+        oldJoint, newJoint = first(pair), last(pair)
+        add_body_fixed_frame!(mechanism, Transform3D{T}(newJoint.frameBefore, oldJoint.frameAfter))
+        add_body_fixed_frame!(mechanism, Transform3D{T}(newJoint.frameAfter, oldJoint.frameBefore))
     end
     for vertex in mechanism.toposortedTree
         canonicalize_frame_definitions!(mechanism, vertex)
