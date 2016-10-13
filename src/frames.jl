@@ -20,6 +20,9 @@ immutable CartesianFrame3D
 end
 name(frame::CartesianFrame3D) = frame_names[frame.id]
 show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\"")
+function rename(frame::CartesianFrame3D, name::String)
+    frame_names[frame.id] = name
+end
 
 # enable/disable frame checks
 if isdefined(Main, :RIGID_BODY_DYNAMICS_RELEASE)
