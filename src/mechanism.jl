@@ -221,10 +221,10 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     detach!(oldSubtreeRoot)
 
     # reroot
-    flippedJoints = Pair{Joint{T}, Joint{T}}[]
+    flippedJoints = Dict{Joint{T}, Joint{T}}()
     flipDirectionFunction = joint -> begin
         flipped = Joint(joint.name * "_flipped", flip_direction(joint.jointType))
-        push!(flippedJoints, joint => flipped)
+        flippedJoints[joint] = flipped
         flipped
     end
     subtreeRerooted = reroot(newSubtreeRoot, flipDirectionFunction)
@@ -238,8 +238,7 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     add_body_fixed_frame!(mechanism, newSubtreeRootBody, inv(newSubTreeRootBodyToJoint))
 
     # define identities between new frames and old frames and recanonicalize frame definitions
-    for pair in flippedJoints
-        oldJoint, newJoint = first(pair), last(pair)
+    for (oldJoint, newJoint) in flippedJoints
         add_body_fixed_frame!(mechanism, Transform3D{T}(newJoint.frameBefore, oldJoint.frameAfter))
         add_body_fixed_frame!(mechanism, Transform3D{T}(newJoint.frameAfter, oldJoint.frameBefore))
     end
@@ -248,7 +247,7 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     end
 
     recompute_ranges!(mechanism)
-    mechanism
+    flippedJoints
 end
 
 function change_joint_type!(m::Mechanism, joint::Joint, newType::JointType)
