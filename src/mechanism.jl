@@ -215,7 +215,7 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     # reroot
     flippedJoints = Pair{Joint{T}, Joint{T}}[]
     flipDirectionFunction = joint -> begin
-        flipped = Joint(joint.name * "Flipped", joint.jointType) # TODO: flip direction of joint (probably?)
+        flipped = Joint(joint.name * "_flipped", flip_direction(joint.jointType))
         push!(flippedJoints, joint => flipped)
         flipped
     end
