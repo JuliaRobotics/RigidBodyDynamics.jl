@@ -143,32 +143,33 @@ end
 function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::Mechanism{T})
     # note: gravitational acceleration for childMechanism is ignored.
 
-    # merge trees and set up frames for children of childMechanism's root
     parentVertex = findfirst(tree(m), parentBody)
     childRootVertex = root_vertex(childMechanism)
     childRootBody = vertex_data(childRootVertex)
 
-    for child in children(childRootVertex)
-        vertex = insert_subtree!(parentVertex, child)
-    end
-
     # define where child root body is located w.r.t parent body
+    # and add frames that were attached to childRootBody to parentBody
     add_body_fixed_frame!(m, parentBody, Transform3D{T}(childRootBody.frame, parentBody.frame)) # TODO: add optional function argument
-
-    # add frames that were attached to childRootBody to parentBody
     for transform in childMechanism.bodyFixedFrameDefinitions[childRootBody]
-        add_body_fixed_frame!(m, parentBody, transform)
+        if isempty(filter(t -> t.from == transform.from, m.bodyFixedFrameDefinitions[parentBody]))
+            add_body_fixed_frame!(m, parentBody, transform)
+        end
     end
-
     canonicalize_frame_definitions!(m, parentVertex)
-    m.toposortedTree = toposort(tree(m))
-    recompute_ranges!(m)
 
-    # merge frame info for vertices whose parents haven't changed
-    childRootJoints = Joint[edge_to_parent_data(child) for child in children(childRootVertex)]
+    # merge in frame info for vertices whose parents will remain the same
     merge!(m.bodyFixedFrameDefinitions, filter((k, v) -> k != childRootBody, childMechanism.bodyFixedFrameDefinitions))
     merge!(m.bodyFixedFrameToBody, filter((k, v) -> v != childRootBody, childMechanism.bodyFixedFrameToBody))
-    merge!(m.jointToJointTransforms, filter((k, v) -> k ∉ childRootJoints, childMechanism.jointToJointTransforms))
+    merge!(m.jointToJointTransforms, childMechanism.jointToJointTransforms)
+
+    # merge trees
+    for child in children(childRootVertex)
+        vertex = insert_subtree!(parentVertex, child)
+        canonicalize_frame_definitions!(m, vertex)
+    end
+
+    m.toposortedTree = toposort(tree(m))
+    recompute_ranges!(m)
 
     m
 end
