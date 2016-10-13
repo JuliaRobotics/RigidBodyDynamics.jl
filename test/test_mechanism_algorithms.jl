@@ -1,6 +1,4 @@
 @testset "mechanism algorithms" begin
-    import RigidBodyDynamics.TreeDataStructure: edge_to_parent_data, vertex_data, children
-
     mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...)
     x = MechanismState(Float64, mechanism)
     rand!(x)

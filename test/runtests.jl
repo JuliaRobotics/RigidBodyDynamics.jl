@@ -1,6 +1,7 @@
 using Base.Test
 
 using RigidBodyDynamics
+using RigidBodyDynamics.TreeDataStructure
 using Quaternions
 using StaticArrays
 using Compat
