@@ -1,4 +1,4 @@
-The Mayday.jl package is licensed under the MIT "Expat" License:
+The RigidBodyDynamics.jl package is licensed under the MIT "Expat" License:
 
 > Copyright (c) 2016: Twan Koolen.
 >
