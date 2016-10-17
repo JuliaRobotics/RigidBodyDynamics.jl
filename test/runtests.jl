@@ -30,6 +30,8 @@ if VERSION < v"0.6-dev"
     end
 end
 
-@testset "benchmarks" begin
-    include("../perf/runbenchmarks.jl")
+if VERSION < v"0.6-dev" # due to SSL failure with nightly on Travis
+    @testset "benchmarks" begin
+        include("../perf/runbenchmarks.jl")
+    end
 end
