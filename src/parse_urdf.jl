@@ -18,7 +18,7 @@ function parse_inertia{T}(::Type{T}, xmlInertia::XMLElement)
     iyy = parse_scalar(T, xmlInertia, "iyy", "0")
     iyz = parse_scalar(T, xmlInertia, "iyz", "0")
     izz = parse_scalar(T, xmlInertia, "izz", "0")
-    return @SMatrix [ixx ixy ixz; ixy iyy iyz; ixz iyz izz]
+    @SMatrix [ixx ixy ixz; ixy iyy iyz; ixz iyz izz]
 end
 
 function parse_pose{T}(::Type{T}, xmlPose::Union{Void, XMLElement})

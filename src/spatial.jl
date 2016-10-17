@@ -165,13 +165,13 @@ end
 function transform_spatial_motion(angular::SVector{3}, linear::SVector{3}, rot::Quaternion, p::SVector{3})
     angular = rotate(angular, rot)
     linear = rotate(linear, rot) + cross(p, angular)
-    return angular, linear
+    angular, linear
 end
 
 function transform(twist::Twist, transform::Transform3D)
     framecheck(twist.frame, transform.from)
     angular, linear = transform_spatial_motion(twist.angular, twist.linear, transform.rot, transform.trans)
-    return Twist(twist.body, twist.base, transform.to, angular, linear)
+    Twist(twist.body, twist.base, transform.to, angular, linear)
 end
 
 change_base_no_relative_motion(t::Twist, base::CartesianFrame3D) = Twist(t.body, base, t.frame, t.angular, t.linear)
@@ -258,7 +258,7 @@ show(io::IO, w::Wrench) = print(io, "Wrench expressed in \"$(name(w.frame))\":\n
 zero{T}(::Type{Wrench{T}}, frame::CartesianFrame3D) = Wrench(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
 rand{T}(::Type{Wrench{T}}, frame::CartesianFrame3D) = Wrench(frame, rand(SVector{3, T}), rand(SVector{3, T}))
 
-dot(w::Wrench, t::Twist) = begin framecheck(w.frame, t.frame); return dot(w.angular, t.angular) + dot(w.linear, t.linear) end
+dot(w::Wrench, t::Twist) = begin framecheck(w.frame, t.frame); dot(w.angular, t.angular) + dot(w.linear, t.linear) end
 dot(t::Twist, w::Wrench) = dot(w, t)
 
 immutable Momentum{T<:Real} <: ForceSpaceElement{T}

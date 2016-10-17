@@ -25,7 +25,7 @@ twist_wrt_world{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(sta
 relative_twist{X, M}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}) = -twist_wrt_world(state, base) + twist_wrt_world(state, body)
 function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D)
     twist = relative_twist(state, state.mechanism.bodyFixedFrameToBody[bodyFrame],  state.mechanism.bodyFixedFrameToBody[baseFrame])
-    return Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)
+    Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)
 end
 
 bias_acceleration{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.twistsAndBiases[body])[2]
@@ -63,7 +63,7 @@ function transform(state::MechanismState, accel::SpatialAcceleration, to::Cartes
     twistOfBodyWrtBase = transform(relative_twist(state, accel.body, accel.base), rootToOld)
     twistOfOldWrtNew = transform(relative_twist(state, accel.frame, to), rootToOld)
     oldToNew = inv(transform_to_root(state, to)) * oldToRoot
-    return transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
+    transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
 end
 
 
@@ -72,7 +72,7 @@ function subtree_mass{T}(base::Tree{RigidBody{T}, Joint{T}})
     for child in children(base)
         result += subtree_mass(child)
     end
-    return result
+    result
 end
 mass(m::Mechanism) = subtree_mass(tree(m))
 mass(state::MechanismState) = mass(state.mechanism)
@@ -90,7 +90,7 @@ function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
         end
     end
     com /= mass
-    return com
+    com
 end
 
 center_of_mass(state::MechanismState) = center_of_mass(state, non_root_bodies(state.mechanism))
@@ -98,7 +98,7 @@ center_of_mass(state::MechanismState) = center_of_mass(state, non_root_bodies(st
 function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{RigidBody{M}, Joint{M}})
     copysign = (motionSubspace::GeometricJacobian, sign::Int64) -> sign < 0 ? -motionSubspace : motionSubspace
     motionSubspaces = [copysign(motion_subspace(state, joint), sign)::GeometricJacobian for (joint, sign) in zip(path.edgeData, path.directions)]
-    return hcat(motionSubspaces...)
+    hcat(motionSubspaces...)
 end
 
 function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::AbstractVector{V})
@@ -106,7 +106,7 @@ function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::Rigid
     J = geometric_jacobian(state, p)
     v̇path = vcat([v̇[state.mechanism.vRanges[joint]] for joint in p.edgeData]...)
     bias = -bias_acceleration(state, base) + bias_acceleration(state, body)
-    return SpatialAcceleration(J, v̇path) + bias
+    SpatialAcceleration(J, v̇path) + bias
 end
 
 kinetic_energy{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = kinetic_energy(spatial_inertia(state, body), twist_wrt_world(state, body))
@@ -349,5 +349,5 @@ end
 function dynamics!{T, X, M, W}(result::DynamicsResult{T}, state::MechanismState{X, M}, stateVec::Vector{X}, externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
     set!(state, stateVec)
     dynamics!(result, state, externalWrenches)
-    return copy(result.ẋ)
+    copy(result.ẋ)
 end

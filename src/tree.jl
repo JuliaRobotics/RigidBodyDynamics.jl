@@ -75,7 +75,7 @@ function findfirst{V, E}(pred::Function, tree::Tree{V, E})
         vertex = findfirst(pred, child)
         vertex != nothing && return vertex
     end
-    return nothing # TODO: turn into error
+    nothing # TODO: turn into error
 end
 
 # TODO: not type stable
@@ -88,7 +88,7 @@ function findfirst{V, E}(tree::Tree{V, E}, vertexData::V)
         vertex = findfirst(child, vertexData)
         vertex != nothing && return vertex
     end
-    return nothing # TODO: turn into error
+    nothing # TODO: turn into error
 end
 
 function find{V, E}(pred::Function, tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
@@ -97,7 +97,7 @@ function find{V, E}(pred::Function, tree::Tree{V, E}, result = Vector{TreeVertex
     for child in children(root)
         find(pred, child, result)
     end
-    return result
+    result
 end
 
 function toposort{V, E}(tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
@@ -106,7 +106,7 @@ function toposort{V, E}(tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
     for child in children(root)
         toposort(child, result)
     end
-    return result
+    result
 end
 
 function detach!{V, E}(vertex::TreeVertex{V, E})
@@ -155,11 +155,11 @@ function ancestors{V, E}(vertex::TreeVertex{V, E})
         push!(result, parent(current))
         current = parent(current)
     end
-    return result
+    result
 end
 
 function leaves{V, E}(tree::Tree{V, E})
-    return find(x -> isleaf(x), tree)
+    find(x -> isleaf(x), tree)
 end
 
 function map!{F, V, E}(f::F, tree::Tree{V, E})
@@ -168,7 +168,7 @@ function map!{F, V, E}(f::F, tree::Tree{V, E})
     for child in children(root)
         map!(f, child)
     end
-    return tree
+    tree
 end
 
 function insert_subtree!{V, E}(root::TreeVertex{V, E}, subtree_root::TreeVertex{V, E})
@@ -246,21 +246,21 @@ function path{V, E}(from::TreeVertex{V, E}, to::TreeVertex{V, E})
     ancestorsTo = [to; ancestors(to)]
 
     # find least common ancestor
-    common_size = min(length(ancestorsFrom), length(ancestorsTo))
-    lca_found = false
-    fromIndex = length(ancestorsFrom) - common_size + 1
-    toIndex = length(ancestorsTo) - common_size + 1
+    commonSize = min(length(ancestorsFrom), length(ancestorsTo))
+    lowestCommonAncestorFound = false
+    fromIndex = length(ancestorsFrom) - commonSize + 1
+    toIndex = length(ancestorsTo) - commonSize + 1
     i = 1
-    while i <= common_size
+    while i <= commonSize
         if ancestorsFrom[fromIndex] == ancestorsTo[toIndex]
-            lca_found = true
+            lowestCommonAncestorFound = true
             break
         end
         i += 1
         fromIndex += 1
         toIndex += 1
     end
-    !lca_found && error("no path between vertices")
+    !lowestCommonAncestorFound && error("no path between vertices")
 
     vertexData = Vector{V}()
     edgeData = Vector{E}()
@@ -276,7 +276,7 @@ function path{V, E}(from::TreeVertex{V, E}, to::TreeVertex{V, E})
         push!(edgeData, edge_to_parent_data(ancestorsTo[j]))
         push!(directions, 1)
     end
-    return Path(vertexData, edgeData, directions)
+    Path(vertexData, edgeData, directions)
 end
 
 end # module TreeDataStructure
