@@ -97,27 +97,27 @@ end
 
 function *(t1::Transform3D, t2::Transform3D)
     framecheck(t1.from, t2.to)
-    return Transform3D(t2.from, t1.to, t1.rot * t2.rot, t1.trans + rotate(t2.trans, t1.rot))
+    Transform3D(t2.from, t1.to, t1.rot * t2.rot, t1.trans + rotate(t2.trans, t1.rot))
 end
 
 function inv{T}(t::Transform3D{T})
     rotinv = inv(t.rot)
-    return Transform3D{T}(t.to, t.from, rotinv, -rotate(t.trans, rotinv))
+    Transform3D{T}(t.to, t.from, rotinv, -rotate(t.trans, rotinv))
 end
 
 rand(::Type{Transform3D{Float64}}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D(from, to, nquatrand(), rand(SVector{3, Float64}))
 
 function isapprox{T}(x::Transform3D{T}, y::Transform3D{T}; atol::Real = 1e-12)
     theta = 2 * angle(x.rot / y.rot)
-    return x.from == y.from && x.to == y.to && isapprox(theta, zero(T), atol = atol) && isapprox(x.trans, y.trans, atol = atol)
+    x.from == y.from && x.to == y.to && isapprox(theta, zero(T), atol = atol) && isapprox(x.trans, y.trans, atol = atol)
 end
 
 function *(t::Transform3D, point::Point3D)
     framecheck(t.from, point.frame)
-    return Point3D(t.to, rotate(point.v, t.rot) + t.trans)
+    Point3D(t.to, rotate(point.v, t.rot) + t.trans)
 end
 
 function *(t::Transform3D, vector::FreeVector3D)
     framecheck(t.from, vector.frame)
-    return FreeVector3D(t.to, rotate(vector.v, t.rot))
+    FreeVector3D(t.to, rotate(vector.v, t.rot))
 end

@@ -1,4 +1,4 @@
-# __precompile__() TODO: enable
+# __precompile__() TODO: enable once Quaternions.jl tags new version
 
 module RigidBodyDynamics
 

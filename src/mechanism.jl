@@ -39,6 +39,11 @@ show(io::IO, m::Mechanism) = print(io, m.toposortedTree[1])
 is_fixed_to_body{M}(m::Mechanism{M}, frame::CartesianFrame3D, body::RigidBody{M}) = body.frame == frame || any((t) -> t.from == frame, m.bodyFixedFrameDefinitions[body])
 isinertial(m::Mechanism, frame::CartesianFrame3D) = is_fixed_to_body(m, frame, root_body(m))
 isroot{T}(m::Mechanism{T}, b::RigidBody{T}) = b == root_body(m)
+joints(m::Mechanism) = [edge_to_parent_data(vertex) for vertex in non_root_vertices(m)] # TODO: make less expensive
+bodies{T}(m::Mechanism{T}) = [vertex_data(vertex)::RigidBody{T} for vertex in m.toposortedTree] # TODO: make less expensive
+non_root_bodies{T}(m::Mechanism{T}) = [vertex_data(vertex)::RigidBody{T} for vertex in non_root_vertices(m)] # TODO: make less expensive
+num_positions(m::Mechanism) = num_positions(joints(m))
+num_velocities(m::Mechanism) = num_velocities(joints(m))
 
 function default_frame{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint{T}})
      # allows standardization on a frame to reduce number of transformations required
@@ -76,7 +81,7 @@ function add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform
     filter!(t -> t.from != transform.from, definitions)
     push!(definitions, transform)
     m.bodyFixedFrameToBody[transform.from] = body
-    return transform
+    transform
 end
 
 function add_body_fixed_frame!{T}(m::Mechanism{T}, transform::Transform3D{T})
@@ -138,9 +143,7 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
 
     # define where child is attached to joint
     framecheck(childToJoint.from, childBody.frame)
-    if childToJoint.from != joint.frameAfter # we've already defined it
-        add_body_fixed_frame!(m, childBody, childToJoint)
-    end
+    add_body_fixed_frame!(m, childBody, childToJoint)
 
     canonicalize_frame_definitions!(m, vertex)
     m.toposortedTree = toposort(tree(m))
@@ -294,13 +297,6 @@ function remove_fixed_joints!(m::Mechanism)
     recompute_ranges!(m)
     m
 end
-
-joints(m::Mechanism) = [edge_to_parent_data(vertex) for vertex in non_root_vertices(m)] # TODO: make less expensive
-bodies{T}(m::Mechanism{T}) = [vertex_data(vertex)::RigidBody{T} for vertex in m.toposortedTree] # TODO: make less expensive
-non_root_bodies{T}(m::Mechanism{T}) = [vertex_data(vertex)::RigidBody{T} for vertex in non_root_vertices(m)] # TODO: make less expensive
-
-num_positions(m::Mechanism) = num_positions(joints(m))
-num_velocities(m::Mechanism) = num_velocities(joints(m))
 
 function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
     parentBody = RigidBody{T}("world")

@@ -216,5 +216,5 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
     end
 
     setdirty!(state)
-    return state
+    state
 end
