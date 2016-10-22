@@ -15,7 +15,7 @@
             end
         end
 
-        parentBody = rand(bodies(mechanism))
+        parentBody = rand(collect(bodies(mechanism)))
         attach!(mechanism, parentBody, mechanism2)
 
         @test num_positions(mechanism) == nq + num_positions(mechanism2)
@@ -83,7 +83,7 @@
             rand!(state)
             M = mass_matrix(state)
 
-            submechanismRoot = rand(bodies(mechanism))
+            submechanismRoot = rand(collect(bodies(mechanism)))
             mechanismPart = submechanism(mechanism, submechanismRoot)
             @test root_body(mechanismPart) == submechanismRoot
             @test mechanism.gravitationalAcceleration.v == mechanismPart.gravitationalAcceleration.v
@@ -115,7 +115,7 @@
             floatingBody = vertex_data(subtreeRootVertex)
 
             # reattach at different body
-            newFloatingBody = rand(non_root_bodies(mechanism))
+            newFloatingBody = rand(collect(non_root_bodies(mechanism)))
             newFloatingJoint = Joint("newFloating", QuaternionFloating{Float64}())
             world = root_body(mechanism)
             jointToWorld = Transform3D{Float64}(newFloatingJoint.frameBefore, world.frame)
