@@ -55,6 +55,7 @@ end
 function runbenchmarks()
     suite = create_benchmark_suite()
     tune!(suite)
+    Profile.clear_malloc_data()
     results = run(suite, verbose = true)
     showall(results)
     println()
