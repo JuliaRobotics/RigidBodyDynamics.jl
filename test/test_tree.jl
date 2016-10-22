@@ -9,6 +9,13 @@
         v7 = insert!(tree, 7, Int32(7), 5)
         v8 = insert!(tree, 8, Int32(8), 7)
 
+        @testset "findfirst" begin
+            @test findfirst(tree, 4) == v4
+            @inferred findfirst(tree, 4)
+            @test findfirst(x -> vertex_data(x) > 7, tree) == v8
+            @inferred findfirst(x -> vertex_data(x) > 5, tree)
+        end
+
         @testset "toposort" begin
             toposortedTree = toposort(tree)
             for (index, vertex) in enumerate(toposortedTree)
