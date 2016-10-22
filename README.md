@@ -6,7 +6,7 @@
 RigidBodyDynamics.jl is a small rigid body dynamics library for Julia. It was inspired by the [IHMCRoboticsToolkit](https://bitbucket.org/ihmcrobotics/ihmc-open-robotics-software) from the Institute of Human and Machine Cognition, and by [Drake](http://drake.mit.edu).
 
 ## Key features
-* easy creation of general rigid body mechanisms
+* easy creation of general rigid body mechanisms (including basic [URDF](http://wiki.ros.org/urdf) parsing)
 * extensive checks that verify that coordinate systems match before computation: the goal is to make reference frame mistakes impossible
 * support for automatic differentiation using e.g. [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl)
 * flexible caching of intermediate results to prevent doing double work
