@@ -69,7 +69,7 @@
     remove_fixed_joints!(doublePendulumUrdf)
     x_urdf = MechanismState(Float64, doublePendulumUrdf)
     for (i, j) in enumerate(joints(doublePendulum))
-        urdf_joints = joints(doublePendulumUrdf)
+        urdf_joints = collect(joints(doublePendulumUrdf))
         index = findfirst(joint -> joint.name == j.name, urdf_joints)
         j_urdf = urdf_joints[index]
         set_configuration!(x_urdf, j_urdf, configuration(x, j))
@@ -77,7 +77,7 @@
     end
     v̇ = rand(num_velocities(x_urdf))
     τ = inverse_dynamics(x_urdf, v̇)
-    urdfBodies = bodies(doublePendulumUrdf)
+    urdfBodies = collect(bodies(doublePendulumUrdf))
     urdfUpperLink = urdfBodies[findfirst(b -> name(b) == name(body1), urdfBodies)]
     urdfLowerLink = urdfBodies[findfirst(b -> name(b) == name(body2), urdfBodies)]
     @test isapprox(T1, kinetic_energy(x_urdf, urdfUpperLink), atol = 1e-12)

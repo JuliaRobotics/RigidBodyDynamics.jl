@@ -81,7 +81,6 @@
         body = rand([bs...])
         delete!(bs, body)
         base = rand([bs...])
-        js = joints(mechanism)
         v̇ = rand(num_velocities(mechanism))
         Ṫ = relative_acceleration(x, body, base, v̇)
 
@@ -260,7 +259,6 @@
         x = MechanismState(Float64, mechanism)
         rand!(x)
 
-        js = joints(mechanism)
         externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
         stateVector = state_vector(x)
 

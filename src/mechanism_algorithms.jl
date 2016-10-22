@@ -310,9 +310,9 @@ type DynamicsResult{M, T}
         dynamicsBias = zeros(T, nv)
         biasedTorques = zeros(T, nv)
         accelerations = Dict{RigidBody{M}, SpatialAcceleration{T}}()
-        sizehint!(accelerations, length(bodies(mechanism)))
+        sizehint!(accelerations, num_bodies(mechanism))
         jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
-        sizehint!(jointWrenches, length(bodies(mechanism)))
+        sizehint!(jointWrenches, num_bodies(mechanism))
         new(massMatrix, massMatrixInversionCache, dynamicsBias, biasedTorques, ẋ, q̇, v̇, accelerations, jointWrenches)
     end
 end

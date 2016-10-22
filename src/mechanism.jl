@@ -39,11 +39,12 @@ show(io::IO, m::Mechanism) = print(io, m.toposortedTree[1])
 is_fixed_to_body{M}(m::Mechanism{M}, frame::CartesianFrame3D, body::RigidBody{M}) = body.frame == frame || any((t) -> t.from == frame, m.bodyFixedFrameDefinitions[body])
 isinertial(m::Mechanism, frame::CartesianFrame3D) = is_fixed_to_body(m, frame, root_body(m))
 isroot{T}(m::Mechanism{T}, b::RigidBody{T}) = b == root_body(m)
-joints(m::Mechanism) = [edge_to_parent_data(vertex) for vertex in non_root_vertices(m)] # TODO: make less expensive
-bodies{T}(m::Mechanism{T}) = [vertex_data(vertex)::RigidBody{T} for vertex in m.toposortedTree] # TODO: make less expensive
-non_root_bodies{T}(m::Mechanism{T}) = [vertex_data(vertex)::RigidBody{T} for vertex in non_root_vertices(m)] # TODO: make less expensive
+joints(m::Mechanism) = (edge_to_parent_data(vertex) for vertex in non_root_vertices(m))
+bodies{T}(m::Mechanism{T}) = (vertex_data(vertex) for vertex in m.toposortedTree)
+non_root_bodies{T}(m::Mechanism{T}) = (vertex_data(vertex) for vertex in non_root_vertices(m))
 num_positions(m::Mechanism) = num_positions(joints(m))
 num_velocities(m::Mechanism) = num_velocities(joints(m))
+num_bodies(m::Mechanism) = length(m.toposortedTree)
 
 function default_frame{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint{T}})
      # allows standardization on a frame to reduce number of transformations required
