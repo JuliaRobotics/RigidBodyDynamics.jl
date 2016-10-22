@@ -28,10 +28,13 @@ The (forward) dynamics algorithm is currently rudimentary; it just computes the 
 
 Closed loop systems and contact are not yet supported.
 
+## Related packages
+* [RigidBodyTreeInspector.jl](https://github.com/rdeits/RigidBodyTreeInspector.jl) - 3D visualization of RigidBodyDynamics.jl `Mechanism`s using [Director](https://github.com/RobotLocomotion/director).
+
 ## Citing this library
 ```
 @misc{rigidbodydynamicsjl,
- author = "Twan Koolen",
+ author = "Twan Koolen and contributors",
  title = "RigidBodyDynamics.jl",
  year = 2016,
  url = "https://github.com/tkoolen/RigidBodyDynamics.jl"
