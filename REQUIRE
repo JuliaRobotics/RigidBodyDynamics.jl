@@ -1,6 +1,6 @@
-julia 0.5.0-rc0+115
+julia 0.5
 StaticArrays 0.0.4
-Quaternions
-DataStructures
-LightXML
+Quaternions 0.1
+DataStructures 0.4.6
+LightXML 0.4.0
 ODE 0.2.1
