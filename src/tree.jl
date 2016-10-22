@@ -65,31 +65,20 @@ function show(io::IO, vertex::TreeVertex, level = 0)
     end
 end
 
-# TODO: not type stable
-function findfirst{V, E}(pred::Function, tree::Tree{V, E})
+function _findfirst{V, E}(pred, tree::Tree{V, E})::Nullable{TreeVertex{V, E}}
     # depth first search
     root = tree
-    pred(root) && return root
+    pred(root) && return Nullable(root)
 
     for child in children(root)
-        vertex = findfirst(pred, child)
-        vertex != nothing && return vertex
+        vertex = _findfirst(pred, child)
+        !isnull(vertex) && return vertex
     end
-    nothing # TODO: turn into error
+    Nullable{TreeVertex{V, E}}()
 end
 
-# TODO: not type stable
-function findfirst{V, E}(tree::Tree{V, E}, vertexData::V)
-    # depth first search
-    root = tree
-    vertex_data(root) == vertexData && return root
-
-    for child in children(root)
-        vertex = findfirst(child, vertexData)
-        vertex != nothing && return vertex
-    end
-    nothing # TODO: turn into error
-end
+findfirst(pred::Function, tree::Tree) = get(_findfirst(pred, tree))
+findfirst{V, E}(tree::Tree{V, E}, vertexData::V) = findfirst(v -> vertex_data(v) == vertexData, tree)
 
 function find{V, E}(pred::Function, tree::Tree{V, E}, result = Vector{TreeVertex{V, E}}())
     root = tree
