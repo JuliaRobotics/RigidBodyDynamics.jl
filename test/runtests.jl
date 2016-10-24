@@ -41,5 +41,5 @@ end
 # benchmarks
 @testset "benchmarks" begin
     # skip on nightly due to SSL failure with nightly while downloading Atlas URDF on Travis
-    @test_skip_nightly evalfile("../perf/runbenchmarks.jl")
+    @test_skip_nightly begin include("../perf/runbenchmarks.jl"); true end
 end
