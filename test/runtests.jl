@@ -4,7 +4,6 @@ using RigidBodyDynamics
 using RigidBodyDynamics.TreeDataStructure
 using Quaternions
 using StaticArrays
-using Compat
 import ForwardDiff
 
 include("test_tree.jl")
