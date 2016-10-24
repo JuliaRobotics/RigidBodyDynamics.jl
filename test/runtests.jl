@@ -33,6 +33,7 @@ end
     for f in filter(x -> endswith(x, "ipynb"), readdir("../examples"))
         notebook = joinpath("..", "examples", f)
         output = joinpath(outputdir, f)
+        # skip on nightly because notebooks specify version 0.5
         @test_skip_nightly begin run(`$jupyter nbconvert --to notebook --execute $notebook --output $output`); true end
     end
 end
