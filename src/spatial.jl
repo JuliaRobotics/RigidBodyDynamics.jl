@@ -370,6 +370,10 @@ function Momentum(mat::MomentumMatrix, v::AbstractVector)
     Momentum(mat.frame, convert(SVector{3}, mat.angular * v), convert(SVector{3}, mat.linear * v))
 end
 
+function Wrench(mat::MomentumMatrix, v̇::AbstractVector)
+    Wrench(mat.frame, convert(SVector{3}, mat.angular * v̇), convert(SVector{3}, mat.linear * v̇))
+end
+
 function transform(mat::MomentumMatrix, transform::Transform3D)
     framecheck(mat.frame, transform.from)
     R = rotationmatrix_normalized_fsa(transform.rot)

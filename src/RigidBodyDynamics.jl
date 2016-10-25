@@ -121,6 +121,7 @@ export
     mass_matrix!,
     mass_matrix,
     momentum_matrix,
+    momentum_rate_bias,
     inverse_dynamics!,
     inverse_dynamics,
     dynamics!,
