@@ -22,7 +22,9 @@ RigidBodyDynamics.jl is a small rigid body dynamics library for Julia. It was in
 * kinetic/potential energy
 * center of mass
 * geometric/basic/spatial Jacobians
+* momentum
 * momentum matrix
+* momentum rate bias (= momentum matrix time derivative multiplied by joint velocity vector)
 * mass matrix (composite rigid body algorithm)
 * inverse dynamics (recursive Newton-Euler)
 * dynamics
