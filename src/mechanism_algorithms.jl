@@ -168,6 +168,16 @@ function momentum_matrix(state::MechanismState)
     hcat([crb_inertia(state, vertex_data(vertex)) * motion_subspace(state, edge_to_parent_data(vertex)) for vertex in non_root_vertices(state.mechanism)]...)
 end
 
+function newton_euler(state::MechanismState, body::RigidBody, accel::SpatialAcceleration)
+    inertia = spatial_inertia(state, body)
+    twist = twist_wrt_world(state, body)
+    newton_euler(inertia, accel, twist)
+end
+
+momentum_rate_bias(state::MechanismState, body::RigidBody) = newton_euler(state, body, bias_acceleration(state, body))
+momentum_rate_bias(state::MechanismState, itr) = sum(momentum_rate_bias(state, body) for body in itr)
+momentum_rate_bias(state::MechanismState) = momentum_rate_bias(state, non_root_bodies(state.mechanism))
+
 function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M})
     mechanism = state.mechanism
     vertices = mechanism.toposortedTree
@@ -210,14 +220,8 @@ function newton_euler!{T, X, M, W}(
 
     mechanism = state.mechanism
     vertices = mechanism.toposortedTree
-    for vertex in non_root_vertices(mechanism)
-        body = vertex_data(vertex)
-        joint = edge_to_parent_data(vertex)
-
-        Ṫbody = accelerations[body]
-        I = spatial_inertia(state, body)
-        Tbody = twist_wrt_world(state, body)
-        wrench = newton_euler(I, Ṫbody, Tbody)
+    for body in non_root_bodies(mechanism)
+        wrench = newton_euler(state, body, accelerations[body])
         if haskey(externalWrenches, body)
             wrench -= transform(state, externalWrenches[body], wrench.frame)
         end

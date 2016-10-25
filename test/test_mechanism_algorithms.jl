@@ -219,23 +219,17 @@
         @test isapprox(g2, g'; atol = 1e-12)
     end
 
-    @testset "inverse dynamics / external wrenches" begin
-        mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
+    @testset "momentum matrix" begin
+        mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
         x = MechanismState(Float64, mechanism)
         rand_configuration!(x)
         rand_velocity!(x)
-
         q = configuration_vector(x)
         q̇ = configuration_derivative(x)
         v = velocity_vector(x)
         v̇ = rand(num_velocities(mechanism))
-        externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
-        τ = inverse_dynamics(x, v̇, externalWrenches)
-        floatingBodyVertex = children(root_vertex(mechanism))[1]
-        floatingJoint = edge_to_parent_data(floatingBodyVertex)
-        floatingJointWrench = Wrench(edge_to_parent_data(floatingBodyVertex).frameAfter, τ[mechanism.vRanges[floatingJoint]])
-        floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
 
+        # rate of change of momentum computed using autodiff:
         create_autodiff = (z, dz) -> [ForwardDiff.Dual(z[i]::Float64, dz[i]::Float64) for i in 1 : length(z)]
         q_autodiff = create_autodiff(q, q̇)
         v_autodiff = create_autodiff(v, v̇)
@@ -245,13 +239,32 @@
         A_autodiff = Array(momentum_matrix(x_autodiff))
         A = [ForwardDiff.value(A_autodiff[i, j])::Float64 for i = 1 : size(A_autodiff, 1), j = 1 : size(A_autodiff, 2)]
         Ȧ = [ForwardDiff.partials(A_autodiff[i, j], 1)::Float64 for i = 1 : size(A_autodiff, 1), j = 1 : size(A_autodiff, 2)]
-        ḣ = A * v̇ + Ȧ * v # rate of change of momentum
+        ḣArray = A * v̇ + Ȧ * v
 
+        # rate of change of momentum computed without autodiff:
+        ḣ = Wrench(momentum_matrix(x), v̇) + momentum_rate_bias(x)
+        @test isapprox(ḣArray, Array(ḣ); atol = 1e-12)
+    end
+
+    @testset "inverse dynamics / external wrenches" begin
+        mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
+        x = MechanismState(Float64, mechanism)
+        rand_configuration!(x)
+        rand_velocity!(x)
+
+        v̇ = rand(num_velocities(mechanism))
+        externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
+        τ = inverse_dynamics(x, v̇, externalWrenches)
+        floatingBodyVertex = children(root_vertex(mechanism))[1]
+        floatingJoint = edge_to_parent_data(floatingBodyVertex)
+        floatingJointWrench = Wrench(edge_to_parent_data(floatingBodyVertex).frameAfter, τ[mechanism.vRanges[floatingJoint]])
+        floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
+        ḣ = Wrench(momentum_matrix(x), v̇) + momentum_rate_bias(x) # momentum rate of change
         gravitational_force = mass(mechanism) * mechanism.gravitationalAcceleration
         com = center_of_mass(x)
         gravitational_wrench = Wrench(gravitational_force.frame, cross(com, gravitational_force).v, gravitational_force.v)
         total_wrench = floatingJointWrench + gravitational_wrench + sum((w) -> transform(x, w, root_frame(mechanism)), values(externalWrenches))
-        @test isapprox(Array(total_wrench), ḣ; atol = 1e-12)
+        @test isapprox(total_wrench, ḣ; atol = 1e-12)
     end
 
     @testset "dynamics / inverse dynamics" begin
