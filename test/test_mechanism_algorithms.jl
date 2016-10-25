@@ -229,6 +229,9 @@
         v = velocity_vector(x)
         v̇ = rand(num_velocities(mechanism))
 
+        # momentum computed two ways
+        @test isapprox(Momentum(momentum_matrix(x), v), momentum(x))
+
         # rate of change of momentum computed using autodiff:
         create_autodiff = (z, dz) -> [ForwardDiff.Dual(z[i]::Float64, dz[i]::Float64) for i in 1 : length(z)]
         q_autodiff = create_autodiff(q, q̇)

@@ -164,6 +164,10 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
     ret
 end
 
+momentum(state::MechanismState, body::RigidBody) = spatial_inertia(state, body) * twist_wrt_world(state, body)
+momentum(state::MechanismState, itr) = sum(momentum(state, body) for body in itr)
+momentum(state::MechanismState) = momentum(state, non_root_bodies(state.mechanism))
+
 function momentum_matrix(state::MechanismState)
     hcat([crb_inertia(state, vertex_data(vertex)) * motion_subspace(state, edge_to_parent_data(vertex)) for vertex in non_root_vertices(state.mechanism)]...)
 end
