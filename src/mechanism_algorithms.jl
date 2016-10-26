@@ -345,7 +345,6 @@ function dynamics!{T, X, M, W}(out::DynamicsResult{T}, state::MechanismState{X, 
     @inbounds copy!(out.biasedTorques, out.dynamicsBias) # TODO: handle input torques again
     scale!(out.biasedTorques, -1)
     mass_matrix!(out.massMatrix, state)
-    out.massMatrixInversionCache = out.massMatrix
     joint_accelerations!(out.v̇, out.massMatrixInversionCache, out.massMatrix, out.biasedTorques)
     nothing
 end
