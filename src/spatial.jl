@@ -51,9 +51,8 @@ function vector_to_skew_symmetric{T}(v::SVector{3, T})
               -v[2] v[1] zero(T)]
 end
 
-function cross{N, T}(a::SVector{3, T}, B::SMatrix{3, N, T})
+function cross{T}(a::SVector{3, T}, B::AbstractArray{T, 2})
     vector_to_skew_symmetric(a) * B
-    # SMatrix(map((col) -> cross(a, SVector(col)).values::Tuple{T, T, T}, B.values))::SMatrix{3, N, T} # way slower
 end
 
 @inline function vector_to_skew_symmetric_squared(a::SVector{3})
@@ -198,12 +197,13 @@ function GeometricJacobian{A<:AbstractMatrix}(body::CartesianFrame3D, base::Cart
     GeometricJacobian{A}(body, base, frame, angular, linear)
 end
 
-# function GeometricJacobian{A<:AbstractMatrix}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, mat::A) # TODO: remove?
-#     @assert size(mat, 1) == 6
-#     @inbounds angular = mat[1 : 3, :]
-#     @inbounds linear = mat[4 : 6, :]
-#     GeometricJacobian(body, base, frame, angular, linear)
-# end
+typealias MotionSubspace{T} GeometricJacobian{SubArray{T,2,StaticArrays.SMatrix{3,6,T,18},Tuple{Colon,UnitRange{Int64}},true}}
+
+function MotionSubspace{N, T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, N, T}, linear::SMatrix{3, N, T})
+    angularData = N < 6 ? [angular fill(NaN, SMatrix{3, 6 - N, T})] : angular # zero-column fill doesn't work
+    linearData = N < 6 ? [linear fill(NaN, SMatrix{3, 6 - N, T})] : linear # zero-column fill doesn't work
+    MotionSubspace{T}(body, base, frame, view(angularData, :, 1 : N), view(linearData, :, 1 : N))
+end
 
 convert{A}(::Type{GeometricJacobian{A}}, jac::GeometricJacobian{A}) = jac
 convert{A}(::Type{GeometricJacobian{A}}, jac::GeometricJacobian) = GeometricJacobian(jac.body, jac.base, jac.frame, convert(A, jac.angular), convert(A, jac.linear))
@@ -215,7 +215,9 @@ angular_part(jac::GeometricJacobian) = jac.angular
 linear_part(jac::GeometricJacobian) = jac.linear
 
 function Twist(jac::GeometricJacobian, v::AbstractVector)
-    Twist(jac.body, jac.base, jac.frame, jac.angular * v, jac.linear * v)
+    angular = convert(SVector{3}, _mul(jac.angular, v))
+    linear = convert(SVector{3}, _mul(jac.linear, v))
+    Twist(jac.body, jac.base, jac.frame, angular, linear)
 end
 
 (-)(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.angular, -jac.linear)
@@ -229,15 +231,14 @@ function hcat(jacobians::GeometricJacobian...)
         framecheck(jacobians[j].frame, frame)
         framecheck(jacobians[j].base, jacobians[j - 1].body)
     end
-    angular = hcat((jac.angular::SMatrix for jac in jacobians)...)
-    linear = hcat((jac.linear::SMatrix for jac in jacobians)...)
+    angular = hcat((jac.angular for jac in jacobians)...)
+    linear = hcat((jac.linear for jac in jacobians)...)
     GeometricJacobian(jacobians[end].body, jacobians[1].base, frame, angular, linear)
 end
 
 function transform(jac::GeometricJacobian, transform::Transform3D)
     framecheck(jac.frame, transform.from)
     R = rotationmatrix_normalized_fsa(transform.rot)
-    T = eltype(R)
     angular = R * jac.angular
     linear = R * jac.linear + cross(transform.trans, angular)
     GeometricJacobian(jac.body, jac.base, transform.to, angular, linear)
@@ -361,8 +362,8 @@ function hcat(mats::MomentumMatrix...)
     for j = 2 : length(mats)
         framecheck(mats[j].frame, frame)
     end
-    angular = hcat((m.angular::SMatrix for m in mats)...)
-    linear = hcat((m.linear::SMatrix for m in mats)...)
+    angular = hcat((m.angular for m in mats)...)
+    linear = hcat((m.linear for m in mats)...)
     MomentumMatrix(frame, angular, linear)
 end
 
@@ -399,7 +400,9 @@ function SpatialAcceleration(body::CartesianFrame3D, base::CartesianFrame3D, fra
 end
 
 function SpatialAcceleration(jac::GeometricJacobian, v̇::AbstractVector)
-    SpatialAcceleration(jac.body, jac.base, jac.frame, jac.angular * v̇, jac.linear * v̇)
+    angular = convert(SVector{3}, _mul(jac.angular, v̇))
+    linear = convert(SVector{3}, _mul(jac.linear, v̇))
+    SpatialAcceleration(jac.body, jac.base, jac.frame, angular, linear)
 end
 
 function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
