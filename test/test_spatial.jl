@@ -19,6 +19,7 @@ end
         @test isapprox(Array(I1), Ad(inv(H21))' * Array(I2) * Ad(inv(H21)); atol = 1e-12)
         @test isapprox(I2, transform(I1, inv(H21)))
         @test isapprox(Array(I2) + Array(I3), Array(I2 + I3); atol = 1e-12)
+        @inferred transform(zero(SpatialInertia{Float32}, f1), Transform3D{Float64}(f1))
     end
 
     @testset "twist" begin
