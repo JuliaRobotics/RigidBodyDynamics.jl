@@ -34,6 +34,20 @@ function (functor::UpdateTwistAndBias)()
     (twist, bias)
 end
 
+immutable UpdateMotionSubspace{M, C}
+    parentFrame::CartesianFrame3D
+    joint::Joint{M}
+    qJoint::SubArray{C,1,Array{C,1},Tuple{UnitRange{Int64}},true}
+    transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
+end
+function (functor::UpdateMotionSubspace)()
+    parentFrame = functor.parentFrame
+    joint = functor.joint
+    qJoint = functor.qJoint
+    S = transform(motion_subspace(joint, qJoint), get(functor.transformToRootCache))
+    GeometricJacobian(S.body, parentFrame, S.frame, S.angular, S.linear) # to make frames line up
+end
+
 immutable UpdateSpatialInertiaInWorld{M, C}
     body::RigidBody{M}
     transformToRootCache::CacheElement{Transform3D{C}, UpdateTransformToRoot{C}}
@@ -60,7 +74,7 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     v::Vector{X}
     transformCache::TransformCache{C}
     twistsAndBiases::Dict{RigidBody{M}, CacheElement{Tuple{Twist{C}, SpatialAcceleration{C}}, UpdateTwistAndBias{M, C}}}
-    motionSubspaces::Dict{Joint{M}, CacheElement{MotionSubspace{C}}}
+    motionSubspaces::Dict{Joint{M}, CacheElement{MotionSubspace{C}, UpdateMotionSubspace{M, C}}}
     spatialInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{M, C}}}
     crbInertias::Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}
 
@@ -184,11 +198,7 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
             state.twistsAndBiases[body] = twistCache
 
             # motion subspaces
-            update_motion_subspace = () -> begin
-                S = transform(motion_subspace(joint, qJoint), get(transformToRootCache))
-                GeometricJacobian(S.body, parentFrame, S.frame, S.angular, S.linear) # to make frames line up
-            end
-            state.motionSubspaces[joint] = CacheElement(MotionSubspace{C}, update_motion_subspace)
+            state.motionSubspaces[joint] = CacheElement(MotionSubspace{C}, UpdateMotionSubspace{M, C}(parentFrame, joint, qJoint, transformToRootCache))
         else
             rootTwist = zero(Twist{C}, root.frame, root.frame, root.frame)
             rootBias = zero(SpatialAcceleration{C}, root.frame, root.frame, root.frame)
