@@ -202,6 +202,7 @@ typealias MotionSubspace{T} GeometricJacobian{SubArray{T,2,StaticArrays.SMatrix{
 @generated function MotionSubspace{N, T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, N, T}, linear::SMatrix{3, N, T})
     fillerSize = 6 - N
     return quote
+        $(Expr(:meta, :inline))
         filler = fill(NaN, SMatrix{3, $fillerSize, T})
         angularData = hcat(angular, filler)::SMatrix{3,6,T,18}
         linearData = hcat(linear, filler)::SMatrix{3,6,T,18}
