@@ -56,7 +56,7 @@ function cross{N, T}(a::SVector{3, T}, B::SMatrix{3, N, T})
     # SMatrix(map((col) -> cross(a, SVector(col)).values::Tuple{T, T, T}, B.values))::SMatrix{3, N, T} # way slower
 end
 
-function vector_to_skew_symmetric_squared(a::SVector{3})
+@inline function vector_to_skew_symmetric_squared(a::SVector{3})
     aSq1 = a[1] * a[1]
     aSq2 = a[2] * a[2]
     aSq3 = a[3] * a[3]
@@ -71,14 +71,14 @@ function vector_to_skew_symmetric_squared(a::SVector{3})
               b13 b23 b33]
 end
 
-function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
+function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})::SpatialInertia{promote_type(I, T)}
     framecheck(t.from, inertia.frame)
     S = promote_type(I, T)
 
     if t.from == t.to
-        ret = convert(SpatialInertia{S}, inertia)
+        return convert(SpatialInertia{S}, inertia)
     elseif inertia.mass == zero(I)
-        ret = zero(SpatialInertia{S}, t.to)
+        return zero(SpatialInertia{S}, t.to)
     else
         J = convert(SMatrix{3, 3, S}, inertia.moment)
         m = convert(S, inertia.mass)
@@ -91,11 +91,11 @@ function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
         Jnew = vector_to_skew_symmetric_squared(cnew)
         cnew += m * p
         Jnew -= vector_to_skew_symmetric_squared(cnew)
-        Jnew /= m
+        mInv = inv(m)
+        Jnew *= mInv
         Jnew += R * J * R'
-        ret = SpatialInertia(t.to, Jnew, cnew, m)
+        return SpatialInertia{S}(t.to, Jnew, cnew, m)
     end
-    ret
 end
 
 function rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
