@@ -1,2 +1,6 @@
-examples/.ipynb_checkpoints
-packages
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+deps/deps.jl
+*.ipynb_checkpoints
+
