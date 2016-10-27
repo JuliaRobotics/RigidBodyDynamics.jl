@@ -76,7 +76,7 @@ function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})
     S = promote_type(I, T)
 
     if t.from == t.to
-        ret = inertia
+        ret = convert(SpatialInertia{S}, inertia)
     elseif inertia.mass == zero(I)
         ret = zero(SpatialInertia{S}, t.to)
     else
