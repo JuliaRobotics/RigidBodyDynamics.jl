@@ -51,7 +51,7 @@ function vector_to_skew_symmetric{T}(v::SVector{3, T})
               -v[2] v[1] zero(T)]
 end
 
-function cross{T}(a::SVector{3, T}, B::AbstractArray{T, 2})
+function cross(a::SVector{3}, B::AbstractMatrix)
     vector_to_skew_symmetric(a) * B
 end
 
@@ -186,9 +186,9 @@ immutable GeometricJacobian{A<:AbstractMatrix}
     linear::A
 
     function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A)
-        @assert size(angular, 1) == 3
-        @assert size(linear, 1) == 3
-        @assert size(angular, 2) == size(linear, 2)
+        @boundscheck size(angular, 1) == 3 || error("size mismatch")
+        @boundscheck size(linear, 1) == 3 || error("size mismatch")
+        @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
         new(body, base, frame, angular, linear)
     end
 end
@@ -199,10 +199,24 @@ end
 
 typealias MotionSubspace{T} GeometricJacobian{SubArray{T,2,StaticArrays.SMatrix{3,6,T,18},Tuple{Colon,UnitRange{Int64}},true}}
 
-function MotionSubspace{N, T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, N, T}, linear::SMatrix{3, N, T})
-    angularData = N < 6 ? [angular fill(NaN, SMatrix{3, 6 - N, T})] : angular # zero-column fill doesn't work
-    linearData = N < 6 ? [linear fill(NaN, SMatrix{3, 6 - N, T})] : linear # zero-column fill doesn't work
-    MotionSubspace{T}(body, base, frame, view(angularData, :, 1 : N), view(linearData, :, 1 : N))
+@generated function MotionSubspace{N, T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, N, T}, linear::SMatrix{3, N, T})
+    fillerSize = 6 - N
+    return quote
+        filler = fill(NaN, SMatrix{3, $fillerSize, T})
+        angularData = hcat(angular, filler)::SMatrix{3,6,T,18}
+        linearData = hcat(linear, filler)::SMatrix{3,6,T,18}
+        MotionSubspace{T}(body, base, frame, view(angularData, :, 1 : N), view(linearData, :, 1 : N))
+    end
+end
+
+function MotionSubspace{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, 0, T}, linear::SMatrix{3, 0, T})
+    angularData = fill(NaN, SMatrix{3, 6, T})
+    linearData = fill(NaN, SMatrix{3, 6, T})
+    MotionSubspace{T}(body, base, frame, view(angularData, :, 1 : 0), view(linearData, :, 1 : 0))
+end
+
+function MotionSubspace{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, 6, T}, linear::SMatrix{3, 6, T})
+    MotionSubspace{T}(body, base, frame, view(angular, :, 1 : 6), view(linear, :, 1 : 6))
 end
 
 convert{A}(::Type{GeometricJacobian{A}}, jac::GeometricJacobian{A}) = jac
