@@ -76,7 +76,7 @@ _mul(a, b) = a * b
 
 # TODO: too specific
 function _mul{S1, S2, TA, L, Tb}(
-        A::Union{SMatrix{S1, S2, TA, L}, ContiguousSMatrixColumnView{S1, S2, TA, L}},
+        A::ContiguousSMatrixColumnView{S1, S2, TA, L},
         b::StridedVector{Tb})
     @boundscheck @assert size(A, 2) == size(b, 1)
     ret = zeros(SVector{S1, promote_type(TA, Tb)})
