@@ -343,12 +343,14 @@ end
 
 DynamicsResult{M, T}(t::Type{T}, mechanism::Mechanism{M}) = DynamicsResult{M, T}(t, mechanism)
 
-function joint_accelerations!(out::AbstractVector, massMatrixInversionCache::Symmetric, massMatrix::Symmetric, biasedTorques::Vector)
+function joint_accelerations!(out::AbstractVector, massMatrixInversionCache::Symmetric,
+        massMatrix::Symmetric, biasedTorques::Vector)
     out[:] = massMatrix \ biasedTorques # TODO: make more efficient
     nothing
 end
 
-function joint_accelerations!(out::AbstractVector{Float64}, massMatrixInversionCache::Symmetric{Float64, Matrix{Float64}}, massMatrix::Symmetric{Float64, Matrix{Float64}}, biasedTorques::Vector{Float64})
+function joint_accelerations!{T<:Union{Float32, Float64}}(out::AbstractVector{T}, massMatrixInversionCache::Symmetric{T, Matrix{T}},
+        massMatrix::Symmetric{T, Matrix{T}}, biasedTorques::Vector{T})
     @inbounds copy!(out, biasedTorques)
     @inbounds copy!(massMatrixInversionCache.data, massMatrix.data)
     Base.LinAlg.LAPACK.posv!(massMatrixInversionCache.uplo, massMatrixInversionCache.data, out)
