@@ -1,5 +1,5 @@
 julia 0.5
-StaticArrays 0.0.4
+StaticArrays 0.0.11
 Quaternions 0.1
 DataStructures 0.4.6
 LightXML 0.4.0
