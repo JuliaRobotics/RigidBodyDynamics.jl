@@ -42,8 +42,6 @@ end
 # TODO: make more efficient and less specific, or remove once StaticArrays does this.
 import Base: *, +, -
 
-typealias ContiguousSMatrixColumnView{S1, S2, T, L} SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
-
 function *{S1, S2, T, L}(A::StaticMatrix, B::ContiguousSMatrixColumnView{S1, S2, T, L})
     data = A * parent(B)
     view(data, B.indexes[1], B.indexes[2])
