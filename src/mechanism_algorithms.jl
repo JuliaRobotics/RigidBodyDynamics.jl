@@ -349,16 +349,12 @@ function joint_accelerations!(out::AbstractVector, massMatrixInversionCache::Sym
     nothing
 end
 
-for elty in (:Float32, :Float64) # LAPACK-supported real scalar types
-    @eval begin
-        function joint_accelerations!(out::AbstractVector{$elty}, massMatrixInversionCache::Symmetric{$elty, Matrix{$elty}},
-                massMatrix::Symmetric{$elty, Matrix{$elty}}, biasedTorques::Vector{$elty})
-            @inbounds copy!(out, biasedTorques)
-            @inbounds copy!(massMatrixInversionCache.data, massMatrix.data)
-            Base.LinAlg.LAPACK.posv!(massMatrixInversionCache.uplo, massMatrixInversionCache.data, out)
-            nothing
-        end
-    end
+function joint_accelerations!{T<:Union{Float32, Float64}}(out::AbstractVector{T}, massMatrixInversionCache::Symmetric{T, Matrix{T}},
+        massMatrix::Symmetric{T, Matrix{T}}, biasedTorques::Vector{T})
+    @inbounds copy!(out, biasedTorques)
+    @inbounds copy!(massMatrixInversionCache.data, massMatrix.data)
+    Base.LinAlg.LAPACK.posv!(massMatrixInversionCache.uplo, massMatrixInversionCache.data, out)
+    nothing
 end
 
 function dynamics!{T, X, M, W}(out::DynamicsResult{T}, state::MechanismState{X, M}, externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
