@@ -55,6 +55,7 @@ Platform Info:
   LIBM: libopenlibm
   LLVM: libLLVM-3.7.1 (ORCJIT, broadwell)
 ```
+Commit SHA: [`5085451`](https://github.com/tkoolen/RigidBodyDynamics.jl/commit/508545147a35277cf3f4bf3299991886d7ae6291).
 
 Mass matrix:
 ```
@@ -62,27 +63,26 @@ Mass matrix:
   evals/sample:     1
   time tolerance:   5.00%
   memory tolerance: 1.00%
-  memory estimate:  115.80 kb
-  allocs estimate:  2913
-  minimum time:     200.72 μs (0.00% GC)
-  median time:      215.32 μs (0.00% GC)
-  mean time:        230.30 μs (5.96% GC)
-  maximum time:     3.45 ms (92.18% GC)
+  memory estimate:  40.98 kb
+  allocs estimate:  488
+  minimum time:     74.76 μs (0.00% GC)
+  median time:      76.95 μs (0.00% GC)
+  mean time:        80.74 μs (3.50% GC)
+  maximum time:     2.33 ms (95.62% GC)
 ```
 
 Inverse dynamics:
 ```
-  "inverse_dynamics" => BenchmarkTools.Trial: 
   samples:          10000
   evals/sample:     1
   time tolerance:   5.00%
   memory tolerance: 1.00%
-  memory estimate:  60.67 kb
-  allocs estimate:  1246
-  minimum time:     243.40 μs (0.00% GC)
-  median time:      250.57 μs (0.00% GC)
-  mean time:        258.38 μs (2.53% GC)
-  maximum time:     2.96 ms (90.01% GC)
+  memory estimate:  35.19 kb
+  allocs estimate:  466
+  minimum time:     81.51 μs (0.00% GC)
+  median time:      84.71 μs (0.00% GC)
+  mean time:        88.45 μs (3.32% GC)
+  maximum time:     2.70 ms (95.44% GC)
 ```
 
 Forward dynamics:
@@ -91,12 +91,12 @@ Forward dynamics:
   evals/sample:     1
   time tolerance:   5.00%
   memory tolerance: 1.00%
-  memory estimate:  133.08 kb
-  allocs estimate:  3355
-  minimum time:     283.42 μs (0.00% GC)
-  median time:      297.46 μs (0.00% GC)
-  mean time:        313.83 μs (5.05% GC)
-  maximum time:     3.91 ms (90.38% GC)
+  memory estimate:  49.55 kb
+  allocs estimate:  713
+  minimum time:     140.14 μs (0.00% GC)
+  median time:      142.53 μs (0.00% GC)
+  mean time:        149.27 μs (3.62% GC)
+  maximum time:     3.17 ms (93.63% GC)
 ```
 
 
