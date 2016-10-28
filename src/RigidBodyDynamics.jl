@@ -18,6 +18,7 @@ include("third_party_addendum.jl")
 include("frames.jl")
 include("spatial.jl")
 include("rigid_body.jl")
+include("joint_types.jl")
 include("joint.jl")
 include("cache_element.jl")
 

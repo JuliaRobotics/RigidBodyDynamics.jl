@@ -25,3 +25,24 @@ function cached_download(url::String, localFileName::String, cacheDir::String = 
     end
     fullCachePath
 end
+
+macro rtti_dispatch(typeUnion, signature)
+    @assert signature.head == :call
+    @assert length(signature.args) > 1
+    @assert typeUnion.head == :curly
+    @assert typeUnion.args[1] == :Union
+
+    f = signature.args[1]
+    args = signature.args[2 : end]
+    dispatchArg = args[1]
+    otherArgs = args[2 : end]
+    types = typeUnion.args[2 : end]
+
+    ret = :(error("type not recognized"))
+    for T in reverse(types)
+        ret = Expr(:if, :(isa($dispatchArg, $T)), :(return $(f)($(dispatchArg)::$T, $(otherArgs...))), ret)
+    end
+    :($(esc(ret)))
+end
+
+typealias ContiguousSMatrixColumnView{S1, S2, T, L} SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}

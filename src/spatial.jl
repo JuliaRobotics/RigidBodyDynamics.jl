@@ -197,15 +197,19 @@ function GeometricJacobian{A<:AbstractMatrix}(body::CartesianFrame3D, base::Cart
     GeometricJacobian{A}(body, base, frame, angular, linear)
 end
 
-typealias MotionSubspace{T} GeometricJacobian{SubArray{T,2,StaticArrays.SMatrix{3,6,T,18},Tuple{Colon,UnitRange{Int64}},true}}
+# MotionSubspace is the return type of the motion_subspace(::Joint, ...) method. Defining it as a
+# GeometricJacobian with a view of a 3×6 SMatrix as the underlying data type gets around type
+# instabilities in motion_subspace while still using an isbits type.
+# See https://github.com/tkoolen/RigidBodyDynamics.jl/issues/84.
+typealias MotionSubspace{T} GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
 
 @generated function MotionSubspace{N, T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, N, T}, linear::SMatrix{3, N, T})
     fillerSize = 6 - N
     return quote
         $(Expr(:meta, :inline))
         filler = fill(NaN, SMatrix{3, $fillerSize, T})
-        angularData = hcat(angular, filler)::SMatrix{3,6,T,18}
-        linearData = hcat(linear, filler)::SMatrix{3,6,T,18}
+        angularData = hcat(angular, filler)::SMatrix{3, 6, T, 18}
+        linearData = hcat(linear, filler)::SMatrix{3, 6, T, 18}
         MotionSubspace{T}(body, base, frame, view(angularData, :, 1 : N), view(linearData, :, 1 : N))
     end
 end
