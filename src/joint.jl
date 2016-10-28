@@ -38,8 +38,7 @@ function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform
     _joint_transform(joint.jointType, joint.frameAfter, joint.frameBefore, q)
 end
 
-# TODO: currently not type stable (should probably return a fixed-maximum-size GeometricJacobian)
-function motion_subspace(joint::Joint, q::AbstractVector)
+function motion_subspace{M, X}(joint::Joint{M}, q::AbstractVector{X})::MotionSubspace{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     _motion_subspace(joint.jointType, joint.frameAfter, joint.frameBefore, q)
 end
@@ -110,7 +109,7 @@ function _motion_subspace{T<:Real, X<:Real}(
     S = promote_type(T, X)
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
-    GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
+    MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
 function _bias_acceleration{T<:Real, X<:Real}(
@@ -241,7 +240,7 @@ function _motion_subspace{T<:Real, X<:Real}(
     S = promote_type(T, X)
     angular = zeros(SMatrix{3, 1, X})
     linear = SMatrix{3, 1, X}(jt.translation_axis)
-    GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
+    MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
 function _joint_torque!(jt::Prismatic, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
@@ -283,7 +282,7 @@ function _motion_subspace{T<:Real, X<:Real}(
     S = promote_type(T, X)
     angular = SMatrix{3, 1, S}(jt.rotation_axis)
     linear = zeros(SMatrix{3, 1, S})
-    GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
+    MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
 function _joint_torque!(jt::Revolute, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
@@ -312,7 +311,7 @@ end
 function _motion_subspace{T<:Real, X<:Real}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
-    GeometricJacobian(frameAfter, frameBefore, frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
+    MotionSubspace(frameAfter, frameBefore, frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
 _zero_configuration!(::Fixed, q::AbstractVector) = nothing
