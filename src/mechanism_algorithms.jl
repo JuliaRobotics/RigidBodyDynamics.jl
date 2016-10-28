@@ -343,16 +343,22 @@ end
 
 DynamicsResult{M, T}(t::Type{T}, mechanism::Mechanism{M}) = DynamicsResult{M, T}(t, mechanism)
 
-function joint_accelerations!(out::AbstractVector, massMatrixInversionCache::Symmetric, massMatrix::Symmetric, biasedTorques::Vector)
+function joint_accelerations!(out::AbstractVector, massMatrixInversionCache::Symmetric,
+        massMatrix::Symmetric, biasedTorques::Vector)
     out[:] = massMatrix \ biasedTorques # TODO: make more efficient
     nothing
 end
 
-function joint_accelerations!(out::AbstractVector{Float64}, massMatrixInversionCache::Symmetric{Float64, Matrix{Float64}}, massMatrix::Symmetric{Float64, Matrix{Float64}}, biasedTorques::Vector{Float64})
-    @inbounds copy!(out, biasedTorques)
-    @inbounds copy!(massMatrixInversionCache.data, massMatrix.data)
-    Base.LinAlg.LAPACK.posv!(massMatrixInversionCache.uplo, massMatrixInversionCache.data, out)
-    nothing
+for elty in (:Float32, :Float64) # LAPACK-supported real scalar types
+    @eval begin
+        function joint_accelerations!(out::AbstractVector{$elty}, massMatrixInversionCache::Symmetric{$elty, Matrix{$elty}},
+                massMatrix::Symmetric{$elty, Matrix{$elty}}, biasedTorques::Vector{$elty})
+            @inbounds copy!(out, biasedTorques)
+            @inbounds copy!(massMatrixInversionCache.data, massMatrix.data)
+            Base.LinAlg.LAPACK.posv!(massMatrixInversionCache.uplo, massMatrixInversionCache.data, out)
+            nothing
+        end
+    end
 end
 
 function dynamics!{T, X, M, W}(out::DynamicsResult{T}, state::MechanismState{X, M}, externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
