@@ -37,18 +37,3 @@ function rpy_to_quaternion(rpy::Vector)
     @inbounds qz = c[1]*c[2]*s[3] - s[1]*s[2]*c[3]
     Quaternion(qs, qx, qy, qz)
 end
-
-# TODO: notify StaticArrays maintainer
-# TODO: too specific
-function (*){N, M, T, L, S}(m::SMatrix{N, M, T, L}, x::Union{Vector{S}, VectorSegment{S}})
-    @boundscheck @assert M == size(x, 1)
-    ret = zeros(SVector{N, promote_type(T, S)})
-    for i = 1 : M
-        @inbounds xi = x[i]
-        ret = ret + m[:, i] * xi
-    end
-    ret
-end
-
-# # TODO: notify StaticArrays maintainer
-# @inline (::Type{SVector{0}}){T}(::VectorSegment{T}) = zeros(SVector{0, T})
