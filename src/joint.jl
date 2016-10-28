@@ -35,55 +35,125 @@ end
 # They might not be completely necessary at this point.
 function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform3D{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
-    _joint_transform(joint.jointType, joint.frameAfter, joint.frameBefore, q)
+    if isa(joint.jointType, QuaternionFloating{M})
+        return _joint_transform(joint.jointType::QuaternionFloating{M}, joint.frameAfter, joint.frameBefore, q)
+    elseif isa(joint.jointType, Revolute{M})
+        return _joint_transform(joint.jointType::Revolute{M}, joint.frameAfter, joint.frameBefore, q)
+    elseif isa(joint.jointType, Prismatic{M})
+        return _joint_transform(joint.jointType::Prismatic{M}, joint.frameAfter, joint.frameBefore, q)
+    elseif isa(joint.jointType, Fixed{M})
+        return _joint_transform(joint.jointType::Fixed{M}, joint.frameAfter, joint.frameBefore, q)
+    else
+        error("joint type not recognized")
+    end
 end
 
 function motion_subspace{M, X}(joint::Joint{M}, q::AbstractVector{X})::MotionSubspace{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
-    _motion_subspace(joint.jointType, joint.frameAfter, joint.frameBefore, q)
+    if isa(joint.jointType, QuaternionFloating{M})
+        return _motion_subspace(joint.jointType::QuaternionFloating{M}, joint.frameAfter, joint.frameBefore, q)
+    elseif isa(joint.jointType, Revolute{M})
+        return _motion_subspace(joint.jointType::Revolute{M}, joint.frameAfter, joint.frameBefore, q)
+    elseif isa(joint.jointType, Prismatic{M})
+        return _motion_subspace(joint.jointType::Prismatic{M}, joint.frameAfter, joint.frameBefore, q)
+    elseif isa(joint.jointType, Fixed{M})
+        return _motion_subspace(joint.jointType::Fixed{M}, joint.frameAfter, joint.frameBefore, q)
+    else
+        error("joint type not recognized")
+    end
 end
 
 function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::SpatialAcceleration{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    _bias_acceleration(joint.jointType, joint.frameAfter, joint.frameBefore, q, v)
+    if isa(joint.jointType, QuaternionFloating{M})
+        return _bias_acceleration(joint.jointType::QuaternionFloating{M}, joint.frameAfter, joint.frameBefore, q, v)
+    elseif isa(joint.jointType, Revolute{M})
+        return _bias_acceleration(joint.jointType::Revolute{M}, joint.frameAfter, joint.frameBefore, q, v)
+    elseif isa(joint.jointType, Prismatic{M})
+        return _bias_acceleration(joint.jointType::Prismatic{M}, joint.frameAfter, joint.frameBefore, q, v)
+    elseif isa(joint.jointType, Fixed{M})
+        return _bias_acceleration(joint.jointType::Fixed{M}, joint.frameAfter, joint.frameBefore, q, v)
+    else
+        error("joint type not recognized")
+    end
 end
 
-function configuration_derivative_to_velocity!(joint::Joint, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)::Void
+function configuration_derivative_to_velocity!{M}(joint::Joint{M}, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)::Void
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q̇)
-    _configuration_derivative_to_velocity!(joint.jointType, v, q, q̇)
+    if isa(joint.jointType, QuaternionFloating{M})
+        return _configuration_derivative_to_velocity!(joint.jointType::QuaternionFloating{M}, v, q, q̇)
+    elseif isa(joint.jointType, Revolute{M})
+        return _configuration_derivative_to_velocity!(joint.jointType::Revolute{M}, v, q, q̇)
+    elseif isa(joint.jointType, Prismatic{M})
+        return _configuration_derivative_to_velocity!(joint.jointType::Prismatic{M}, v, q, q̇)
+    elseif isa(joint.jointType, Fixed{M})
+        return _configuration_derivative_to_velocity!(joint.jointType::Fixed{M}, v, q, q̇)
+    else
+        error("joint type not recognized")
+    end
 end
 
-function velocity_to_configuration_derivative!(joint::Joint, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)::Void
+function velocity_to_configuration_derivative!{M}(joint::Joint{M}, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)::Void
     @boundscheck check_num_positions(joint, q̇)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    _velocity_to_configuration_derivative!(joint.jointType, q̇, q, v)
+    if isa(joint.jointType, QuaternionFloating{M})
+        return _velocity_to_configuration_derivative!(joint.jointType::QuaternionFloating{M}, q̇, q, v)
+    elseif isa(joint.jointType, Revolute{M})
+        return _velocity_to_configuration_derivative!(joint.jointType::Revolute{M}, q̇, q, v)
+    elseif isa(joint.jointType, Prismatic{M})
+        return _velocity_to_configuration_derivative!(joint.jointType::Prismatic{M}, q̇, q, v)
+    elseif isa(joint.jointType, Fixed{M})
+        return _velocity_to_configuration_derivative!(joint.jointType::Fixed{M}, q̇, q, v)
+    else
+        error("joint type not recognized")
+    end
 end
 
 function zero_configuration!(joint::Joint, q::AbstractVector)::Void
     @boundscheck check_num_positions(joint, q)
-    _zero_configuration!(joint.jointType, q)
+    _zero_configuration!(joint.jointType, q) # TODO
 end
 
 function rand_configuration!(joint::Joint, q::AbstractVector)::Void
     @boundscheck check_num_positions(joint, q)
-    _rand_configuration!(joint.jointType, q)
+    _rand_configuration!(joint.jointType, q) # TODO
 end
 
 function joint_twist{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::Twist{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    _joint_twist(joint.jointType, joint.frameAfter, joint.frameBefore, q, v)
+    if isa(joint.jointType, QuaternionFloating{M})
+        return _joint_twist(joint.jointType::QuaternionFloating{M}, joint.frameAfter, joint.frameBefore, q, v)
+    elseif isa(joint.jointType, Revolute{M})
+        return _joint_twist(joint.jointType::Revolute{M}, joint.frameAfter, joint.frameBefore, q, v)
+    elseif isa(joint.jointType, Prismatic{M})
+        return _joint_twist(joint.jointType::Prismatic{M}, joint.frameAfter, joint.frameBefore, q, v)
+    elseif isa(joint.jointType, Fixed{M})
+        return _joint_twist(joint.jointType::Fixed{M}, joint.frameAfter, joint.frameBefore, q, v)
+    else
+        error("joint type not recognized")
+    end
 end
 
-function joint_torque!(joint::Joint, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)::Void
+function joint_torque!{M}(joint::Joint{M}, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)::Void
     @boundscheck check_num_velocities(joint, τ)
     @boundscheck check_num_positions(joint, q)
     framecheck(joint_wrench.frame, joint.frameAfter)
-    _joint_torque!(joint.jointType, τ, q, joint_wrench)
+    if isa(joint.jointType, QuaternionFloating{M})
+        return _joint_torque!(joint.jointType::QuaternionFloating{M}, τ, q, joint_wrench)
+    elseif isa(joint.jointType, Revolute{M})
+        return _joint_torque!(joint.jointType::Revolute{M}, τ, q, joint_wrench)
+    elseif isa(joint.jointType, Prismatic{M})
+        return _joint_torque!(joint.jointType::Prismatic{M}, τ, q, joint_wrench)
+    elseif isa(joint.jointType, Fixed{M})
+        return _joint_torque!(joint.jointType::Fixed{M}, τ, q, joint_wrench)
+    else
+        error("joint type not recognized")
+    end
 end
 
 immutable QuaternionFloating{T} <: JointType{T}
