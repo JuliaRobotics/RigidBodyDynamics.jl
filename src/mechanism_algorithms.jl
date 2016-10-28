@@ -120,6 +120,23 @@ function potential_energy{X, M, C}(state::MechanismState{X, M, C})
     -dot(gravitationalForce, FreeVector3D(centerOfMass))
  end
 
+ function _mass_matrix_part!(out, jac::GeometricJacobian, mat::MomentumMatrix)
+    # more efficient version of
+    # out[:] = jac.angular' * mat.angular + jac.linear' * mat.linear
+    n = num_cols(jac)
+    m = num_cols(mat)
+    @boundscheck size(out, 1) == n || error("size mismatch")
+    @boundscheck size(out, 2) == m || error("size mismatch")
+    framecheck(jac.frame, mat.frame)
+
+    for row = 1 : n
+        for col = 1 : m
+            @inbounds out[row, col] = jac.angular[1, row] * mat.angular[1, col] + jac.angular[2, row] * mat.angular[2, col] + jac.angular[3, row] * mat.angular[3, col]
+            @inbounds out[row, col] += jac.linear[1, row] * mat.linear[1, col] + jac.linear[2, row] * mat.linear[2, col] + jac.linear[3, row] * mat.linear[3, col]
+        end
+    end
+ end
+
 function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
     @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
     @assert out.uplo == 'U'
@@ -137,7 +154,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             Ii = crb_inertia(state, bodyi)
             F = Ii * Si
             @inbounds Hii = view(out.data, irange, irange)
-            @inbounds Hii[:] = Si.angular' * F.angular + Si.linear' * F.linear
+            _mass_matrix_part!(Hii, Si, F)
 
             # Hji, Hij
             vj = parent(vi)
@@ -147,9 +164,8 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                 if nvj > 0
                     jrange = mechanism.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
-                    framecheck(F.frame, Sj.frame)
                     @inbounds Hji = view(out.data, jrange, irange)
-                    @inbounds Hji[:] = Sj.angular' * F.angular + Sj.linear' * F.linear
+                    _mass_matrix_part!(Hji, Sj, F)
                 end
                 vj = parent(vj)
             end
