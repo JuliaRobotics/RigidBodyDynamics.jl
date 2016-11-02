@@ -87,7 +87,6 @@
         q = configuration_vector(x)
         v = velocity_vector(x)
         q̇ = configuration_derivative(x)
-        create_autodiff = (z, dz) -> [ForwardDiff.Dual(z[i]::Float64, dz[i]::Float64) for i in 1 : length(z)]
         q_autodiff = create_autodiff(q, q̇)
         v_autodiff = create_autodiff(v, v̇)
         x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
@@ -233,7 +232,6 @@
         @test isapprox(Momentum(momentum_matrix(x), v), momentum(x))
 
         # rate of change of momentum computed using autodiff:
-        create_autodiff = (z, dz) -> [ForwardDiff.Dual(z[i]::Float64, dz[i]::Float64) for i in 1 : length(z)]
         q_autodiff = create_autodiff(q, q̇)
         v_autodiff = create_autodiff(v, v̇)
         x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
@@ -274,14 +272,39 @@
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
         x = MechanismState(Float64, mechanism)
         rand!(x)
-
+        externalTorques = rand(num_velocities(mechanism))
         externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
-        stateVector = state_vector(x)
 
         result = DynamicsResult(Float64, mechanism)
-        dynamics!(result, x, stateVector, externalWrenches)
-        τ = inverse_dynamics(x, result.v̇, externalWrenches)
+        dynamics!(result, x, externalTorques, externalWrenches)
+        τ = inverse_dynamics(x, result.v̇, externalWrenches) - externalTorques
         @test isapprox(τ, zeros(num_velocities(mechanism)); atol = 1e-12)
+    end
+
+    @testset "power flow" begin
+        mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
+        x = MechanismState(Float64, mechanism)
+        rand_configuration!(x)
+        rand_velocity!(x)
+        externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
+        τ = rand(num_velocities(mechanism))
+        result = DynamicsResult(Float64, mechanism)
+        dynamics!(result, x, τ, externalWrenches)
+
+        q = configuration_vector(x)
+        q̇ = configuration_derivative(x)
+        v = velocity_vector(x)
+        v̇ = result.v̇
+        power = τ ⋅ v + sum(body -> externalWrenches[body] ⋅ twist_wrt_world(x, body), non_root_bodies(mechanism))
+
+        q_autodiff = create_autodiff(q, q̇)
+        v_autodiff = create_autodiff(v, v̇)
+        x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
+        set_configuration!(x_autodiff, q_autodiff)
+        set_velocity!(x_autodiff, v_autodiff)
+        energy_autodiff = potential_energy(x_autodiff) + kinetic_energy(x_autodiff)
+        energy_derivative = ForwardDiff.partials(energy_autodiff)[1]
+        @test isapprox(power, energy_derivative, atol = 1e-10)
     end
 
     @testset "simulate" begin

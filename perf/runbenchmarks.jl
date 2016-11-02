@@ -44,9 +44,10 @@ function create_benchmark_suite()
     let
         state = MechanismState(ScalarType, mechanism)
         result = DynamicsResult(ScalarType, mechanism)
-        suite["dynamics"] = @benchmarkable(dynamics!($result, $state, externalWrenches),
+        suite["dynamics"] = @benchmarkable(dynamics!($result, $state, τ, externalWrenches),
             setup=(
                 rand!($state);
+                τ = rand(num_velocities($mechanism));
                 externalWrenches = Dict(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in non_root_bodies($mechanism))
             )
         )

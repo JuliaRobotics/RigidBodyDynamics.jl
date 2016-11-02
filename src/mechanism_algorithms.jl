@@ -373,9 +373,11 @@ end
 # e.g. for use with standard ODE integrators
 # Note that preallocatedState is required so that we don't need to allocate a new
 # MechanismState object every time this function is called
-function dynamics!{T, X, M, W}(result::DynamicsResult{T}, state::MechanismState{X, M}, stateVec::Vector{X},
+function dynamics!{T, X, M, W}(ẋ::AbstractVector{X},
+        result::DynamicsResult{T}, state::MechanismState{X, M}, stateVec::AbstractVector{X},
         externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
     set!(state, stateVec)
     dynamics!(result, state, NullVector{T}(num_velocities(state)), externalWrenches)
-    copy(result.ẋ)
+    copy!(ẋ, result.ẋ)
+    ẋ
 end
