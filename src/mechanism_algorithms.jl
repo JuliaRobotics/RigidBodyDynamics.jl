@@ -357,11 +357,13 @@ function joint_accelerations!{T<:Union{Float32, Float64}}(out::AbstractVector{T}
     nothing
 end
 
-function dynamics!{T, X, M, W}(out::DynamicsResult{T}, state::MechanismState{X, M}, externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+function dynamics!{T, X, M, Tau, W}(out::DynamicsResult{T}, state::MechanismState{X, M},
+        torques::AbstractVector{Tau} = NullVector{T}(num_velocities(state)),
+        externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
     configuration_derivative!(out.q̇, state)
     dynamics_bias!(out.dynamicsBias, out.accelerations, out.jointWrenches, state, externalWrenches)
     @inbounds copy!(out.biasedTorques, out.dynamicsBias) # TODO: handle input torques again
-    scale!(out.biasedTorques, -1)
+    sub!(out.biasedTorques, torques, out.dynamicsBias)
     mass_matrix!(out.massMatrix, state)
     joint_accelerations!(out.v̇, out.massMatrixInversionCache, out.massMatrix, out.biasedTorques)
     nothing
@@ -371,8 +373,9 @@ end
 # e.g. for use with standard ODE integrators
 # Note that preallocatedState is required so that we don't need to allocate a new
 # MechanismState object every time this function is called
-function dynamics!{T, X, M, W}(result::DynamicsResult{T}, state::MechanismState{X, M}, stateVec::Vector{X}, externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+function dynamics!{T, X, M, W}(result::DynamicsResult{T}, state::MechanismState{X, M}, stateVec::Vector{X},
+        externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
     set!(state, stateVec)
-    dynamics!(result, state, externalWrenches)
+    dynamics!(result, state, NullVector{T}(num_velocities(state)), externalWrenches)
     copy(result.ẋ)
 end
