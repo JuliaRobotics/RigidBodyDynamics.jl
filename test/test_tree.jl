@@ -31,7 +31,17 @@
             sub = subtree(v4)
             @test isroot(sub)
             @test length(toposort(sub)) == 5
-            # println(sub)
+        end
+
+        @testset "ancestors" begin
+            for vertex in toposort(tree)
+                for ancestor in ancestors(vertex)
+                    @test isancestor(vertex, ancestor)
+                end
+                for self_or_descendant in toposort(subtree(vertex))
+                    @test !isancestor(vertex, self_or_descendant)
+                end
+            end
         end
 
         @testset "reroot" begin

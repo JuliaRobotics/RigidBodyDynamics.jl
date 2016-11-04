@@ -77,25 +77,23 @@
     end
 
     @testset "relative_acceleration" begin
-        bs = Set(bodies(mechanism))
-        body = rand([bs...])
-        delete!(bs, body)
-        base = rand([bs...])
-        v̇ = rand(num_velocities(mechanism))
-        Ṫ = relative_acceleration(x, body, base, v̇)
-
-        q = configuration_vector(x)
-        v = velocity_vector(x)
-        q̇ = configuration_derivative(x)
-        q_autodiff = create_autodiff(q, q̇)
-        v_autodiff = create_autodiff(v, v̇)
-        x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
-        set_configuration!(x_autodiff, q_autodiff)
-        set_velocity!(x_autodiff, v_autodiff)
-        twist_autodiff = relative_twist(x_autodiff, body, base)
-        accel_vec = [ForwardDiff.partials(x, 1)::Float64 for x in (Array(twist_autodiff))]
-
-        @test isapprox(Array(Ṫ), accel_vec; atol = 1e-12)
+        for body in bodies(mechanism)
+            for base in bodies(mechanism)
+                v̇ = rand(num_velocities(mechanism))
+                Ṫ = relative_acceleration(x, body, base, v̇)
+                q = configuration_vector(x)
+                v = velocity_vector(x)
+                q̇ = configuration_derivative(x)
+                q_autodiff = create_autodiff(q, q̇)
+                v_autodiff = create_autodiff(v, v̇)
+                x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
+                set_configuration!(x_autodiff, q_autodiff)
+                set_velocity!(x_autodiff, v_autodiff)
+                twist_autodiff = relative_twist(x_autodiff, body, base)
+                accel_vec = [ForwardDiff.partials(x, 1)::Float64 for x in (Array(twist_autodiff))]
+                @test isapprox(Array(Ṫ), accel_vec; atol = 1e-12)
+            end
+        end
     end
 
     @testset "motion subspace / twist wrt world" begin

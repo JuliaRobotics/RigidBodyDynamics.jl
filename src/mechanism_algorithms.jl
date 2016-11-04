@@ -101,12 +101,32 @@ function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{
     hcat(motionSubspaces...)
 end
 
-function relative_acceleration{X, M, V}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}, v̇::AbstractVector{V})
-    p = path(state.mechanism, base, body)
-    J = geometric_jacobian(state, p)
-    v̇path = vcat([v̇[state.mechanism.vRanges[joint]] for joint in p.edgeData]...)
-    bias = -bias_acceleration(state, base) + bias_acceleration(state, body)
-    SpatialAcceleration(J, v̇path) + bias
+function acceleration_wrt_ancestor{X, M, C, V}(state::MechanismState{X, M, C},
+        descendant::TreeVertex{RigidBody{M}, Joint{M}},
+        ancestor::TreeVertex{RigidBody{M}, Joint{M}},
+        v̇::AbstractVector{V})
+    mechanism = state.mechanism
+    T = promote_type(C, V)
+    descendantFrame = default_frame(mechanism, vertex_data(descendant))
+    accel = zero(SpatialAcceleration{T}, descendantFrame, descendantFrame, root_frame(mechanism))
+    descendant == ancestor && return accel
+
+    current = descendant
+    while current != ancestor
+        joint = edge_to_parent_data(current)
+        v̇joint = view(v̇, mechanism.vRanges[joint])
+        jointAccel = SpatialAcceleration(motion_subspace(state, joint), v̇joint)
+        accel = jointAccel + accel
+        current = parent(current)
+    end
+    -bias_acceleration(state, vertex_data(ancestor)) + bias_acceleration(state, vertex_data(descendant)) + accel
+end
+
+function relative_acceleration(state::MechanismState, body::RigidBody, base::RigidBody, v̇::AbstractVector)
+    bodyVertex = findfirst(tree(state.mechanism), body)
+    baseVertex = findfirst(tree(state.mechanism), base)
+    lca = lowest_common_ancestor(baseVertex, bodyVertex)
+    -acceleration_wrt_ancestor(state, baseVertex, lca, v̇) + acceleration_wrt_ancestor(state, bodyVertex, lca, v̇)
 end
 
 kinetic_energy{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = kinetic_energy(spatial_inertia(state, body), twist_wrt_world(state, body))
