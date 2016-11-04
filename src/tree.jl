@@ -13,7 +13,9 @@ export
     isleaf,
     toposort,
     detach!,
+    isancestor,
     ancestors,
+    lowest_common_ancestor,
     leaves,
     path,
     insert_subtree!,
@@ -135,6 +137,25 @@ function copy{V, E}(v::TreeVertex{V, E})
         insert!(ret, copy(child))
     end
     ret
+end
+
+function isancestor{V, E}(vertex::TreeVertex{V, E}, candidate::TreeVertex{V, E})
+    current = vertex
+    while !isroot(current)
+        current = parent(current)
+        current == candidate && return true
+    end
+    return false
+end
+
+function lowest_common_ancestor{V, E}(a::TreeVertex{V, E}, b::TreeVertex{V, E})
+    (a == b || isroot(b)) && return b
+    current = a
+    while !isancestor(b, current)
+        isroot(current) && error("vertices are not part of the same tree")
+        current = parent(current)
+    end
+    current
 end
 
 function ancestors{V, E}(vertex::TreeVertex{V, E})
