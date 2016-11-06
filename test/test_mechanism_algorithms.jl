@@ -276,7 +276,7 @@
         result = DynamicsResult(Float64, mechanism)
         dynamics!(result, x, externalTorques, externalWrenches)
         τ = inverse_dynamics(x, result.v̇, externalWrenches) - externalTorques
-        @test isapprox(τ, zeros(num_velocities(mechanism)); atol = 1e-12)
+        @test isapprox(τ, zeros(num_velocities(mechanism)); atol = 1e-10)
     end
 
     @testset "power flow" begin
