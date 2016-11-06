@@ -1,6 +1,6 @@
 function Ad(H::Transform3D)
     R = rotationmatrix(H.rot)
-    pHat = Array(RigidBodyDynamics.vector_to_skew_symmetric(H.trans))
+    pHat = Array(RigidBodyDynamics.hat(H.trans))
     return [R zeros(3, 3); pHat * R R]
 end
 
