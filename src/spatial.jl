@@ -45,16 +45,6 @@ function (+){T}(inertia1::SpatialInertia{T}, inertia2::SpatialInertia{T})
     SpatialInertia(inertia1.frame, moment, crossPart, mass)
 end
 
-function vector_to_skew_symmetric{T}(v::SVector{3, T})
-    @SMatrix [zero(T) -v[3] v[2];
-              v[3] zero(T) -v[1];
-              -v[2] v[1] zero(T)]
-end
-
-function cross(a::SVector{3}, B::AbstractMatrix)
-    vector_to_skew_symmetric(a) * B
-end
-
 @inline function vector_to_skew_symmetric_squared(a::SVector{3})
     aSq1 = a[1] * a[1]
     aSq2 = a[2] * a[2]
@@ -83,7 +73,7 @@ function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})::Spatial
         m = convert(S, inertia.mass)
         c = convert(SVector{3, S}, inertia.crossPart)
 
-        R = rotationmatrix_normalized_fsa(convert(Quaternion{S}, t.rot))
+        R = rotation_matrix(convert(Quaternion{S}, t.rot))
         p = convert(SVector{3, S}, t.trans)
 
         cnew = R * c
@@ -257,7 +247,7 @@ end
 
 function transform(jac::GeometricJacobian, transform::Transform3D)
     framecheck(jac.frame, transform.from)
-    R = rotationmatrix_normalized_fsa(transform.rot)
+    R = rotation_matrix(transform.rot)
     angular = R * jac.angular
     linear = R * jac.linear + cross(transform.trans, angular)
     GeometricJacobian(jac.body, jac.base, transform.to, angular, linear)
@@ -396,7 +386,7 @@ end
 
 function transform(mat::MomentumMatrix, transform::Transform3D)
     framecheck(mat.frame, transform.from)
-    R = rotationmatrix_normalized_fsa(transform.rot)
+    R = rotation_matrix(transform.rot)
     linear = R * linear_part(mat)
     T = eltype(linear)
     angular = R * angular_part(mat) + cross(transform.trans, linear)
