@@ -11,14 +11,17 @@ const frame_names = Dict{Int64, String}()
 
 immutable CartesianFrame3D
     id::Int64
+
     function CartesianFrame3D(name::String)
         ret = new(next_frame_id.x)
         next_frame_id.x += 1
         frame_names[ret.id] = name
         ret
     end
+
+    CartesianFrame3D() = new(-1)
 end
-name(frame::CartesianFrame3D) = frame_names[frame.id]
+name(frame::CartesianFrame3D) = frame.id >= 0 ? frame_names[frame.id] : "(anonymous)"
 show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\"")
 
 # enable/disable frame checks
