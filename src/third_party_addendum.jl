@@ -1,4 +1,4 @@
-function vector_to_skew_symmetric{T}(v::SVector{3, T})
+@inline function vector_to_skew_symmetric{T}(v::SVector{3, T})
     @SMatrix [zero(T) -v[3] v[2];
               v[3] zero(T) -v[1];
               -v[2] v[1] zero(T)]
@@ -6,8 +6,25 @@ end
 
 const hat = vector_to_skew_symmetric
 
+@inline function vector_to_skew_symmetric_squared(a::SVector{3})
+    aSq1 = a[1] * a[1]
+    aSq2 = a[2] * a[2]
+    aSq3 = a[3] * a[3]
+    b11 = -aSq2 - aSq3
+    b12 = a[1] * a[2]
+    b13 = a[1] * a[3]
+    b22 = -aSq1 - aSq3
+    b23 = a[2] * a[3]
+    b33 = -aSq1 - aSq2
+    @SMatrix [b11 b12 b13;
+              b12 b22 b23;
+              b13 b23 b33]
+end
+
+const hat_squared = vector_to_skew_symmetric_squared
+
 function cross(a::SVector{3}, B::AbstractMatrix)
-    vector_to_skew_symmetric(a) * B
+    hat(a) * B
 end
 
 rotate(x::SMatrix{3}, q::Quaternion) = rotation_matrix(q) * x
