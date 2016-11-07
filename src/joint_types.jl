@@ -1,5 +1,18 @@
 abstract JointType{T<:Real}
-flip_direction{T}(jt::JointType{T}) = deepcopy(jt) # default behavior for flipping the direction of a joint
+
+# Default implementations
+flip_direction{T}(jt::JointType{T}) = deepcopy(jt)
+
+function _local_coordinates!(jt::JointType,
+        ϕ::AbstractVector, ϕ̇::AbstractVector,
+        q0::AbstractVector, q::AbstractVector, v::AbstractVector)
+    sub!(ϕ, q, q0)
+    copy!(ϕ̇, v)
+end
+
+function _global_coordinates!(jt::JointType, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
+    q .= q0 .+ ϕ # TODO: allocates on 0.5
+end
 
 
 #=
@@ -14,12 +27,56 @@ rand{T}(::Type{QuaternionFloating{T}}) = QuaternionFloating{T}()
 num_positions(::QuaternionFloating) = 7
 num_velocities(::QuaternionFloating) = 6
 
+@inline rotation_view(::QuaternionFloating, q::AbstractVector) = begin @inbounds quat = view(q, 1 : 4); quat end
+@inline translation_view(::QuaternionFloating, q::AbstractVector) = begin @inbounds trans = view(q, 5 : 7); trans end
+
+@inline function rotation(jt::QuaternionFloating, q::AbstractVector)
+    quat_view = rotation_view(jt, q)
+    @inbounds quat = Quaternion(quat_view[1], quat_view[2], quat_view[3], quat_view[4])
+    quat
+end
+
+@inline function rotation!(jt::QuaternionFloating, q::AbstractVector, quat::Quaternion)
+    quat_view = rotation_view(jt, q)
+    @inbounds q[1] = quat.s
+    @inbounds q[2] = quat.v1
+    @inbounds q[3] = quat.v2
+    @inbounds q[4] = quat.v3
+    nothing
+end
+
+@inline function translation(jt::QuaternionFloating, q::AbstractVector)
+    @inbounds trans = SVector{3}(translation_view(jt, q))
+    trans
+end
+
+@inline function translation!(jt::QuaternionFloating, q::AbstractVector, trans::AbstractVector)
+    @inbounds copy!(translation_view(jt, q), trans)
+    nothing
+end
+
+@inline angular_velocity_view(::QuaternionFloating, v::AbstractVector) = begin @inbounds ω = view(v, 1 : 3); ω end
+@inline linear_velocity_view(::QuaternionFloating, v::AbstractVector) = begin @inbounds vel = view(v, 4 : 6); vel end
+
+@inline angular_velocity(jt::QuaternionFloating, v::AbstractVector) = SVector{3}(angular_velocity_view(jt, v))
+@inline linear_velocity(jt::QuaternionFloating, v::AbstractVector) = SVector{3}(linear_velocity_view(jt, v))
+
+@inline function angular_velocity!(jt::QuaternionFloating, v::AbstractVector, ω::AbstractVector)
+    @inbounds copy!(angular_velocity_view(jt, v), ω)
+    nothing
+end
+
+@inline function linear_velocity!(jt::QuaternionFloating, v::AbstractVector, ν::AbstractVector)
+    @inbounds copy!(linear_velocity_view(jt, v), ν)
+    nothing
+end
+
 function _joint_transform{T<:Real, X<:Real}(
         jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
-    @inbounds rot = Quaternion(q[1], q[2], q[3], q[4])
+    rot = rotation(jt, q)
     Quaternions.normalize(rot)
-    @inbounds trans = SVector{3}(q[5], q[6], q[7])
+    trans = translation(jt, q)
     Transform3D(frameAfter, frameBefore, convert(Quaternion{S}, rot), convert(SVector{3, S}, trans))
 end
 
@@ -38,65 +95,189 @@ function _bias_acceleration{T<:Real, X<:Real}(
 end
 
 function _configuration_derivative_to_velocity!(jt::QuaternionFloating, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
-    @inbounds quat = Quaternion(q[1], q[2], q[3], q[4])
+    quat = rotation(jt, q)
     invquat = inv(quat)
-    Quaternions.normalize(quat)
-    @inbounds quatdot = Quaternion(q̇[1], q̇[2], q̇[3], q̇[4])
-    @inbounds posdot = SVector{3}(q̇[5], q̇[6], q̇[7])
+    quatdot = rotation(jt, q̇)
+    posdot = translation(jt, q̇)
     linear = rotate(posdot, invquat)
     angularQuat = 2 * invquat * quatdot
-    @inbounds v[1] = angularQuat.v1
-    @inbounds v[2] = angularQuat.v2
-    @inbounds v[3] = angularQuat.v3
-    @inbounds v[4] = linear[1]
-    @inbounds v[5] = linear[2]
-    @inbounds v[6] = linear[3]
+    angular_velocity!(jt, v, SVector{3}(angularQuat.v1, angularQuat.v2, angularQuat.v3))
+    linear_velocity!(jt, v, linear)
     nothing
 end
 
 function _velocity_to_configuration_derivative!(jt::QuaternionFloating, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
-    @inbounds quat = Quaternion(q[1], q[2], q[3], q[4])
-    Quaternions.normalize(quat)
-    @inbounds ωQuat = Quaternion(0, v[1], v[2], v[3])
-    @inbounds linear = SVector{3}(v[4], v[5], v[6])
-    quatdot = 1/2 * quat * ωQuat
-    posdot = rotate(linear, quat)
-    @inbounds q̇[1] = quatdot.s
-    @inbounds q̇[2] = quatdot.v1
-    @inbounds q̇[3] = quatdot.v2
-    @inbounds q̇[4] = quatdot.v3
-    @inbounds copy!(view(q̇, 5 : 7), posdot)
+    quat = rotation(jt, q)
+    ω = angular_velocity(jt, v)
+    ωQuat = Quaternion(0, ω[1], ω[2], ω[3])
+    linear = linear_velocity(jt, v)
+    quatdot = 0.5 * quat * ωQuat
+    transdot = rotate(linear, quat)
+    rotation!(jt, q̇, quatdot)
+    translation!(jt, q̇, transdot)
     nothing
 end
 
 function _zero_configuration!(jt::QuaternionFloating, q::AbstractVector)
-    @inbounds q[1] = 1
-    @inbounds fill!(view(q, 2 : 7), 0)
+    T = eltype(q)
+    rotation!(jt, q, Quaternion(one(T), zero(T), zero(T), zero(T)))
+    translation!(jt, q, zeros(SVector{3, T}))
     nothing
 end
 
 function _rand_configuration!(jt::QuaternionFloating, q::AbstractVector)
-    quat = nquatrand()
-    @inbounds q[1] = quat.s
-    @inbounds q[2] = quat.v1
-    @inbounds q[3] = quat.v2
-    @inbounds q[4] = quat.v3
-    @inbounds randn!(view(q, 5 : 7))
+    T = eltype(q)
+    rotation!(jt, q, nquatrand())
+    translation!(jt, q, randn(SVector{3, T}))
     nothing
 end
 
 function _joint_twist{T<:Real, X<:Real}(
         jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     S = promote_type(T, X)
-    @inbounds ret = Twist(frameAfter, frameBefore, frameAfter, SVector{3, S}(v[1], v[2], v[3]), SVector{3, S}(v[4], v[5], v[6]))
-    ret
+    angular = convert(SVector{3, S}, angular_velocity(jt, v))
+    linear = convert(SVector{3, S}, linear_velocity(jt, v))
+    Twist(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
 function _joint_torque!(jt::QuaternionFloating, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
-    @inbounds copy!(view(τ, 1 : 3), joint_wrench.angular)
-    @inbounds copy!(view(τ, 4 : 6), joint_wrench.linear)
+    angular_velocity!(jt, τ, joint_wrench.angular)
+    linear_velocity!(jt, τ, joint_wrench.linear)
     nothing
 end
+
+function _local_coordinates!(jt::QuaternionFloating,
+        ϕ::AbstractVector, ϕ̇::AbstractVector,
+        q0::AbstractVector, q::AbstractVector, v::AbstractVector)
+    # references:
+    # Murray, Richard M., et al.
+    # A mathematical introduction to robotic manipulation.
+    # CRC press, 1994.
+
+    # Bullo, Francesco, and R. M. Murray.
+    # "Proportional derivative (PD) control on the Euclidean group."
+    # European Control Conference. Vol. 2. 1995.
+
+    # use exponential coordinates centered around q0
+    # proposition 2.9 in Murray et al.
+
+    # anonymous helper frames
+    frameBefore = CartesianFrame3D()
+    frame0 = CartesianFrame3D()
+    frameAfter = CartesianFrame3D()
+
+    # compute transform from frame at q to frame at q0
+    t0 = _joint_transform(jt, frame0, frameBefore, q0) # 0 to before
+    t = _joint_transform(jt, frameAfter, frameBefore, q) # after to before
+    relative_transform = inv(t0) * t
+    rot = relative_transform.rot
+    trans = relative_transform.trans
+
+    # rotational part of local coordinates is simply the rotation vector corresponding to orientation relative to q0 frame:
+    # not using angle_axis_proper because we want to reuse intermediate results
+    Θ_over_2 = atan2(√(rot.v1^2 + rot.v2^2 + rot.v3^2), rot.s)
+    Θ = 2 * Θ_over_2
+    sΘ_over_2 = sin(Θ_over_2)
+    cΘ_over_2 = cos(Θ_over_2)
+    axis = Θ < eps(Θ) ? SVector(one(Θ), zero(Θ), zero(Θ)) : SVector(rot.v1, rot.v2, rot.v3) * (1 / sΘ_over_2)
+    ϕrot = Θ * axis
+
+    # translational part
+    # see Bullo and Murray, (2.4) and (2.5)
+    α = Θ_over_2 * cΘ_over_2 / sΘ_over_2 # TODO: singularity
+    Θ_squared = Θ^2
+    p = trans
+    ϕtrans = p - 0.5 * ϕrot × p + (1 - α) / Θ_squared * ϕrot × (ϕrot × p) # Bullo, Murray, (2.5)
+
+    # time derivatives of exponential coordinates
+    # see Bullo and Murray, Lemma 4.
+    # this is truely magic.
+    ω = angular_velocity(jt, v)
+    ν = linear_velocity(jt, v)
+    β = Θ_over_2^2 / sΘ_over_2^2 # TODO: singularity
+    A = (2 * (1 - α) + 0.5 * (α - β)) / Θ_squared
+    B = ((1 - α) + 0.5 * (α - β)) / Θ_squared^2
+    ϕ̇rot_cross_1, ϕ̇trans_cross_1 = se3_commutator(ϕrot, ϕtrans, ω, ν)
+    ϕ̇rot_cross_2, ϕ̇trans_cross_2 = se3_commutator(ϕrot, ϕtrans, ϕ̇rot_cross_1, ϕ̇trans_cross_1)
+    ϕ̇rot_cross_3, ϕ̇trans_cross_3 = se3_commutator(ϕrot, ϕtrans, ϕ̇rot_cross_2, ϕ̇trans_cross_2)
+    ϕ̇rot_cross_4, ϕ̇trans_cross_4 = se3_commutator(ϕrot, ϕtrans, ϕ̇rot_cross_3, ϕ̇trans_cross_3)
+    ϕ̇rot = ω + 0.5 * ϕ̇rot_cross_1 + A * ϕ̇rot_cross_2 + B * ϕ̇rot_cross_4
+    ϕ̇trans = ν + 0.5 * ϕ̇trans_cross_1 + A * ϕ̇trans_cross_2 + B * ϕ̇trans_cross_4
+
+    @inbounds copy!(view(ϕ, 1 : 3), ϕrot)
+    @inbounds copy!(view(ϕ, 4 : 6), ϕtrans)
+
+    @inbounds copy!(view(ϕ̇, 1 : 3), ϕ̇rot)
+    @inbounds copy!(view(ϕ̇, 4 : 6), ϕ̇trans)
+
+    # other implementations:
+    # TODO: turn into tests
+    # ϕtrans as derived in proposition 2.9 in Murray based on rotation matrices:
+    # R = rotation_matrix(rot)
+    # A = (eye(SMatrix{3, 3, T}) - R) * hat(axis) + axis * axis' * angle # prop 2.9 in Murray
+    # ϕtrans = angle * (A \ trans)
+    #
+    # . See:
+    # # Park, Jonghoon, and Wan-Kyun Chung.
+    # # "Geometric integration on Euclidean group with application to articulated multibody systems."
+    # # IEEE Transactions on Robotics 21.5 (2005): 850-863.
+    # # Equations (23) and (24)
+    #
+    # # rotational part
+    # ω = quaternion_floating_angular_velocity(v)
+    # ϕ̇rot = rotation_vector_rate(ϕrot, ω)
+    #
+    # # translational part TODO: ugly, don't quite understand it
+    # ν = quaternion_floating_linear_velocity(v)
+    # ϕ̇trans = rotation_vector_rate(ϕrot, ν)
+    # Θ = angle
+    # Θ_2 = Θ / 2
+    # s = sin(Θ_2)
+    # c = cos(Θ_2)
+    # β = s^2
+    # γ = c / s # TODO: singularity?
+    # D = (1 - γ) / Θ^2 * hat(ν, ω) + (1 / β + γ - 2) / Θ^4 * dot(ω, v) * hat_squared(ω)
+    # ϕ̇trans += (D - 1/2 * hat(v)) * v
+
+    nothing
+end
+
+function _global_coordinates!(jt::QuaternionFloating, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
+    T = eltype(ϕ)
+
+    # anonymous helper frames
+    frameBefore = CartesianFrame3D()
+    frame0 = CartesianFrame3D()
+    frameAfter = CartesianFrame3D()
+
+    # compute transform from frame at q to frame at q0
+    t0 = _joint_transform(jt, frame0, frameBefore, q0)
+
+    # exponentiate ϕ
+    ϕrot = SVector{3}(view(ϕ, 1 : 3))
+    ϕtrans = SVector{3}(view(ϕ, 4 : 6))
+    Θ = norm(ϕrot)
+    if Θ < eps(Θ)
+        # 2.32 in Murray et al.
+        rot = Quaternion{T}(one(T), zero(T), zero(T), zero(T), true)
+        trans = ϕtrans
+    else
+        # 2.36 in Murray et al.
+        rot = angle_axis_to_quaternion(Θ, ϕrot / Θ)
+        # ω and v are not really velocities, but this is the notation used in 2.36
+        ω = ϕrot / Θ
+        v = ϕtrans / Θ
+        trans = ω × v
+        trans -= rotate(trans, rot)
+        trans += ω * dot(ω, v) * Θ
+    end
+    relative_transform = Transform3D(frameAfter, frame0, rot, trans)
+    t = t0 * relative_transform
+    rotation!(jt, q, t.rot)
+    translation!(jt, q, t.trans)
+    nothing
+end
+
 
 
 #=
@@ -191,11 +372,7 @@ flip_direction(jt::Revolute) = Revolute(-jt.rotation_axis)
 
 function _joint_transform{T<:Real, X<:Real}(
         jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
-    S = promote_type(T, X)
-    @inbounds arg = q[1] / X(2)
-    s = sin(arg)
-    axis = jt.rotation_axis
-    @inbounds rot = Quaternion(cos(arg), s * axis[1], s * axis[2], s * axis[3], true)
+    @inbounds rot = angle_axis_to_quaternion(q[1], jt.rotation_axis)
     Transform3D(frameAfter, frameBefore, rot)
 end
 

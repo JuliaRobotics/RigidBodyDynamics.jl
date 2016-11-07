@@ -83,3 +83,21 @@ function joint_torque!{M}(joint::Joint{M}, τ::AbstractVector, q::AbstractVector
     framecheck(joint_wrench.frame, joint.frameAfter)
     @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _joint_torque!(joint.jointType, τ, q, joint_wrench)
 end
+
+function local_coordinates!{M}(joint::Joint{M},
+        ϕ::AbstractVector, ϕ̇::AbstractVector,
+        q0::AbstractVector, q::AbstractVector, v::AbstractVector)
+    @boundscheck check_num_velocities(joint, ϕ)
+    @boundscheck check_num_velocities(joint, ϕ̇)
+    @boundscheck check_num_positions(joint, q0)
+    @boundscheck check_num_positions(joint, q)
+    @boundscheck check_num_velocities(joint, v)
+    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _local_coordinates!(joint.jointType, ϕ, ϕ̇, q0, q, v)
+end
+
+function global_coordinates!{M}(joint::Joint{M}, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
+    @boundscheck check_num_positions(joint, q0)
+    @boundscheck check_num_velocities(joint, ϕ)
+    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _global_coordinates!(joint.jointType, q, q0, ϕ)
+end
