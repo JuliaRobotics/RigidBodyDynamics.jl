@@ -102,9 +102,9 @@ end
 
 rotate(x::SMatrix{3}, q::Quaternion) = rotation_matrix(q) * x
 
-function rotate(x::SVector{3}, q::Quaternion)
-    qret = q * Quaternion(zero(eltype(x)), x[1], x[2], x[3]) * inv(q)
-    SVector(qret.v1, qret.v2, qret.v3)
+@inline function rotate(x::SVector{3}, q::Quaternion)
+    qvec = SVector(q.v1, q.v2, q.v3)
+    2 * dot(qvec, x) * qvec + (q.s^2 - dot(qvec, qvec)) * x + 2 * q.s * cross(qvec, x)
 end
 
 function angle_axis_proper{T}(q::Quaternion{T})
