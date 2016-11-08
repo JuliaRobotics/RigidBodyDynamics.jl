@@ -16,8 +16,8 @@ rand{T}(::Type{QuaternionFloating{T}}) = QuaternionFloating{T}()
 num_positions(::QuaternionFloating) = 7
 num_velocities(::QuaternionFloating) = 6
 
-@inline function rotation(jt::QuaternionFloating, q::AbstractVector)
-    @inbounds quat = Quaternion(q[1], q[2], q[3], q[4])
+@inline function rotation(jt::QuaternionFloating, q::AbstractVector, normalized::Bool = true)
+    @inbounds quat = Quaternion{eltype(q)}(q[1], q[2], q[3], q[4], normalized)
     quat
 end
 @inline function rotation!(jt::QuaternionFloating, q::AbstractVector, quat::Quaternion)
@@ -63,7 +63,7 @@ end
 function _configuration_derivative_to_velocity!(jt::QuaternionFloating, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
     quat = rotation(jt, q)
     invquat = inv(quat)
-    quatdot = rotation(jt, q̇)
+    quatdot = rotation(jt, q̇, false)
     posdot = translation(jt, q̇)
     linear = rotate(posdot, invquat)
     angularQuat = 2 * invquat * quatdot
