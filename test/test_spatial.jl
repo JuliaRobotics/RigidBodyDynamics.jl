@@ -92,12 +92,34 @@ end
         @test isapprox(transform(newton_euler(transform(I, H), transform(Ṫ, H, T, T), transform(T, H)), inv(H)), W)
     end
 
-    @testset "other functionality" begin
+    @testset "kinetic energy" begin
         I = rand(SpatialInertia{Float64}, f2)
         T = rand(Twist{Float64}, f2, f1, f2)
         H = rand(Transform3D{Float64}, f2, f1)
         Ek = kinetic_energy(I, T)
         @test isapprox((1//2 * Array(T)' * Array(I) * Array(T))[1], Ek; atol = 1e-12)
         @test isapprox(kinetic_energy(transform(I, H), transform(T, H)), Ek; atol = 1e-12)
+    end
+
+    @testset "log / exp" begin
+        for θ in [linspace(0., 10 * eps(Float64), 100); linspace(0., 2 * π - eps(Float64), 100)]
+            # have magnitude of parts of twist be bounded by θ to check for numerical issues
+            ϕrot = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
+            ϕtrans = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
+            T = Twist{Float64}(f2, f1, f1, ϕrot, ϕtrans)
+            H = exp(T)
+            @test isapprox(T, log(H))
+
+            That = [RigidBodyDynamics.hat(ϕrot) ϕtrans]
+            That = [That; zeros(1, 4)]
+            H_mat = [RigidBodyDynamics.rotation_matrix(H.rot) H.trans]
+            H_mat = [H_mat; zeros(1, 3) 1.]
+            @test isapprox(expm(That), H_mat; atol = 1e-10)
+        end
+
+        # test without rotation but with nonzero translation:
+        T = Twist{Float64}(f2, f1, f1, zeros(SVector{3}), rand(SVector{3}))
+        H = exp(T)
+        @test isapprox(T, log(H))
     end
 end

@@ -5,7 +5,7 @@ module RigidBodyDynamics
 include("tree.jl")
 
 import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!
-import Base: hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype, copy
+import Base: hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype, copy, exp, log
 using StaticArrays
 using Quaternions
 using DataStructures
