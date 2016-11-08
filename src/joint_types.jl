@@ -3,7 +3,19 @@
 abstract JointType{T<:Real}
 eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
 
-flip_direction{T}(jt::JointType{T}) = deepcopy(jt) # default behavior for flipping the direction of a joint
+# Default implementations
+flip_direction{T}(jt::JointType{T}) = deepcopy(jt)
+
+function _local_coordinates!(jt::JointType,
+        ϕ::AbstractVector, ϕ̇::AbstractVector,
+        q0::AbstractVector, q::AbstractVector, v::AbstractVector)
+    sub!(ϕ, q, q0)
+    copy!(ϕ̇, v)
+end
+
+function _global_coordinates!(jt::JointType, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
+    q .= q0 .+ ϕ # TODO: allocates on 0.5
+end
 
 
 #=
@@ -112,6 +124,48 @@ function _joint_torque!(jt::QuaternionFloating, τ::AbstractVector, q::AbstractV
     linear_velocity!(jt, τ, joint_wrench.linear)
     nothing
 end
+
+# uses exponential coordinates centered around q0
+function _local_coordinates!(jt::QuaternionFloating,
+        ϕ::AbstractVector, ϕ̇::AbstractVector,
+        q0::AbstractVector, q::AbstractVector, v::AbstractVector)
+    # anonymous helper frames
+    frameBefore = CartesianFrame3D()
+    frame0 = CartesianFrame3D()
+    frameAfter = CartesianFrame3D()
+
+    t0 = _joint_transform(jt, frame0, frameBefore, q0) # 0 to before
+    t = _joint_transform(jt, frameAfter, frameBefore, q) # after to before
+    relative_transform = inv(t0) * t # relative to q0
+    twist = _joint_twist(jt, frameAfter, frame0, q, v) # (q_0 is assumed not to change)
+    ξ, ξ̇ = log_with_time_derivative(relative_transform, twist)
+
+    @inbounds copy!(ϕ, 1, ξ.angular, 1, 3)
+    @inbounds copy!(ϕ, 4, ξ.linear, 1, 3)
+
+    @inbounds copy!(ϕ̇, 1, ξ̇.angular, 1, 3)
+    @inbounds copy!(ϕ̇, 4, ξ̇.linear, 1, 3)
+
+    nothing
+end
+
+function _global_coordinates!(jt::QuaternionFloating, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
+    # anonymous helper frames
+    frameBefore = CartesianFrame3D()
+    frame0 = CartesianFrame3D()
+    frameAfter = CartesianFrame3D()
+
+    t0 = _joint_transform(jt, frame0, frameBefore, q0)
+    @inbounds ξrot = SVector(ϕ[1], ϕ[2], ϕ[3])
+    @inbounds ξtrans = SVector(ϕ[4], ϕ[5], ϕ[6])
+    ξ = Twist(frameAfter, frame0, frame0, ξrot, ξtrans)
+    relative_transform = exp(ξ)
+    t = t0 * relative_transform
+    rotation!(jt, q, t.rot)
+    translation!(jt, q, t.trans)
+    nothing
+end
+
 
 
 #=

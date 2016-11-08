@@ -60,6 +60,8 @@ export
     newton_euler,
     joint_torque,
     joint_torque!,
+    local_coordinates!,
+    global_coordinates!,
     root_frame,
     root_vertex,
     tree,
