@@ -310,6 +310,7 @@
         state = MechanismState(Float64, mechanism)
         rand!(state)
         for joint in joints(mechanism)
+            # back and forth between local and global
             ϕ = Vector{Float64}(num_velocities(joint))
             ϕ̇ = Vector{Float64}(num_velocities(joint))
             q0 = Vector{Float64}(num_positions(joint))
@@ -334,7 +335,12 @@
             local_coordinates!(joint, ϕ_autodiff, ϕ̇_autodiff, q0_autodiff, q_autodiff, v_autodiff)
             ϕ̇_from_autodiff = [ForwardDiff.partials(x)[1] for x in ϕ_autodiff]
             @test isapprox(ϕ̇, ϕ̇_from_autodiff)
-            # TODO: should ϕ̇ just always be computed using autodiff? Should benchmark.
+
+            # local coordinates should be zero when q = q0
+            # Definition 2.9 in Duindam, "Port-Based Modeling and Control for Efficient Bipedal Walking Robots"
+            copy!(q, q0)
+            local_coordinates!(joint, ϕ, ϕ̇, q0, q, v)
+            @test isapprox(ϕ, zeros(num_velocities(joint)); atol = 1e-12)
         end
     end
 
@@ -343,7 +349,7 @@
         x = MechanismState(Float64, acrobot)
         rand!(x)
         total_energy_before = potential_energy(x) + kinetic_energy(x)
-        tspan = [0.; 1.]
+        tspan = linspace(0., 1., 1e4)
         times, states = simulate(x, tspan)
         set!(x, states[end])
         total_energy_after = potential_energy(x) + kinetic_energy(x)
