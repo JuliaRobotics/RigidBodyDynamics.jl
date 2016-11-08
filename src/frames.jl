@@ -113,7 +113,8 @@ end
 rand(::Type{Transform3D{Float64}}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D(from, to, nquatrand(), rand(SVector{3, Float64}))
 
 function isapprox{T}(x::Transform3D{T}, y::Transform3D{T}; atol::Real = 1e-12)
-    theta = 2 * angle(x.rot / y.rot)
+    theta, axis = angle_axis_proper(x.rot / y.rot)
+    theta = angle_difference(theta, zero(T))
     x.from == y.from && x.to == y.to && isapprox(theta, zero(T), atol = atol) && isapprox(x.trans, y.trans, atol = atol)
 end
 

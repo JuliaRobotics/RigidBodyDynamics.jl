@@ -102,7 +102,7 @@ end
     end
 
     @testset "log / exp" begin
-        for θ in [linspace(0., 10 * eps(Float64), 100); linspace(0., 2 * π - eps(Float64), 100)]
+        for θ in [linspace(0., 10 * eps(), 100); linspace(0., 2 * π - eps(), 100)]
             # have magnitude of parts of twist be bounded by θ to check for numerical issues
             ϕrot = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
             ϕtrans = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
@@ -121,5 +121,13 @@ end
         T = Twist{Float64}(f2, f1, f1, zeros(SVector{3}), rand(SVector{3}))
         H = exp(T)
         @test isapprox(T, log(H))
+
+        # test rotation for θ > 2 * π
+        for θ in [linspace(2 * π - 10 * eps(), 2 * π + 10 * eps(), 100) linspace(2 * π, 6 * π, 100)]
+            ω = normalize(rand(SVector{3}))
+            T1 = Twist(f2, f1, f1, ω * θ, zeros(SVector{3}))
+            T2 = Twist(f2, f1, f1, ω * mod(θ, 2 * π), zeros(SVector{3}))
+            @test isapprox(exp(T1), exp(T2); atol = 1e-10)
+        end
     end
 end

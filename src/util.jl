@@ -184,3 +184,7 @@ function rotation_vector_rate{T}(rotation_vector::AbstractVector{T}, angular_vel
     end
     ϕ̇
 end
+
+function angle_difference(a, b)
+    mod(b - a + pi, 2 * π) - π
+end

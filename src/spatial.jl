@@ -514,18 +514,14 @@ function exp(twist::Twist)
     ϕrot = twist.angular
     ϕtrans = twist.linear
     θ = norm(ϕrot)
-    while θ > 2 * π
-        θ -= 2 * π
-    end
-
-    if θ < eps(θ)
+    if abs(angle_difference(θ, zero(θ))) < eps(θ)
         # (2.32)
         rot = Quaternion{typeof(θ)}(one(θ), zero(θ), zero(θ), zero(θ), true)
         trans = ϕtrans
     else
         # (2.36)
-        rot = angle_axis_to_quaternion(θ, ϕrot / θ)
         ω = ϕrot / θ
+        rot = angle_axis_to_quaternion(θ, ω)
         v = ϕtrans / θ
         trans = ω × v
         trans -= rotate(trans, rot)
