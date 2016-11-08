@@ -183,11 +183,11 @@ function _local_coordinates!(jt::QuaternionFloating,
     ϕ̇rot = ω + 0.5 * ϕ̇rot_cross_1 + A * ϕ̇rot_cross_2 + B * ϕ̇rot_cross_4
     ϕ̇trans = ν + 0.5 * ϕ̇trans_cross_1 + A * ϕ̇trans_cross_2 + B * ϕ̇trans_cross_4
 
-    @inbounds copy!(view(ϕ, 1 : 3), ϕrot)
-    @inbounds copy!(view(ϕ, 4 : 6), ϕtrans)
+    @inbounds copy!(ϕ, 1, ϕrot, 1, 3)
+    @inbounds copy!(ϕ, 4, ϕtrans, 1, 3)
 
-    @inbounds copy!(view(ϕ̇, 1 : 3), ϕ̇rot)
-    @inbounds copy!(view(ϕ̇, 4 : 6), ϕ̇trans)
+    @inbounds copy!(ϕ̇, 1, ϕ̇rot, 1, 3)
+    @inbounds copy!(ϕ̇, 4, ϕ̇trans, 1, 3)
 
     # other implementations:
     # TODO: turn into tests
