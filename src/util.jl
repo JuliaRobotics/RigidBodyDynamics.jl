@@ -108,8 +108,9 @@ rotate(x::SMatrix{3}, q::Quaternion) = rotation_matrix(q) * x
 end
 
 function angle_axis_proper{T}(q::Quaternion{T})
-    Θ = 2 * atan2(√(q.v1^2 + q.v2^2 + q.v3^2), q.s)
-    axis = isapprox(Θ, zero(T)) ? SVector{3, T}(1, 0, 0) : SVector{3, T}(q.v1, q.v2, q.v3) / sin(Θ / 2)
+    Θ_over_2 = atan2(√(q.v1^2 + q.v2^2 + q.v3^2), q.s)
+    Θ = 2 * Θ_over_2
+    axis = Θ < eps(Θ) ? SVector(one(T), zero(T), zero(T)) : SVector(q.v1, q.v2, q.v3) * (1 / sin(Θ_over_2))
     Θ, axis
 end
 
@@ -139,6 +140,15 @@ function rotation_vector(q::Quaternion)
     ϕ = Θ * axis
 end
 
+function angle_axis_to_quaternion(angle::Real, axis::AbstractVector)
+    @boundscheck length(axis) == 3 || error("axis has wrong size")
+    Θ_over_2 = 0.5 * angle
+    s = sin(Θ_over_2)
+    c = cos(Θ_over_2)
+    @inbounds ret = Quaternion(c, s * axis[1], s * axis[2], s * axis[3])
+    ret
+end
+
 function angle_axis_to_rotation_matrix{T}(angle::T, axis::AbstractVector{T})
     # axis is assumed to be normalized.
     @boundscheck length(axis) == 3 || error("axis has wrong size")
@@ -162,7 +172,7 @@ end
 # ̂(dexp(ϕ(t)) * ϕ̇(t)) = d/dt(exp(ϕ(t))) * exp(ϕ(t))⁻¹  (hat form of angular velocity in world frame)
 #                      = ̂(exp(ϕ(t)) ω)      (with ω angular velocity in body frame)
 # ϕ̇(t) = dexp⁻¹(ϕ(t)) * exp(ϕ(t)) * ω
-function rotation_vector_rate(rotation_vector::AbstractVector, angular_velocity_in_body::AbstractVector)
+function rotation_vector_rate{T}(rotation_vector::AbstractVector{T}, angular_velocity_in_body::AbstractVector{T})
     ϕ = rotation_vector
     ω = angular_velocity_in_body
     @boundscheck length(ϕ) == 3 || error("ϕ has wrong length")
@@ -170,7 +180,7 @@ function rotation_vector_rate(rotation_vector::AbstractVector, angular_velocity_
     Θ = norm(ϕ)
     ϕ̇ = ω
     if Θ > eps(Θ)
-        ϕ̇ += (ϕ × ω) / 2 + 1 / Θ^2 * (1 - (Θ * sin(Θ)) / (2 * (1 - cos(Θ)))) * ϕ × (ϕ × ω)
+        ϕ̇ += T(0.5) * (ϕ × ω) + 1 / Θ^2 * (1 - (Θ * sin(Θ)) / (2 * (1 - cos(Θ)))) * ϕ × (ϕ × ω)
     end
     ϕ̇
 end
