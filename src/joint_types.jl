@@ -1,7 +1,6 @@
 # TODO: put in separate module
 
 abstract JointType{T<:Real}
-
 eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
 
 # Default implementations
@@ -126,132 +125,41 @@ function _joint_torque!(jt::QuaternionFloating, τ::AbstractVector, q::AbstractV
     nothing
 end
 
+# uses exponential coordinates centered around q0
 function _local_coordinates!(jt::QuaternionFloating,
         ϕ::AbstractVector, ϕ̇::AbstractVector,
         q0::AbstractVector, q::AbstractVector, v::AbstractVector)
-    # references:
-    # Murray, Richard M., et al.
-    # A mathematical introduction to robotic manipulation.
-    # CRC press, 1994.
-
-    # Bullo, Francesco, and R. M. Murray.
-    # "Proportional derivative (PD) control on the Euclidean group."
-    # European Control Conference. Vol. 2. 1995.
-
-    # use exponential coordinates centered around q0
-    # proposition 2.9 in Murray et al.
-
     # anonymous helper frames
     frameBefore = CartesianFrame3D()
     frame0 = CartesianFrame3D()
     frameAfter = CartesianFrame3D()
 
-    # compute transform from frame at q to frame at q0
     t0 = _joint_transform(jt, frame0, frameBefore, q0) # 0 to before
     t = _joint_transform(jt, frameAfter, frameBefore, q) # after to before
-    relative_transform = inv(t0) * t
-    rot = relative_transform.rot
-    trans = relative_transform.trans
+    relative_transform = inv(t0) * t # relative to q0
+    twist = _joint_twist(jt, frameAfter, frame0, q, v) # (q_0 is assumed not to change)
+    ξ, ξ̇ = log_with_time_derivative(relative_transform, twist)
 
-    # rotational part of local coordinates is simply the rotation vector corresponding to orientation relative to q0 frame:
-    # not using angle_axis_proper because we want to reuse intermediate results
-    Θ_over_2 = atan2(√(rot.v1^2 + rot.v2^2 + rot.v3^2), rot.s)
-    Θ = 2 * Θ_over_2
-    sΘ_over_2 = sin(Θ_over_2)
-    cΘ_over_2 = cos(Θ_over_2)
-    axis = Θ < eps(Θ) ? SVector(one(Θ), zero(Θ), zero(Θ)) : SVector(rot.v1, rot.v2, rot.v3) * (1 / sΘ_over_2)
-    ϕrot = Θ * axis
+    @inbounds copy!(ϕ, 1, ξ.angular, 1, 3)
+    @inbounds copy!(ϕ, 4, ξ.linear, 1, 3)
 
-    # translational part
-    # see Bullo and Murray, (2.4) and (2.5)
-    α = Θ_over_2 * cΘ_over_2 / sΘ_over_2 # TODO: singularity
-    Θ_squared = Θ^2
-    p = trans
-    ϕtrans = p - 0.5 * ϕrot × p + (1 - α) / Θ_squared * ϕrot × (ϕrot × p) # Bullo, Murray, (2.5)
-
-    # time derivatives of exponential coordinates
-    # see Bullo and Murray, Lemma 4.
-    # this is truely magic.
-    ω = angular_velocity(jt, v)
-    ν = linear_velocity(jt, v)
-    β = Θ_over_2^2 / sΘ_over_2^2 # TODO: singularity
-    A = (2 * (1 - α) + 0.5 * (α - β)) / Θ_squared
-    B = ((1 - α) + 0.5 * (α - β)) / Θ_squared^2
-    ϕ̇rot_cross_1, ϕ̇trans_cross_1 = se3_commutator(ϕrot, ϕtrans, ω, ν)
-    ϕ̇rot_cross_2, ϕ̇trans_cross_2 = se3_commutator(ϕrot, ϕtrans, ϕ̇rot_cross_1, ϕ̇trans_cross_1)
-    ϕ̇rot_cross_3, ϕ̇trans_cross_3 = se3_commutator(ϕrot, ϕtrans, ϕ̇rot_cross_2, ϕ̇trans_cross_2)
-    ϕ̇rot_cross_4, ϕ̇trans_cross_4 = se3_commutator(ϕrot, ϕtrans, ϕ̇rot_cross_3, ϕ̇trans_cross_3)
-    ϕ̇rot = ω + 0.5 * ϕ̇rot_cross_1 + A * ϕ̇rot_cross_2 + B * ϕ̇rot_cross_4
-    ϕ̇trans = ν + 0.5 * ϕ̇trans_cross_1 + A * ϕ̇trans_cross_2 + B * ϕ̇trans_cross_4
-
-    @inbounds copy!(ϕ, 1, ϕrot, 1, 3)
-    @inbounds copy!(ϕ, 4, ϕtrans, 1, 3)
-
-    @inbounds copy!(ϕ̇, 1, ϕ̇rot, 1, 3)
-    @inbounds copy!(ϕ̇, 4, ϕ̇trans, 1, 3)
-
-    # other implementations:
-    # TODO: turn into tests
-    # ϕtrans as derived in proposition 2.9 in Murray based on rotation matrices:
-    # R = rotation_matrix(rot)
-    # A = (eye(SMatrix{3, 3, T}) - R) * hat(axis) + axis * axis' * angle # prop 2.9 in Murray
-    # ϕtrans = angle * (A \ trans)
-    #
-    # . See:
-    # # Park, Jonghoon, and Wan-Kyun Chung.
-    # # "Geometric integration on Euclidean group with application to articulated multibody systems."
-    # # IEEE Transactions on Robotics 21.5 (2005): 850-863.
-    # # Equations (23) and (24)
-    #
-    # # rotational part
-    # ω = quaternion_floating_angular_velocity(v)
-    # ϕ̇rot = rotation_vector_rate(ϕrot, ω)
-    #
-    # # translational part TODO: ugly, don't quite understand it
-    # ν = quaternion_floating_linear_velocity(v)
-    # ϕ̇trans = rotation_vector_rate(ϕrot, ν)
-    # Θ = angle
-    # Θ_2 = Θ / 2
-    # s = sin(Θ_2)
-    # c = cos(Θ_2)
-    # β = s^2
-    # γ = c / s # TODO: singularity?
-    # D = (1 - γ) / Θ^2 * hat(ν, ω) + (1 / β + γ - 2) / Θ^4 * dot(ω, v) * hat_squared(ω)
-    # ϕ̇trans += (D - 1/2 * hat(v)) * v
+    @inbounds copy!(ϕ̇, 1, ξ̇.angular, 1, 3)
+    @inbounds copy!(ϕ̇, 4, ξ̇.linear, 1, 3)
 
     nothing
 end
 
 function _global_coordinates!(jt::QuaternionFloating, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
-    T = eltype(ϕ)
-
     # anonymous helper frames
     frameBefore = CartesianFrame3D()
     frame0 = CartesianFrame3D()
     frameAfter = CartesianFrame3D()
 
-    # compute transform from frame at q to frame at q0
     t0 = _joint_transform(jt, frame0, frameBefore, q0)
-
-    # exponentiate ϕ
-    ϕrot = SVector{3}(view(ϕ, 1 : 3))
-    ϕtrans = SVector{3}(view(ϕ, 4 : 6))
-    Θ = norm(ϕrot)
-    if Θ < eps(Θ)
-        # 2.32 in Murray et al.
-        rot = Quaternion{T}(one(T), zero(T), zero(T), zero(T), true)
-        trans = ϕtrans
-    else
-        # 2.36 in Murray et al.
-        rot = angle_axis_to_quaternion(Θ, ϕrot / Θ)
-        # ω and v are not really velocities, but this is the notation used in 2.36
-        ω = ϕrot / Θ
-        v = ϕtrans / Θ
-        trans = ω × v
-        trans -= rotate(trans, rot)
-        trans += ω * dot(ω, v) * Θ
-    end
-    relative_transform = Transform3D(frameAfter, frame0, rot, trans)
+    @inbounds ξrot = SVector(ϕ[1], ϕ[2], ϕ[3])
+    @inbounds ξtrans = SVector(ϕ[4], ϕ[5], ϕ[6])
+    ξ = Twist(frameAfter, frame0, frame0, ξrot, ξtrans)
+    relative_transform = exp(ξ)
     t = t0 * relative_transform
     rotation!(jt, q, t.rot)
     translation!(jt, q, t.trans)
