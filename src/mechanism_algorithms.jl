@@ -2,11 +2,9 @@ function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismSt
     mechanism = state.mechanism
     for vertex in non_root_vertices(mechanism)
         joint = edge_to_parent_data(vertex)
-        qRange = mechanism.qRanges[joint]
-        vRange = state.mechanism.vRanges[joint]
-        @inbounds qjoint = view(state.q, qRange)
-        @inbounds vjoint = view(state.v, vRange)
-        @inbounds q̇joint = view(out, qRange)
+        qjoint = configuration(state, joint)
+        vjoint = velocity(state, joint)
+        @inbounds q̇joint = view(out, mechanism.qRanges[joint]) # TODO: allocates
         velocity_to_configuration_derivative!(joint, q̇joint, qjoint, vjoint)
     end
 end
@@ -114,7 +112,7 @@ function acceleration_wrt_ancestor{X, M, C, V}(state::MechanismState{X, M, C},
     current = descendant
     while current != ancestor
         joint = edge_to_parent_data(current)
-        v̇joint = view(v̇, mechanism.vRanges[joint])
+        v̇joint = view(v̇, mechanism.vRanges[joint]) # TODO: allocates
         jointAccel = SpatialAcceleration(motion_subspace(state, joint), v̇joint)
         accel = jointAccel + accel
         current = parent(current)
@@ -173,7 +171,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = Ii * Si
-            @inbounds Hii = view(out.data, irange, irange)
+            @inbounds Hii = view(out.data, irange, irange) # TODO: allocates
             _mass_matrix_part!(Hii, Si, F)
 
             # Hji, Hij
@@ -184,7 +182,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                 if nvj > 0
                     jrange = mechanism.vRanges[jointj]
                     Sj = motion_subspace(state, jointj)
-                    @inbounds Hji = view(out.data, jrange, irange)
+                    @inbounds Hji = view(out.data, jrange, irange) # TODO: allocates
                     _mass_matrix_part!(Hji, Sj, F)
                 end
                 vj = parent(vj)
@@ -240,7 +238,7 @@ function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialA
         body = vertex_data(vertex)
         joint = edge_to_parent_data(vertex)
         S = motion_subspace(state, joint)
-        @inbounds v̇joint = view(v̇, mechanism.vRanges[joint])
+        @inbounds v̇joint = view(v̇, mechanism.vRanges[joint]) # TODO: allocates
         joint_accel = SpatialAcceleration(S, v̇joint)
         out[body] = out[vertex_data(parent(vertex))] + joint_accel
     end
@@ -289,7 +287,7 @@ function joint_wrenches_and_torques!{T, X, M}(
             netWrenchesInJointWrenchesOut[parentBody] = netWrenchesInJointWrenchesOut[parentBody] + jointWrench # action = -reaction
         end
         jointWrench = transform(state, jointWrench, joint.frameAfter)
-        @inbounds τjoint = view(torquesOut, mechanism.vRanges[joint])
+        @inbounds τjoint = view(torquesOut, mechanism.vRanges[joint]) # TODO: allocates
         joint_torque!(joint, τjoint, configuration(state, joint), jointWrench)
     end
 end
