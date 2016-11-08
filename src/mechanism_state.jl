@@ -72,6 +72,8 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     mechanism::Mechanism{M}
     q::Vector{X}
     v::Vector{X}
+    jointConfigurations::Dict{Joint{M}, VectorSegment{X}}
+    jointVelocities::Dict{Joint{M}, VectorSegment{X}}
     transformCache::TransformCache{C}
     twistsAndBiases::Dict{RigidBody{M}, CacheElement{Tuple{Twist{C}, SpatialAcceleration{C}}, UpdateTwistAndBias{M, C}}}
     motionSubspaces::Dict{Joint{M}, CacheElement{MotionSubspace{C}, UpdateMotionSubspace{M, C}}}
@@ -81,12 +83,14 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real} # immutable, but can change 
     function MechanismState(m::Mechanism{M})
         q = zeros(X, num_positions(m))
         v = zeros(X, num_velocities(m))
+        jointConfigurations = Dict(joint => view(q, m.qRanges[joint]) for joint in joints(m))
+        jointVelocities = Dict(joint => view(v, m.vRanges[joint]) for joint in joints(m))
         transformCache = TransformCache(m, q)
         twistsAndBiases = Dict{RigidBody{M}, CacheElement{Tuple{Twist{C}, SpatialAcceleration{C}}, UpdateTwistAndBias{M, C}}}()
         motionSubspaces = Dict{Joint{M}, CacheElement{MotionSubspace{C}}}()
         spatialInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateSpatialInertiaInWorld{M, C}}}()
         crbInertias = Dict{RigidBody{M}, CacheElement{SpatialInertia{C}, UpdateCompositeRigidBodyInertia{M, C}}}()
-        new(m, q, v, transformCache, twistsAndBiases, motionSubspaces, spatialInertias, crbInertias)
+        new(m, q, v, jointConfigurations, jointVelocities, transformCache, twistsAndBiases, motionSubspaces, spatialInertias, crbInertias)
     end
 end
 
@@ -96,8 +100,8 @@ num_velocities(state::MechanismState) = length(state.v)
 state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
 mechanism_eltype{X, M, C}(state::MechanismState{X, M, C}) = M
 cache_eltype{X, M, C}(state::MechanismState{X, M, C}) = C
-configuration(state::MechanismState, joint::Joint) = view(state.q, state.mechanism.qRanges[joint])
-velocity(state::MechanismState, joint::Joint) = view(state.v, state.mechanism.vRanges[joint])
+configuration(state::MechanismState, joint::Joint) = state.jointConfigurations[joint]
+velocity(state::MechanismState, joint::Joint) = state.jointVelocities[joint]
 
 function setdirty!(state::MechanismState)
     setdirty!(state.transformCache)
@@ -188,8 +192,8 @@ function MechanismState{X, M}(::Type{X}, m::Mechanism{M})
             joint = edge_to_parent_data(vertex)
             parentFrame = default_frame(m, parentBody)
 
-            qJoint = view(state.q, state.mechanism.qRanges[joint])
-            vJoint = view(state.v, state.mechanism.vRanges[joint])
+            qJoint = configuration(state, joint)
+            vJoint = velocity(state, joint)
 
             # twists and bias accelerations
             transformToRootCache = state.transformCache.transformsToRoot[joint.frameAfter]
