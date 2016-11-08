@@ -1,3 +1,5 @@
+# TODO: put in separate module
+
 abstract JointType{T<:Real}
 
 # Default implementations
@@ -27,17 +29,11 @@ rand{T}(::Type{QuaternionFloating{T}}) = QuaternionFloating{T}()
 num_positions(::QuaternionFloating) = 7
 num_velocities(::QuaternionFloating) = 6
 
-@inline rotation_view(::QuaternionFloating, q::AbstractVector) = begin @inbounds quat = view(q, 1 : 4); quat end
-@inline translation_view(::QuaternionFloating, q::AbstractVector) = begin @inbounds trans = view(q, 5 : 7); trans end
-
 @inline function rotation(jt::QuaternionFloating, q::AbstractVector)
-    quat_view = rotation_view(jt, q)
-    @inbounds quat = Quaternion(quat_view[1], quat_view[2], quat_view[3], quat_view[4])
+    @inbounds quat = Quaternion(q[1], q[2], q[3], q[4])
     quat
 end
-
 @inline function rotation!(jt::QuaternionFloating, q::AbstractVector, quat::Quaternion)
-    quat_view = rotation_view(jt, q)
     @inbounds q[1] = quat.s
     @inbounds q[2] = quat.v1
     @inbounds q[3] = quat.v2
@@ -45,31 +41,14 @@ end
     nothing
 end
 
-@inline function translation(jt::QuaternionFloating, q::AbstractVector)
-    @inbounds trans = SVector{3}(translation_view(jt, q))
-    trans
-end
+@inline translation(jt::QuaternionFloating, q::AbstractVector) = begin @inbounds trans = SVector(q[5], q[6], q[7]); trans end
+@inline translation!(jt::QuaternionFloating, q::AbstractVector, trans::AbstractVector) = @inbounds copy!(q, 5, trans, 1, 3)
 
-@inline function translation!(jt::QuaternionFloating, q::AbstractVector, trans::AbstractVector)
-    @inbounds copy!(translation_view(jt, q), trans)
-    nothing
-end
+@inline angular_velocity(jt::QuaternionFloating, v::AbstractVector) = begin @inbounds ω = SVector(v[1], v[2], v[3]); ω end
+@inline angular_velocity!(jt::QuaternionFloating, v::AbstractVector, ω::AbstractVector) = @inbounds copy!(v, 1, ω, 1, 3)
 
-@inline angular_velocity_view(::QuaternionFloating, v::AbstractVector) = begin @inbounds ω = view(v, 1 : 3); ω end
-@inline linear_velocity_view(::QuaternionFloating, v::AbstractVector) = begin @inbounds vel = view(v, 4 : 6); vel end
-
-@inline angular_velocity(jt::QuaternionFloating, v::AbstractVector) = SVector{3}(angular_velocity_view(jt, v))
-@inline linear_velocity(jt::QuaternionFloating, v::AbstractVector) = SVector{3}(linear_velocity_view(jt, v))
-
-@inline function angular_velocity!(jt::QuaternionFloating, v::AbstractVector, ω::AbstractVector)
-    @inbounds copy!(angular_velocity_view(jt, v), ω)
-    nothing
-end
-
-@inline function linear_velocity!(jt::QuaternionFloating, v::AbstractVector, ν::AbstractVector)
-    @inbounds copy!(linear_velocity_view(jt, v), ν)
-    nothing
-end
+@inline linear_velocity(jt::QuaternionFloating, v::AbstractVector) = begin @inbounds ν = SVector(v[4], v[5], v[6]); ν end
+@inline linear_velocity!(jt::QuaternionFloating, v::AbstractVector, ν::AbstractVector) = @inbounds copy!(v, 4, ν, 1, 3)
 
 function _joint_transform{T<:Real, X<:Real}(
         jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
