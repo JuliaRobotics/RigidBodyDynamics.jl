@@ -417,6 +417,13 @@ function show(io::IO, a::SpatialAcceleration)
     print(io, "SpatialAcceleration of \"$(name(a.body))\" w.r.t \"$(name(a.base))\" in \"$(name(a.frame))\":\nangular: $(a.angular), linear: $(a.linear)")
 end
 
+# also known as 'spatial motion cross product'
+@inline function se3_commutator(xω, xv, yω, yv)
+    angular = cross(xω, yω)
+    linear = cross(xω, yv) + cross(xv, yω)
+    angular, linear
+end
+
 function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCurrentWrtNew::Twist, twistOfBodyWrtBase::Twist)
     # trivial case
     accel.frame == oldToNew.to && return accel
@@ -430,10 +437,10 @@ function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCur
     framecheck(twistOfBodyWrtBase.body, accel.body)
     framecheck(twistOfBodyWrtBase.base, accel.base)
 
-    # spatial motion cross product:
-    angular = cross(twistOfCurrentWrtNew.angular, twistOfBodyWrtBase.angular)
-    linear = cross(twistOfCurrentWrtNew.linear, twistOfBodyWrtBase.angular)
-    linear += cross(twistOfCurrentWrtNew.angular, twistOfBodyWrtBase.linear)
+    # 'cross term':
+    angular, linear = se3_commutator(
+        twistOfCurrentWrtNew.angular, twistOfCurrentWrtNew.linear,
+        twistOfBodyWrtBase.angular, twistOfBodyWrtBase.linear)
 
     # add current acceleration:
     angular += accel.angular

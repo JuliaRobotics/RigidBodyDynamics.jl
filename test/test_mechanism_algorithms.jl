@@ -305,6 +305,39 @@
         @test isapprox(power, energy_derivative, atol = 1e-10)
     end
 
+    @testset "local / global coordinates" begin
+        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
+        state = MechanismState(Float64, mechanism)
+        rand!(state)
+        for joint in joints(mechanism)
+            ϕ = Vector{Float64}(num_velocities(joint))
+            ϕ̇ = Vector{Float64}(num_velocities(joint))
+            q0 = Vector{Float64}(num_positions(joint))
+            q = configuration(state, joint)
+            v = velocity(state, joint)
+            rand_configuration!(joint, q0)
+            local_coordinates!(joint, ϕ, ϕ̇, q0, q, v)
+            q_back = Vector{Float64}(num_positions(joint))
+            global_coordinates!(joint, q_back, q0, ϕ)
+            @test isapprox(q, q_back)
+
+            # compare ϕ̇ to autodiff
+            q̇ = Vector{Float64}(num_positions(joint))
+            velocity_to_configuration_derivative!(joint, q̇, q, v)
+            v̇ = rand(num_velocities(joint))
+            q_autodiff = create_autodiff(q, q̇)
+            v_autodiff = create_autodiff(v, v̇)
+            q0_autodiff = create_autodiff(q0, zeros(length(q0)))
+            T = eltype(q_autodiff)
+            ϕ_autodiff = Vector{T}(length(ϕ))
+            ϕ̇_autodiff = Vector{T}(length(ϕ̇))
+            local_coordinates!(joint, ϕ_autodiff, ϕ̇_autodiff, q0_autodiff, q_autodiff, v_autodiff)
+            ϕ̇_from_autodiff = [ForwardDiff.partials(x)[1] for x in ϕ_autodiff]
+            @test isapprox(ϕ̇, ϕ̇_from_autodiff)
+            # TODO: should ϕ̇ just always be computed using autodiff? Should benchmark.
+        end
+    end
+
     @testset "simulate" begin
         acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
         x = MechanismState(Float64, acrobot)
