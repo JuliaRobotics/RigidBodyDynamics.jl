@@ -480,3 +480,52 @@ function kinetic_energy(I::SpatialInertia, twist::Twist)
     m = I.mass
     1/2 * (dot(ω, J * ω) + dot(v, m * v + 2 * cross(ω, c)))
 end
+
+function log(t::Transform3D)
+    # Proposition 2.9 in Murray et al, "A mathematical introduction to robotic manipulation."
+
+    T = eltype(t)
+
+    rot = t.rot
+    p = t.trans
+
+    # Rotational part of local coordinates is simply the rotation vector.
+    θ, axis = angle_axis_proper(rot)
+    ϕrot = θ * axis
+
+    # Translational part from Bullo and Murray, "Proportional derivative (PD) control on the Euclidean group.",
+    # (2.4) and (2.5), which provide a closed form solution of the inverse of the A matrix in proposition 2.9 of Murray et al.
+    if θ < eps(θ)
+        ϕtrans = p
+    else
+        θ_over_2 = T(0.5) * θ
+        sθ_over_2 = sin(θ_over_2)
+        cθ_over_2 = cos(θ_over_2)
+        α = θ_over_2 * cθ_over_2 / sθ_over_2
+        ϕtrans = p - T(0.5) * ϕrot × p + (1 - α) / θ^2 * ϕrot × (ϕrot × p) # Bullo, Murray, (2.5)
+    end
+
+    Twist(t.from, t.to, t.to, ϕrot, ϕtrans) # twist in base frame; see section 4.3
+end
+
+function exp(twist::Twist)
+    # See Murray et al, "A mathematical introduction to robotic manipulation."
+    framecheck(twist.frame, twist.base) # twist in base frame; see section 4.3
+    ϕrot = twist.angular
+    ϕtrans = twist.linear
+    θ = norm(ϕrot)
+    if abs(angle_difference(θ, zero(θ))) < eps(θ)
+        # (2.32)
+        rot = Quaternion{typeof(θ)}(one(θ), zero(θ), zero(θ), zero(θ), true)
+        trans = ϕtrans
+    else
+        # (2.36)
+        ω = ϕrot / θ
+        rot = angle_axis_to_quaternion(θ, ω)
+        v = ϕtrans / θ
+        trans = ω × v
+        trans -= rotate(trans, rot)
+        trans += ω * dot(ω, v) * θ
+    end
+    Transform3D(twist.body, twist.base, rot, trans)
+end
