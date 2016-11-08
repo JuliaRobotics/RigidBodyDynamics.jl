@@ -1,6 +1,7 @@
 # TODO: put in separate module
 
 abstract JointType{T<:Real}
+eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
 
 # Default implementations
 flip_direction{T}(jt::JointType{T}) = deepcopy(jt)
@@ -50,13 +51,12 @@ end
 @inline linear_velocity(jt::QuaternionFloating, v::AbstractVector) = begin @inbounds ν = SVector(v[4], v[5], v[6]); ν end
 @inline linear_velocity!(jt::QuaternionFloating, v::AbstractVector, ν::AbstractVector) = @inbounds copy!(v, 4, ν, 1, 3)
 
-function _joint_transform{T<:Real, X<:Real}(
-        jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
-    S = promote_type(T, X)
-    rot = rotation(jt, q)
-    Quaternions.normalize(rot)
-    trans = translation(jt, q)
-    Transform3D(frameAfter, frameBefore, convert(Quaternion{S}, rot), convert(SVector{3, S}, trans))
+function _joint_transform(
+        jt::QuaternionFloating, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
+    S = promote_type(eltype(jt), eltype(q))
+    rot = convert(Quaternion{S}, rotation(jt, q))
+    trans = convert(SVector{3, S}, translation(jt, q))
+    Transform3D{S}(frameAfter, frameBefore, rot, trans)
 end
 
 function _motion_subspace{T<:Real, X<:Real}(
