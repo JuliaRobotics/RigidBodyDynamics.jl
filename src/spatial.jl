@@ -399,6 +399,10 @@ function SpatialAcceleration(jac::GeometricJacobian, v̇::AbstractVector)
     SpatialAcceleration(jac.body, jac.base, jac.frame, angular, linear)
 end
 
+function isapprox(x::SpatialAcceleration, y::SpatialAcceleration; atol = 1e-12)
+    x.body == y.body && x.base == y.base && x.frame == y.frame && isapprox(x.angular, y.angular; atol = atol) && isapprox(x.linear, y.linear; atol = atol)
+end
+
 function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
     framecheck(accel1.frame, accel2.frame)
     if accel1.body == accel2.base
@@ -417,6 +421,13 @@ function show(io::IO, a::SpatialAcceleration)
     print(io, "SpatialAcceleration of \"$(name(a.body))\" w.r.t \"$(name(a.base))\" in \"$(name(a.frame))\":\nangular: $(a.angular), linear: $(a.linear)")
 end
 
+# also known as 'spatial motion cross product'
+@inline function se3_commutator(xω, xv, yω, yv)
+    angular = cross(xω, yω)
+    linear = cross(xω, yv) + cross(xv, yω)
+    angular, linear
+end
+
 function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCurrentWrtNew::Twist, twistOfBodyWrtBase::Twist)
     # trivial case
     accel.frame == oldToNew.to && return accel
@@ -430,10 +441,10 @@ function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCur
     framecheck(twistOfBodyWrtBase.body, accel.body)
     framecheck(twistOfBodyWrtBase.base, accel.base)
 
-    # spatial motion cross product:
-    angular = cross(twistOfCurrentWrtNew.angular, twistOfBodyWrtBase.angular)
-    linear = cross(twistOfCurrentWrtNew.linear, twistOfBodyWrtBase.angular)
-    linear += cross(twistOfCurrentWrtNew.angular, twistOfBodyWrtBase.linear)
+    # 'cross term':
+    angular, linear = se3_commutator(
+        twistOfCurrentWrtNew.angular, twistOfCurrentWrtNew.linear,
+        twistOfBodyWrtBase.angular, twistOfBodyWrtBase.linear)
 
     # add current acceleration:
     angular += accel.angular
@@ -481,11 +492,9 @@ function kinetic_energy(I::SpatialInertia, twist::Twist)
     1/2 * (dot(ω, J * ω) + dot(v, m * v + 2 * cross(ω, c)))
 end
 
-function log(t::Transform3D)
+# log(::Transform3D) + some extra outputs that make log_with_time_derivative faster
+function _log(t::Transform3D)
     # Proposition 2.9 in Murray et al, "A mathematical introduction to robotic manipulation."
-
-    T = eltype(t)
-
     rot = t.rot
     p = t.trans
 
@@ -495,17 +504,63 @@ function log(t::Transform3D)
 
     # Translational part from Bullo and Murray, "Proportional derivative (PD) control on the Euclidean group.",
     # (2.4) and (2.5), which provide a closed form solution of the inverse of the A matrix in proposition 2.9 of Murray et al.
-    if θ < eps(θ)
+
+    θ_over_2 = θ / 2
+    sθ_over_2 = sin(θ_over_2)
+    cθ_over_2 = cos(θ_over_2)
+    θ_squared = θ^2
+    if abs(angle_difference(θ, zero(θ))) < eps(θ)
+        α = one(θ_over_2)
         ϕtrans = p
     else
-        θ_over_2 = T(0.5) * θ
-        sθ_over_2 = sin(θ_over_2)
-        cθ_over_2 = cos(θ_over_2)
         α = θ_over_2 * cθ_over_2 / sθ_over_2
-        ϕtrans = p - T(0.5) * ϕrot × p + (1 - α) / θ^2 * ϕrot × (ϕrot × p) # Bullo, Murray, (2.5)
+        ϕtrans = p - ϕrot × p / 2 + (1 - α) / θ_squared * ϕrot × (ϕrot × p) # Bullo, Murray, (2.5)
     end
 
-    Twist(t.from, t.to, t.to, ϕrot, ϕtrans) # twist in base frame; see section 4.3
+    ξ = Twist(t.from, t.to, t.to, ϕrot, ϕtrans) # twist in base frame; see section 4.3
+    ξ, θ, θ_squared, θ_over_2, sθ_over_2, cθ_over_2, α
+end
+
+function log(t::Transform3D)
+    first(_log(t))
+end
+
+# Compute exponential coordinates as well as their time derivatives in one shot.
+# This mainly exists because ForwardDiff won't work at the singularity of log.
+# It is also ~50% faster than ForwardDiff in this case.
+function log_with_time_derivative(t::Transform3D, twist::Twist)
+    # See Bullo and Murray, "Proportional derivative (PD) control on the Euclidean group.", Lemma 4.
+    # This is truely magic.
+    # Notation matches Bullo and Murray.
+
+    framecheck(twist.body, t.from)
+    framecheck(twist.base, t.to)
+    framecheck(twist.frame, twist.body) # required by Lemma 4.
+
+    X, θ, θ_squared, θ_over_2, sθ_over_2, cθ_over_2, α = _log(t)
+
+    ψ = X.angular
+    q = X.linear
+
+    ω = twist.angular
+    v = twist.linear
+
+    ψ̇ = ω
+    q̇ = v
+    if abs(angle_difference(θ, zero(θ))) > eps(θ)
+        β = θ_over_2^2 / sθ_over_2^2
+        A = (2 * (1 - α) + (α - β) / 2) / θ_squared
+        B = ((1 - α) + (α - β) / 2) / θ_squared^2
+        adψ̇, adq̇ = se3_commutator(ψ, q, ω, v)
+        ad2ψ̇, ad2q̇ = se3_commutator(ψ, q, adψ̇, adq̇)
+        ad3ψ̇, ad3q̇ = se3_commutator(ψ, q, ad2ψ̇, ad2q̇)
+        ad4ψ̇, ad4q̇ = se3_commutator(ψ, q, ad3ψ̇, ad3q̇)
+        ψ̇ += adψ̇ / 2 + A * ad2ψ̇ + B * ad4ψ̇
+        q̇ += adq̇ / 2 + A * ad2q̇ + B * ad4q̇
+    end
+    Ẋ = SpatialAcceleration(X.body, X.base, X.frame, ψ̇, q̇)
+
+    X, Ẋ
 end
 
 function exp(twist::Twist)

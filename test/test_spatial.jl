@@ -106,28 +106,56 @@ end
             # have magnitude of parts of twist be bounded by θ to check for numerical issues
             ϕrot = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
             ϕtrans = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
-            T = Twist{Float64}(f2, f1, f1, ϕrot, ϕtrans)
-            H = exp(T)
-            @test isapprox(T, log(H))
+            ξ = Twist{Float64}(f2, f1, f1, ϕrot, ϕtrans)
+            H = exp(ξ)
+            @test isapprox(ξ, log(H))
 
-            That = [RigidBodyDynamics.hat(ϕrot) ϕtrans]
-            That = [That; zeros(1, 4)]
+            ξhat = [RigidBodyDynamics.hat(ϕrot) ϕtrans]
+            ξhat = [ξhat; zeros(1, 4)]
             H_mat = [RigidBodyDynamics.rotation_matrix(H.rot) H.trans]
             H_mat = [H_mat; zeros(1, 3) 1.]
-            @test isapprox(expm(That), H_mat; atol = 1e-10)
+            @test isapprox(expm(ξhat), H_mat; atol = 1e-10)
         end
 
         # test without rotation but with nonzero translation:
-        T = Twist{Float64}(f2, f1, f1, zeros(SVector{3}), rand(SVector{3}))
-        H = exp(T)
-        @test isapprox(T, log(H))
+        ξ = Twist{Float64}(f2, f1, f1, zeros(SVector{3}), rand(SVector{3}))
+        H = exp(ξ)
+        @test isapprox(ξ, log(H))
 
         # test rotation for θ > 2 * π
         for θ in [linspace(2 * π - 10 * eps(), 2 * π + 10 * eps(), 100) linspace(2 * π, 6 * π, 100)]
             ω = normalize(rand(SVector{3}))
-            T1 = Twist(f2, f1, f1, ω * θ, zeros(SVector{3}))
-            T2 = Twist(f2, f1, f1, ω * mod(θ, 2 * π), zeros(SVector{3}))
-            @test isapprox(exp(T1), exp(T2); atol = 1e-10)
+            ξ1 = Twist(f2, f1, f1, ω * θ, zeros(SVector{3}))
+            ξ2 = Twist(f2, f1, f1, ω * mod(θ, 2 * π), zeros(SVector{3}))
+            @test isapprox(exp(ξ1), exp(ξ2); atol = 1e-10)
+        end
+
+        # derivative
+        for θ in linspace(1e-3, 2 * π - 1e-3, 100) # autodiff doesn't work close to the identity rotation
+            ξ = Twist{Float64}(f2, f1, f1, θ * normalize(rand(SVector{3})), θ * normalize(rand(SVector{3})))
+            H = exp(ξ)
+            T = Twist{Float64}(f2, f1, f2, rand(SVector{3}), rand(SVector{3}))
+            ξ2, ξ̇ = RigidBodyDynamics.log_with_time_derivative(H, T)
+            @test isapprox(ξ, ξ2)
+            # autodiff log. Need time derivative of transform in ForwardDiff form, so need to basically v_to_qdot for quaternion floating joint
+
+            ωQuat = Quaternion{Float64}(0., T.angular[1], T.angular[2], T.angular[3], false)
+            linear = T.linear
+            rotdot = 0.5 * H.rot * ωQuat
+            transdot = RigidBodyDynamics.rotate(linear, H.rot)
+
+            trans_autodiff = @SVector [ForwardDiff.Dual(H.trans[i], transdot[i]) for i in 1 : 3]
+            rot_autodiff = Quaternion{eltype(trans_autodiff)}(
+                ForwardDiff.Dual(H.rot.s, rotdot.s),
+                ForwardDiff.Dual(H.rot.v1, rotdot.v1),
+                ForwardDiff.Dual(H.rot.v2, rotdot.v2),
+                ForwardDiff.Dual(H.rot.v3, rotdot.v3), true)
+            H_autodiff = Transform3D(H.from, H.to, rot_autodiff, trans_autodiff)
+            ξ_autodiff = log(H_autodiff)
+            ξ̇rot_from_autodiff = @SVector [ForwardDiff.partials(ξ_autodiff.angular[i])[1] for i in 1 : 3]
+            ξ̇trans_from_autodiff = @SVector [ForwardDiff.partials(ξ_autodiff.linear[i])[1] for i in 1 : 3]
+            ξ̇_from_autodiff = SpatialAcceleration(ξ.body, ξ.base, ξ.frame, ξ̇rot_from_autodiff, ξ̇trans_from_autodiff)
+            @test isapprox(ξ̇, ξ̇_from_autodiff; atol = 1e-10)
         end
     end
 end

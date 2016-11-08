@@ -9,6 +9,9 @@ import ForwardDiff
 # useful utility function for computing time derivatives.
 create_autodiff(x, dx) = [ForwardDiff.Dual(x[i], dx[i]) for i in 1 : length(x)]
 
+# TODO: open a PR with ForwardDiff:
+Base.mod{T<:ForwardDiff.Dual}(x::T, y::T) = ForwardDiff.Dual(mod(ForwardDiff.value(x), ForwardDiff.value(y)), ForwardDiff.partials(x))
+
 include("test_util.jl")
 include("test_tree.jl")
 include("test_frames.jl")
