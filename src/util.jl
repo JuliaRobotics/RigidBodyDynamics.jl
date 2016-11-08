@@ -140,9 +140,9 @@ function rotation_vector(q::Quaternion)
     ϕ = Θ * axis
 end
 
-function angle_axis_to_quaternion{T}(angle::T, axis::AbstractVector{T})
+function angle_axis_to_quaternion(angle::Real, axis::AbstractVector)
     @boundscheck length(axis) == 3 || error("axis has wrong size")
-    Θ_over_2 = T(0.5) * angle
+    Θ_over_2 = 0.5 * angle
     s = sin(Θ_over_2)
     c = cos(Θ_over_2)
     @inbounds ret = Quaternion(c, s * axis[1], s * axis[2], s * axis[3])
