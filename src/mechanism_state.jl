@@ -336,3 +336,23 @@ function transform(state::MechanismState, accel::SpatialAcceleration, to::Cartes
     oldToNew = inv(transform_to_root(state, to)) * oldToRoot
     transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
 end
+
+function local_coordinates!(state::MechanismState, ϕ::AbstractVector, ϕ̇::AbstractVector, q0::AbstractVector)
+    mechanism = state.mechanism
+    for joint in joints(mechanism)
+        vRange = mechanism.vRanges[joint]
+        @inbounds ϕjoint = view(ϕ, vRange) # TODO: allocates
+        @inbounds ϕ̇joint = view(ϕ̇, vRange) # TODO: allocates
+        @inbounds q0joint = view(q0, mechanism.qRanges[joint]) # TODO: allocates
+        local_coordinates!(joint, ϕjoint, ϕ̇joint, q0joint, configuration(state, joint), velocity(state, joint))
+    end
+end
+
+function global_coordinates!(state::MechanismState, q0::AbstractVector, ϕ::AbstractVector)
+    mechanism = state.mechanism
+    for joint in joints(mechanism)
+        @inbounds q0joint = view(q0, mechanism.qRanges[joint]) # TODO: allocates
+        @inbounds ϕjoint = view(ϕ, mechanism.vRanges[joint]) # TODO: allocates
+        global_coordinates!(joint, configuration(state, joint), q0joint, ϕjoint)
+    end
+end

@@ -66,6 +66,13 @@ else
     sub!(out, a, b) = broadcast!(-, out, a, b)
 end
 
+function scaleadd!(a::AbstractVector, b::AbstractVector, c::Number)
+    @boundscheck length(a) == length(b) || error("size mismatch")
+    @simd for i in eachindex(a)
+        @inbounds a[i] = a[i] + b[i] * c
+    end
+end
+
 
 #=
 Geometry utilities
