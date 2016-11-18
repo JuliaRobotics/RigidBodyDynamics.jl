@@ -1,39 +1,3 @@
-function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
-    mechanism = state.mechanism
-    for vertex in non_root_vertices(mechanism)
-        joint = edge_to_parent_data(vertex)
-        qjoint = configuration(state, joint)
-        vjoint = velocity(state, joint)
-        @inbounds q̇joint = view(out, mechanism.qRanges[joint]) # TODO: allocates
-        velocity_to_configuration_derivative!(joint, q̇joint, qjoint, vjoint)
-    end
-end
-
-function configuration_derivative{X}(state::MechanismState{X})
-    ret = Vector{X}(num_positions(state))
-    configuration_derivative!(ret, state)
-    ret
-end
-
-transform_to_parent(state::MechanismState, frame::CartesianFrame3D) = transform_to_parent(state.transformCache, frame)
-transform_to_root(state::MechanismState, frame::CartesianFrame3D) = transform_to_root(state.transformCache, frame)
-relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D) = relative_transform(state.transformCache, from, to)
-
-twist_wrt_world{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.twistsAndBiases[body])[1]
-relative_twist{X, M}(state::MechanismState{X, M}, body::RigidBody{M}, base::RigidBody{M}) = -twist_wrt_world(state, base) + twist_wrt_world(state, body)
-function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D)
-    twist = relative_twist(state, state.mechanism.bodyFixedFrameToBody[bodyFrame],  state.mechanism.bodyFixedFrameToBody[baseFrame])
-    Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)
-end
-
-bias_acceleration{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.twistsAndBiases[body])[2]
-
-motion_subspace(state::MechanismState, joint::Joint) = get(state.motionSubspaces[joint])
-
-spatial_inertia{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.spatialInertias[body])
-
-crb_inertia{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = get(state.crbInertias[body])
-
 function transform(state::MechanismState, point::Point3D, to::CartesianFrame3D)
     point.frame == to && return point # nothing to be done
     relative_transform(state, point.frame, to) * point
@@ -237,8 +201,8 @@ function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialA
         joint = edge_to_parent_data(vertex)
         S = motion_subspace(state, joint)
         @inbounds v̇joint = view(v̇, mechanism.vRanges[joint]) # TODO: allocates
-        joint_accel = SpatialAcceleration(S, v̇joint)
-        out[body] = out[vertex_data(parent(vertex))] + joint_accel
+        jointAccel = SpatialAcceleration(S, v̇joint)
+        out[body] = out[vertex_data(parent(vertex))] + jointAccel
     end
 
     # add bias acceleration - gravity

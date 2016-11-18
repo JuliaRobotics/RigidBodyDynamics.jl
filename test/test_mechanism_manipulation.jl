@@ -114,6 +114,12 @@
             floatingJoint = edge_to_parent_data(subtreeRootVertex)
             floatingBody = vertex_data(subtreeRootVertex)
 
+            # do dynamics at random mechanism state
+            x = MechanismState(Float64, mechanism)
+            rand!(x)
+            result = DynamicsResult(Float64, mechanism)
+            dynamics!(result, x)
+
             # reattach at different body
             newFloatingBody = rand(collect(non_root_bodies(mechanism)))
             newFloatingJoint = Joint("newFloating", QuaternionFloating{Float64}())
@@ -122,10 +128,6 @@
             bodyToJoint = Transform3D{Float64}(newFloatingBody.frame, newFloatingJoint.frameAfter)
             rerooted = copy(mechanism)
             flippedJointMapping = reattach!(rerooted, floatingBody, world, newFloatingJoint, jointToWorld, newFloatingBody, bodyToJoint)
-
-            # create random mechanism state
-            x = MechanismState(Float64, mechanism)
-            rand!(x)
 
             # mimic the same state for the rerooted mechanism
             # copy non-floating joint configurations and velocities
@@ -147,9 +149,6 @@
             set_velocity!(xRerooted, newFloatingJoint, [newFloatingJointTwist.angular; newFloatingJointTwist.linear]) # TODO: add Joint function that does mapping
 
             # make sure that joint accelerations for non-floating joints are the same
-            result = DynamicsResult(Float64, mechanism)
-            dynamics!(result, x)
-
             resultRerooted = DynamicsResult(Float64, rerooted)
             dynamics!(resultRerooted, xRerooted)
 

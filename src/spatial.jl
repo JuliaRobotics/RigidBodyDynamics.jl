@@ -148,8 +148,7 @@ function transform(twist::Twist, transform::Transform3D)
     Twist(twist.body, twist.base, transform.to, angular, linear)
 end
 
-change_base_no_relative_motion(t::Twist, base::CartesianFrame3D) = Twist(t.body, base, t.frame, t.angular, t.linear)
-change_body_no_relative_motion(t::Twist, body::CartesianFrame3D) = Twist(body, t.base, t.frame, t.angular, t.linear)
+change_base(t::Twist, base::CartesianFrame3D) = Twist(t.body, base, t.frame, t.angular, t.linear)
 zero{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
 rand{T}(::Type{Twist{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = Twist(body, base, frame, rand(SVector{3, T}), rand(SVector{3, T}))
 
@@ -207,6 +206,8 @@ eltype{A}(::Type{GeometricJacobian{A}}) = eltype(A)
 num_cols(jac::GeometricJacobian) = size(jac.angular, 2)
 angular_part(jac::GeometricJacobian) = jac.angular
 linear_part(jac::GeometricJacobian) = jac.linear
+
+change_base(jac::GeometricJacobian, base::CartesianFrame3D) = GeometricJacobian(jac.body, base, jac.frame, jac.angular, jac.linear)
 
 function Twist(jac::GeometricJacobian, v::AbstractVector)
     angular = convert(SVector{3}, _mul(jac.angular, v))
@@ -410,7 +411,7 @@ function (+)(accel1::SpatialAcceleration, accel2::SpatialAcceleration)
     elseif accel1.body == accel2.body && accel1.base == accel2.base
         return SpatialAcceleration(accel1.body, accel1.base, accel1.frame, accel1.angular + accel2.angular, accel1.linear + accel2.linear)
     end
-    @assert false
+    error("Can't add $accel1 and $accel2")
 end
 
 (-)(accel::SpatialAcceleration) = SpatialAcceleration(accel.base, accel.body, accel.frame, -accel.angular, -accel.linear)
@@ -456,8 +457,10 @@ function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCur
     SpatialAcceleration(accel.body, accel.base, oldToNew.to, angular, linear)
 end
 
+change_base(accel::SpatialAcceleration, base::CartesianFrame3D) = SpatialAcceleration(accel.body, base, accel.frame, accel.angular, accel.linear)
 zero{T}(::Type{SpatialAcceleration{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = SpatialAcceleration(body, base, frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
 rand{T}(::Type{SpatialAcceleration{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = SpatialAcceleration(body, base, frame, rand(SVector{3, T}), rand(SVector{3, T}))
+
 
 function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
     body = Ṫ.body
