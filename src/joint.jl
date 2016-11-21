@@ -12,9 +12,6 @@ Joint{T<:Real}(name::String, jointType::JointType{T}) = Joint{T}(name, jointType
 show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
 showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
 
-num_positions(joint::Joint) = num_positions(joint.jointType)::Int64
-num_velocities(joint::Joint) = num_velocities(joint.jointType)::Int64
-
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
 num_velocities(itr) = reduce((val, joint) -> val + num_velocities(joint), 0, itr)
 
@@ -31,6 +28,10 @@ end
 
 # 'RTTI'-style dispatch inspired by https://groups.google.com/d/msg/julia-users/ude2-MUiFLM/z-MuQ9nhAAAJ, hopefully a short-term solution.
 # See https://github.com/tkoolen/RigidBodyDynamics.jl/issues/93.
+
+num_positions{M}(joint::Joint{M})::Int64 = @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} num_positions(joint.jointType)
+num_velocities{M}(joint::Joint{M})::Int64 = @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} num_velocities(joint.jointType)
+
 function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform3D{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _joint_transform(joint.jointType, joint.frameAfter, joint.frameBefore, q)
