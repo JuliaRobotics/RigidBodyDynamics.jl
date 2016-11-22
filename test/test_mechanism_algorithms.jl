@@ -356,6 +356,6 @@
         total_energy_after = potential_energy(x) + kinetic_energy(x)
 
         # fairly loose tolerance here; should use geometric integrator:
-        @test isapprox(total_energy_after, total_energy_before, atol = 1e-2)
+        @test isapprox(total_energy_after, total_energy_before, atol = 1e-1)
     end
 end
