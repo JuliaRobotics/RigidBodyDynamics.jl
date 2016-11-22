@@ -1,10 +1,10 @@
 # NOTE: The `next_frame_id' and `frame_names' globals below are a hack, but they
-# significantly reduce allocation.
+# enable a significant reduction in allocations.
 # Storing the names of all CartesianFrame3D objects in this frame_names vector instead
 # of in the CartesianFrame3D and having CartesianFrame3D only contain an integer ID
-# makes CartesianFram3D an isbits type.
+# makes CartesianFrame3D an isbits (pointer free) type.
 # This in turn makes it so that a lot of the geometry/dynamics types become isbits
-# (pointer free) types, making them stack allocated and allowing all sorts of
+# types, making them stack allocated and allowing all sorts of
 # optimizations.
 const next_frame_id = Ref(0)
 const frame_names = Dict{Int64, String}()
@@ -31,48 +31,7 @@ else
     framecheck(f1::CartesianFrame3D, f2::CartesianFrame3D) = f1 != f2 && throw(ArgumentError(("$f1 doesn't match $f2")))
 end
 
-
-for VectorType in (:FreeVector3D, :Point3D)
-    @eval begin
-        type $VectorType{V <:AbstractVector}
-            frame::CartesianFrame3D
-            v::V
-
-            $VectorType(frame::CartesianFrame3D, v::V) = begin @boundscheck length(v) == 3; new(frame, v) end
-        end
-
-        $VectorType{V}(frame::CartesianFrame3D, v::V) = $VectorType{V}(frame, v)
-        $VectorType{T<:Real}(::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, zeros(SVector{3, T}))
-
-        convert{V}(::Type{$VectorType{V}}, p::$VectorType{V}) = p
-        convert{V}(::Type{$VectorType{V}}, p::$VectorType) = $VectorType(p.frame, convert(V, p.v))
-
-        (/){S<:Real}(p::$VectorType, s::S) = $VectorType(p.frame, p.v / s)
-        (*){S<:Real}(p::$VectorType, s::S) = $VectorType(p.frame, p.v * s)
-        (*){S<:Real}(s::S, p::$VectorType) = $VectorType(p.frame, s * p.v)
-
-        rand{T}(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, rand(SVector{3, T}))
-        show(io::IO, p::$VectorType) = print(io, "$($(VectorType).name.name) in \"$(name(p.frame))\": $(p.v)")
-        isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
-        copy(p::$VectorType) = $VectorType(p.frame, copy(p.v))
-    end
-end
-
-# Point specific
-(-)(p1::Point3D, p2::Point3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v - p2.v) end
-
-# FreeVector specific
-FreeVector3D(p::Point3D) = FreeVector3D(p.frame, p.v)
-cross(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
-dot(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
-
-# Mixed Point and FreeVector
-(+)(p1::FreeVector3D, p2::FreeVector3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v + p2.v) end
-(+)(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); Point3D(p.frame, p.v + v.v) end
-(+)(v::FreeVector3D, p::Point3D) = p + v
-(-)(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); Point3D(p.frame, p.v - v.v) end
-cross(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); FreeVector3D(p.frame, cross(p.v, v.v)) end
-
+# Transform between frames
 immutable Transform3D{T<:Real}
     from::CartesianFrame3D
     to::CartesianFrame3D
@@ -118,12 +77,51 @@ function isapprox{T}(x::Transform3D{T}, y::Transform3D{T}; atol::Real = 1e-12)
     x.from == y.from && x.to == y.to && isapprox(theta, zero(T), atol = atol) && isapprox(x.trans, y.trans, atol = atol)
 end
 
-function *(t::Transform3D, point::Point3D)
-    framecheck(t.from, point.frame)
-    Point3D(t.to, rotate(point.v, t.rot) + t.trans)
+
+# Point3D, FreeVector3D. The difference is that a FreeVector3D is only rotated when its frame is changed,
+# whereas a Point3D is also translated
+for VectorType in (:FreeVector3D, :Point3D)
+    @eval begin
+        type $VectorType{V <:AbstractVector}
+            frame::CartesianFrame3D
+            v::V
+
+            $VectorType(frame::CartesianFrame3D, v::V) = begin @boundscheck length(v) == 3; new(frame, v) end
+        end
+
+        $VectorType{V}(frame::CartesianFrame3D, v::V) = $VectorType{V}(frame, v)
+        $VectorType{T<:Real}(::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, zeros(SVector{3, T}))
+
+        convert{V}(::Type{$VectorType{V}}, p::$VectorType{V}) = p
+        convert{V}(::Type{$VectorType{V}}, p::$VectorType) = $VectorType(p.frame, convert(V, p.v))
+
+        (/){S<:Real}(p::$VectorType, s::S) = $VectorType(p.frame, p.v / s)
+        (*){S<:Real}(p::$VectorType, s::S) = $VectorType(p.frame, p.v * s)
+        (*){S<:Real}(s::S, p::$VectorType) = $VectorType(p.frame, s * p.v)
+
+        rand{T}(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, rand(SVector{3, T}))
+        show(io::IO, p::$VectorType) = print(io, "$($(VectorType).name.name) in \"$(name(p.frame))\": $(p.v)")
+        isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
+        copy(p::$VectorType) = $VectorType(p.frame, copy(p.v))
+        transform(x::$VectorType, t::Transform3D) = t * x
+        eltype{V}(::Type{$VectorType{V}}) = eltype(V)
+        similar_type{V, T}(x::Type{$VectorType{V}}, ::Type{T}) = $VectorType{SVector{3, T}}
+    end
 end
 
-function *(t::Transform3D, vector::FreeVector3D)
-    framecheck(t.from, vector.frame)
-    FreeVector3D(t.to, rotate(vector.v, t.rot))
-end
+# Point specific
+(-)(p1::Point3D, p2::Point3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v - p2.v) end
+(*)(t::Transform3D, point::Point3D) = begin framecheck(t.from, point.frame); Point3D(t.to, rotate(point.v, t.rot) + t.trans) end
+
+# FreeVector specific
+FreeVector3D(p::Point3D) = FreeVector3D(p.frame, p.v)
+cross(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
+dot(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
+(*)(t::Transform3D, vector::FreeVector3D) = begin framecheck(t.from, vector.frame); FreeVector3D(t.to, rotate(vector.v, t.rot)) end
+
+# Mixed Point and FreeVector
+(+)(p1::FreeVector3D, p2::FreeVector3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v + p2.v) end
+(+)(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); Point3D(p.frame, p.v + v.v) end
+(+)(v::FreeVector3D, p::Point3D) = p + v
+(-)(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); Point3D(p.frame, p.v - v.v) end
+cross(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); FreeVector3D(p.frame, cross(p.v, v.v)) end

@@ -283,8 +283,13 @@ end
 
 motion_subspace(state::MechanismState, joint::Joint) = motion_subspace(state_vertex(state, joint))
 
-for fun in (:twist_wrt_world, :bias_acceleration, :spatial_inertia, :crb_inertia)
+for fun in (:twist_wrt_world, :bias_acceleration, :spatial_inertia, :crb_inertia, :momentum, :momentum_rate_bias)
     @eval $fun{X, M, C}(state::MechanismState{X, M, C}, body::RigidBody{M}) = $fun(state_vertex(state, body))
+end
+
+for fun in (:momentum, :momentum_rate_bias)
+    @eval $fun(state::MechanismState) = sum($fun, non_root_vertices(state))
+    @eval $fun(state::MechanismState, body_itr) = sum($fun(state, body) for body in body_itr)
 end
 
 function relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D)
@@ -312,4 +317,23 @@ function relative_twist(state::MechanismState, body::RigidBody, base::RigidBody)
 function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D)
     twist = relative_twist(state, state.mechanism.bodyFixedFrameToBody[bodyFrame], state.mechanism.bodyFixedFrameToBody[baseFrame])
     Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)
+end
+
+for VectorType in (:Point3D, :FreeVector3D, :Twist, :Momentum, :Wrench)
+    @eval begin
+        function transform(state::MechanismState, v::$VectorType, to::CartesianFrame3D)::similar_type(typeof(v), promote_type(cache_eltype(state), eltype(v)))
+            # TODO: consider transforming in steps, so that computing the relative transform is not necessary
+            v.frame == to ? v : transform(v, relative_transform(state, v.frame, to))
+        end
+    end
+end
+
+function transform(state::MechanismState, accel::SpatialAcceleration, to::CartesianFrame3D)
+    accel.frame == to && return accel # nothing to be done
+    oldToRoot = transform_to_root(state, accel.frame)
+    rootToOld = inv(oldToRoot)
+    twistOfBodyWrtBase = transform(relative_twist(state, accel.body, accel.base), rootToOld)
+    twistOfOldWrtNew = transform(relative_twist(state, accel.frame, to), rootToOld)
+    oldToNew = inv(transform_to_root(state, to)) * oldToRoot
+    transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
 end

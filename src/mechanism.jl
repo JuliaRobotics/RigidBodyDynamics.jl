@@ -344,3 +344,12 @@ function gravitational_spatial_acceleration{M}(m::Mechanism{M})
     frame = m.gravitationalAcceleration.frame
     SpatialAcceleration(frame, frame, frame, zeros(SVector{3, M}), m.gravitationalAcceleration.v)
 end
+
+function subtree_mass{T}(base::Tree{RigidBody{T}, Joint{T}})
+    result = isroot(base) ? zero(T) : spatial_inertia(vertex_data(base)).mass
+    for child in children(base)
+        result += subtree_mass(child)
+    end
+    result
+end
+mass(m::Mechanism) = subtree_mass(tree(m))

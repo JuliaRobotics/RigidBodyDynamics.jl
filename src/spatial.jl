@@ -270,7 +270,6 @@ show(io::IO, m::Momentum) = print(io, "Momentum expressed in \"$(name(m.frame))\
 zero{T}(::Type{Momentum{T}}, frame::CartesianFrame3D) = Momentum(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
 rand{T}(::Type{Momentum{T}}, frame::CartesianFrame3D) = Momentum(frame, rand(SVector{3, T}), rand(SVector{3, T}))
 
-
 function transform{F<:ForceSpaceElement}(f::F, transform::Transform3D)
     framecheck(f.frame, transform.from)
     linear = rotate(f.linear, transform.rot)
@@ -586,4 +585,9 @@ function exp(twist::Twist)
         trans += ω * dot(ω, v) * θ
     end
     Transform3D(twist.body, twist.base, rot, trans)
+end
+
+for VectorType in (:Wrench, :Momentum, :Twist, :SpatialAcceleration)
+    @eval eltype{T}(::Type{$VectorType{T}}) = T
+    @eval similar_type{T1, T2}(::Type{$VectorType{T1}}, ::Type{T2}) = $VectorType{T2}
 end

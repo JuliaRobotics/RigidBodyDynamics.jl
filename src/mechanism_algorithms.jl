@@ -1,44 +1,3 @@
-function transform(state::MechanismState, point::Point3D, to::CartesianFrame3D)
-    point.frame == to && return point # nothing to be done
-    relative_transform(state, point.frame, to) * point
-end
-
-function transform(state::MechanismState, vector::FreeVector3D, to::CartesianFrame3D)
-    vector.frame == to && return vector # nothing to be done
-    relative_transform(state, vector.frame, to) * vector
-end
-
-function transform(state::MechanismState, twist::Twist, to::CartesianFrame3D)
-    twist.frame == to && return twist # nothing to be done
-    transform(twist, relative_transform(state, twist.frame, to))
-end
-
-function transform(state::MechanismState, wrench::Wrench, to::CartesianFrame3D)
-    wrench.frame == to && return wrench # nothing to be done
-    transform(wrench, relative_transform(state, wrench.frame, to))
-end
-
-function transform(state::MechanismState, accel::SpatialAcceleration, to::CartesianFrame3D)
-    accel.frame == to && return accel # nothing to be done
-    oldToRoot = transform_to_root(state, accel.frame)
-    rootToOld = inv(oldToRoot)
-    twistOfBodyWrtBase = transform(relative_twist(state, accel.body, accel.base), rootToOld)
-    twistOfOldWrtNew = transform(relative_twist(state, accel.frame, to), rootToOld)
-    oldToNew = inv(transform_to_root(state, to)) * oldToRoot
-    transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
-end
-
-
-function subtree_mass{T}(base::Tree{RigidBody{T}, Joint{T}})
-    result = isroot(base) ? zero(T) : spatial_inertia(vertex_data(base)).mass
-    for child in children(base)
-        result += subtree_mass(child)
-    end
-    result
-end
-mass(m::Mechanism) = subtree_mass(tree(m))
-mass(state::MechanismState) = mass(state.mechanism)
-
 function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
     frame = root_body(state.mechanism).frame
     com = Point3D(frame, zeros(SVector{3, C}))
@@ -169,21 +128,9 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
 end
 
 # TODO: make more efficient:
-momentum(state::MechanismState, body::RigidBody) = momentum(state_vertex(state, body))
-momentum(state::MechanismState, body_itr) = sum(momentum(state, body) for body in body_itr)
-momentum(state::MechanismState) = sum(momentum, non_root_vertices(state))
-
-# TODO: make more efficient:
 function momentum_matrix(state::MechanismState)
     hcat([crb_inertia(state, vertex_data(vertex)) * motion_subspace(state, edge_to_parent_data(vertex)) for vertex in non_root_vertices(state.mechanism)]...)
 end
-
-momentum_rate_bias(state::MechanismState, body::RigidBody) = newton_euler(state_vertex(state, body))
-momentum_rate_bias(state, body_itr) = sum(momentum_rate_bias(state, body) for body in body_itr)
-momentum_rate_bias(state::MechanismState) = sum(momentum_rate_bias, non_root_vertices(state))
-
-# FIXME: remove:
-newton_euler(state::MechanismState, body::RigidBody, accel::SpatialAcceleration) = newton_euler(state_vertex(state, body), accel)
 
 function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M})
     gravityBias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(state.mechanism))

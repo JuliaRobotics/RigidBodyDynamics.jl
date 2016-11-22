@@ -7,6 +7,7 @@ include("tree.jl")
 import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!
 import Base: hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype, copy, exp, log, get!
 using StaticArrays
+import StaticArrays: similar_type
 using Quaternions
 using DataStructures
 using LightXML
