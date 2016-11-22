@@ -109,17 +109,17 @@ for VectorType in (:FreeVector3D, :Point3D)
     end
 end
 
-# Point specific
+# Point3D-specific
 (-)(p1::Point3D, p2::Point3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v - p2.v) end
 (*)(t::Transform3D, point::Point3D) = begin framecheck(t.from, point.frame); Point3D(t.to, rotate(point.v, t.rot) + t.trans) end
 
-# FreeVector specific
+# FreeVector3D-specific
 FreeVector3D(p::Point3D) = FreeVector3D(p.frame, p.v)
 cross(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
 dot(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
 (*)(t::Transform3D, vector::FreeVector3D) = begin framecheck(t.from, vector.frame); FreeVector3D(t.to, rotate(vector.v, t.rot)) end
 
-# Mixed Point and FreeVector
+# Mixed Point3D and FreeVector3D
 (+)(p1::FreeVector3D, p2::FreeVector3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v + p2.v) end
 (+)(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); Point3D(p.frame, p.v + v.v) end
 (+)(v::FreeVector3D, p::Point3D) = p + v
