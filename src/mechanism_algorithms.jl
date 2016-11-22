@@ -196,24 +196,22 @@ end
 
 function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M}, v̇::AbstractVector)
     mechanism = state.mechanism
-    vertices = mechanism.toposortedTree
 
+    # TODO: consider merging back into one loop
     # unbiased joint accelerations + gravity
-    rootBody = vertex_data(vertices[1])
-    out[rootBody] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
-    for vertex in non_root_vertices(mechanism)
-        body = vertex_data(vertex)
-        joint = edge_to_parent_data(vertex)
-        S = motion_subspace(state, joint)
-        @inbounds v̇joint = view(v̇, mechanism.vRanges[joint]) # TODO: allocates
+    out[root_body(mechanism)] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
+    for vertex in non_root_vertices(state)
+        body = vertex_data(vertex).body
+        S = motion_subspace(vertex)
+        @inbounds v̇joint = view(v̇, velocity_range(edge_to_parent_data(vertex))) # TODO: allocates
         jointAccel = SpatialAcceleration(S, v̇joint)
-        out[body] = out[vertex_data(parent(vertex))] + jointAccel
+        out[body] = out[vertex_data(parent(vertex)).body] + jointAccel
     end
 
     # add bias acceleration - gravity
-    for vertex in non_root_vertices(mechanism)
-        body = vertex_data(vertex)
-        out[body] += bias_acceleration(state, body)
+    for vertex in non_root_vertices(state)
+        body = vertex_data(vertex).body
+        out[body] += bias_acceleration(vertex)
     end
     nothing
 end
