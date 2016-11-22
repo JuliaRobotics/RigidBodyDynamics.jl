@@ -102,19 +102,28 @@ function potential_energy{X, M, C}(state::MechanismState{X, M, C})
     -dot(gravitationalForce, FreeVector3D(centerOfMass))
  end
 
- function _mass_matrix_part!(out, jac::GeometricJacobian, mat::MomentumMatrix)
+ function _mass_matrix_part!(out::Symmetric, rowstart::Int64, colstart::Int64, jac::GeometricJacobian, mat::MomentumMatrix)
     # more efficient version of
-    # out[:] = jac.angular' * mat.angular + jac.linear' * mat.linear
+    # @view out[rowstart : rowstart + n - 1, colstart : colstart + n - 1] = jac.angular' * mat.angular + jac.linear' * mat.linear
     n = num_cols(jac)
     m = num_cols(mat)
-    @boundscheck size(out, 1) == n || error("size mismatch")
-    @boundscheck size(out, 2) == m || error("size mismatch")
+    @boundscheck (rowstart > 0 && rowstart + n - 1 <= size(out, 1)) || error("size mismatch")
+    @boundscheck (colstart > 0 && colstart + m - 1 <= size(out, 2)) || error("size mismatch")
     framecheck(jac.frame, mat.frame)
 
     for row = 1 : n
-        for col = 1 : m
-            @inbounds out[row, col] = jac.angular[1, row] * mat.angular[1, col] + jac.angular[2, row] * mat.angular[2, col] + jac.angular[3, row] * mat.angular[3, col]
-            @inbounds out[row, col] += jac.linear[1, row] * mat.linear[1, col] + jac.linear[2, row] * mat.linear[2, col] + jac.linear[3, row] * mat.linear[3, col]
+        @simd for col = 1 : m
+            outrow = rowstart + row - 1
+            outcol = colstart + col - 1
+            @inbounds begin
+                out.data[outrow, outcol] =
+                    jac.angular[1, row] * mat.angular[1, col] +
+                    jac.angular[2, row] * mat.angular[2, col] +
+                    jac.angular[3, row] * mat.angular[3, col] +
+                    jac.linear[1, row] * mat.linear[1, col] +
+                    jac.linear[2, row] * mat.linear[2, col] +
+                    jac.linear[3, row] * mat.linear[3, col]
+            end
         end
     end
  end
@@ -125,27 +134,26 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
     fill!(out.data, zero(C))
     mechanism = state.mechanism
 
-    for vi in non_root_vertices(mechanism)
+    for vi in filter(v -> !isroot(v), state.toposortedStateVertices)
         # Hii
         jointi = edge_to_parent_data(vi)
-        irange = mechanism.vRanges[jointi]
+        irange = velocity_range(jointi)
         if length(irange) > 0
-            bodyi = vertex_data(vi)
-            Si = motion_subspace(state, jointi)
-            Ii = crb_inertia(state, bodyi)
+            Si = motion_subspace(vi)
+            Ii = crb_inertia(vi)
             F = Ii * Si
-            @inbounds Hii = view(out.data, irange, irange) # TODO: allocates
-            _mass_matrix_part!(Hii, Si, F)
+            istart = first(irange)
+            _mass_matrix_part!(out, istart, istart, Si, F)
 
             # Hji, Hij
             vj = parent(vi)
             while (!isroot(vj))
                 jointj = edge_to_parent_data(vj)
-                jrange = mechanism.vRanges[jointj]
+                jrange = velocity_range(jointj)
                 if length(jrange) > 0
-                    Sj = motion_subspace(state, jointj)
-                    @inbounds Hji = view(out.data, jrange, irange) # TODO: allocates
-                    _mass_matrix_part!(Hji, Sj, F)
+                    Sj = motion_subspace(vj)
+                    jstart = first(jrange)
+                    _mass_matrix_part!(out, jstart, istart, Sj, F)
                 end
                 vj = parent(vj)
             end
