@@ -134,7 +134,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
     fill!(out.data, zero(C))
     mechanism = state.mechanism
 
-    for vi in filter(v -> !isroot(v), state.toposortedStateVertices)
+    for vi in non_root_vertices(state)
         # Hii
         jointi = edge_to_parent_data(vi)
         irange = velocity_range(jointi)
@@ -220,11 +220,10 @@ function newton_euler!{T, X, M, W}(
         out::Associative{RigidBody{M}, Wrench{T}}, state::MechanismState{X, M},
         accelerations::Associative{RigidBody{M}, SpatialAcceleration{T}},
         externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
-
     mechanism = state.mechanism
-    vertices = mechanism.toposortedTree
-    for body in non_root_bodies(mechanism)
-        wrench = newton_euler(state, body, accelerations[body])
+    for vertex in non_root_vertices(state)
+        body = vertex_data(vertex).body
+        wrench = newton_euler(vertex, accelerations[body])
         if haskey(externalWrenches, body)
             wrench -= transform(state, externalWrenches[body], wrench.frame)
         end
@@ -240,20 +239,19 @@ function joint_wrenches_and_torques!{T, X, M}(
         netWrenchesInJointWrenchesOut::Associative{RigidBody{M}, Wrench{T}},
         state::MechanismState{X, M})
     @boundscheck length(torquesOut) == num_velocities(state) || error("torquesOut size is wrong")
-    mechanism = state.mechanism
-    vertices = mechanism.toposortedTree
+    vertices = state.toposortedStateVertices
     for i = length(vertices) : -1 : 2
         vertex = vertices[i]
-        joint = edge_to_parent_data(vertex)
-        body = vertex_data(vertex)
+        body = vertex_data(vertex).body
         jointWrench = netWrenchesInJointWrenchesOut[body]
         if !isroot(parent(vertex))
-            parentBody = vertex_data(parent(vertex))
+            parentBody = vertex_data(parent(vertex)).body
             netWrenchesInJointWrenchesOut[parentBody] = netWrenchesInJointWrenchesOut[parentBody] + jointWrench # action = -reaction
         end
-        jointWrench = transform(state, jointWrench, joint.frameAfter)
-        @inbounds τjoint = view(torquesOut, mechanism.vRanges[joint]) # TODO: allocates
-        joint_torque!(joint, τjoint, configuration(state, joint), jointWrench)
+        jointState = edge_to_parent_data(vertex)
+        jointWrench = transform(jointWrench, inv(transform_to_root(vertex))) # TODO: stay in world frame?
+        @inbounds τjoint = view(torquesOut, velocity_range(jointState)) # TODO: allocates
+        joint_torque!(jointState.joint, τjoint, configuration(jointState), jointWrench)
     end
 end
 

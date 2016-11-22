@@ -89,6 +89,7 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real}
     q::Vector{X}
     v::Vector{X}
     toposortedStateVertices::Vector{TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}}
+    nonRootTopoSortedStateVertices::VectorSegment{TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}} # because of https://github.com/JuliaLang/julia/issues/14955
 
     function MechanismState(::Type{X}, mechanism::Mechanism{M})
         q = Vector{X}(num_positions(mechanism))
@@ -109,7 +110,8 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real}
             jointState = JointState(joint, beforeJointToParent, qJoint, vJoint)
             insert!(parentStateVertex, bodyState, jointState)
         end
-        new(mechanism, q, v, toposort(tree))
+        vertices = toposort(tree)
+        new(mechanism, q, v, vertices, view(vertices, 2 : length(vertices)))
     end
 end
 MechanismState{X, M}(t::Type{X}, mechanism::Mechanism{M}) = MechanismState{X, M, promote_type(X, M)}(t, mechanism)
@@ -124,7 +126,7 @@ state_vertex(state::MechanismState, body::RigidBody) = state.toposortedStateVert
 state_vertex(state::MechanismState, joint::Joint) = state.toposortedStateVertices[findfirst(v -> !isroot(v) && edge_to_parent_data(v).joint == joint, state.toposortedStateVertices)] # FIXME: linear time
 configuration(state::MechanismState, joint::Joint) = edge_to_parent_data(state_vertex(state, joint)).q
 velocity(state::MechanismState, joint::Joint) = edge_to_parent_data(state_vertex(state, joint)).v
-non_root_vertices(state::MechanismState) = filter(v -> !isroot(v), state.toposortedStateVertices)
+non_root_vertices(state::MechanismState) = state.nonRootTopoSortedStateVertices
 
 function setdirty!(state::MechanismState)
     for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
