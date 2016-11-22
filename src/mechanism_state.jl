@@ -168,15 +168,15 @@ configuration_vector(state::MechanismState) = state.q
 velocity_vector(state::MechanismState) = state.v
 state_vector(state::MechanismState) = [configuration_vector(state); velocity_vector(state)]
 
-configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([state.q[state.mechanism.qRanges[joint]] for joint in path.edgeData]...) # TODO
-velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([state.v[state.mechanism.vRanges[joint]] for joint in path.edgeData]...) # TODO
+configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([configuration(state, joint) for joint in path.edgeData]...)
+velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([velocity(state, joint) for joint in path.edgeData]...)
 
-function set_configuration!(state::MechanismState, joint::Joint, q::AbstractVector) # FIXME
+function set_configuration!(state::MechanismState, joint::Joint, q::AbstractVector)
     configuration(state, joint)[:] = q
     setdirty!(state)
 end
 
-function set_velocity!(state::MechanismState, joint::Joint, v::AbstractVector) # FIXME
+function set_velocity!(state::MechanismState, joint::Joint, v::AbstractVector)
     velocity(state, joint)[:] = v
     setdirty!(state)
 end
