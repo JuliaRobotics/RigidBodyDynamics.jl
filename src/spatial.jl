@@ -159,13 +159,6 @@ end
 # MotionSpaceElement-specific
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     @eval begin
-        function $MotionSpaceElement{T<:Real}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, vec::AbstractVector{T})
-            @boundscheck length(vec) == 6 || error("size mismatch")
-            @inbounds angular = SVector(vec[1], vec[2], vec[3])
-            @inbounds linear = SVector(vec[4], vec[5], vec[6])
-            $MotionSpaceElement(body, base, frame, angular, linear)
-        end
-
         convert{T<:Real}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement{T}) = m
         convert{T<:Real}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement) = $MotionSpaceElement(m.body, m.base, m.frame, convert(SVector{3, T}, m.angular), convert(SVector{3, T}, m.linear))
         convert{T}(::Type{Vector{T}}, m::$MotionSpaceElement{T}) = [m.angular...; m.linear...]
@@ -345,13 +338,6 @@ end
 # ForceSpaceElement-specific
 for ForceSpaceElement in (:Momentum, :Wrench)
     @eval begin
-        function $ForceSpaceElement{T}(frame::CartesianFrame3D, vec::AbstractVector{T})
-            @boundscheck length(vec) == 6 || error("size mismatch")
-            @inbounds angular = SVector(vec[1], vec[2], vec[3])
-            @inbounds linear = SVector(vec[4], vec[5], vec[6])
-            $ForceSpaceElement{T}(frame, angular, linear)
-        end
-
         convert{T<:Real}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) = f
 
         function convert{T<:Real}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement)
@@ -466,13 +452,6 @@ dot(t::Twist, w::Wrench) = dot(w, t)
 # MomentumMatrix-specific functions
 function MomentumMatrix{A<:AbstractMatrix}(frame::CartesianFrame3D, angular::A, linear::A)
     MomentumMatrix{A}(frame, angular, linear)
-end
-
-function MomentumMatrix{A<:AbstractMatrix}(frame::CartesianFrame3D, mat::A)
-    @assert size(mat, 1) == 6
-    @inbounds angular = mat[1 : 3, :]
-    @inbounds linear = mat[4 : 6, :]
-    MomentumMatrix(frame, angular, linear)
 end
 
 convert{A}(::Type{MomentumMatrix{A}}, mat::MomentumMatrix{A}) = mat
