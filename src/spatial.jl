@@ -166,40 +166,40 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
             $MotionSpaceElement(body, base, frame, angular, linear)
         end
 
-        convert{T<:Real}(::Type{$MotionSpaceElement{T}}, t::$MotionSpaceElement{T}) = t
-        convert{T<:Real}(::Type{$MotionSpaceElement{T}}, t::$MotionSpaceElement) = $MotionSpaceElement(t.body, t.base, t.frame, convert(SVector{3, T}, t.angular), convert(SVector{3, T}, t.linear))
-        convert{T}(::Type{Vector{T}}, twist::$MotionSpaceElement{T}) = [twist.angular...; twist.linear...]
-        Array{T}(twist::$MotionSpaceElement{T}) = convert(Vector{T}, twist)
+        convert{T<:Real}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement{T}) = m
+        convert{T<:Real}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement) = $MotionSpaceElement(m.body, m.base, m.frame, convert(SVector{3, T}, m.angular), convert(SVector{3, T}, m.linear))
+        convert{T}(::Type{Vector{T}}, m::$MotionSpaceElement{T}) = [m.angular...; m.linear...]
+        Array{T}(m::$MotionSpaceElement{T}) = convert(Vector{T}, m)
 
         eltype{T}(::Type{$MotionSpaceElement{T}}) = T
         similar_type{T1, T2}(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) = $MotionSpaceElement{T2}
 
-        function show(io::IO, t::$MotionSpaceElement)
-            print(io, "$($(MotionSpaceElement).name.name) of \"$(name(t.body))\" w.r.t \"$(name(t.base))\" in \"$(name(t.frame))\":\nangular: $(t.angular), linear: $(t.linear)")
+        function show(io::IO, m::$MotionSpaceElement)
+            print(io, "$($(MotionSpaceElement).name.name) of \"$(name(m.body))\" w.r.t \"$(name(m.base))\" in \"$(name(m.frame))\":\nangular: $(m.angular), linear: $(m.linear)")
         end
 
         function isapprox(x::$MotionSpaceElement, y::$MotionSpaceElement; atol = 1e-12)
             x.body == y.body && x.base == y.base && x.frame == y.frame && isapprox(x.angular, y.angular; atol = atol) && isapprox(x.linear, y.linear; atol = atol)
         end
 
-        function (+)(twist1::$MotionSpaceElement, twist2::$MotionSpaceElement)
-            framecheck(twist1.frame, twist2.frame)
-            angular = twist1.angular + twist2.angular
-            linear = twist1.linear + twist2.linear
-            if twist1.body == twist2.body && twist1.base == twist2.base
-                return $MotionSpaceElement(twist1.body, twist1.base, twist1.frame, angular, linear)
-            elseif twist1.body == twist2.base
-                return $MotionSpaceElement(twist2.body, twist1.base, twist1.frame, angular, linear)
-            elseif twist1.base == twist2.body
-                return $MotionSpaceElement(twist1.body, twist2.base, twist1.frame, angular, linear)
+        function (+)(m1::$MotionSpaceElement, m2::$MotionSpaceElement)
+            framecheck(m1.frame, m2.frame)
+            angular = m1.angular + m2.angular
+            linear = m1.linear + m2.linear
+            if m1.body == m2.body && m1.base == m2.base
+                return $MotionSpaceElement(m1.body, m1.base, m1.frame, angular, linear)
+            elseif m1.body == m2.base
+                return $MotionSpaceElement(m2.body, m1.base, m1.frame, angular, linear)
+            elseif m1.base == m2.body
+                return $MotionSpaceElement(m1.body, m2.base, m1.frame, angular, linear)
             else
                 throw(ArgumentError("frame mismatch"))
             end
         end
 
-        (-)(t::$MotionSpaceElement) = $MotionSpaceElement(t.base, t.body, t.frame, -t.angular, -t.linear)
+        (-)(m::$MotionSpaceElement) = $MotionSpaceElement(m.base, m.body, m.frame, -m.angular, -m.linear)
 
-        change_base(t::$MotionSpaceElement, base::CartesianFrame3D) = $MotionSpaceElement(t.body, base, t.frame, t.angular, t.linear)
+        change_base(m::$MotionSpaceElement, base::CartesianFrame3D) = $MotionSpaceElement(m.body, base, m.frame, m.angular, m.linear)
 
         function zero{T}(::Type{$MotionSpaceElement{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
             $MotionSpaceElement(body, base, frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
@@ -352,16 +352,16 @@ for ForceSpaceElement in (:Momentum, :Wrench)
             $ForceSpaceElement{T}(frame, angular, linear)
         end
 
-        convert{T<:Real}(::Type{$ForceSpaceElement{T}}, wrench::$ForceSpaceElement{T}) = wrench
+        convert{T<:Real}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) = f
 
-        function convert{T<:Real}(::Type{$ForceSpaceElement{T}}, wrench::$ForceSpaceElement)
-            $ForceSpaceElement(wrench.frame, convert(SVector{3, T}, wrench.angular), convert(SVector{3, T}, wrench.linear))
+        function convert{T<:Real}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement)
+            $ForceSpaceElement(f.frame, convert(SVector{3, T}, f.angular), convert(SVector{3, T}, f.linear))
         end
 
         eltype{T}(::Type{$ForceSpaceElement{T}}) = T
         similar_type{T1, T2}(::Type{$ForceSpaceElement{T1}}, ::Type{T2}) = $ForceSpaceElement{T2}
 
-        show(io::IO, w::$ForceSpaceElement) = print(io, "$($(ForceSpaceElement).name.name) expressed in \"$(name(w.frame))\":\nangular: $(w.angular), linear: $(w.linear)")
+        show(io::IO, f::$ForceSpaceElement) = print(io, "$($(ForceSpaceElement).name.name) expressed in \"$(name(f.frame))\":\nangular: $(f.angular), linear: $(f.linear)")
         zero{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
         rand{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, rand(SVector{3, T}), rand(SVector{3, T}))
 

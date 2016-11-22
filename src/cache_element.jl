@@ -2,10 +2,7 @@ type CacheElement{T}
     dirty::Bool
     data::T
     CacheElement() = new(true)
-    CacheElement(data::T) = new(true, data)
 end
-
-CacheElement{T}(data::T) = CacheElement{T}(data)
 
 function update!{T}(element::CacheElement{T}, data::T)
     element.data = data
