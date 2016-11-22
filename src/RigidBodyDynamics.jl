@@ -58,7 +58,7 @@ export
     has_defined_inertia,
     transform,
     newton_euler,
-    joint_torque,
+    torque,
     joint_torque!,
     local_coordinates!,
     global_coordinates!,

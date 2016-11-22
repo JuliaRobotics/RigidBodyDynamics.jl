@@ -69,7 +69,7 @@ end
 
 
 #=
-Rotation utilities
+Geometry utilities
 =#
 @inline function vector_to_skew_symmetric{T}(v::SVector{3, T})
     @SMatrix [zero(T) -v[3] v[2];
@@ -187,4 +187,23 @@ end
 
 function angle_difference(a, b)
     mod(b - a + pi, 2 * π) - π
+end
+
+function transform_spatial_motion(angular::SVector{3}, linear::SVector{3}, rot::Quaternion, p::SVector{3})
+    angular = rotate(angular, rot)
+    linear = rotate(linear, rot) + cross(p, angular)
+    angular, linear
+end
+
+function mul_inertia(J, c, m, ω, v)
+    angular = J * ω + cross(c, v)
+    linear = m * v - cross(c, ω)
+    angular, linear
+end
+
+# also known as 'spatial motion cross product'
+@inline function se3_commutator(xω, xv, yω, yv)
+    angular = cross(xω, yω)
+    linear = cross(xω, yv) + cross(xv, yω)
+    angular, linear
 end

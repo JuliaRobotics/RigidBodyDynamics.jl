@@ -60,7 +60,7 @@
             τ = Vector{Float64}(num_velocities(joint))
             joint_torque!(joint, τ, qjoint, wrench)
             S = motion_subspace(joint, qjoint)
-            @test isapprox(τ, joint_torque(S, wrench))
+            @test isapprox(τ, torque(S, wrench))
         end
     end
 
