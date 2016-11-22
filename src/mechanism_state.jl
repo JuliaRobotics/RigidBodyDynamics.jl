@@ -124,6 +124,7 @@ state_vertex(state::MechanismState, body::RigidBody) = state.toposortedStateVert
 state_vertex(state::MechanismState, joint::Joint) = state.toposortedStateVertices[findfirst(v -> !isroot(v) && edge_to_parent_data(v).joint == joint, state.toposortedStateVertices)] # FIXME: linear time
 configuration(state::MechanismState, joint::Joint) = edge_to_parent_data(state_vertex(state, joint)).q
 velocity(state::MechanismState, joint::Joint) = edge_to_parent_data(state_vertex(state, joint)).v
+non_root_vertices(state::MechanismState) = filter(v -> !isroot(v), state.toposortedStateVertices)
 
 function setdirty!(state::MechanismState)
     for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
@@ -243,6 +244,16 @@ function crb_inertia{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointStat
     get!(vertex_data(vertex).crbInertia, update)
 end
 
+function newton_euler{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}, accel::SpatialAcceleration)
+    inertia = spatial_inertia(vertex)
+    twist = twist_wrt_world(vertex)
+    newton_euler(inertia, accel, twist)
+end
+
+momentum{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}) = spatial_inertia(vertex) * twist_wrt_world(vertex)
+
+momentum_rate_bias{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}) = newton_euler(vertex, bias_acceleration(vertex))
+
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
     for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
         jointState = edge_to_parent_data(vertex)
@@ -260,11 +271,10 @@ function configuration_derivative{X}(state::MechanismState{X})
 end
 
 function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
-    # TODO: consider caching
     body = state.mechanism.bodyFixedFrameToBody[frame]
     transform = transform_to_root(state_vertex(state, body))
     if transform.from != frame
-        transform = transform * find_body_fixed_frame_definition(state.mechanism, body, frame)
+        transform = transform * find_body_fixed_frame_definition(state.mechanism, body, frame) # TODO: consider caching
     end
     transform
 end

@@ -168,31 +168,28 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
     ret
 end
 
-momentum(state::MechanismState, body::RigidBody) = spatial_inertia(state, body) * twist_wrt_world(state, body)
-momentum(state::MechanismState, itr) = sum(momentum(state, body) for body in itr)
-momentum(state::MechanismState) = momentum(state, non_root_bodies(state.mechanism))
+# TODO: make more efficient:
+momentum(state::MechanismState, body::RigidBody) = momentum(state_vertex(state, body))
+momentum(state::MechanismState, body_itr) = sum(momentum(state, body) for body in body_itr)
+momentum(state::MechanismState) = sum(momentum, non_root_vertices(state))
 
+# TODO: make more efficient:
 function momentum_matrix(state::MechanismState)
     hcat([crb_inertia(state, vertex_data(vertex)) * motion_subspace(state, edge_to_parent_data(vertex)) for vertex in non_root_vertices(state.mechanism)]...)
 end
 
-function newton_euler(state::MechanismState, body::RigidBody, accel::SpatialAcceleration)
-    inertia = spatial_inertia(state, body)
-    twist = twist_wrt_world(state, body)
-    newton_euler(inertia, accel, twist)
-end
+momentum_rate_bias(state::MechanismState, body::RigidBody) = newton_euler(state_vertex(state, body))
+momentum_rate_bias(state, body_itr) = sum(momentum_rate_bias(state, body) for body in body_itr)
+momentum_rate_bias(state::MechanismState) = sum(momentum_rate_bias, non_root_vertices(state))
 
-momentum_rate_bias(state::MechanismState, body::RigidBody) = newton_euler(state, body, bias_acceleration(state, body))
-momentum_rate_bias(state::MechanismState, itr) = sum(momentum_rate_bias(state, body) for body in itr)
-momentum_rate_bias(state::MechanismState) = momentum_rate_bias(state, non_root_bodies(state.mechanism))
+# FIXME: remove:
+newton_euler(state::MechanismState, body::RigidBody, accel::SpatialAcceleration) = newton_euler(state_vertex(state, body), accel)
 
 function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M})
-    mechanism = state.mechanism
-    vertices = mechanism.toposortedTree
-    gravityBias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
-    for vertex in non_root_vertices(mechanism)
-        body = vertex_data(vertex)
-        out[body] = gravityBias + bias_acceleration(state, body)
+    gravityBias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(state.mechanism))
+    for vertex in non_root_vertices(state)
+        body = vertex_data(vertex).body
+        out[body] = gravityBias + bias_acceleration(vertex)
     end
     nothing
 end
