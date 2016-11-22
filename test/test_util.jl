@@ -7,7 +7,7 @@ import RigidBodyDynamics: angle_axis_to_rotation_matrix, rotation_vector_to_rota
             R = rotation_matrix(quat)
             angle, axis = angle_axis_proper(quat)
             ϕ = rotation_vector(quat)
-            @test isapprox(R, expm(hat(ϕ)); atol = 1e-10)
+            @test isapprox(R, SMatrix{3, 3}(expm(Array(hat(ϕ)))); atol = 1e-10)
             @test isapprox(R, angle_axis_to_rotation_matrix(angle, axis))
             @test isapprox(R, rotation_vector_to_rotation_matrix(ϕ))
         end
@@ -16,7 +16,7 @@ import RigidBodyDynamics: angle_axis_to_rotation_matrix, rotation_vector_to_rota
     @testset "rotation vector rate" begin
         for ϕ in (rand(SVector{3}), zeros(SVector{3})) # exponential coordinates (rotation vector)
             ω = rand(SVector{3}) # angular velocity in body frame
-            R = expm(hat(ϕ)) # rotation matrix TODO: use dedicated function
+            R = SMatrix{3, 3}(expm(Array(hat(ϕ)))) # rotation matrix TODO: use dedicated function
             Ṙ = R * hat(ω)
             ϕ̇ = rotation_vector_rate(ϕ, ω)
             Θ = norm(ϕ)
