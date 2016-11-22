@@ -164,10 +164,9 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
     for vi in non_root_vertices(mechanism)
         # Hii
         jointi = edge_to_parent_data(vi)
-        nvi = num_velocities(jointi)
-        if nvi > 0
+        irange = mechanism.vRanges[jointi]
+        if length(irange) > 0
             bodyi = vertex_data(vi)
-            irange = mechanism.vRanges[jointi]
             Si = motion_subspace(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = Ii * Si
@@ -178,9 +177,8 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             vj = parent(vi)
             while (!isroot(vj))
                 jointj = edge_to_parent_data(vj)
-                nvj = num_velocities(jointj)
-                if nvj > 0
-                    jrange = mechanism.vRanges[jointj]
+                jrange = mechanism.vRanges[jointj]
+                if length(jrange) > 0
                     Sj = motion_subspace(state, jointj)
                     @inbounds Hji = view(out.data, jrange, irange) # TODO: allocates
                     _mass_matrix_part!(Hji, Sj, F)
