@@ -63,14 +63,14 @@ end
         W = rand(Wrench{Float64}, f3)
         T = Twist(J, v)
         H = rand(Transform3D{Float64}, f3, f1)
-        τ = joint_torque(J, W)
+        τ = torque(J, W)
         @test J.body == T.body
         @test J.base == T.base
         @test J.frame == T.frame
         @test isapprox(Twist(transform(J, H), v), transform(T, H))
         @test isapprox(dot(Array(τ), v), dot(T, W); atol = 1e-12) # power equality
         @test_throws ArgumentError dot(transform(T, H), W)
-        @test_throws ArgumentError joint_torque(transform(J, H), W)
+        @test_throws ArgumentError torque(transform(J, H), W)
     end
 
     @testset "momentum matrix" begin

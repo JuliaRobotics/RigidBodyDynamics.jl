@@ -60,7 +60,7 @@
             τ = Vector{Float64}(num_velocities(joint))
             joint_torque!(joint, τ, qjoint, wrench)
             S = motion_subspace(joint, qjoint)
-            @test isapprox(τ, joint_torque(S, wrench))
+            @test isapprox(τ, torque(S, wrench))
         end
     end
 
@@ -256,7 +256,8 @@
         τ = inverse_dynamics(x, v̇, externalWrenches)
         floatingBodyVertex = children(root_vertex(mechanism))[1]
         floatingJoint = edge_to_parent_data(floatingBodyVertex)
-        floatingJointWrench = Wrench(edge_to_parent_data(floatingBodyVertex).frameAfter, τ[mechanism.vRanges[floatingJoint]])
+        τfloating = τ[mechanism.vRanges[floatingJoint]]
+        floatingJointWrench = Wrench(edge_to_parent_data(floatingBodyVertex).frameAfter, SVector{3}(τfloating[1 : 3]), SVector{3}(τfloating[4 : 6]))
         floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
         ḣ = Wrench(momentum_matrix(x), v̇) + momentum_rate_bias(x) # momentum rate of change
         gravitational_force = mass(mechanism) * mechanism.gravitationalAcceleration
@@ -355,6 +356,6 @@
         total_energy_after = potential_energy(x) + kinetic_energy(x)
 
         # fairly loose tolerance here; should use geometric integrator:
-        @test isapprox(total_energy_after, total_energy_before, atol = 1e-2)
+        @test isapprox(total_energy_after, total_energy_before, atol = 1e-1)
     end
 end

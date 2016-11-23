@@ -5,8 +5,9 @@ module RigidBodyDynamics
 include("tree.jl")
 
 import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!
-import Base: hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype, copy, exp, log
+import Base: hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype, copy, exp, log, get!
 using StaticArrays
+import StaticArrays: similar_type
 using Quaternions
 using DataStructures
 using LightXML
@@ -24,7 +25,6 @@ include("cache_element.jl")
 
 importall .TreeDataStructure
 include("mechanism.jl")
-include("transform_cache.jl")
 include("mechanism_state.jl")
 include("mechanism_algorithms.jl")
 include("parse_urdf.jl")
@@ -58,7 +58,7 @@ export
     has_defined_inertia,
     transform,
     newton_euler,
-    joint_torque,
+    torque,
     joint_torque!,
     local_coordinates!,
     global_coordinates!,
@@ -112,7 +112,6 @@ export
     add_frame!,
     twist_wrt_world,
     relative_twist,
-    transform_to_parent,
     transform_to_root,
     relative_transform,
     mass,

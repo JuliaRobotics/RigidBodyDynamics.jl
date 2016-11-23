@@ -61,8 +61,11 @@ function runbenchmarks()
     tune!(suite)
     Profile.clear_malloc_data()
     results = run(suite, verbose = true)
-    showall(results)
-    println()
+    for result in results
+        println("$(first(result)):")
+        println(last(result))
+        println()
+    end
 end
 
 runbenchmarks()

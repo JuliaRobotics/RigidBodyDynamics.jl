@@ -117,6 +117,13 @@ function canonicalize_frame_definitions!{T}(m::Mechanism{T}, vertex::TreeVertex{
     end
 
     m.bodyFixedFrameDefinitions[body] = newDefinitions
+
+    # transform body's spatial inertia to default frame
+    if has_defined_inertia(body)
+        inertia = spatial_inertia(body)
+        body.inertia = Nullable(transform(inertia, find_fixed_transform(m, inertia.frame, defaultFrame)))
+    end
+
     nothing
 end
 
@@ -199,7 +206,9 @@ function submechanism{T}(m::Mechanism{T}, submechanismRootBody::RigidBody{T})
     merge!(ret.bodyFixedFrameToBody, filter((k, v) -> v ∈ bodies(ret), m.bodyFixedFrameToBody))
     merge!(ret.jointToJointTransforms, filter((k, v) -> k ∈ joints(ret), m.jointToJointTransforms))
 
-    canonicalize_frame_definitions!(ret, root_vertex(ret))
+    for vertex in ret.toposortedTree
+        canonicalize_frame_definitions!(ret, vertex)
+    end
 
     ret
 end
@@ -267,7 +276,8 @@ function remove_fixed_joints!(m::Mechanism)
         if !isroot(vertex)
             body = vertex_data(vertex)
             joint = edge_to_parent_data(vertex)
-            parentBody = vertex_data(parent(vertex))
+            parentVertex = parent(vertex)
+            parentBody = vertex_data(parentVertex)
             if isa(joint.jointType, Fixed)
                 # add identity joint transform as a body-fixed frame definition
                 jointTransform = Transform3D{T}(joint.frameAfter, joint.frameBefore)
@@ -290,7 +300,13 @@ function remove_fixed_joints!(m::Mechanism)
                 end
 
                 # merge vertex into parent
+                formerChildren = children(vertex)
                 merge_into_parent!(vertex)
+
+                # recanonicalize children since their new parent's default frame may be different
+                for child in formerChildren
+                    canonicalize_frame_definitions!(m, child)
+                end
             end
         end
     end
@@ -328,3 +344,12 @@ function gravitational_spatial_acceleration{M}(m::Mechanism{M})
     frame = m.gravitationalAcceleration.frame
     SpatialAcceleration(frame, frame, frame, zeros(SVector{3, M}), m.gravitationalAcceleration.v)
 end
+
+function subtree_mass{T}(base::Tree{RigidBody{T}, Joint{T}})
+    result = isroot(base) ? zero(T) : spatial_inertia(vertex_data(base)).mass
+    for child in children(base)
+        result += subtree_mass(child)
+    end
+    result
+end
+mass(m::Mechanism) = subtree_mass(tree(m))
