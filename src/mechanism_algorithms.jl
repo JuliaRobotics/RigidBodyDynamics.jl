@@ -70,18 +70,14 @@ function potential_energy{X, M, C}(state::MechanismState{X, M, C})
     @boundscheck (colstart > 0 && colstart + m - 1 <= size(out, 2)) || error("size mismatch")
     framecheck(jac.frame, mat.frame)
 
-    for row = 1 : n
-        @simd for col = 1 : m
+    for col = 1 : m
+        outcol = colstart + col - 1
+        for row = 1 : n
             outrow = rowstart + row - 1
-            outcol = colstart + col - 1
-            @inbounds begin
-                out.data[outrow, outcol] =
-                    jac.angular[1, row] * mat.angular[1, col] +
-                    jac.angular[2, row] * mat.angular[2, col] +
-                    jac.angular[3, row] * mat.angular[3, col] +
-                    jac.linear[1, row] * mat.linear[1, col] +
-                    jac.linear[2, row] * mat.linear[2, col] +
-                    jac.linear[3, row] * mat.linear[3, col]
+            @inbounds out.data[outrow, outcol] = zero(eltype(out))
+            @simd for i = 1 : 3
+                @inbounds out.data[outrow, outcol] += jac.angular[i, row] * mat.angular[i, col]
+                @inbounds out.data[outrow, outcol] += jac.linear[i, row] * mat.linear[i, col]
             end
         end
     end
@@ -89,7 +85,7 @@ function potential_energy{X, M, C}(state::MechanismState{X, M, C})
 
 function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
     @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
-    @assert out.uplo == 'U'
+    @boundscheck out.uplo == 'U' || error("expected an upper triangular symmetric matrix type as the mass matrix")
     fill!(out.data, zero(C))
     mechanism = state.mechanism
 

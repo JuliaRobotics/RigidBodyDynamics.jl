@@ -129,14 +129,14 @@ velocity(state::MechanismState, joint::Joint) = edge_to_parent_data(state_vertex
 non_root_vertices(state::MechanismState) = state.nonRootTopoSortedStateVertices
 
 function setdirty!(state::MechanismState)
-    for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
+    for vertex in state.nonRootTopoSortedStateVertices
         setdirty!(vertex_data(vertex))
         setdirty!(edge_to_parent_data(vertex))
     end
 end
 
 function zero_configuration!(state::MechanismState)
-    for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
+    for vertex in state.nonRootTopoSortedStateVertices
         zero_configuration!(edge_to_parent_data(vertex))
     end
     setdirty!(state)
@@ -151,7 +151,7 @@ end
 zero!(state::MechanismState) = begin zero_configuration!(state); zero_velocity!(state) end
 
 function rand_configuration!(state::MechanismState)
-    for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
+    for vertex in state.nonRootTopoSortedStateVertices
         rand_configuration!(edge_to_parent_data(vertex))
     end
     setdirty!(state)
@@ -257,7 +257,7 @@ momentum{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
 momentum_rate_bias{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}) = newton_euler(vertex, bias_acceleration(vertex))
 
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
-    for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
+    for vertex in state.nonRootTopoSortedStateVertices
         jointState = edge_to_parent_data(vertex)
         q = configuration(jointState)
         v = velocity(jointState)
