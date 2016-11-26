@@ -75,7 +75,7 @@ function potential_energy{X, M, C}(state::MechanismState{X, M, C})
         for row = 1 : n
             outrow = rowstart + row - 1
             @inbounds out.data[outrow, outcol] = zero(eltype(out))
-            @simd for i = 1 : 3
+            for i = 1 : 3
                 @inbounds out.data[outrow, outcol] += jac.angular[i, row] * mat.angular[i, col]
                 @inbounds out.data[outrow, outcol] += jac.linear[i, row] * mat.linear[i, col]
             end
