@@ -385,27 +385,37 @@ end
 # GeometricJacobian with a view of a 3×6 SMatrix as the underlying data type gets around type
 # instabilities in motion_subspace while still using an isbits type.
 # See https://github.com/tkoolen/RigidBodyDynamics.jl/issues/84.
-typealias MotionSubspace{T} GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
+typealias MotionSubspaceArrayType{T} ContiguousSMatrixColumnView{3, 6, T, 18}
+typealias MotionSubspace{T} GeometricJacobian{MotionSubspaceArrayType{T}}
+@inline function fast_view_for_motion_subspace{T}(data::SMatrix{3, 6, T, 18}, colrange::UnitRange{Int64})
+    MotionSubspaceArrayType{T}(data, (:, colrange), 0, 1)
+end
 
 @generated function MotionSubspace{N, T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, N, T}, linear::SMatrix{3, N, T})
-    fillerSize = 6 - N
-    return quote
-        $(Expr(:meta, :inline))
-        filler = fill(NaN, SMatrix{3, $fillerSize, T})
-        angularData = hcat(angular, filler)::SMatrix{3, 6, T, 18}
-        linearData = hcat(linear, filler)::SMatrix{3, 6, T, 18}
-        MotionSubspace{T}(body, base, frame, view(angularData, :, 1 : N), view(linearData, :, 1 : N))
+    colrange = 1 : N
+    if N == 0
+        return quote
+            $(Expr(:meta, :inline))
+            angularData = fill(NaN, SMatrix{3, 6, T, 18})
+            linearData = fill(NaN, SMatrix{3, 6, T, 18})
+            MotionSubspace{T}(body, base, frame, fast_view_for_motion_subspace(angularData, $colrange), fast_view_for_motion_subspace(linearData, $colrange))
+        end
+    elseif N == 6
+        return quote
+            $(Expr(:meta, :inline))
+            MotionSubspace{T}(body, base, frame, fast_view_for_motion_subspace(angular, $colrange), fast_view_for_motion_subspace(linear, $colrange))
+        end
+    else
+        fillerSize = 6 - N
+        L = 3 * fillerSize
+        return quote
+            $(Expr(:meta, :inline))
+            filler = fill(NaN, SMatrix{3, $fillerSize, T, $L})
+            angularData = hcat(angular, filler)::SMatrix{3, 6, T, 18}
+            linearData = hcat(linear, filler)::SMatrix{3, 6, T, 18}
+            MotionSubspace{T}(body, base, frame, fast_view_for_motion_subspace(angularData, $colrange), fast_view_for_motion_subspace(linearData, $colrange))
+        end
     end
-end
-
-function MotionSubspace{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, 0, T}, linear::SMatrix{3, 0, T})
-    angularData = fill(NaN, SMatrix{3, 6, T})
-    linearData = fill(NaN, SMatrix{3, 6, T})
-    MotionSubspace{T}(body, base, frame, view(angularData, :, 1 : 0), view(linearData, :, 1 : 0))
-end
-
-function MotionSubspace{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, 6, T}, linear::SMatrix{3, 6, T})
-    MotionSubspace{T}(body, base, frame, view(angular, :, 1 : 6), view(linear, :, 1 : 6))
 end
 
 convert{A}(::Type{GeometricJacobian{A}}, jac::GeometricJacobian{A}) = jac
