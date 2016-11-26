@@ -29,60 +29,60 @@ end
 # 'RTTI'-style dispatch inspired by https://groups.google.com/d/msg/julia-users/ude2-MUiFLM/z-MuQ9nhAAAJ, hopefully a short-term solution.
 # See https://github.com/tkoolen/RigidBodyDynamics.jl/issues/93.
 
-num_positions{M}(joint::Joint{M})::Int64 = @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} num_positions(joint.jointType)
-num_velocities{M}(joint::Joint{M})::Int64 = @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} num_velocities(joint.jointType)
+num_positions{M}(joint::Joint{M})::Int64 = @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) num_positions(joint.jointType)
+num_velocities{M}(joint::Joint{M})::Int64 = @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) num_velocities(joint.jointType)
 
 function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform3D{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _joint_transform(joint.jointType, joint.frameAfter, joint.frameBefore, q)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_transform(joint.jointType, joint.frameAfter, joint.frameBefore, q)
 end
 
 function motion_subspace{M, X}(joint::Joint{M}, q::AbstractVector{X})::MotionSubspace{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _motion_subspace(joint.jointType, joint.frameAfter, joint.frameBefore, q)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _motion_subspace(joint.jointType, joint.frameAfter, joint.frameBefore, q)
 end
 
 function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::SpatialAcceleration{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _bias_acceleration(joint.jointType, joint.frameAfter, joint.frameBefore, q, v)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _bias_acceleration(joint.jointType, joint.frameAfter, joint.frameBefore, q, v)
 end
 
 function configuration_derivative_to_velocity!{M}(joint::Joint{M}, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)::Void
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q̇)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _configuration_derivative_to_velocity!(joint.jointType, v, q, q̇)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _configuration_derivative_to_velocity!(joint.jointType, v, q, q̇)
 end
 
 function velocity_to_configuration_derivative!{M}(joint::Joint{M}, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)::Void
     @boundscheck check_num_positions(joint, q̇)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _velocity_to_configuration_derivative!(joint.jointType, q̇, q, v)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _velocity_to_configuration_derivative!(joint.jointType, q̇, q, v)
 end
 
 function zero_configuration!{M}(joint::Joint{M}, q::AbstractVector)::Void
     @boundscheck check_num_positions(joint, q)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _zero_configuration!(joint.jointType, q)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _zero_configuration!(joint.jointType, q)
 end
 
 function rand_configuration!{M}(joint::Joint{M}, q::AbstractVector)::Void
     @boundscheck check_num_positions(joint, q)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _rand_configuration!(joint.jointType, q)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _rand_configuration!(joint.jointType, q)
 end
 
 function joint_twist{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::Twist{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _joint_twist(joint.jointType, joint.frameAfter, joint.frameBefore, q, v)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_twist(joint.jointType, joint.frameAfter, joint.frameBefore, q, v)
 end
 
 function joint_torque!{M}(joint::Joint{M}, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)::Void
     @boundscheck check_num_velocities(joint, τ)
     @boundscheck check_num_positions(joint, q)
     framecheck(joint_wrench.frame, joint.frameAfter)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _joint_torque!(joint.jointType, τ, q, joint_wrench)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_torque!(joint.jointType, τ, q, joint_wrench)
 end
 
 function local_coordinates!{M}(joint::Joint{M},
@@ -93,12 +93,12 @@ function local_coordinates!{M}(joint::Joint{M},
     @boundscheck check_num_positions(joint, q0)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _local_coordinates!(joint.jointType, ϕ, ϕ̇, q0, q, v)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _local_coordinates!(joint.jointType, ϕ, ϕ̇, q0, q, v)
 end
 
 function global_coordinates!{M}(joint::Joint{M}, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q0)
     @boundscheck check_num_velocities(joint, ϕ)
-    @rtti_dispatch Union{QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}} _global_coordinates!(joint.jointType, q, q0, ϕ)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _global_coordinates!(joint.jointType, q, q0, ϕ)
 end
