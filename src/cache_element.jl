@@ -4,25 +4,32 @@ type CacheElement{T}
     CacheElement() = new(true)
 end
 
-function update!{T}(element::CacheElement{T}, data::T)
+@inline function update!{T}(element::CacheElement{T}, data::T)
     element.data = data
     element.dirty = false
 end
 
-function get(element::CacheElement)
+@inline function get(element::CacheElement)
     element.dirty && error("Cache dirty.")
     element.data
 end
 
-function setdirty!(element::CacheElement)
+@inline function setdirty!(element::CacheElement)
     element.dirty = true
 end
 
 @inline isdirty(element::CacheElement) = element.dirty
 
-function get!(element::CacheElement, updateFunction)
-    if isdirty(element)
-        update!(element, updateFunction())
+# The reason to do this using a macro instead of using something like get!(element::CacheElement, callable)
+# is that in all use cases so far, the callable would be a closure over some non-isbits types, meaning that
+# creating the closure allocates.
+# Example showing this allocation behavior: @benchmark (fun = () -> a.x) setup = a = Ref(rand(Int64))
+macro cache_element_get!(element, updateExpr)
+    ret = quote
+        if isdirty($element)
+            update!($element, $updateExpr)
+        end
+        get($element)
     end
-    element.data
+    :($(esc(ret)))
 end
