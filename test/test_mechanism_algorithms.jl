@@ -151,6 +151,12 @@
         @test isapprox(M2, M; atol = 1e-12)
     end
 
+    @testset "mass matrix allocation" begin
+        M = Symmetric(Matrix{Float64}(num_velocities(x), num_velocities(x)))
+        mass_matrix!(M, x) # JIT compile
+        @test @allocated(mass_matrix!(M, x)) == 0
+    end
+
     @testset "inverse dynamics / acceleration term" begin
         M = mass_matrix(x)
 
