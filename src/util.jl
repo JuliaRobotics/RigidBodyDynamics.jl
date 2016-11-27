@@ -34,17 +34,16 @@ function cached_download(url::String, localFileName::String, cacheDir::String = 
     fullCachePath
 end
 
-macro rtti_dispatch(typeUnion, signature)
+macro rtti_dispatch(typeTuple, signature)
     @assert signature.head == :call
     @assert length(signature.args) > 1
-    @assert typeUnion.head == :curly
-    @assert typeUnion.args[1] == :Union
+    @assert typeTuple.head == :tuple
 
     f = signature.args[1]
     args = signature.args[2 : end]
     dispatchArg = args[1]
     otherArgs = args[2 : end]
-    types = typeUnion.args[2 : end]
+    types = typeTuple.args
 
     ret = :(error("type not recognized"))
     for T in reverse(types)

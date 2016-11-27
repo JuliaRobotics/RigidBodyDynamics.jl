@@ -28,10 +28,11 @@ velocity(state::JointState) = state.v
 configuration_range(state::JointState) = first(parentindexes(state.q))
 velocity_range(state::JointState) = first(parentindexes(state.v))
 parent_frame(state::JointState) = state.beforeJointToParent.to
-transform(state::JointState) = get!(state.afterJointToParent, () -> state.beforeJointToParent * joint_transform(state.joint, state.q))
-twist(state::JointState) = get!(state.twist, () -> change_base(joint_twist(state.joint, state.q, state.v), parent_frame(state)))
-bias_acceleration(state::JointState) = get!(state.biasAcceleration, () -> change_base(bias_acceleration(state.joint, state.q, state.v), parent_frame(state)))
-motion_subspace(state::JointState) = get!(state.motionSubspace, () -> change_base(motion_subspace(state.joint, state.q), parent_frame(state)))
+transform(state::JointState) = @cache_element_get!(state.afterJointToParent, state.beforeJointToParent * joint_transform(state.joint, state.q))
+twist(state::JointState) = @cache_element_get!(state.twist, change_base(joint_twist(state.joint, state.q, state.v), parent_frame(state)))
+bias_acceleration(state::JointState) = @cache_element_get!(state.biasAcceleration, change_base(bias_acceleration(state.joint, state.q, state.v), parent_frame(state)))
+motion_subspace(state::JointState) = @cache_element_get!(state.motionSubspace, change_base(motion_subspace(state.joint, state.q), parent_frame(state)))
+
 zero_configuration!(state::JointState) = (zero_configuration!(state.joint, state.q))
 rand_configuration!(state::JointState) = (rand_configuration!(state.joint, state.q))
 
@@ -129,14 +130,14 @@ velocity(state::MechanismState, joint::Joint) = edge_to_parent_data(state_vertex
 non_root_vertices(state::MechanismState) = state.nonRootTopoSortedStateVertices
 
 function setdirty!(state::MechanismState)
-    for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
+    for vertex in non_root_vertices(state)
         setdirty!(vertex_data(vertex))
         setdirty!(edge_to_parent_data(vertex))
     end
 end
 
 function zero_configuration!(state::MechanismState)
-    for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
+    for vertex in non_root_vertices(state)
         zero_configuration!(edge_to_parent_data(vertex))
     end
     setdirty!(state)
@@ -151,7 +152,7 @@ end
 zero!(state::MechanismState) = begin zero_configuration!(state); zero_velocity!(state) end
 
 function rand_configuration!(state::MechanismState)
-    for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
+    for vertex in non_root_vertices(state)
         rand_configuration!(edge_to_parent_data(vertex))
     end
     setdirty!(state)
@@ -202,17 +203,17 @@ end
 
 # the following functions return quantities expressed in world frame and w.r.t. world frame (where applicable)
 function transform_to_root{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
-    update = () -> transform_to_root(parent(vertex)) * transform(edge_to_parent_data(vertex))
-    get!(vertex_data(vertex).transformToWorld, update)
+    @cache_element_get!(vertex_data(vertex).transformToWorld,
+        transform_to_root(parent(vertex)) * transform(edge_to_parent_data(vertex)))
 end
 
 function twist_wrt_world{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
-    update = () -> twist_wrt_world(parent(vertex)) + transform(twist(edge_to_parent_data(vertex)), transform_to_root(vertex))
-    get!(vertex_data(vertex).twist, update)
+    @cache_element_get!(vertex_data(vertex).twist,
+        twist_wrt_world(parent(vertex)) + transform(twist(edge_to_parent_data(vertex)), transform_to_root(vertex)))
 end
 
 function bias_acceleration{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
-    update = () -> begin
+    @cache_element_get!(vertex_data(vertex).biasAcceleration, begin
         parentVertex = parent(vertex)
         parentBias = bias_acceleration(parentVertex)
         toRoot = transform_to_root(vertex)
@@ -221,29 +222,27 @@ function bias_acceleration{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, Joi
         jointTwist = twist(edge_to_parent_data(vertex))
         jointBias = transform(jointBias, toRoot, twistWrtWorld, jointTwist)
         parentBias + jointBias
-    end
-    get!(vertex_data(vertex).biasAcceleration, update)
+    end)
 end
 
 function motion_subspace{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
-    update = () -> transform(motion_subspace(edge_to_parent_data(vertex)), transform_to_root(vertex))
-    get!(vertex_data(vertex).motionSubspace, update)
+    @cache_element_get!(vertex_data(vertex).motionSubspace,
+        transform(motion_subspace(edge_to_parent_data(vertex)), transform_to_root(vertex)))
 end
 
 function spatial_inertia{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
-    update = () -> transform(spatial_inertia(vertex_data(vertex).body), transform_to_root(vertex))
-    get!(vertex_data(vertex).inertia, update)
+    @cache_element_get!(vertex_data(vertex).inertia,
+        transform(spatial_inertia(vertex_data(vertex).body), transform_to_root(vertex)))
 end
 
 function crb_inertia{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
-    update = () -> begin
+    @cache_element_get!(vertex_data(vertex).crbInertia, begin
         ret = spatial_inertia(vertex)
         for child in children(vertex)
             ret += crb_inertia(child)
         end
         ret
-    end
-    get!(vertex_data(vertex).crbInertia, update)
+    end)
 end
 
 function newton_euler{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}, accel::SpatialAcceleration)
@@ -257,7 +256,7 @@ momentum{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
 momentum_rate_bias{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}) = newton_euler(vertex, bias_acceleration(vertex))
 
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
-    for vertex in filter(x -> !isroot(x), state.toposortedStateVertices)
+    for vertex in non_root_vertices(state)
         jointState = edge_to_parent_data(vertex)
         q = configuration(jointState)
         v = velocity(jointState)
