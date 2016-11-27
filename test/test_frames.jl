@@ -1,9 +1,11 @@
 @testset "frames" begin
     f1name = "1"
     f1 = CartesianFrame3D(f1name)
-    f2 = CartesianFrame3D() # anonymous
+    f2 = CartesianFrame3D()
+    f3 = CartesianFrame3D()
     @test name(f1) == f1name
     name(f2) # just to make sure it doesn't crash
+    @test f2 != f3
 
     t1 = rand(Transform3D{Float64}, f2, f1)
     @test isapprox(t1 * inv(t1), Transform3D{Float64}(f1))

@@ -19,10 +19,14 @@ immutable CartesianFrame3D
         ret
     end
 
-    CartesianFrame3D() = new(-1)
+    function CartesianFrame3D()
+        ret = new(next_frame_id.x)
+        next_frame_id.x += 1
+        ret
+    end
 end
-name(frame::CartesianFrame3D) = frame.id >= 0 ? frame_names[frame.id] : "(anonymous)"
-show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\"")
+name(frame::CartesianFrame3D) = get(frame_names, frame.id, "anonymous")
+show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\" (id = $(frame.id))")
 
 # enable/disable frame checks
 if isdefined(Main, :RIGID_BODY_DYNAMICS_RELEASE)
