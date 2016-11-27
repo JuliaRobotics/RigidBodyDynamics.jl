@@ -50,10 +50,6 @@ function relative_acceleration(state::MechanismState, body::RigidBody, base::Rig
     -acceleration_wrt_ancestor(state, baseVertex, lca, v̇) + acceleration_wrt_ancestor(state, bodyVertex, lca, v̇)
 end
 
-kinetic_energy{X, M}(state::MechanismState{X, M}, body::RigidBody{M}) = kinetic_energy(spatial_inertia(state, body), twist_wrt_world(state, body))
-kinetic_energy{X, M}(state::MechanismState{X, M}, itr) = sum(body::RigidBody -> kinetic_energy(state, body), itr)
-kinetic_energy(state::MechanismState) = kinetic_energy(state, non_root_bodies(state.mechanism))
-
 function potential_energy{X, M, C}(state::MechanismState{X, M, C})
     m = mass(state.mechanism)
     gravitationalForce = m * state.mechanism.gravitationalAcceleration

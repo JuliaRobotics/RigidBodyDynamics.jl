@@ -394,25 +394,21 @@ end
 @generated function MotionSubspace{N, T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, N, T}, linear::SMatrix{3, N, T})
     colrange = 1 : N
     if N == 0
+        angularView = fast_view_for_motion_subspace(fill(NaN, SMatrix{3, 6, T, 18}), colrange)
+        linearView = fast_view_for_motion_subspace(fill(NaN, SMatrix{3, 6, T, 18}), colrange)
         return quote
-            $(Expr(:meta, :inline))
-            angularData = fill(NaN, SMatrix{3, 6, T, 18})
-            linearData = fill(NaN, SMatrix{3, 6, T, 18})
-            MotionSubspace{T}(body, base, frame, fast_view_for_motion_subspace(angularData, $colrange), fast_view_for_motion_subspace(linearData, $colrange))
+            MotionSubspace{T}(body, base, frame, $angularView, $linearView)
         end
     elseif N == 6
         return quote
-            $(Expr(:meta, :inline))
             MotionSubspace{T}(body, base, frame, fast_view_for_motion_subspace(angular, $colrange), fast_view_for_motion_subspace(linear, $colrange))
         end
     else
         fillerSize = 6 - N
-        L = 3 * fillerSize
+        filler = fill(NaN, SMatrix{3, fillerSize, T, 3 * fillerSize})
         return quote
-            $(Expr(:meta, :inline))
-            filler = fill(NaN, SMatrix{3, $fillerSize, T, $L})
-            angularData = hcat(angular, filler)::SMatrix{3, 6, T, 18}
-            linearData = hcat(linear, filler)::SMatrix{3, 6, T, 18}
+            angularData = hcat(angular, $filler)::SMatrix{3, 6, T, 18}
+            linearData = hcat(linear, $filler)::SMatrix{3, 6, T, 18}
             MotionSubspace{T}(body, base, frame, fast_view_for_motion_subspace(angularData, $colrange), fast_view_for_motion_subspace(linearData, $colrange))
         end
     end
@@ -454,11 +450,6 @@ function transform(jac::GeometricJacobian, transform::Transform3D)
 end
 
 
-# Wrench-specific functions
-dot(w::Wrench, t::Twist) = begin framecheck(w.frame, t.frame); dot(w.angular, t.angular) + dot(w.linear, t.linear) end
-dot(t::Twist, w::Wrench) = dot(w, t)
-
-
 # MomentumMatrix-specific functions
 function MomentumMatrix{A<:AbstractMatrix}(frame::CartesianFrame3D, angular::A, linear::A)
     MomentumMatrix{A}(frame, angular, linear)
@@ -496,6 +487,11 @@ end
 
 
 # Interactions between spatial types
+
+# Mechanical power
+dot(w::Wrench, t::Twist) = begin framecheck(w.frame, t.frame); dot(w.angular, t.angular) + dot(w.linear, t.linear) end
+dot(t::Twist, w::Wrench) = dot(w, t)
+
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     # GeometricJacobian * velocity vector --> Twist
     # GeometricJacobian * acceleration vector --> SpatialAcceleration

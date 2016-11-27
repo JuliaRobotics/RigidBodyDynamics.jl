@@ -8,13 +8,13 @@ function *{S1, S2, T, L}(A::StaticMatrix, B::ContiguousSMatrixColumnView{S1, S2,
 end
 
 function +{S1, S2, T, L}(A::ContiguousSMatrixColumnView{S1, S2, T, L}, B::ContiguousSMatrixColumnView{S1, S2, T, L})
-    @boundscheck size(A) == size(B)
+    @boundscheck size(A) == size(B) || error("size mismatch")
     data = parent(A) + parent(B)
     typeof(A)(data, A.indexes, A.offset1, A.stride1)
 end
 
 function -{S1, S2, T, L}(A::ContiguousSMatrixColumnView{S1, S2, T, L}, B::ContiguousSMatrixColumnView{S1, S2, T, L})
-    @boundscheck size(A) == size(B)
+    @boundscheck size(A) == size(B) || error("size mismatch")
     data = parent(A) - parent(B)
     typeof(A)(data, A.indexes, A.offset1, A.stride1)
 end
@@ -36,7 +36,7 @@ _mul(a, b) = a * b
 function _mul{S1, S2, TA, L, Tb}(
         A::ContiguousSMatrixColumnView{S1, S2, TA, L},
         b::StridedVector{Tb})
-    @boundscheck @assert size(A, 2) == size(b, 1)
+    @boundscheck size(A, 2) == size(b, 1) || error("size mismatch")
     ret = zeros(SVector{S1, promote_type(TA, Tb)})
     for i = 1 : size(A, 2)
         @inbounds bi = b[i]

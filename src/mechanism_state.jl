@@ -252,8 +252,8 @@ function newton_euler{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointSta
 end
 
 momentum{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}) = spatial_inertia(vertex) * twist_wrt_world(vertex)
-
 momentum_rate_bias{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}) = newton_euler(vertex, bias_acceleration(vertex))
+kinetic_energy{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}) = kinetic_energy(spatial_inertia(vertex), twist_wrt_world(vertex))
 
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
     for vertex in non_root_vertices(state)
@@ -282,13 +282,13 @@ end
 
 motion_subspace(state::MechanismState, joint::Joint) = motion_subspace(state_vertex(state, joint))
 
-for fun in (:twist_wrt_world, :bias_acceleration, :spatial_inertia, :crb_inertia, :momentum, :momentum_rate_bias)
+for fun in (:twist_wrt_world, :bias_acceleration, :spatial_inertia, :crb_inertia, :momentum, :momentum_rate_bias, :kinetic_energy)
     @eval $fun{X, M, C}(state::MechanismState{X, M, C}, body::RigidBody{M}) = $fun(state_vertex(state, body))
 end
 
-for fun in (:momentum, :momentum_rate_bias)
-    @eval $fun(state::MechanismState) = sum($fun, non_root_vertices(state))
-    @eval $fun(state::MechanismState, body_itr) = sum($fun(state, body) for body in body_itr)
+for fun in (:momentum, :momentum_rate_bias, :kinetic_energy)
+    @eval $fun{X, M, C}(state::MechanismState{X, M, C}) = sum($fun, non_root_vertices(state))
+    @eval $fun{X, M, C}(state::MechanismState{X, M, C}, body_itr) = sum($fun(state, body) for body in body_itr)
 end
 
 function relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D)
