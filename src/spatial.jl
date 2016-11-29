@@ -514,7 +514,8 @@ end
 
 function (*)(inertia::SpatialInertia, twist::Twist)
     framecheck(inertia.frame, twist.frame)
-    Momentum(inertia.frame, mul_inertia(inertia.moment, inertia.crossPart, inertia.mass, twist.angular, twist.linear)...)
+    angular, linear = mul_inertia(inertia.moment, inertia.crossPart, inertia.mass, twist.angular, twist.linear)
+    Momentum(inertia.frame, angular, linear)
 end
 
 function (*)(inertia::SpatialInertia, jac::GeometricJacobian)
