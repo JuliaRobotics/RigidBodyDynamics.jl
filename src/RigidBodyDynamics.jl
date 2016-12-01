@@ -11,7 +11,6 @@ import StaticArrays: similar_type
 using Quaternions
 using DataStructures
 using LightXML
-import ODE: ode45
 
 include("util.jl")
 include("third_party_addendum.jl")

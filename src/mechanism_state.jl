@@ -337,18 +337,18 @@ function transform(state::MechanismState, accel::SpatialAcceleration, to::Cartes
     transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
 end
 
-function local_coordinates!(state::MechanismState, ϕ::StridedVector, ϕ̇::StridedVector, q0::StridedVector)
+function local_coordinates!(state::MechanismState, ϕ::StridedVector, ϕd::StridedVector, q0::StridedVector)
     mechanism = state.mechanism
     for vertex in non_root_vertices(state)
         jointState = edge_to_parent_data(vertex)
         qRange = configuration_range(jointState)
         vRange = velocity_range(jointState)
         ϕjoint = UnsafeVectorView(ϕ, vRange)
-        ϕ̇joint = UnsafeVectorView(ϕ̇, vRange)
+        ϕdjoint = UnsafeVectorView(ϕd, vRange)
         q0joint = UnsafeVectorView(q0, qRange)
         qjoint = configuration(jointState)
         vjoint = velocity(jointState)
-        local_coordinates!(jointState.joint, ϕjoint, ϕ̇joint, q0joint, qjoint, vjoint)
+        local_coordinates!(jointState.joint, ϕjoint, ϕdjoint, q0joint, qjoint, vjoint)
     end
 end
 
