@@ -60,46 +60,51 @@ Commit SHA: [`5085451`](https://github.com/tkoolen/RigidBodyDynamics.jl/commit/5
 
 Mass matrix:
 ```
+  memory estimate:  0.00 bytes
+  allocs estimate:  0
+  --------------
+  minimum time:     34.914 μs (0.00% GC)
+  median time:      38.399 μs (0.00% GC)
+  mean time:        39.384 μs (0.00% GC)
+  maximum time:     89.382 μs (0.00% GC)
+  --------------
   samples:          10000
   evals/sample:     1
   time tolerance:   5.00%
   memory tolerance: 1.00%
-  memory estimate:  40.98 kb
-  allocs estimate:  488
-  minimum time:     74.76 μs (0.00% GC)
-  median time:      76.95 μs (0.00% GC)
-  mean time:        80.74 μs (3.50% GC)
-  maximum time:     2.33 ms (95.62% GC)
 ```
 
 Inverse dynamics:
 ```
+  memory estimate:  0.00 bytes
+  allocs estimate:  0
+  --------------
+  minimum time:     41.952 μs (0.00% GC)
+  median time:      42.451 μs (0.00% GC)
+  mean time:        43.191 μs (0.00% GC)
+  maximum time:     95.406 μs (0.00% GC)
+  --------------
   samples:          10000
   evals/sample:     1
   time tolerance:   5.00%
   memory tolerance: 1.00%
-  memory estimate:  35.19 kb
-  allocs estimate:  466
-  minimum time:     81.51 μs (0.00% GC)
-  median time:      84.71 μs (0.00% GC)
-  mean time:        88.45 μs (3.32% GC)
-  maximum time:     2.70 ms (95.44% GC)
 ```
 
 Forward dynamics:
 ```
+  memory estimate:  1.50 kb
+  allocs estimate:  33
+  --------------
+  minimum time:     75.966 μs (0.00% GC)
+  median time:      76.876 μs (0.00% GC)
+  mean time:        82.728 μs (0.27% GC)
+  maximum time:     2.352 ms (94.91% GC)
+  --------------
   samples:          10000
   evals/sample:     1
   time tolerance:   5.00%
   memory tolerance: 1.00%
-  memory estimate:  49.55 kb
-  allocs estimate:  713
-  minimum time:     140.14 μs (0.00% GC)
-  median time:      142.53 μs (0.00% GC)
-  mean time:        149.27 μs (3.62% GC)
-  maximum time:     3.17 ms (93.63% GC)
 ```
-
 
 ## Related packages
 * [RigidBodyTreeInspector.jl](https://github.com/rdeits/RigidBodyTreeInspector.jl) - 3D visualization of RigidBodyDynamics.jl `Mechanism`s using [Director](https://github.com/RobotLocomotion/director).
