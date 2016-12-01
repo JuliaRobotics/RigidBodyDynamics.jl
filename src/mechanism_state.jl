@@ -273,11 +273,11 @@ end
 
 function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
     body = state.mechanism.bodyFixedFrameToBody[frame]
-    transform = transform_to_root(state_vertex(state, body))
-    if transform.from != frame
-        transform = transform * find_body_fixed_frame_definition(state.mechanism, body, frame) # TODO: consider caching
+    tf = transform_to_root(state_vertex(state, body))
+    if tf.from != frame
+        tf = tf * find_body_fixed_frame_definition(state.mechanism, body, frame) # TODO: consider caching
     end
-    transform
+    tf
 end
 
 motion_subspace(state::MechanismState, joint::Joint) = motion_subspace(state_vertex(state, joint))

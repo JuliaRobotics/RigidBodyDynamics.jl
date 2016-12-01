@@ -107,10 +107,10 @@ function canonicalize_frame_definitions!{T}(m::Mechanism{T}, vertex::TreeVertex{
     oldDefinitions = m.bodyFixedFrameDefinitions[body]
     newDefinitions = Set{Transform3D{T}}()
     identityFound = false
-    for transform in oldDefinitions
-        transform = transform.to == defaultFrame ? transform : find_fixed_transform(m, transform.to, default_frame(m, vertex)) * transform
-        identityFound = identityFound || transform.from == defaultFrame
-        push!(newDefinitions, transform)
+    for tf in oldDefinitions
+        tf = tf.to == defaultFrame ? tf : find_fixed_transform(m, tf.to, default_frame(m, vertex)) * tf
+        identityFound = identityFound || tf.from == defaultFrame
+        push!(newDefinitions, tf)
     end
     if !identityFound
         push!(newDefinitions, Transform3D{T}(defaultFrame, defaultFrame))
@@ -176,8 +176,8 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     canonicalize_frame_definitions!(m, parentVertex)
 
     # merge in frame info for vertices whose parents will remain the same
-    merge!(m.bodyFixedFrameDefinitions, filter((k, v) -> k != childRootBody, childMechanism.bodyFixedFrameDefinitions))
-    merge!(m.bodyFixedFrameToBody, filter((k, v) -> v != childRootBody, childMechanism.bodyFixedFrameToBody))
+    merge!(m.bodyFixedFrameDefinitions, Dict(k => v for (k, v) ∈ childMechanism.bodyFixedFrameDefinitions if k != childRootBody))
+    merge!(m.bodyFixedFrameToBody, Dict(k => v for (k, v) ∈ childMechanism.bodyFixedFrameToBody if v != childRootBody))
     merge!(m.jointToJointTransforms, childMechanism.jointToJointTransforms)
 
     # merge trees
@@ -202,9 +202,9 @@ function submechanism{T}(m::Mechanism{T}, submechanismRootBody::RigidBody{T})
     recompute_ranges!(ret)
 
     # copy frame information over
-    merge!(ret.bodyFixedFrameDefinitions, filter((k, v) -> k ∈ bodies(ret), m.bodyFixedFrameDefinitions))
-    merge!(ret.bodyFixedFrameToBody, filter((k, v) -> v ∈ bodies(ret), m.bodyFixedFrameToBody))
-    merge!(ret.jointToJointTransforms, filter((k, v) -> k ∈ joints(ret), m.jointToJointTransforms))
+    merge!(ret.bodyFixedFrameDefinitions, Dict(k => v for (k, v) in m.bodyFixedFrameDefinitions if k ∈ bodies(ret)))
+    merge!(ret.bodyFixedFrameToBody, Dict(k => v for (k, v) in m.bodyFixedFrameToBody if v ∈ bodies(ret)))
+    merge!(ret.jointToJointTransforms, Dict(k => v for (k, v) in m.jointToJointTransforms if k ∈ joints(ret)))
 
     for vertex in ret.toposortedTree
         canonicalize_frame_definitions!(ret, vertex)
@@ -285,8 +285,8 @@ function remove_fixed_joints!(m::Mechanism)
                 delete!(m.jointToJointTransforms, joint)
 
                 # migrate body fixed frames to parent body
-                for transform in m.bodyFixedFrameDefinitions[body]
-                    add_body_fixed_frame!(m, parentBody, transform)
+                for tf in m.bodyFixedFrameDefinitions[body]
+                    add_body_fixed_frame!(m, parentBody, tf)
                 end
                 delete!(m.bodyFixedFrameDefinitions, body) # TODO: remove_body_fixed_frame!
                 delete!(m.bodyFixedFrameToBody, body)

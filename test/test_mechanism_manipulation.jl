@@ -9,8 +9,8 @@
         for body in bodies(mechanism2)
             for i = 1 : 5
                 frame = CartesianFrame3D("frame_$i")
-                transform = rand(Transform3D{Float64}, frame, body.frame)
-                add_body_fixed_frame!(mechanism2, body, transform)
+                tf = rand(Transform3D{Float64}, frame, body.frame)
+                add_body_fixed_frame!(mechanism2, body, tf)
                 additionalFrames[frame] = body
             end
         end
@@ -64,7 +64,7 @@
         rand!(state)
         q = configuration_vector(state)
         M = mass_matrix(state)
-        nonFixedJointVertices = filter(v -> !isa(edge_to_parent_data(v).jointType, Fixed), non_root_vertices(mechanism))
+        nonFixedJointVertices = collect(filter(v -> !isa(edge_to_parent_data(v).jointType, Fixed), non_root_vertices(mechanism)))
 
         remove_fixed_joints!(mechanism)
         @test non_root_vertices(mechanism) == nonFixedJointVertices

@@ -2,6 +2,10 @@ module TreeDataStructure
 
 import Base: showcompact, show, parent, findfirst, map!, insert!, copy
 
+if VERSION > v"0.5"
+    import Base.Iterators: filter
+end
+
 export
     # types
     Tree,

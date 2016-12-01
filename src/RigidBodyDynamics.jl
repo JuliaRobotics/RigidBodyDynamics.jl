@@ -12,6 +12,10 @@ using Quaternions
 using DataStructures
 using LightXML
 
+if VERSION > v"0.5"
+    import Base.Iterators: filter
+end
+
 include("util.jl")
 include("third_party_addendum.jl")
 

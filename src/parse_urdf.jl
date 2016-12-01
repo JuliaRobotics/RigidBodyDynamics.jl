@@ -103,7 +103,7 @@ function parse_urdf{T}(::Type{T}, filename)
         child = nameToVertex[attribute(find_element(xmlJoint, "child"), "link")]
         insert!(parent, child, xmlJoint)
     end
-    roots = filter(isroot, vertices)
+    roots = collect(filter(isroot, vertices))
     length(roots) != 1 && error("Can only handle a single root")
     tree = roots[1]
 

@@ -68,19 +68,14 @@ end
 
 typealias ContiguousSMatrixColumnView{S1, S2, T, L} SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
 
-if VERSION < v"0.6-" # TODO: get rid of sub! after moving to 0.6. broadcast! allocates in 0.5; fixed in 0.6.
-    function sub!(out, a, b)
-        @boundscheck length(out) == length(a) || error("size mismatch")
-        @boundscheck length(out) == length(b) || error("size mismatch")
-        @simd for i in eachindex(out)
-            @inbounds out[i] = a[i] - b[i]
-        end
+# TODO: use fusing broadcast instead of these functions in 0.6, where they don't allocate.
+function sub!(out, a, b)
+    @boundscheck length(out) == length(a) || error("size mismatch")
+    @boundscheck length(out) == length(b) || error("size mismatch")
+    @simd for i in eachindex(out)
+        @inbounds out[i] = a[i] - b[i]
     end
-else
-    sub!(out, a, b) = broadcast!(-, out, a, b)
 end
-
-# TODO: use fusing broadcast instead of this function in 0.6, where this doesn't allocate.
 @inline function scaleadd!(a::AbstractVector, b::AbstractVector, c::Number)
     @boundscheck length(a) == length(b) || error("size mismatch")
     @simd for i in eachindex(a)

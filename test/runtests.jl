@@ -6,6 +6,10 @@ using Quaternions
 using StaticArrays
 import ForwardDiff
 
+if VERSION > v"0.5"
+    import Base.Iterators: filter
+end
+
 # useful utility function for computing time derivatives.
 create_autodiff(x, dx) = [ForwardDiff.Dual(x[i], dx[i]) for i in 1 : length(x)]
 
