@@ -343,9 +343,9 @@ function local_coordinates!(state::MechanismState, ϕ::AbstractVector, ϕ̇::Abs
         jointState = edge_to_parent_data(vertex)
         qRange = configuration_range(jointState)
         vRange = velocity_range(jointState)
-        @inbounds ϕjoint = vector_view(ϕ, vRange) # TODO: allocates
-        @inbounds ϕ̇joint = vector_view(ϕ̇, vRange) # TODO: allocates
-        @inbounds q0joint = vector_view(q0, qRange) # TODO: allocates
+        @inbounds ϕjoint = view(ϕ, vRange) # TODO: allocates
+        @inbounds ϕ̇joint = view(ϕ̇, vRange) # TODO: allocates
+        @inbounds q0joint = view(q0, qRange) # TODO: allocates
         qjoint = configuration(jointState)
         vjoint = velocity(jointState)
         local_coordinates!(jointState.joint, ϕjoint, ϕ̇joint, q0joint, qjoint, vjoint)
@@ -356,8 +356,8 @@ function global_coordinates!(state::MechanismState, q0::AbstractVector, ϕ::Abst
     mechanism = state.mechanism
     for vertex in non_root_vertices(state)
         jointState = edge_to_parent_data(vertex)
-        @inbounds q0joint = vector_view(q0, configuration_range(jointState)) # TODO: allocates
-        @inbounds ϕjoint = vector_view(ϕ, velocity_range(jointState)) # TODO: allocates
+        @inbounds q0joint = view(q0, configuration_range(jointState)) # TODO: allocates
+        @inbounds ϕjoint = view(ϕ, velocity_range(jointState)) # TODO: allocates
         qjoint = configuration(jointState)
         global_coordinates!(jointState.joint, qjoint, q0joint, ϕjoint)
     end

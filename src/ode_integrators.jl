@@ -1,3 +1,18 @@
+module OdeIntegrators
+
+using RigidBodyDynamics
+using StaticArrays
+
+export runge_kutta_4,
+    MuntheKaasIntegrator,
+    OdeResultsSink,
+    OdeRingBufferStorage,
+    integrate,
+    step
+
+import Base: eltype, length, step
+import RigidBodyDynamics: scaleadd!
+
 immutable ButcherTableau{N, T<:Real, L}
     a::SMatrix{N, N, T, L}
     b::SVector{N, T}
@@ -22,7 +37,7 @@ function runge_kutta_4{T}(::Type{T})
     a = zeros(T, 4, 4)
     a[2, 1] = 1/2
     a[3, 2] = 1/2
-    a[4, 3] = 1/2
+    a[4, 3] = 1
     b = T[1/6, 1/3, 1/3, 1/6]
     ButcherTableau(a, b)
 end
@@ -70,6 +85,8 @@ type MuntheKaasStageCache{N, T<:Real}
     vds::SVector{N, Vector{T}} # time derivatives of vs
     ϕs::SVector{N, Vector{T}} # local coordinates around q0 for each stage
     ϕds::SVector{N, Vector{T}} # time derivatives of ϕs
+    ϕstep::Vector{T}
+    vstep::Vector{T}
 
     function MuntheKaasStageCache()
         q0 = Vector{T}()
@@ -77,7 +94,9 @@ type MuntheKaasStageCache{N, T<:Real}
         vds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
         ϕs = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
         ϕds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
-        new(q0, vs, vds, ϕs, ϕds)
+        ϕstep = Vector{T}()
+        vstep = Vector{T}()
+        new(q0, vs, vds, ϕs, ϕds, ϕstep, vstep)
     end
 end
 set_num_positions!(cache::MuntheKaasStageCache, n::Int64) = resize!(cache.q0, n)
@@ -86,6 +105,8 @@ function set_num_velocities!(cache::MuntheKaasStageCache, n::Int64)
     for vd in cache.vds resize!(vd, n) end
     for ϕ in cache.ϕs resize!(ϕ, n) end
     for ϕd in cache.ϕds resize!(ϕd, n) end
+    resize!(cache.ϕstep, n)
+    resize!(cache.vstep, n)
 end
 
 immutable MuntheKaasIntegrator{N, T<:Real, F, S<:OdeResultsSink, L}
@@ -118,8 +139,9 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
     n = num_stages(integrator)
 
     # Use current configuration as the configuration around which the local coordinates for this step will be centered.
-    q0 = stages.q0
+    q0, v0 = stages.q0, stages.vstep
     copy!(q0, configuration_vector(state))
+    copy!(v0, velocity_vector(state))
 
     # Compute integrator stages.
     for i = 1 : n
@@ -127,7 +149,7 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
         ϕ = stages.ϕs[i]
         v = stages.vs[i]
         fill!(ϕ, zero(eltype(ϕ)))
-        copy!(v, velocity_vector(state))
+        copy!(v, v0)
         for j = 1 : i - 1
             aij = tableau.a[i, j]
             if aij != zero(aij)
@@ -143,23 +165,21 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
 
         # Dynamics in global coordinates
         vd = stages.vds[i]
-        tstage = t + Δt * tableau.c[i]
-        integrator.dynamics!(vd, tstage, state)
+        integrator.dynamics!(vd, t + Δt * tableau.c[i], state)
 
         # Convert back to local coordinates TODO: ϕ not needed, just ϕd!
         ϕd = stages.ϕds[i]
         local_coordinates!(state, ϕ, ϕd, q0)
     end
 
-    # Combine stages (store in vector for first step) # TODO: don't do that to make code simpler
-    ϕ = stages.ϕs[1]
-    v = stages.vs[1]
-    scale!(ϕ, tableau.b[1] * Δt)
-    scale!(v, tableau.b[1] * Δt)
-    for i = 2 : n
+    # Combine stages
+    ϕ = stages.ϕstep
+    fill!(ϕ, zero(eltype(ϕ)))
+    v = stages.vstep # already initialized to v0
+    for i = 1 : n
         weight = tableau.b[i] * Δt
-        scaleadd!(ϕ, stages.ϕs[i], weight) # TODO: use fusing broadcast in 0.6
-        scaleadd!(v, stages.vs[i], weight) # TODO: use fusing broadcast in 0.6
+        scaleadd!(ϕ, stages.ϕds[i], weight) # TODO: use fusing broadcast in 0.6
+        scaleadd!(v, stages.vds[i], weight) # TODO: use fusing broadcast in 0.6
     end
 
     # Convert from local to global coordinates
@@ -182,3 +202,5 @@ function integrate(integrator::MuntheKaasIntegrator, state0, finalTime, Δt)
         process(integrator.sink, t, state)
     end
 end
+
+end # module

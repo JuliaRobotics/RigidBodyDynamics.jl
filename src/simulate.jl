@@ -1,12 +1,17 @@
-function simulate(state0::MechanismState, tspan; integrator = ode45, kwargs...)
-    q0 = configuration_vector(state0)
-    v0 = velocity_vector(state0)
-    x0 = [q0; v0]
+using RigidBodyDynamics.OdeIntegrators
+
+function simulate(state0::MechanismState, finalTime)
     T = cache_eltype(state0)
-    state = state0
-    mechanism = state.mechanism
-    result = DynamicsResult(T, mechanism)
-    ẋ = Vector{T}(num_positions(mechanism) + num_velocities(mechanism))
-    odefun(t, x) = dynamics!(ẋ, result, state, x)
-    times, states = integrator(odefun, x0, tspan; kwargs...)
+    result = DynamicsResult(T, state0.mechanism)
+    passive_dynamics! = (vd::AbstractArray, t, state) -> begin
+        dynamics!(result, state)
+        copy!(vd, result.v̇)
+        nothing
+    end
+    Δt = 1e-4
+    tableau = runge_kutta_4(Float64)
+    storage = OdeRingBufferStorage{Float64}(ceil(Int64, finalTime / Δt) + 1)
+    integrator = MuntheKaasIntegrator(passive_dynamics!, tableau, storage)
+    integrate(integrator, state0, finalTime, Δt)
+    storage.ts, storage.qs, storage.vs
 end
