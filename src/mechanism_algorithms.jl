@@ -238,8 +238,8 @@ type DynamicsResult{M, T}
     dynamicsBias::Vector{T}
     biasedTorques::Vector{T}
     ẋ::Vector{T}
-    q̇::AbstractVector{T}
-    v̇::AbstractVector{T}
+    q̇::VectorSegment{T}
+    v̇::VectorSegment{T}
     accelerations::Dict{RigidBody{M}, SpatialAcceleration{T}}
     jointWrenches::Dict{RigidBody{M}, Wrench{T}}
 

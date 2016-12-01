@@ -66,7 +66,7 @@ else
     sub!(out, a, b) = broadcast!(-, out, a, b)
 end
 
-function scaleadd!(a::AbstractVector, b::AbstractVector, c::Number)
+@inline function scaleadd!(a::AbstractVector, b::AbstractVector, c::Number)
     @boundscheck length(a) == length(b) || error("size mismatch")
     @simd for i in eachindex(a)
         @inbounds a[i] = a[i] + b[i] * c
@@ -212,4 +212,8 @@ end
     angular = cross(xω, yω)
     linear = cross(xω, yv) + cross(xv, yω)
     angular, linear
+end
+
+@inline function vector_view{T}(v::Vector{T}, range::UnitRange{Int64})
+    VectorSegment{T}(v, (range,), 0, 1)
 end

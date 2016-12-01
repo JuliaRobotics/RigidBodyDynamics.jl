@@ -64,7 +64,7 @@ function process{T}(storage::OdeRingBufferStorage{T}, t::T, state)
     nothing
 end
 
-immutable MuntheKaasStageCache{N, T<:Real}
+type MuntheKaasStageCache{N, T<:Real}
     q0::Vector{T} # global coordinates
     vs::SVector{N, Vector{T}} # velocity vector for each stage
     vds::SVector{N, Vector{T}} # time derivatives of vs
@@ -126,7 +126,7 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
         # Update local coordinates and velocities
         ϕ = stages.ϕs[i]
         v = stages.vs[i]
-        fill!(ϕ, 0)
+        fill!(ϕ, zero(eltype(ϕ)))
         copy!(v, velocity_vector(state))
         for j = 1 : i - 1
             aij = tableau.a[i, j]
