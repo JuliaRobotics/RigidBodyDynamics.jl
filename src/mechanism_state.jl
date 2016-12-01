@@ -339,20 +339,25 @@ end
 
 function local_coordinates!(state::MechanismState, ϕ::AbstractVector, ϕ̇::AbstractVector, q0::AbstractVector)
     mechanism = state.mechanism
-    for joint in joints(mechanism)
-        vRange = mechanism.vRanges[joint]
+    for vertex in non_root_vertices(state)
+        jointState = edge_to_parent_data(vertex)
+        qRange = configuration_range(jointState)
+        vRange = velocity_range(jointState)
         @inbounds ϕjoint = view(ϕ, vRange) # TODO: allocates
         @inbounds ϕ̇joint = view(ϕ̇, vRange) # TODO: allocates
-        @inbounds q0joint = view(q0, mechanism.qRanges[joint]) # TODO: allocates
-        local_coordinates!(joint, ϕjoint, ϕ̇joint, q0joint, configuration(state, joint), velocity(state, joint))
+        @inbounds q0joint = view(q0, qRange) # TODO: allocates
+        qjoint = configuration(jointState)
+        vjoint = velocity(jointState)
+        local_coordinates!(jointState.joint, ϕjoint, ϕ̇joint, q0joint, qjoint, vjoint)
     end
 end
 
 function global_coordinates!(state::MechanismState, q0::AbstractVector, ϕ::AbstractVector)
     mechanism = state.mechanism
-    for joint in joints(mechanism)
-        @inbounds q0joint = view(q0, mechanism.qRanges[joint]) # TODO: allocates
-        @inbounds ϕjoint = view(ϕ, mechanism.vRanges[joint]) # TODO: allocates
-        global_coordinates!(joint, configuration(state, joint), q0joint, ϕjoint)
+    for vertex in non_root_vertices(state)
+        jointState = edge_to_parent_data(vertex)
+        @inbounds q0joint = view(q0, configuration_range(jointState)) # TODO: allocates
+        @inbounds ϕjoint = view(ϕ, velocity_range(jointState)) # TODO: allocates
+        global_coordinates!(jointState.joint, configuration(jointState), q0joint, ϕjoint)
     end
 end

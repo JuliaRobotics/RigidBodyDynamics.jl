@@ -1,5 +1,5 @@
-immutable ButcherTableau{N, T<:Real}
-    a::SMatrix{N, N, T}
+immutable ButcherTableau{N, T<:Real, L}
+    a::SMatrix{N, N, T, L}
     b::SVector{N, T}
     c::SVector{N, T}
     explicit::Bool
@@ -14,7 +14,7 @@ immutable ButcherTableau{N, T<:Real}
         new(SMatrix{N, N}(a), SVector{N}(b), SVector{N}(c), explicit)
     end
 end
-ButcherTableau{T}(a::Matrix{T}, b::Vector{T}) = ButcherTableau{length(b), T}(a, b)
+ButcherTableau{T}(a::Matrix{T}, b::Vector{T}) = ButcherTableau{length(b), T, length(b)^2}(a, b)
 num_stages{N, T}(::ButcherTableau{N, T}) = N
 isexplicit(tableau::ButcherTableau) = tableau.explicit
 
@@ -24,7 +24,7 @@ function runge_kutta_4{T}(::Type{T})
     a[3, 2] = 1/2
     a[4, 3] = 1/2
     b = T[1/6, 1/3, 1/3, 1/6]
-    ButcherTableau{4, Float64}(a, b)
+    ButcherTableau(a, b)
 end
 
 abstract OdeResultsSink
@@ -49,10 +49,10 @@ Base.length(storage::OdeRingBufferStorage) = length(storage.ts)
 set_num_positions!(storage::OdeRingBufferStorage, n::Int64) = for q in storage.qs resize!(q, n) end
 set_num_velocities!(storage::OdeRingBufferStorage, n::Int64) = for v in storage.vs resize!(v, n) end
 
-function initialize(storage::OdeRingBufferStorage, state)
+function initialize{T}(storage::OdeRingBufferStorage{T}, t::T, state)
     set_num_positions!(storage, length(configuration_vector(state)))
-    set_num_velocities(storage, length(velocity_vector(state)))
-    process!(storage, zero(eltype(storage)), stage)
+    set_num_velocities!(storage, length(velocity_vector(state)))
+    process(storage, t, state)
 end
 
 function process{T}(storage::OdeRingBufferStorage{T}, t::T, state)
@@ -71,38 +71,46 @@ immutable MuntheKaasStageCache{N, T<:Real}
     ϕs::SVector{N, Vector{T}} # local coordinates around q0 for each stage
     ϕds::SVector{N, Vector{T}} # time derivatives of ϕs
 
-    function MuntheKaasStageCache(qLength::Int64, vLength::Int64)
-        q0 = Vector{T}(qLength)
-        vs = SVector{N, Vector{T}}((Vector{T}(vLength) for i in 1 : N)...)
-        vds = SVector{N, Vector{T}}((Vector{T}(vLength) for i in 1 : N)...)
-        ϕs = SVector{N, Vector{T}}((Vector{T}(vLength) for i in 1 : N)...)
-        ϕds = SVector{N, Vector{T}}((Vector{T}(vLength) for i in 1 : N)...)
+    function MuntheKaasStageCache()
+        q0 = Vector{T}()
+        vs = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
+        vds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
+        ϕs = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
+        ϕds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
         new(q0, vs, vds, ϕs, ϕds)
     end
 end
+set_num_positions!(cache::MuntheKaasStageCache, n::Int64) = resize!(cache.q0, n)
+function set_num_velocities!(cache::MuntheKaasStageCache, n::Int64)
+    for v in cache.vs resize!(v, n) end
+    for vd in cache.vds resize!(vd, n) end
+    for ϕ in cache.ϕs resize!(ϕ, n) end
+    for ϕd in cache.ϕds resize!(ϕd, n) end
+end
 
-immutable MuntheKaasIntegrator{N, T<:Real, F, S<:OdeResultsSink}
+immutable MuntheKaasIntegrator{N, T<:Real, F, S<:OdeResultsSink, L}
     dynamics!::F # dynamics!(vd, t, state), sets vd (time derivative of v) given time t and state
-    tableau::ButcherTableau{N, T}
+    tableau::ButcherTableau{N, T, L}
     sink::S
     stages::MuntheKaasStageCache{N, T}
 
-    function MuntheKaasIntegrator(dynamics!::F, tableau::ButcherTableau{N, T}, sink::S)
+    function MuntheKaasIntegrator(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S)
         @assert isexplicit(tableau)
         stages = MuntheKaasStageCache{N, T}()
         new(dynamics!, tableau, sink, stages)
     end
 end
-
-MuntheKaasIntegrator{N, T<:Real, F, S<:OdeResultsSink}(dynamics!::F, tableau::ButcherTableau{N, T}, sink::S) = MuntheKaasIntegrator{N, T, F, S}(dynamics!, tableau, sink)
+function MuntheKaasIntegrator{N, T<:Real, F, S<:OdeResultsSink, L}(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S)
+    MuntheKaasIntegrator{N, T, F, S, L}(dynamics!, tableau, sink)
+end
 num_stages{N}(::MuntheKaasIntegrator{N}) = N
 eltype{N, T}(::MuntheKaasIntegrator{N, T}) = T
 
 # state must be a type for which the following functions are defined:
 # - configuration_vector(state), returns the configuration vector in global coordinates
 # - velocity_vector(state), returns the velocity vector
-# - global_coordinates!(state, q0, ϕ), sets global coordinates in state based on local coordinates ϕ centered around global coordinates q0
 # - set_velocity!(state, v), sets velocity vector to v
+# - global_coordinates!(state, q0, ϕ), sets global coordinates in state based on local coordinates ϕ centered around global coordinates q0
 # - local_coordinates!(state, ϕ, ϕd, q0), converts state's global configuration q and velocity v to local coordinates centered around global coordinates q0
 function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
     tableau = integrator.tableau
@@ -110,7 +118,8 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
     n = num_stages(integrator)
 
     # Use current configuration as the configuration around which the local coordinates for this step will be centered.
-    copy!(stages.q0, configuration_vector(state))
+    q0 = stages.q0
+    copy!(q0, configuration_vector(state))
 
     # Compute integrator stages.
     for i = 1 : n
@@ -123,8 +132,8 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
             aij = tableau.a[i, j]
             if aij != zero(aij)
                 weight = Δt * aij
-                scaleadd!(ϕ, stages.ϕd[j], weight) # TODO: use fusing broadcast in 0.6
-                scaleadd!(v, stage.vd[j], weight) # TODO: use fusing broadcast in 0.6
+                scaleadd!(ϕ, stages.ϕds[j], weight) # TODO: use fusing broadcast in 0.6
+                scaleadd!(v, stages.vds[j], weight) # TODO: use fusing broadcast in 0.6
             end
         end
 
@@ -134,21 +143,23 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
 
         # Dynamics in global coordinates
         vd = stages.vds[i]
-        integrator.dynamics!(vd, t + Δt * tableau.c[i], state)
+        tstage = t + Δt * tableau.c[i]
+        integrator.dynamics!(vd, tstage, state)
 
         # Convert back to local coordinates TODO: ϕ not needed, just ϕd!
         ϕd = stages.ϕds[i]
         local_coordinates!(state, ϕ, ϕd, q0)
     end
 
-    # Combine stages (store in vector for first step)
-    ϕ = stages.ϕ[1]
-    v = stages.v[1]
+    # Combine stages (store in vector for first step) # TODO: don't do that to make code simpler
+    ϕ = stages.ϕs[1]
+    v = stages.vs[1]
     scale!(ϕ, tableau.b[1] * Δt)
     scale!(v, tableau.b[1] * Δt)
     for i = 2 : n
-        scaleadd!(ϕ, stages.ϕ[i], tableau.b[i] * Δt) # TODO: use fusing broadcast in 0.6
-        scaleadd!(v, stages.v[i], tableau.b[i] * Δt) # TODO: use fusing broadcast in 0.6
+        weight = tableau.b[i] * Δt
+        scaleadd!(ϕ, stages.ϕs[i], weight) # TODO: use fusing broadcast in 0.6
+        scaleadd!(v, stages.vs[i], weight) # TODO: use fusing broadcast in 0.6
     end
 
     # Convert from local to global coordinates
@@ -162,9 +173,11 @@ function integrate(integrator::MuntheKaasIntegrator, state0, finalTime, Δt)
     T = eltype(integrator)
     t = zero(T)
     state = state0
-    initialize(integrator.sink, state)
+    set_num_positions!(integrator.stages, length(configuration_vector(state)))
+    set_num_velocities!(integrator.stages, length(velocity_vector(state)))
+    initialize(integrator.sink, t, state)
     while t < finalTime
-        step(integrator, state, Δt)
+        step(integrator, t, state, Δt)
         t += Δt
         process(integrator.sink, t, state)
     end
