@@ -35,7 +35,7 @@ _mul(a, b) = a * b
 # TODO: too specific
 function _mul{S1, S2, TA, L, Tb}(
         A::ContiguousSMatrixColumnView{S1, S2, TA, L},
-        b::StridedVector{Tb})
+        b::Union{StridedVector{Tb}, UnsafeVectorView{Tb}})
     @boundscheck size(A, 2) == size(b, 1) || error("size mismatch")
     ret = zeros(SVector{S1, promote_type(TA, Tb)})
     for i = 1 : size(A, 2)

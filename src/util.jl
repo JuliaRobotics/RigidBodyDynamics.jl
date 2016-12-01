@@ -21,6 +21,20 @@ Base.linearindexing{T}(::Type{NullVector{T}}) = Base.LinearFast()
 # TODO: a bit too specific
 typealias VectorSegment{T} SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true}
 
+# non-allocating, unsafe vector view
+# from https://github.com/mlubin/ReverseDiffSparse.jl/commit/8e3ade867581aad6ade7c898ada2ed58e0ad42bb
+immutable UnsafeVectorView{T} <: AbstractVector{T}
+    offset::Int
+    len::Int
+    ptr::Ptr{T}
+end
+UnsafeVectorView{T}(parent::StridedVector{T}, range::UnitRange) = UnsafeVectorView(start(range) - 1, length(range), pointer(parent))
+Base.size(v::UnsafeVectorView) = (v.len,)
+Base.getindex(v::UnsafeVectorView, idx) = unsafe_load(v.ptr, idx + v.offset)
+Base.setindex!(v::UnsafeVectorView, value, idx) = unsafe_store!(v.ptr, value, idx + v.offset)
+Base.length(v::UnsafeVectorView) = v.len
+Base.linearindexing{T}(::Type{UnsafeVectorView{T}}) = Base.LinearFast()
+
 const module_tempdir = joinpath(Base.tempdir(), string(module_name(current_module())))
 
 function cached_download(url::String, localFileName::String, cacheDir::String = joinpath(module_tempdir, string(hash(url))))

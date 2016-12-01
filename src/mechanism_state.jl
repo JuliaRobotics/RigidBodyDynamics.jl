@@ -337,27 +337,27 @@ function transform(state::MechanismState, accel::SpatialAcceleration, to::Cartes
     transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
 end
 
-function local_coordinates!(state::MechanismState, ϕ::AbstractVector, ϕ̇::AbstractVector, q0::AbstractVector)
+function local_coordinates!(state::MechanismState, ϕ::StridedVector, ϕ̇::StridedVector, q0::StridedVector)
     mechanism = state.mechanism
     for vertex in non_root_vertices(state)
         jointState = edge_to_parent_data(vertex)
         qRange = configuration_range(jointState)
         vRange = velocity_range(jointState)
-        @inbounds ϕjoint = view(ϕ, vRange) # TODO: allocates
-        @inbounds ϕ̇joint = view(ϕ̇, vRange) # TODO: allocates
-        @inbounds q0joint = view(q0, qRange) # TODO: allocates
+        ϕjoint = UnsafeVectorView(ϕ, vRange)
+        ϕ̇joint = UnsafeVectorView(ϕ̇, vRange)
+        q0joint = UnsafeVectorView(q0, qRange)
         qjoint = configuration(jointState)
         vjoint = velocity(jointState)
         local_coordinates!(jointState.joint, ϕjoint, ϕ̇joint, q0joint, qjoint, vjoint)
     end
 end
 
-function global_coordinates!(state::MechanismState, q0::AbstractVector, ϕ::AbstractVector)
+function global_coordinates!(state::MechanismState, q0::StridedVector, ϕ::StridedVector)
     mechanism = state.mechanism
     for vertex in non_root_vertices(state)
         jointState = edge_to_parent_data(vertex)
-        @inbounds q0joint = view(q0, configuration_range(jointState)) # TODO: allocates
-        @inbounds ϕjoint = view(ϕ, velocity_range(jointState)) # TODO: allocates
+        q0joint = UnsafeVectorView(q0, configuration_range(jointState))
+        ϕjoint = UnsafeVectorView(ϕ, velocity_range(jointState))
         qjoint = configuration(jointState)
         global_coordinates!(jointState.joint, qjoint, q0joint, ϕjoint)
     end
