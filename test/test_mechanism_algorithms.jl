@@ -357,12 +357,10 @@
         x = MechanismState(Float64, acrobot)
         rand!(x)
         total_energy_before = potential_energy(x) + kinetic_energy(x)
-        tspan = linspace(0., 1., 1e4)
-        times, states = simulate(x, tspan)
-        set!(x, states[end])
+        times, qs, vs = simulate(x, 1.)
+        set_configuration!(x, qs[end])
+        set_velocity!(x, vs[end])
         total_energy_after = potential_energy(x) + kinetic_energy(x)
-
-        # fairly loose tolerance here; should use geometric integrator:
-        @test isapprox(total_energy_after, total_energy_before, atol = 1e-1)
+        @test isapprox(total_energy_after, total_energy_before, atol = 1e-3)
     end
 end

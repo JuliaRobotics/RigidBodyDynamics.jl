@@ -11,7 +11,10 @@ import StaticArrays: similar_type
 using Quaternions
 using DataStructures
 using LightXML
-import ODE: ode45
+
+if VERSION > v"0.5"
+    import Base.Iterators: filter
+end
 
 include("util.jl")
 include("third_party_addendum.jl")
@@ -28,6 +31,7 @@ include("mechanism.jl")
 include("mechanism_state.jl")
 include("mechanism_algorithms.jl")
 include("parse_urdf.jl")
+include("ode_integrators.jl")
 include("simulate.jl")
 
 export

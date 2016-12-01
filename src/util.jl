@@ -21,6 +21,20 @@ Base.linearindexing{T}(::Type{NullVector{T}}) = Base.LinearFast()
 # TODO: a bit too specific
 typealias VectorSegment{T} SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true}
 
+# non-allocating, unsafe vector view
+# from https://github.com/mlubin/ReverseDiffSparse.jl/commit/8e3ade867581aad6ade7c898ada2ed58e0ad42bb
+immutable UnsafeVectorView{T} <: AbstractVector{T}
+    offset::Int
+    len::Int
+    ptr::Ptr{T}
+end
+UnsafeVectorView{T}(parent::StridedVector{T}, range::UnitRange) = UnsafeVectorView(start(range) - 1, length(range), pointer(parent))
+Base.size(v::UnsafeVectorView) = (v.len,)
+Base.getindex(v::UnsafeVectorView, idx) = unsafe_load(v.ptr, idx + v.offset)
+Base.setindex!(v::UnsafeVectorView, value, idx) = unsafe_store!(v.ptr, value, idx + v.offset)
+Base.length(v::UnsafeVectorView) = v.len
+Base.linearindexing{T}(::Type{UnsafeVectorView{T}}) = Base.LinearFast()
+
 const module_tempdir = joinpath(Base.tempdir(), string(module_name(current_module())))
 
 function cached_download(url::String, localFileName::String, cacheDir::String = joinpath(module_tempdir, string(hash(url))))
@@ -54,16 +68,19 @@ end
 
 typealias ContiguousSMatrixColumnView{S1, S2, T, L} SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
 
-if VERSION < v"0.6-" # TODO: get rid of sub! after moving to 0.6. broadcast! allocates in 0.5; fixed in 0.6.
-    function sub!(out, a, b)
-        @boundscheck length(out) == length(a) || error("size mismatch")
-        @boundscheck length(out) == length(b) || error("size mismatch")
-        @simd for i in eachindex(out)
-            @inbounds out[i] = a[i] - b[i]
-        end
+# TODO: use fusing broadcast instead of these functions in 0.6, where they don't allocate.
+function sub!(out, a, b)
+    @boundscheck length(out) == length(a) || error("size mismatch")
+    @boundscheck length(out) == length(b) || error("size mismatch")
+    @simd for i in eachindex(out)
+        @inbounds out[i] = a[i] - b[i]
     end
-else
-    sub!(out, a, b) = broadcast!(-, out, a, b)
+end
+@inline function scaleadd!(a::AbstractVector, b::AbstractVector, c::Number)
+    @boundscheck length(a) == length(b) || error("size mismatch")
+    @simd for i in eachindex(a)
+        @inbounds a[i] += b[i] * c
+    end
 end
 
 

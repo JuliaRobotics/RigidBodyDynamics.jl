@@ -25,7 +25,7 @@ end
 function acceleration_wrt_ancestor{X, M, C, V}(state::MechanismState{X, M, C},
         descendant::TreeVertex{RigidBody{M}, Joint{M}},
         ancestor::TreeVertex{RigidBody{M}, Joint{M}},
-        v̇::AbstractVector{V})
+        v̇::StridedVector{V})
     mechanism = state.mechanism
     T = promote_type(C, V)
     descendantFrame = default_frame(mechanism, vertex_data(descendant))
@@ -35,7 +35,7 @@ function acceleration_wrt_ancestor{X, M, C, V}(state::MechanismState{X, M, C},
     current = descendant
     while current != ancestor
         joint = edge_to_parent_data(current)
-        v̇joint = view(v̇, mechanism.vRanges[joint]) # TODO: allocates
+        v̇joint = UnsafeVectorView(v̇, mechanism.vRanges[joint])
         jointAccel = SpatialAcceleration(motion_subspace(state, joint), v̇joint)
         accel = jointAccel + accel
         current = parent(current)
@@ -133,7 +133,7 @@ function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcce
     nothing
 end
 
-function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M}, v̇::AbstractVector)
+function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M}, v̇::StridedVector)
     mechanism = state.mechanism
 
     # TODO: consider merging back into one loop
@@ -142,7 +142,7 @@ function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialA
     for vertex in non_root_vertices(state)
         body = vertex_data(vertex).body
         S = motion_subspace(vertex)
-        @inbounds v̇joint = view(v̇, velocity_range(edge_to_parent_data(vertex))) # TODO: allocates
+        v̇joint = UnsafeVectorView(v̇, velocity_range(edge_to_parent_data(vertex)))
         jointAccel = SpatialAcceleration(S, v̇joint)
         out[body] = out[vertex_data(parent(vertex)).body] + jointAccel
     end
@@ -174,7 +174,7 @@ end
 Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
 """
 function joint_wrenches_and_torques!{T, X, M}(
-        torquesOut::AbstractVector{T},
+        torquesOut::StridedVector{T},
         netWrenchesInJointWrenchesOut::Associative{RigidBody{M}, Wrench{T}},
         state::MechanismState{X, M})
     @boundscheck length(torquesOut) == num_velocities(state) || error("torquesOut size is wrong")
@@ -189,7 +189,7 @@ function joint_wrenches_and_torques!{T, X, M}(
         end
         jointState = edge_to_parent_data(vertex)
         jointWrench = transform(jointWrench, inv(transform_to_root(vertex))) # TODO: stay in world frame?
-        @inbounds τjoint = view(torquesOut, velocity_range(jointState)) # TODO: allocates
+        @inbounds τjoint = UnsafeVectorView(torquesOut, velocity_range(jointState))
         joint_torque!(jointState.joint, τjoint, configuration(jointState), jointWrench)
     end
 end
@@ -238,8 +238,8 @@ type DynamicsResult{M, T}
     dynamicsBias::Vector{T}
     biasedTorques::Vector{T}
     ẋ::Vector{T}
-    q̇::AbstractVector{T}
-    v̇::AbstractVector{T}
+    q̇::VectorSegment{T}
+    v̇::VectorSegment{T}
     accelerations::Dict{RigidBody{M}, SpatialAcceleration{T}}
     jointWrenches::Dict{RigidBody{M}, Wrench{T}}
 

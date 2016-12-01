@@ -14,7 +14,10 @@ function _local_coordinates!(jt::JointType,
 end
 
 function _global_coordinates!(jt::JointType, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
-    q .= q0 .+ ϕ # TODO: allocates on 0.5
+    @simd for i = 1 : length(q)
+        q[i] = q0[i] + ϕ[i]
+    end
+    nothing
 end
 
 

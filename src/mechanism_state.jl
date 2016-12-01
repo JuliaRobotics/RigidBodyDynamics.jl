@@ -273,11 +273,11 @@ end
 
 function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
     body = state.mechanism.bodyFixedFrameToBody[frame]
-    transform = transform_to_root(state_vertex(state, body))
-    if transform.from != frame
-        transform = transform * find_body_fixed_frame_definition(state.mechanism, body, frame) # TODO: consider caching
+    tf = transform_to_root(state_vertex(state, body))
+    if tf.from != frame
+        tf = tf * find_body_fixed_frame_definition(state.mechanism, body, frame) # TODO: consider caching
     end
-    transform
+    tf
 end
 
 motion_subspace(state::MechanismState, joint::Joint) = motion_subspace(state_vertex(state, joint))
@@ -335,4 +335,30 @@ function transform(state::MechanismState, accel::SpatialAcceleration, to::Cartes
     twistOfOldWrtNew = transform(relative_twist(state, accel.frame, to), rootToOld)
     oldToNew = inv(transform_to_root(state, to)) * oldToRoot
     transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
+end
+
+function local_coordinates!(state::MechanismState, ϕ::StridedVector, ϕd::StridedVector, q0::StridedVector)
+    mechanism = state.mechanism
+    for vertex in non_root_vertices(state)
+        jointState = edge_to_parent_data(vertex)
+        qRange = configuration_range(jointState)
+        vRange = velocity_range(jointState)
+        ϕjoint = UnsafeVectorView(ϕ, vRange)
+        ϕdjoint = UnsafeVectorView(ϕd, vRange)
+        q0joint = UnsafeVectorView(q0, qRange)
+        qjoint = configuration(jointState)
+        vjoint = velocity(jointState)
+        local_coordinates!(jointState.joint, ϕjoint, ϕdjoint, q0joint, qjoint, vjoint)
+    end
+end
+
+function global_coordinates!(state::MechanismState, q0::StridedVector, ϕ::StridedVector)
+    mechanism = state.mechanism
+    for vertex in non_root_vertices(state)
+        jointState = edge_to_parent_data(vertex)
+        q0joint = UnsafeVectorView(q0, configuration_range(jointState))
+        ϕjoint = UnsafeVectorView(ϕ, velocity_range(jointState))
+        qjoint = configuration(jointState)
+        global_coordinates!(jointState.joint, qjoint, q0joint, ϕjoint)
+    end
 end
