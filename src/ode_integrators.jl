@@ -109,6 +109,28 @@ function set_num_velocities!(cache::MuntheKaasStageCache, n::Int64)
     resize!(cache.vstep, n)
 end
 
+# A Lie-group-aware ODE integrator.
+#
+# MuntheKaasIntegrator is used to properly integrate the kinematics of globally
+# parameterized rigid joints (Duindam, Port-Based Modeling and Control for
+# Efficient Bipedal Walking Robots, 2006, Definition 2.9). Global parameterizations of e.g. SO(3)
+# are needed to avoid singularities, but this leads to the problem that the tangent
+# space no longer has the same dimension as the ambient space of the global parameterization.
+# A Munthe-Kaas integrator solves this problem by converting back and forth
+# between local and global coordinates at every integration time step.
+#
+# The idea is to do the dynamics and compute the stages of the integration scheme
+# in terms of local coordinates centered around the global parameterization of
+# the configuration at the end of the previous time step (e.g. exponential coordinates),
+# combine the stages into a new set of local coordinates as usual for Runge-Kutta methods,
+# and then convert the local coordinates back to global coordinates.
+#
+# From Iserles et al., 'Lie-group methods' (2000).
+# https://hal.archives-ouvertes.fr/hal-01328729
+#
+# Another useful reference is Park and Chung,
+# 'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005).
+# http://www.ent.mrt.ac.lk/iml/paperbase/TRO%20Collection/TRO/2005/october/7.pdf
 immutable MuntheKaasIntegrator{N, T<:Real, F, S<:OdeResultsSink, L}
     dynamics!::F # dynamics!(vd, t, state), sets vd (time derivative of v) given time t and state
     tableau::ButcherTableau{N, T, L}
@@ -154,8 +176,8 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
             aij = tableau.a[i, j]
             if aij != zero(aij)
                 weight = Δt * aij
-                scaleadd!(ϕ, stages.ϕds[j], weight) # TODO: use fusing broadcast in 0.6
-                scaleadd!(v, stages.vds[j], weight) # TODO: use fusing broadcast in 0.6
+                scaleadd!(ϕ, stages.ϕds[j], weight)
+                scaleadd!(v, stages.vds[j], weight)
             end
         end
 
@@ -167,8 +189,8 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
         vd = stages.vds[i]
         integrator.dynamics!(vd, t + Δt * tableau.c[i], state)
 
-        # Convert back to local coordinates TODO: ϕ not needed, just ϕd!
-        ϕd = stages.ϕds[i]
+        # Convert back to local coordinates
+        ϕd = stages.ϕds[i] # TODO: ϕ not actually needed, just ϕd!
         local_coordinates!(state, ϕ, ϕd, q0)
     end
 
@@ -178,8 +200,8 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
     v = stages.vstep # already initialized to v0
     for i = 1 : n
         weight = tableau.b[i] * Δt
-        scaleadd!(ϕ, stages.ϕds[i], weight) # TODO: use fusing broadcast in 0.6
-        scaleadd!(v, stages.vds[i], weight) # TODO: use fusing broadcast in 0.6
+        scaleadd!(ϕ, stages.ϕds[i], weight)
+        scaleadd!(v, stages.vds[i], weight)
     end
 
     # Convert from local to global coordinates

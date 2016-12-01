@@ -80,6 +80,7 @@ else
     sub!(out, a, b) = broadcast!(-, out, a, b)
 end
 
+# TODO: use fusing broadcast instead of this function in 0.6, where this doesn't allocate.
 @inline function scaleadd!(a::AbstractVector, b::AbstractVector, c::Number)
     @boundscheck length(a) == length(b) || error("size mismatch")
     @simd for i in eachindex(a)
