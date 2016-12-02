@@ -237,9 +237,7 @@ type DynamicsResult{M, T}
     massMatrixInversionCache::Symmetric{T, Matrix{T}}
     dynamicsBias::Vector{T}
     biasedTorques::Vector{T}
-    ẋ::Vector{T}
-    q̇::VectorSegment{T}
-    v̇::VectorSegment{T}
+    v̇::Vector{T}
     accelerations::Dict{RigidBody{M}, SpatialAcceleration{T}}
     jointWrenches::Dict{RigidBody{M}, Wrench{T}}
 
@@ -248,16 +246,14 @@ type DynamicsResult{M, T}
         nv = num_velocities(mechanism)
         massMatrix = Symmetric(zeros(T, nv, nv))
         massMatrixInversionCache = Symmetric(zeros(T, nv, nv))
-        ẋ = zeros(T, nq + nv)
-        q̇ = view(ẋ, 1 : nq)
-        v̇ = view(ẋ, nq + 1 : nq + nv)
+        v̇ = Vector{T}(nv)
         dynamicsBias = zeros(T, nv)
         biasedTorques = zeros(T, nv)
         accelerations = Dict{RigidBody{M}, SpatialAcceleration{T}}()
         sizehint!(accelerations, num_bodies(mechanism))
         jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
         sizehint!(jointWrenches, num_bodies(mechanism))
-        new(massMatrix, massMatrixInversionCache, dynamicsBias, biasedTorques, ẋ, q̇, v̇, accelerations, jointWrenches)
+        new(massMatrix, massMatrixInversionCache, dynamicsBias, biasedTorques, v̇, accelerations, jointWrenches)
     end
 end
 
@@ -280,24 +276,27 @@ end
 function dynamics!{T, X, M, Tau, W}(out::DynamicsResult{T}, state::MechanismState{X, M},
         torques::AbstractVector{Tau} = NullVector{T}(num_velocities(state)),
         externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
-    configuration_derivative!(out.q̇, state)
     dynamics_bias!(out.dynamicsBias, out.accelerations, out.jointWrenches, state, externalWrenches)
-    @inbounds copy!(out.biasedTorques, out.dynamicsBias) # TODO: handle input torques again
+    @inbounds copy!(out.biasedTorques, out.dynamicsBias)
     sub!(out.biasedTorques, torques, out.dynamicsBias)
     mass_matrix!(out.massMatrix, state)
     joint_accelerations!(out.v̇, out.massMatrixInversionCache, out.massMatrix, out.biasedTorques)
     nothing
 end
 
-# Convenience function that takes a Vector argument for the state and returns a Vector,
-# e.g. for use with standard ODE integrators
-# Note that preallocatedState is required so that we don't need to allocate a new
-# MechanismState object every time this function is called
-function dynamics!{T, X, M, W}(ẋ::AbstractVector{X},
+# Convenience function that takes a Vector argument for the state stacked as [q; v]
+# and returns a Vector, for use with standard ODE integrators.
+function dynamics!{T, X, M, Tau, W}(ẋ::StridedVector{X},
         result::DynamicsResult{T}, state::MechanismState{X, M}, stateVec::AbstractVector{X},
+        torques::AbstractVector{Tau} = NullVector{T}(num_velocities(state)),
         externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
     set!(state, stateVec)
-    dynamics!(result, state, NullVector{T}(num_velocities(state)), externalWrenches)
-    copy!(ẋ, result.ẋ)
+    nq = num_positions(state)
+    nv = num_velocities(state)
+    q̇ = view(ẋ, 1 : nq) # allocates
+    v̇ = view(ẋ, nq + 1 : nq + nv) # allocates
+    configuration_derivative!(q̇, state)
+    dynamics!(result, state, torques, externalWrenches)
+    copy!(v̇, result.v̇)
     ẋ
 end
