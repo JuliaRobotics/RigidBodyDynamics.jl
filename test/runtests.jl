@@ -4,7 +4,8 @@ using RigidBodyDynamics
 using RigidBodyDynamics.TreeDataStructure
 using Quaternions
 using StaticArrays
-import ForwardDiff
+using ODE
+using ForwardDiff
 
 if VERSION > v"0.5"
     import Base.Iterators: filter

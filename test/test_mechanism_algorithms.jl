@@ -353,6 +353,7 @@
     end
 
     @testset "simulate" begin
+        # use simulate function (Munthe-Kaas integrator)
         acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
         x = MechanismState(Float64, acrobot)
         rand!(x)
@@ -362,5 +363,16 @@
         set_velocity!(x, vs[end])
         total_energy_after = potential_energy(x) + kinetic_energy(x)
         @test isapprox(total_energy_after, total_energy_before, atol = 1e-3)
+
+        # use standard integrator (fine when q̇ == v)
+        total_energy_before = potential_energy(x) + kinetic_energy(x)
+        x0 = state_vector(x)
+        result = DynamicsResult(Float64, acrobot)
+        ẋ = Vector{Float64}(length(x0))
+        odefun(t, y) = dynamics!(ẋ, result, x, y)
+        times, states = ODE.ode45(odefun, x0, linspace(0., 1., 1e4))
+        set!(x, states[end])
+        total_energy_after = potential_energy(x) + kinetic_energy(x)
+        @test isapprox(total_energy_after, total_energy_before, atol = 1e-1)
     end
 end
