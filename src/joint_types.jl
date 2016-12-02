@@ -195,12 +195,12 @@ function _bias_acceleration{T<:Real, X<:Real}(
 end
 
 function _configuration_derivative_to_velocity!(::OneDegreeOfFreedomFixedAxis, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
-    v[:] = q̇
+    copy!(v, q̇)
     nothing
 end
 
 function _velocity_to_configuration_derivative!(::OneDegreeOfFreedomFixedAxis, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
-    q̇[:] = v
+    copy!(q̇, v)
     nothing
 end
 

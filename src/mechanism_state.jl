@@ -260,7 +260,7 @@ function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismSt
         jointState = edge_to_parent_data(vertex)
         q = configuration(jointState)
         v = velocity(jointState)
-        @inbounds q̇ = view(out, configuration_range(jointState)) # TODO: allocates
+        q̇ = UnsafeVectorView(out, configuration_range(jointState))
         velocity_to_configuration_derivative!(jointState.joint, q̇, q, v)
     end
 end
