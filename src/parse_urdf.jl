@@ -23,11 +23,11 @@ end
 
 function parse_pose{T}(::Type{T}, xmlPose::Union{Void, XMLElement})
     if xmlPose == nothing
-        rot = one(Quaternion{T})
+        rot = eye(RotMatrix3{T})
         trans = zeros(SVector{3, T})
     else
-        rpy = parse_vector(T, xmlPose, "rpy", "0 0 0")
-        rot = rpy_to_quaternion(rpy)
+        rpy = RotZYX(parse_vector(T, xmlPose, "rpy", "0 0 0")...)
+        rot = RotMatrix(rpy)
         trans = SVector{3}(parse_vector(T, xmlPose, "xyz", "0 0 0"))
     end
     rot, trans

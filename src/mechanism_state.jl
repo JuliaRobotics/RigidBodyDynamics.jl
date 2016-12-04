@@ -94,7 +94,7 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real}
 
     function MechanismState(::Type{X}, mechanism::Mechanism{M})
         q = Vector{X}(num_positions(mechanism))
-        v = Vector{X}(num_velocities(mechanism))
+        v = zeros(X, num_velocities(mechanism))
         rootBodyState = RigidBodyState(root_body(mechanism), X, true)
         tree = Tree{RigidBodyState{M, C}, JointState{X, M, C}}(rootBodyState)
         jointStates = Dict{Joint{M}, JointState{X, M, C}}()
@@ -110,6 +110,7 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real}
             beforeJointToParent = mechanism.jointToJointTransforms[joint]
             jointState = JointState(joint, beforeJointToParent, qJoint, vJoint)
             insert!(parentStateVertex, bodyState, jointState)
+            zero_configuration!(joint, qJoint)
         end
         vertices = toposort(tree)
         new(mechanism, q, v, vertices, view(vertices, 2 : length(vertices)))

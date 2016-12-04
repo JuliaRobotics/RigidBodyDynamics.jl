@@ -35,50 +35,51 @@ else
     framecheck(f1::CartesianFrame3D, f2::CartesianFrame3D) = f1 != f2 && throw(ArgumentError(("$f1 doesn't match $f2")))
 end
 
+
 # Transform between frames
 immutable Transform3D{T<:Real}
     from::CartesianFrame3D
     to::CartesianFrame3D
-    rot::Quaternion{T}
+    rot::RotMatrix3{T}
     trans::SVector{3, T}
 
-    Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Quaternion{T}, trans::SVector{3, T}) = new(from, to, rot, trans)
-    Transform3D(from::CartesianFrame3D, to::CartesianFrame3D) = new(from, to, one(Quaternion{T}), zeros(SVector{3, T}))
-    Transform3D(frame::CartesianFrame3D) = new(frame, frame, one(Quaternion{T}), zeros(SVector{3, T}))
+    Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3, T}, trans::SVector{3, T}) = new(from, to, rot, trans)
+    Transform3D(from::CartesianFrame3D, to::CartesianFrame3D) = new(from, to, eye(RotMatrix3{T}), zeros(SVector{3, T}))
+    Transform3D(frame::CartesianFrame3D) = new(frame, frame, eye(RotMatrix3{T}), zeros(SVector{3, T}))
 end
-Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Quaternion{T}, trans::SVector{3, T}) = Transform3D{T}(from, to, rot, trans)
-Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Quaternion{T}) = Transform3D{T}(from, to, rot, zeros(SVector{3, T}))
-Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, trans::SVector{3, T}) = Transform3D{T}(from, to, one(Quaternion{T}), trans)
-Transform3D{T}(::Type{T}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D{T}(from, to, one(Quaternion{T}), zeros(SVector{3, T}))
-Transform3D{T}(::Type{T}, frame::CartesianFrame3D) = Transform3D{T}(frame, frame, one(Quaternion{T}), zeros(SVector{3, T}))
+Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3, T}, trans::SVector{3, T}) = Transform3D{T}(from, to, rot, trans)
+Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3, T}) = Transform3D{T}(from, to, rot, zeros(SVector{3, T}))
+Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, trans::SVector{3, T}) = Transform3D{T}(from, to, eye(RotMatrix3{T}), trans)
+Transform3D{T}(::Type{T}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D{T}(from, to, eye(RotMatrix3{T}), zeros(SVector{3, T}))
+Transform3D{T}(::Type{T}, frame::CartesianFrame3D) = Transform3D{T}(frame, frame, eye(RotMatrix3{T}), zeros(SVector{3, T}))
 
 convert{T}(::Type{Transform3D{T}}, t::Transform3D{T}) = t
-convert{T}(::Type{Transform3D{T}}, t::Transform3D) = Transform3D(t.from, t.to, convert(Quaternion{T}, t.rot), convert(SVector{3, T}, t.trans))
+convert{T}(::Type{Transform3D{T}}, t::Transform3D) = Transform3D(t.from, t.to, convert(RotMatrix3{T}, t.rot), convert(SVector{3, T}, t.trans))
 
 function show(io::IO, t::Transform3D)
     println(io, "Transform3D from \"$(name(t.from))\" to \"$(name(t.to))\":")
-    angle, axis = angle_axis_proper(t.rot)
+    angleAxis = AngleAxis(t.rot)
+    angle = rotation_angle(angleAxis)
+    axis = rotation_axis(angleAxis)
     println(io, "rotation: $(angle) rad about $(axis), translation: $(t.trans)") # TODO: use fixed Quaternions.jl version once it's updated
 end
 
 @inline function *(t1::Transform3D, t2::Transform3D)
     framecheck(t1.from, t2.to)
     rot = t1.rot * t2.rot
-    trans = t1.trans + rotate(t2.trans, t1.rot)
+    trans = t1.trans + t1.rot * t2.trans
     Transform3D(t2.from, t1.to, rot, trans)
 end
 
 @inline function inv(t::Transform3D)
     rotinv = inv(t.rot)
-    Transform3D(t.to, t.from, rotinv, -rotate(t.trans, rotinv))
+    Transform3D(t.to, t.from, rotinv, -(rotinv * t.trans))
 end
 
-rand(::Type{Transform3D{Float64}}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D(from, to, nquatrand(), rand(SVector{3, Float64}))
+rand{T}(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D(from, to, rand(RotMatrix3{T}), rand(SVector{3, T}))
 
 function isapprox{T}(x::Transform3D{T}, y::Transform3D{T}; atol::Real = 1e-12)
-    theta, axis = angle_axis_proper(x.rot / y.rot)
-    theta = angle_difference(theta, zero(T))
-    x.from == y.from && x.to == y.to && isapprox(theta, zero(T), atol = atol) && isapprox(x.trans, y.trans, atol = atol)
+    x.from == y.from && x.to == y.to && isapprox(x.rot, y.rot, atol = atol) && isapprox(x.trans, y.trans, atol = atol)
 end
 
 
@@ -115,13 +116,13 @@ end
 
 # Point3D-specific
 (-)(p1::Point3D, p2::Point3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v - p2.v) end
-(*)(t::Transform3D, point::Point3D) = begin framecheck(t.from, point.frame); Point3D(t.to, rotate(point.v, t.rot) + t.trans) end
+(*)(t::Transform3D, point::Point3D) = begin framecheck(t.from, point.frame); Point3D(t.to, t.rot * point.v + t.trans) end
 
 # FreeVector3D-specific
 FreeVector3D(p::Point3D) = FreeVector3D(p.frame, p.v)
 cross(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
 dot(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
-(*)(t::Transform3D, vector::FreeVector3D) = begin framecheck(t.from, vector.frame); FreeVector3D(t.to, rotate(vector.v, t.rot)) end
+(*)(t::Transform3D, vector::FreeVector3D) = begin framecheck(t.from, vector.frame); FreeVector3D(t.to, t.rot * vector.v) end
 
 # Mixed Point3D and FreeVector3D
 (+)(p1::FreeVector3D, p2::FreeVector3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v + p2.v) end
