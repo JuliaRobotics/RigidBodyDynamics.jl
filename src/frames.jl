@@ -28,11 +28,14 @@ end
 name(frame::CartesianFrame3D) = get(frame_names, frame.id, "anonymous")
 show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\" (id = $(frame.id))")
 
-# enable/disable frame checks
-if isdefined(Main, :RIGID_BODY_DYNAMICS_RELEASE)
-    framecheck(f1::CartesianFrame3D, f2::CartesianFrame3D) = nothing
-else
-    framecheck(f1::CartesianFrame3D, f2::CartesianFrame3D) = f1 != f2 && throw(ArgumentError(("$f1 doesn't match $f2")))
+# Check that frames match (only when bounds checks are turned on).
+macro framecheck(f1, f2)
+    failure = :($f1 != $f2)
+    msg = string(failure)
+    ret = quote
+        @boundscheck $failure && throw(ArgumentError($msg))
+    end
+    :($(esc(ret)))
 end
 
 
@@ -65,7 +68,7 @@ function show(io::IO, t::Transform3D)
 end
 
 @inline function *(t1::Transform3D, t2::Transform3D)
-    framecheck(t1.from, t2.to)
+    @framecheck(t1.from, t2.to)
     rot = t1.rot * t2.rot
     trans = t1.trans + t1.rot * t2.trans
     Transform3D(t2.from, t1.to, rot, trans)
@@ -115,18 +118,18 @@ for VectorType in (:FreeVector3D, :Point3D)
 end
 
 # Point3D-specific
-(-)(p1::Point3D, p2::Point3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v - p2.v) end
-(*)(t::Transform3D, point::Point3D) = begin framecheck(t.from, point.frame); Point3D(t.to, t.rot * point.v + t.trans) end
+(-)(p1::Point3D, p2::Point3D) = begin @framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v - p2.v) end
+(*)(t::Transform3D, point::Point3D) = begin @framecheck(t.from, point.frame); Point3D(t.to, t.rot * point.v + t.trans) end
 
 # FreeVector3D-specific
 FreeVector3D(p::Point3D) = FreeVector3D(p.frame, p.v)
-cross(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
-dot(v1::FreeVector3D, v2::FreeVector3D) = begin framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
-(*)(t::Transform3D, vector::FreeVector3D) = begin framecheck(t.from, vector.frame); FreeVector3D(t.to, t.rot * vector.v) end
+cross(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
+dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
+(*)(t::Transform3D, vector::FreeVector3D) = begin @framecheck(t.from, vector.frame); FreeVector3D(t.to, t.rot * vector.v) end
 
 # Mixed Point3D and FreeVector3D
-(+)(p1::FreeVector3D, p2::FreeVector3D) = begin framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v + p2.v) end
-(+)(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); Point3D(p.frame, p.v + v.v) end
+(+)(p1::FreeVector3D, p2::FreeVector3D) = begin @framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v + p2.v) end
+(+)(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); Point3D(p.frame, p.v + v.v) end
 (+)(v::FreeVector3D, p::Point3D) = p + v
-(-)(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); Point3D(p.frame, p.v - v.v) end
-cross(p::Point3D, v::FreeVector3D) = begin framecheck(p.frame, v.frame); FreeVector3D(p.frame, cross(p.v, v.v)) end
+(-)(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); Point3D(p.frame, p.v - v.v) end
+cross(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); FreeVector3D(p.frame, cross(p.v, v.v)) end

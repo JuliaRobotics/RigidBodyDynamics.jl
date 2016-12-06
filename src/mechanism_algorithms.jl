@@ -64,7 +64,7 @@ function potential_energy{X, M, C}(state::MechanismState{X, M, C})
     m = num_cols(mat)
     @boundscheck (rowstart > 0 && rowstart + n - 1 <= size(out, 1)) || error("size mismatch")
     @boundscheck (colstart > 0 && colstart + m - 1 <= size(out, 2)) || error("size mismatch")
-    framecheck(jac.frame, mat.frame)
+    @framecheck(jac.frame, mat.frame)
 
     for col = 1 : m
         outcol = colstart + col - 1
