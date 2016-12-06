@@ -263,14 +263,13 @@ end
 
 flip_direction(jt::Revolute) = Revolute(-jt.rotation_axis)
 
-function _joint_transform{T<:Real, X<:Real}(
-        jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
-    @inbounds rot = RotMatrix(AngleAxis(q[1], jt.rotation_axis[1], jt.rotation_axis[2], jt.rotation_axis[3])) # TODO: ask for angleaxis constructor with an SVector as the axis
+function _joint_transform(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
+    @inbounds aa = AngleAxis(q[1], jt.rotation_axis[1], jt.rotation_axis[2], jt.rotation_axis[3])
+    rot = angle_axis_to_rotation_matrix(aa) # TODO
     Transform3D(frameAfter, frameBefore, rot)
 end
 
-function _joint_twist(
-        jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
+function _joint_twist(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
     @inbounds angular_velocity = jt.rotation_axis * v[1]
     Twist(frameAfter, frameBefore, frameAfter, angular_velocity, zeros(angular_velocity))
 end
