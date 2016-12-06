@@ -140,9 +140,9 @@
 
             # set configuration and velocity of new floating joint
             newFloatingJointTransform = newFloatingJointTransform = inv(jointToWorld) * relative_transform(x, bodyToJoint.from, jointToWorld.to) * inv(bodyToJoint)
-            quat = newFloatingJointTransform.rot
+            quat = Quat(newFloatingJointTransform.rot)
             trans = newFloatingJointTransform.trans
-            set_configuration!(xRerooted, newFloatingJoint, [quat.s; quat.v1; quat.v2; quat.v3; trans])# TODO: add Joint function that does mapping
+            set_configuration!(xRerooted, newFloatingJoint, [quat.w; quat.x; quat.y; quat.z; trans])# TODO: add Joint function that does mapping
 
             newFloatingJointTwist = transform(x, relative_twist(x, newFloatingBody, world), bodyToJoint.from)
             newFloatingJointTwist = transform(newFloatingJointTwist, bodyToJoint)

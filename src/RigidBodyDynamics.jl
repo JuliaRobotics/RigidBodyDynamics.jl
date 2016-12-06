@@ -1,4 +1,4 @@
-# __precompile__() TODO: enable once Quaternions.jl tags new version
+__precompile__(true)
 
 module RigidBodyDynamics
 
@@ -8,7 +8,7 @@ import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.r
 import Base: hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype, copy, exp, log, get!
 using StaticArrays
 import StaticArrays: similar_type
-using Quaternions
+using Rotations
 using DataStructures
 using LightXML
 

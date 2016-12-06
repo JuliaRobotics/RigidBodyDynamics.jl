@@ -33,15 +33,16 @@ rand{T}(::Type{QuaternionFloating{T}}) = QuaternionFloating{T}()
 num_positions(::QuaternionFloating) = 7
 num_velocities(::QuaternionFloating) = 6
 
-@inline function rotation(jt::QuaternionFloating, q::AbstractVector, normalized::Bool = true)
-    @inbounds quat = Quaternion{eltype(q)}(q[1], q[2], q[3], q[4], normalized)
+@inline function rotation(jt::QuaternionFloating, q::AbstractVector)
+    @inbounds quat = Quat(q[1], q[2], q[3], q[4])
     quat
 end
-@inline function rotation!(jt::QuaternionFloating, q::AbstractVector, quat::Quaternion)
-    @inbounds q[1] = quat.s
-    @inbounds q[2] = quat.v1
-    @inbounds q[3] = quat.v2
-    @inbounds q[4] = quat.v3
+@inline function rotation!(jt::QuaternionFloating, q::AbstractVector, rot::Rotation{3})
+    quat = Quat(rot)
+    @inbounds q[1] = quat.w
+    @inbounds q[2] = quat.x
+    @inbounds q[3] = quat.y
+    @inbounds q[4] = quat.z
     nothing
 end
 
@@ -57,7 +58,7 @@ end
 function _joint_transform(
         jt::QuaternionFloating, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
     S = promote_type(eltype(jt), eltype(q))
-    rot = convert(Quaternion{S}, rotation(jt, q))
+    rot = convert(Quat{S}, rotation(jt, q))
     trans = convert(SVector{3, S}, translation(jt, q))
     Transform3D{S}(frameAfter, frameBefore, rot, trans)
 end
@@ -78,12 +79,11 @@ end
 
 function _configuration_derivative_to_velocity!(jt::QuaternionFloating, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
     quat = rotation(jt, q)
-    invquat = inv(quat)
-    quatdot = rotation(jt, q̇, false)
+    @inbounds quatdot = SVector(q̇[1], q̇[2], q̇[3], q̇[4])
+    ω = angular_velocity_in_body(quat, quatdot)
     posdot = translation(jt, q̇)
-    linear = rotate(posdot, invquat)
-    angularQuat = 2 * invquat * quatdot
-    angular_velocity!(jt, v, SVector{3}(angularQuat.v1, angularQuat.v2, angularQuat.v3))
+    linear = inv(quat) * posdot
+    angular_velocity!(jt, v, ω)
     linear_velocity!(jt, v, linear)
     nothing
 end
@@ -91,25 +91,27 @@ end
 function _velocity_to_configuration_derivative!(jt::QuaternionFloating, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
     quat = rotation(jt, q)
     ω = angular_velocity(jt, v)
-    ωQuat = Quaternion(0, ω[1], ω[2], ω[3])
     linear = linear_velocity(jt, v)
-    quatdot = 0.5 * quat * ωQuat
-    transdot = rotate(linear, quat)
-    rotation!(jt, q̇, quatdot)
+    quatdot = quaternion_derivative(quat, ω)
+    transdot = quat * linear
+    @inbounds q̇[1] = quatdot[1]# TODO: should use something like rotation!
+    @inbounds q̇[2] = quatdot[2]
+    @inbounds q̇[3] = quatdot[3]
+    @inbounds q̇[4] = quatdot[4]
     translation!(jt, q̇, transdot)
     nothing
 end
 
 function _zero_configuration!(jt::QuaternionFloating, q::AbstractVector)
     T = eltype(q)
-    rotation!(jt, q, Quaternion(one(T), zero(T), zero(T), zero(T)))
+    rotation!(jt, q, eye(Quat{T}))
     translation!(jt, q, zeros(SVector{3, T}))
     nothing
 end
 
 function _rand_configuration!(jt::QuaternionFloating, q::AbstractVector)
     T = eltype(q)
-    rotation!(jt, q, nquatrand())
+    rotation!(jt, q, rand(Quat{T}))
     translation!(jt, q, randn(SVector{3, T}))
     nothing
 end
@@ -261,14 +263,13 @@ end
 
 flip_direction(jt::Revolute) = Revolute(-jt.rotation_axis)
 
-function _joint_transform{T<:Real, X<:Real}(
-        jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
-    @inbounds rot = angle_axis_to_quaternion(q[1], jt.rotation_axis)
+function _joint_transform(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
+    @inbounds aa = AngleAxis(q[1], jt.rotation_axis[1], jt.rotation_axis[2], jt.rotation_axis[3])
+    rot = angle_axis_to_rotation_matrix(aa) # TODO
     Transform3D(frameAfter, frameBefore, rot)
 end
 
-function _joint_twist(
-        jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
+function _joint_twist(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
     @inbounds angular_velocity = jt.rotation_axis * v[1]
     Twist(frameAfter, frameBefore, frameAfter, angular_velocity, zeros(angular_velocity))
 end

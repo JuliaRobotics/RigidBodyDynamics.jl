@@ -2,7 +2,7 @@ using Base.Test
 
 using RigidBodyDynamics
 using RigidBodyDynamics.TreeDataStructure
-using Quaternions
+using Rotations
 using StaticArrays
 using ODE
 using ForwardDiff
@@ -16,6 +16,7 @@ create_autodiff(x, dx) = [ForwardDiff.Dual(x[i], dx[i]) for i in 1 : length(x)]
 
 # TODO: open a PR with ForwardDiff:
 Base.mod{T<:ForwardDiff.Dual}(x::T, y::T) = ForwardDiff.Dual(mod(ForwardDiff.value(x), ForwardDiff.value(y)), ForwardDiff.partials(x))
+@inline Base.rem(x::ForwardDiff.Dual, n::Real) = ForwardDiff.Dual(rem(ForwardDiff.value(x), n), ForwardDiff.partials(x))
 
 include("test_util.jl")
 include("test_tree.jl")

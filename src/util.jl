@@ -67,6 +67,7 @@ macro rtti_dispatch(typeTuple, signature)
 end
 
 typealias ContiguousSMatrixColumnView{S1, S2, T, L} SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
+typealias RotMatrix3{T} RotMatrix{3, T, 9}
 
 # TODO: use fusing broadcast instead of these functions in 0.6, where they don't allocate.
 function sub!(out, a, b)
@@ -116,69 +117,6 @@ function cross(a::SVector{3}, B::AbstractMatrix)
     hat(a) * B
 end
 
-rotate(x::SMatrix{3}, q::Quaternion) = rotation_matrix(q) * x
-
-@inline function rotate(x::SVector{3}, q::Quaternion)
-    qvec = SVector(q.v1, q.v2, q.v3)
-    2 * dot(qvec, x) * qvec + (q.s^2 - dot(qvec, qvec)) * x + 2 * q.s * cross(qvec, x)
-end
-
-function angle_axis_proper{T}(q::Quaternion{T})
-    Θ_over_2 = atan2(√(q.v1^2 + q.v2^2 + q.v3^2), q.s)
-    Θ = 2 * Θ_over_2
-    axis = Θ < eps(Θ) ? SVector(one(T), zero(T), zero(T)) : SVector(q.v1, q.v2, q.v3) * (1 / sin(Θ_over_2))
-    Θ, axis
-end
-
-function rotation_matrix{T}(q::Quaternion{T})
-    sx, sy, sz = 2q.s*q.v1, 2q.s*q.v2, 2q.s*q.v3
-    xx, xy, xz = 2q.v1^2, 2q.v1*q.v2, 2q.v1*q.v3
-    yy, yz, zz = 2q.v2^2, 2q.v2*q.v3, 2q.v3^2
-    @SMatrix [one(T)-(yy+zz) xy-sz xz+sy;
-              xy+sz one(T)-(xx+zz) yz-sx;
-              xz-sy yz+sx one(T)-(xx+yy)]
-end
-
-function rpy_to_quaternion(rpy::Vector)
-    length(rpy) != 3 && error("wrong size")
-    rpy2 = rpy / 2
-    s = sin.(rpy2)
-    c = cos.(rpy2)
-    @inbounds qs = c[1]*c[2]*c[3] + s[1]*s[2]*s[3]
-    @inbounds qx = s[1]*c[2]*c[3] - c[1]*s[2]*s[3]
-    @inbounds qy = c[1]*s[2]*c[3] + s[1]*c[2]*s[3]
-    @inbounds qz = c[1]*c[2]*s[3] - s[1]*s[2]*c[3]
-    Quaternion(qs, qx, qy, qz)
-end
-
-function rotation_vector(q::Quaternion)
-    Θ, axis = angle_axis_proper(q)
-    ϕ = Θ * axis
-end
-
-function angle_axis_to_quaternion(angle::Real, axis::AbstractVector)
-    @boundscheck length(axis) == 3 || error("axis has wrong size")
-    Θ_over_2 = 0.5 * angle
-    s = sin(Θ_over_2)
-    c = cos(Θ_over_2)
-    @inbounds ret = Quaternion(c, s * axis[1], s * axis[2], s * axis[3])
-    ret
-end
-
-function angle_axis_to_rotation_matrix{T}(angle::T, axis::AbstractVector{T})
-    # axis is assumed to be normalized.
-    @boundscheck length(axis) == 3 || error("axis has wrong size")
-    # Rodrigues' formula:
-    θ = angle
-    S = hat(axis)
-    R = eye(SMatrix{3, 3, T}) + sin(θ) * S + (1 - cos(θ)) * S^2
-end
-
-function rotation_vector_to_rotation_matrix{T}(ϕ::AbstractVector{T})
-    θ = norm(ϕ)
-    R = θ < eps(T) ? eye(SMatrix{3, 3, T}) : angle_axis_to_rotation_matrix(θ, ϕ * (1 / θ))
-end
-
 # The 'Bortz equation'.
 # Bortz, John E. "A new mathematical formulation for strapdown inertial navigation."
 # IEEE transactions on aerospace and electronic systems 1 (1971): 61-66.
@@ -205,9 +143,9 @@ function angle_difference(a, b)
     mod(b - a + pi, 2 * π) - π
 end
 
-function transform_spatial_motion(angular::SVector{3}, linear::SVector{3}, rot::Quaternion, p::SVector{3})
-    angular = rotate(angular, rot)
-    linear = rotate(linear, rot) + cross(p, angular)
+function transform_spatial_motion{R <: Rotation{3}}(angular::SVector{3}, linear::SVector{3}, rot::R, trans::SVector{3})
+    angular = rot * angular
+    linear = rot * linear + cross(trans, angular)
     angular, linear
 end
 
@@ -222,4 +160,25 @@ end
     angular = cross(xω, yω)
     linear = cross(xω, yv) + cross(xv, yω)
     angular, linear
+end
+
+function quaternion_derivative(quat::Quat, angular_velocity_in_body::AbstractVector)
+    @boundscheck length(angular_velocity_in_body) == 3 || error("size mismatch")
+    q = quat
+    ω = angular_velocity_in_body
+    M = @SMatrix [
+        -q.x -q.y -q.z;
+         q.w -q.z  q.y;
+         q.z  q.w -q.x;
+        -q.y  q.x  q.w]
+    M * (0.5 * ω)
+end
+
+function angular_velocity_in_body(quat::Quat, quat_derivative::AbstractVector)
+    q = quat
+    MInv = @SMatrix [
+     -q.x  q.w  q.z -q.y;
+     -q.y -q.z  q.w  q.x;
+     -q.z  q.y -q.x  q.w]
+    2 * (MInv * quat_derivative)
 end

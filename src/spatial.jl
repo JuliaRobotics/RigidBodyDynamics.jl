@@ -108,12 +108,12 @@ function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})::Spatial
     elseif inertia.mass == zero(I)
         return zero(SpatialInertia{S}, t.to)
     else
-        J = convert(SMatrix{3, 3, S}, inertia.moment)
-        m = convert(S, inertia.mass)
-        c = convert(SVector{3, S}, inertia.crossPart)
+        J = inertia.moment
+        m = inertia.mass
+        c = inertia.crossPart
 
-        R = rotation_matrix(convert(Quaternion{S}, t.rot))
-        p = convert(SVector{3, S}, t.trans)
+        R = t.rot
+        p = t.trans
 
         cnew = R * c
         Jnew = hat_squared(cnew)
@@ -129,7 +129,7 @@ end
 function rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
     # Try to generate a random but physical moment of inertia
     # by constructing it from its eigendecomposition
-    Q = rotationmatrix(qrotation(rand(T, 3) * 2*pi))
+    Q = rand(RotMatrix3{T}).mat
     principalMoments = Vector{T}(3)
 
     # Scale the inertias to make the length scale of the
@@ -218,12 +218,12 @@ function _log(t::Transform3D)
     p = t.trans
 
     # Rotational part of local coordinates is simply the rotation vector.
-    θ, axis = angle_axis_proper(rot)
+    aa = AngleAxis(rot)
+    θ, axis = rotation_angle(aa), rotation_axis(aa)
     ϕrot = θ * axis
 
     # Translational part from Bullo and Murray, "Proportional derivative (PD) control on the Euclidean group.",
     # (2.4) and (2.5), which provide a closed form solution of the inverse of the A matrix in proposition 2.9 of Murray et al.
-
     θ_over_2 = θ / 2
     sθ_over_2 = sin(θ_over_2)
     cθ_over_2 = cos(θ_over_2)
@@ -290,15 +290,15 @@ function exp(twist::Twist)
     θ = norm(ϕrot)
     if abs(angle_difference(θ, zero(θ))) < eps(θ)
         # (2.32)
-        rot = Quaternion{typeof(θ)}(one(θ), zero(θ), zero(θ), zero(θ), true)
+        rot = eye(RotMatrix3{typeof(θ)})
         trans = ϕtrans
     else
         # (2.36)
         ω = ϕrot / θ
-        rot = angle_axis_to_quaternion(θ, ω)
+        rot = angle_axis_to_rotation_matrix(AngleAxis(θ, ω[1], ω[2], ω[3]))
         v = ϕtrans / θ
         trans = ω × v
-        trans -= rotate(trans, rot)
+        trans -= rot * trans
         trans += ω * dot(ω, v) * θ
     end
     Transform3D(twist.body, twist.base, rot, trans)
@@ -353,8 +353,8 @@ for ForceSpaceElement in (:Momentum, :Wrench)
 
         function transform(f::$ForceSpaceElement, transform::Transform3D)
             framecheck(f.frame, transform.from)
-            linear = rotate(f.linear, transform.rot)
-            angular = rotate(f.angular, transform.rot) + cross(transform.trans, linear)
+            linear = transform.rot * f.linear
+            angular = transform.rot * f.angular + cross(transform.trans, linear)
             $ForceSpaceElement(transform.to, angular, linear)
         end
 
@@ -443,7 +443,7 @@ end
 
 function transform(jac::GeometricJacobian, transform::Transform3D)
     framecheck(jac.frame, transform.from)
-    R = rotation_matrix(transform.rot)
+    R = transform.rot
     angular = R * jac.angular
     linear = R * jac.linear + cross(transform.trans, angular)
     GeometricJacobian(jac.body, jac.base, transform.to, angular, linear)
@@ -478,7 +478,7 @@ end
 
 function transform(mat::MomentumMatrix, transform::Transform3D)
     framecheck(mat.frame, transform.from)
-    R = rotation_matrix(transform.rot)
+    R = transform.rot
     linear = R * linear_part(mat)
     T = eltype(linear)
     angular = R * angular_part(mat) + cross(transform.trans, linear)
