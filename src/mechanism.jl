@@ -143,14 +143,14 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     vertex = insert!(tree(m), childBody, joint, parentBody)
 
     # define where joint is attached on parent body
-    framecheck(jointToParent.from, joint.frameBefore)
+    @framecheck(jointToParent.from, joint.frameBefore)
     add_body_fixed_frame!(m, parentBody, jointToParent)
 
     # add identity transform from frame after joint to itself
     add_body_fixed_frame!(m, childBody, Transform3D{T}(joint.frameAfter, joint.frameAfter))
 
     # define where child is attached to joint
-    framecheck(childToJoint.from, childBody.frame)
+    @framecheck(childToJoint.from, childBody.frame)
     add_body_fixed_frame!(m, childBody, childToJoint)
 
     canonicalize_frame_definitions!(m, vertex)

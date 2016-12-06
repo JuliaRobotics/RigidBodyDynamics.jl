@@ -81,7 +81,7 @@ end
 function joint_torque!{M}(joint::Joint{M}, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)::Void
     @boundscheck check_num_velocities(joint, τ)
     @boundscheck check_num_positions(joint, q)
-    framecheck(joint_wrench.frame, joint.frameAfter)
+    @framecheck(joint_wrench.frame, joint.frameAfter)
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_torque!(joint.jointType, τ, q, joint_wrench)
 end
 

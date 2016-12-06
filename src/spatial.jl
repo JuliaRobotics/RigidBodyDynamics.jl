@@ -92,7 +92,7 @@ function isapprox(x::SpatialInertia, y::SpatialInertia; atol = 1e-12)
 end
 
 function (+){T}(inertia1::SpatialInertia{T}, inertia2::SpatialInertia{T})
-    framecheck(inertia1.frame, inertia2.frame)
+    @framecheck(inertia1.frame, inertia2.frame)
     moment = inertia1.moment + inertia2.moment
     crossPart = inertia1.crossPart + inertia2.crossPart
     mass = inertia1.mass + inertia2.mass
@@ -100,7 +100,7 @@ function (+){T}(inertia1::SpatialInertia{T}, inertia2::SpatialInertia{T})
 end
 
 function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})::SpatialInertia{promote_type(I, T)}
-    framecheck(t.from, inertia.frame)
+    @framecheck(t.from, inertia.frame)
     S = promote_type(I, T)
 
     if t.from == t.to
@@ -176,7 +176,7 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
         end
 
         function (+)(m1::$MotionSpaceElement, m2::$MotionSpaceElement)
-            framecheck(m1.frame, m2.frame)
+            @framecheck(m1.frame, m2.frame)
             angular = m1.angular + m2.angular
             linear = m1.linear + m2.linear
             if m1.body == m2.body && m1.base == m2.base
@@ -206,7 +206,7 @@ end
 
 # Twist-specific functions
 function transform(twist::Twist, transform::Transform3D)
-    framecheck(twist.frame, transform.from)
+    @framecheck(twist.frame, transform.from)
     angular, linear = transform_spatial_motion(twist.angular, twist.linear, transform.rot, transform.trans)
     Twist(twist.body, twist.base, transform.to, angular, linear)
 end
@@ -252,9 +252,9 @@ function log_with_time_derivative(t::Transform3D, twist::Twist)
     # This is truely magic.
     # Notation matches Bullo and Murray.
 
-    framecheck(twist.body, t.from)
-    framecheck(twist.base, t.to)
-    framecheck(twist.frame, twist.body) # required by Lemma 4.
+    @framecheck(twist.body, t.from)
+    @framecheck(twist.base, t.to)
+    @framecheck(twist.frame, twist.body) # required by Lemma 4.
 
     X, θ, θ_squared, θ_over_2, sθ_over_2, cθ_over_2, α = _log(t)
 
@@ -284,7 +284,7 @@ end
 
 function exp(twist::Twist)
     # See Murray et al, "A mathematical introduction to robotic manipulation."
-    framecheck(twist.frame, twist.base) # twist in base frame; see section 4.3
+    @framecheck(twist.frame, twist.base) # twist in base frame; see section 4.3
     ϕrot = twist.angular
     ϕtrans = twist.linear
     θ = norm(ϕrot)
@@ -311,13 +311,13 @@ function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCur
     accel.frame == oldToNew.to && return accel
 
     # frame checks
-    framecheck(oldToNew.from, accel.frame)
-    framecheck(twistOfCurrentWrtNew.frame, accel.frame)
-    framecheck(twistOfCurrentWrtNew.body, accel.frame)
-    framecheck(twistOfCurrentWrtNew.base, oldToNew.to)
-    framecheck(twistOfBodyWrtBase.frame, accel.frame)
-    framecheck(twistOfBodyWrtBase.body, accel.body)
-    framecheck(twistOfBodyWrtBase.base, accel.base)
+    @framecheck(oldToNew.from, accel.frame)
+    @framecheck(twistOfCurrentWrtNew.frame, accel.frame)
+    @framecheck(twistOfCurrentWrtNew.body, accel.frame)
+    @framecheck(twistOfCurrentWrtNew.base, oldToNew.to)
+    @framecheck(twistOfBodyWrtBase.frame, accel.frame)
+    @framecheck(twistOfBodyWrtBase.body, accel.body)
+    @framecheck(twistOfBodyWrtBase.base, accel.base)
 
     # 'cross term':
     angular, linear = se3_commutator(
@@ -352,19 +352,19 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         rand{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, rand(SVector{3, T}), rand(SVector{3, T}))
 
         function transform(f::$ForceSpaceElement, transform::Transform3D)
-            framecheck(f.frame, transform.from)
+            @framecheck(f.frame, transform.from)
             linear = transform.rot * f.linear
             angular = transform.rot * f.angular + cross(transform.trans, linear)
             $ForceSpaceElement(transform.to, angular, linear)
         end
 
         function (+)(f1::$ForceSpaceElement, f2::$ForceSpaceElement)
-            framecheck(f1.frame, f2.frame)
+            @framecheck(f1.frame, f2.frame)
             $ForceSpaceElement(f1.frame, f1.angular + f2.angular, f1.linear + f2.linear)
         end
 
         function (-)(f1::$ForceSpaceElement, f2::$ForceSpaceElement)
-            framecheck(f1.frame, f2.frame)
+            @framecheck(f1.frame, f2.frame)
             $ForceSpaceElement(f1.frame, f1.angular - f2.angular, f1.linear - f2.linear)
         end
 
@@ -433,8 +433,8 @@ end
 function hcat(jacobians::GeometricJacobian...)
     frame = jacobians[1].frame
     for j = 2 : length(jacobians)
-        framecheck(jacobians[j].frame, frame)
-        framecheck(jacobians[j].base, jacobians[j - 1].body)
+        @framecheck(jacobians[j].frame, frame)
+        @framecheck(jacobians[j].base, jacobians[j - 1].body)
     end
     angular = hcat((jac.angular for jac in jacobians)...)
     linear = hcat((jac.linear for jac in jacobians)...)
@@ -442,7 +442,7 @@ function hcat(jacobians::GeometricJacobian...)
 end
 
 function transform(jac::GeometricJacobian, transform::Transform3D)
-    framecheck(jac.frame, transform.from)
+    @framecheck(jac.frame, transform.from)
     R = transform.rot
     angular = R * jac.angular
     linear = R * jac.linear + cross(transform.trans, angular)
@@ -469,7 +469,7 @@ show(io::IO, m::MomentumMatrix) = print(io, "MomentumMatrix expressed in \"$(nam
 function hcat(mats::MomentumMatrix...)
     frame = mats[1].frame
     for j = 2 : length(mats)
-        framecheck(mats[j].frame, frame)
+        @framecheck(mats[j].frame, frame)
     end
     angular = hcat((m.angular for m in mats)...)
     linear = hcat((m.linear for m in mats)...)
@@ -477,7 +477,7 @@ function hcat(mats::MomentumMatrix...)
 end
 
 function transform(mat::MomentumMatrix, transform::Transform3D)
-    framecheck(mat.frame, transform.from)
+    @framecheck(mat.frame, transform.from)
     R = transform.rot
     linear = R * linear_part(mat)
     T = eltype(linear)
@@ -489,7 +489,7 @@ end
 # Interactions between spatial types
 
 # Mechanical power
-dot(w::Wrench, t::Twist) = begin framecheck(w.frame, t.frame); dot(w.angular, t.angular) + dot(w.linear, t.linear) end
+dot(w::Wrench, t::Twist) = begin @framecheck(w.frame, t.frame); dot(w.angular, t.angular) + dot(w.linear, t.linear) end
 dot(t::Twist, w::Wrench) = dot(w, t)
 
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
@@ -513,13 +513,13 @@ for ForceSpaceElement in (:Momentum, :Wrench)
 end
 
 function (*)(inertia::SpatialInertia, twist::Twist)
-    framecheck(inertia.frame, twist.frame)
+    @framecheck(inertia.frame, twist.frame)
     angular, linear = mul_inertia(inertia.moment, inertia.crossPart, inertia.mass, twist.angular, twist.linear)
     Momentum(inertia.frame, angular, linear)
 end
 
 function (*)(inertia::SpatialInertia, jac::GeometricJacobian)
-    framecheck(inertia.frame, jac.frame)
+    @framecheck(inertia.frame, jac.frame)
     Jω = jac.angular
     Jv = jac.linear
     J = inertia.moment
@@ -535,10 +535,10 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
     base = Ṫ.base # TODO: should assert that this is an inertial frame somehow
     frame = Ṫ.frame
 
-    framecheck(I.frame, frame)
-    framecheck(T.body, body)
-    framecheck(T.base, base)
-    framecheck(T.frame, frame)
+    @framecheck(I.frame, frame)
+    @framecheck(T.body, body)
+    @framecheck(T.base, base)
+    @framecheck(T.frame, frame)
 
     angular, linear = mul_inertia(I.moment, I.crossPart, I.mass, Ṫ.angular, Ṫ.linear)
     angularMomentum, linearMomentum = mul_inertia(I.moment, I.crossPart, I.mass, T.angular, T.linear)
@@ -548,12 +548,12 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
 end
 
 function torque(jac::GeometricJacobian, wrench::Wrench)
-    framecheck(jac.frame, wrench.frame)
+    @framecheck(jac.frame, wrench.frame)
     jac.angular' * wrench.angular + jac.linear' * wrench.linear
 end
 
 function kinetic_energy(I::SpatialInertia, twist::Twist)
-    framecheck(I.frame, twist.frame)
+    @framecheck(I.frame, twist.frame)
     # TODO: should assert that twist.base is an inertial frame somehow
     ω = twist.angular
     v = twist.linear
