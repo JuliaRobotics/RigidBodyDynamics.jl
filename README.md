@@ -6,6 +6,7 @@
 RigidBodyDynamics.jl is a small rigid body dynamics library for Julia. It was inspired by the [IHMCRoboticsToolkit](https://bitbucket.org/ihmcrobotics/ihmc-open-robotics-software) from the Institute for Human and Machine Cognition, and by [Drake](http://drake.mit.edu).
 
 ## News
+* December 6, 2016: [tagged version 0.0.3](https://github.com/JuliaLang/METADATA.jl/pull/7183)
 * October 28, 2016: [tagged version 0.0.2](https://github.com/JuliaLang/METADATA.jl/pull/6896).
 * October 24, 2016: [tagged version 0.0.1](https://github.com/JuliaLang/METADATA.jl/pull/6831).
 
@@ -41,7 +42,7 @@ Run `perf/runbenchmarks.jl` (`-O3` and `--check-bounds=no` flags recommended) to
 1. Do inverse dynamics.
 1. Do forward dynamics.
 
-Note that results on Travis builds are **not at all** representative because of code coverage. Results on a recent, fast machine with version 0.0.1:
+Note that results on Travis builds are **not at all** representative because of code coverage. Results on a recent, fast machine with version 0.0.3:
 
 Output of `versioninfo()`:
 ```
@@ -56,8 +57,6 @@ Platform Info:
   LIBM: libopenlibm
   LLVM: libLLVM-3.7.1 (ORCJIT, broadwell)
 ```
-Commit SHA: [`5085451`](https://github.com/tkoolen/RigidBodyDynamics.jl/commit/508545147a35277cf3f4bf3299991886d7ae6291).
-
 Mass matrix:
 ```
   memory estimate:  0.00 bytes
