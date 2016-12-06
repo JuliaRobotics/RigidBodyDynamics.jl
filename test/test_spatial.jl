@@ -107,13 +107,13 @@ end
             ϕtrans = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
             ξ = Twist{Float64}(f2, f1, f1, ϕrot, ϕtrans)
             H = exp(ξ)
-            @test isapprox(ξ, log(H), atol = 1e-10)
+            @test isapprox(ξ, log(H))
 
             ξhat = [RigidBodyDynamics.hat(ϕrot) ϕtrans]
             ξhat = [ξhat; zeros(1, 4)]
             H_mat = [H.rot H.trans]
             H_mat = [H_mat; zeros(1, 3) 1.]
-            @test isapprox(expm(ξhat), H_mat; atol = 1e-10)
+            @test isapprox(expm(ξhat), H_mat)
         end
 
         # test without rotation but with nonzero translation:
@@ -126,7 +126,7 @@ end
             ω = normalize(rand(SVector{3}))
             ξ1 = Twist(f2, f1, f1, ω * θ, zeros(SVector{3}))
             ξ2 = Twist(f2, f1, f1, ω * mod(θ, 2 * π), zeros(SVector{3}))
-            @test isapprox(exp(ξ1), exp(ξ2); atol = 1e-10)
+            @test isapprox(exp(ξ1), exp(ξ2))
         end
 
         # derivative
@@ -135,7 +135,7 @@ end
             H = exp(ξ)
             T = Twist{Float64}(f2, f1, f2, rand(SVector{3}), rand(SVector{3}))
             ξ2, ξ̇ = RigidBodyDynamics.log_with_time_derivative(H, T)
-            @test isapprox(ξ, ξ2, atol = 1e-10)
+            @test isapprox(ξ, ξ2)
             # autodiff log. Need time derivative of transform in ForwardDiff form, so need to basically v_to_qdot for quaternion floating joint
 
             ω = SVector(T.angular[1], T.angular[2], T.angular[3])
@@ -151,7 +151,7 @@ end
             ξ̇rot_from_autodiff = @SVector [ForwardDiff.partials(ξ_autodiff.angular[i])[1] for i in 1 : 3]
             ξ̇trans_from_autodiff = @SVector [ForwardDiff.partials(ξ_autodiff.linear[i])[1] for i in 1 : 3]
             ξ̇_from_autodiff = SpatialAcceleration(ξ.body, ξ.base, ξ.frame, ξ̇rot_from_autodiff, ξ̇trans_from_autodiff)
-            @test isapprox(ξ̇, ξ̇_from_autodiff; atol = 1e-6) # FIXME: tolerance is way too high
+            @test isapprox(ξ̇, ξ̇_from_autodiff)
         end
     end
 end
