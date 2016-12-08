@@ -50,9 +50,9 @@ immutable MomentumMatrix{A<:AbstractMatrix}
     linear::A
 
     function MomentumMatrix(frame::CartesianFrame3D, angular::A, linear::A)
-        @assert size(angular, 1) == 3
-        @assert size(linear, 1) == 3
-        @assert size(angular, 2) == size(linear, 2)
+        @boundscheck size(angular, 1) == 3 || error("size mismatch")
+        @boundscheck size(linear, 1) == 3 || error("size mismatch")
+        @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
         new(frame, angular, linear)
     end
 end
@@ -66,10 +66,8 @@ function convert{T<:Real}(::Type{SpatialInertia{T}}, inertia::SpatialInertia)
 end
 
 function convert{T}(::Type{SMatrix{6, 6, T}}, inertia::SpatialInertia)
-    J = inertia.moment
     C = hat(inertia.crossPart)
-    m = inertia.mass
-    [J  C; C' m * eye(SMatrix{3, 3, T})]
+    [inertia.moment  C; C' inertia.mass * eye(SMatrix{3, 3, T})]
 end
 
 convert{T<:Matrix}(::Type{T}, inertia::SpatialInertia) = convert(T, convert(SMatrix{6, 6, eltype(T)}, inertia))
@@ -101,29 +99,13 @@ end
 
 function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})::SpatialInertia{promote_type(I, T)}
     @framecheck(t.from, inertia.frame)
-    S = promote_type(I, T)
-
-    if t.from == t.to
-        return convert(SpatialInertia{S}, inertia)
-    elseif inertia.mass == zero(I)
-        return zero(SpatialInertia{S}, t.to)
-    else
-        J = inertia.moment
-        m = inertia.mass
-        c = inertia.crossPart
-
-        R = t.rot
-        p = t.trans
-
-        cnew = R * c
-        Jnew = hat_squared(cnew)
-        cnew += m * p
-        Jnew -= hat_squared(cnew)
-        mInv = inv(m)
-        Jnew *= mInv
-        Jnew += R * J * R'
-        return SpatialInertia{S}(t.to, Jnew, cnew, m)
-    end
+    cnew = t.rot * inertia.crossPart
+    Jnew = hat_squared(cnew)
+    cnew += inertia.mass * t.trans
+    Jnew -= hat_squared(cnew)
+    Jnew *= ifelse(inertia.mass == zero(inertia.mass), zero(inertia.mass), inv(inertia.mass))
+    Jnew += t.rot * inertia.moment * t.rot'
+    SpatialInertia(t.to, Jnew, cnew, inertia.mass)
 end
 
 function rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
@@ -410,9 +392,8 @@ end
 
 function transform(jac::GeometricJacobian, transform::Transform3D)
     @framecheck(jac.frame, transform.from)
-    R = transform.rot
-    angular = R * jac.angular
-    linear = R * jac.linear + cross(transform.trans, angular)
+    angular = transform.rot * jac.angular
+    linear = transform.rot * jac.linear + cross(transform.trans, angular)
     GeometricJacobian(jac.body, jac.base, transform.to, angular, linear)
 end
 
@@ -445,10 +426,8 @@ end
 
 function transform(mat::MomentumMatrix, transform::Transform3D)
     @framecheck(mat.frame, transform.from)
-    R = transform.rot
-    linear = R * linear_part(mat)
-    T = eltype(linear)
-    angular = R * angular_part(mat) + cross(transform.trans, linear)
+    linear = transform.rot * mat.linear
+    angular = transform.rot * mat.angular + cross(transform.trans, linear)
     MomentumMatrix(transform.to, angular, linear)
 end
 
@@ -487,13 +466,8 @@ end
 
 function (*)(inertia::SpatialInertia, jac::GeometricJacobian)
     @framecheck(inertia.frame, jac.frame)
-    Jω = jac.angular
-    Jv = jac.linear
-    J = inertia.moment
-    m = inertia.mass
-    c = inertia.crossPart
-    angular = J * Jω + cross(c, Jv)
-    linear = m * Jv - cross(c, Jω)
+    angular = inertia.moment * jac.angular + cross(inertia.crossPart, jac.linear)
+    linear = inertia.mass * jac.linear - cross(inertia.crossPart, jac.angular)
     MomentumMatrix(inertia.frame, angular, linear)
 end
 
