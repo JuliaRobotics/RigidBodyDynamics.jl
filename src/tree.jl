@@ -230,11 +230,11 @@ function reroot{V, E, F}(newRoot::TreeVertex{V, E}, edgeDirectionChangeFunction:
     ret
 end
 
-function merge_into_parent!(vertex::TreeVertex)
+function merge_into_parent!{V, E}(vertex::TreeVertex{V, E})
     # splice vertex's children into parent's children at vertex's location
     @assert !isroot(vertex)
     for child in children(vertex)
-        child.parentAndEdgeData = parent(vertex) => edge_to_parent_data(child)
+        child.parentAndEdgeData = Pair{TreeVertex{V, E}, E}(parent(vertex), edge_to_parent_data(child))
     end
     parentsChildren = parent(vertex).children
     splice!(parentsChildren, findfirst(parentsChildren, vertex), children(vertex))
