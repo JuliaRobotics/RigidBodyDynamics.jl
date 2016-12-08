@@ -1,27 +1,23 @@
 type Mechanism{T<:Real}
-    toposortedTree::Vector{TreeVertex{RigidBody{T}, Joint{T}}} # TODO: consider replacing with just the root vertex after creating iterator
+    toposortedTree::Vector{TreeVertex{RigidBody, Joint}} # TODO: consider replacing with just the root vertex after creating iterator
     bodyFixedFrameDefinitions::Dict{RigidBody{T}, Set{Transform3D{T}}}
-    bodyFixedFrameToBody::Dict{CartesianFrame3D, RigidBody{T}}
-    jointToJointTransforms::Dict{Joint{T}, Transform3D{T}}
+    bodyFixedFrameToBody::Dict{CartesianFrame3D, RigidBody}
+    jointToJointTransforms::Dict{Joint, Transform3D{T}}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
-    qRanges::Dict{Joint{T}, UnitRange{Int64}} # TODO: remove
-    vRanges::Dict{Joint{T}, UnitRange{Int64}} # TODO: remove
 
     function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
-        tree = Tree{RigidBody{T}, Joint{T}}(rootBody)
+        tree = Tree{RigidBody, Joint}(rootBody)
         bodyFixedFrameDefinitions = Dict(rootBody => Set([Transform3D(T, rootBody.frame)]))
         bodyFixedFrameToBody = Dict(rootBody.frame => rootBody)
-        jointToJointTransforms = Dict{Joint{T}, Transform3D{T}}()
+        jointToJointTransforms = Dict{Joint, Transform3D{T}}()
         gravitationalAcceleration = FreeVector3D(rootBody.frame, gravity)
-        qRanges = Dict{Joint{T}, UnitRange{Int64}}()
-        vRanges = Dict{Joint{T}, UnitRange{Int64}}()
         new(toposort(tree), bodyFixedFrameDefinitions, bodyFixedFrameToBody,
-            jointToJointTransforms, gravitationalAcceleration, qRanges, vRanges)
+            jointToJointTransforms, gravitationalAcceleration)
     end
 
     function Mechanism(m::Mechanism{T})
         new(toposort(copy(tree(m))), Dict(k => copy(v) for (k, v) in m.bodyFixedFrameDefinitions), copy(m.bodyFixedFrameToBody),
-            copy(m.jointToJointTransforms), copy(m.gravitationalAcceleration), copy(m.qRanges), copy(m.vRanges))
+            copy(m.jointToJointTransforms), copy(m.gravitationalAcceleration))
     end
 end
 
@@ -42,11 +38,11 @@ isroot{T}(m::Mechanism{T}, b::RigidBody{T}) = b == root_body(m)
 joints(m::Mechanism) = (edge_to_parent_data(vertex) for vertex in non_root_vertices(m))
 bodies{T}(m::Mechanism{T}) = (vertex_data(vertex) for vertex in m.toposortedTree)
 non_root_bodies{T}(m::Mechanism{T}) = (vertex_data(vertex) for vertex in non_root_vertices(m))
-num_positions(m::Mechanism) = num_positions(joints(m))
-num_velocities(m::Mechanism) = num_velocities(joints(m))
+num_positions(m::Mechanism) = sum(num_positions, joints(m))
+num_velocities(m::Mechanism) = sum(num_velocities, joints(m))
 num_bodies(m::Mechanism) = length(m.toposortedTree)
 
-function default_frame{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint{T}})
+function default_frame{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody, Joint})
      # allows standardization on a frame to reduce number of transformations required
     isroot(vertex) ? vertex_data(vertex).frame : edge_to_parent_data(vertex).frameAfter
 end
@@ -91,7 +87,7 @@ function add_body_fixed_frame!{T}(m::Mechanism{T}, transform::Transform3D{T})
     add_body_fixed_frame!(m, body, transform)
 end
 
-function canonicalize_frame_definitions!{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody{T}, Joint{T}})
+function canonicalize_frame_definitions!{T}(m::Mechanism{T}, vertex::TreeVertex{RigidBody, Joint})
     defaultFrame = default_frame(m, vertex)
     body = vertex_data(vertex)
 
@@ -127,17 +123,6 @@ function canonicalize_frame_definitions!{T}(m::Mechanism{T}, vertex::TreeVertex{
     nothing
 end
 
-function recompute_ranges!(m::Mechanism)
-    empty!(m.qRanges)
-    empty!(m.vRanges)
-    qStart, vStart = 1, 1
-    for joint in joints(m)
-        qEnd, vEnd = qStart + num_positions(joint) - 1, vStart + num_velocities(joint) - 1
-        m.qRanges[joint], m.vRanges[joint] = qStart : qEnd, vStart : vEnd
-        qStart, vStart = qEnd + 1, vEnd + 1
-    end
-end
-
 function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
         childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(childBody.frame, joint.frameAfter))
     vertex = insert!(tree(m), childBody, joint, parentBody)
@@ -155,7 +140,6 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
 
     canonicalize_frame_definitions!(m, vertex)
     m.toposortedTree = toposort(tree(m))
-    recompute_ranges!(m)
     m
 end
 
@@ -187,7 +171,6 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     end
 
     m.toposortedTree = toposort(tree(m))
-    recompute_ranges!(m)
 
     m
 end
@@ -199,7 +182,6 @@ function submechanism{T}(m::Mechanism{T}, submechanismRootBody::RigidBody{T})
         insert_subtree!(root_vertex(ret), child)
     end
     ret.toposortedTree = toposort(tree(ret))
-    recompute_ranges!(ret)
 
     # copy frame information over
     merge!(ret.bodyFixedFrameDefinitions, Dict(k => v for (k, v) in m.bodyFixedFrameDefinitions if k ∈ bodies(ret)))
@@ -259,15 +241,11 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
         canonicalize_frame_definitions!(mechanism, vertex)
     end
 
-    recompute_ranges!(mechanism)
     flippedJoints
 end
 
 function change_joint_type!(m::Mechanism, joint::Joint, newType::JointType)
-    # TODO: remove ranges from mechanism so that this function isn't necessary
-    joint.jointType = newType
-    recompute_ranges!(m::Mechanism)
-    m
+    error("fixme")
 end
 
 function remove_fixed_joints!(m::Mechanism)
@@ -311,7 +289,6 @@ function remove_fixed_joints!(m::Mechanism)
         end
     end
     m.toposortedTree = toposort(tree(m))
-    recompute_ranges!(m)
     m
 end
 
@@ -345,7 +322,7 @@ function gravitational_spatial_acceleration{M}(m::Mechanism{M})
     SpatialAcceleration(frame, frame, frame, zeros(SVector{3, M}), m.gravitationalAcceleration.v)
 end
 
-function subtree_mass{T}(base::Tree{RigidBody{T}, Joint{T}})
+function subtree_mass(base::Tree{RigidBody, Joint})
     result = isroot(base) ? zero(T) : spatial_inertia(vertex_data(base)).mass
     for child in children(base)
         result += subtree_mass(child)

@@ -13,6 +13,8 @@ end
 
 RigidBody{T}(name::String, inertia::SpatialInertia{T}) = RigidBody{T}(name, inertia)
 RigidBody{T}(inertia::SpatialInertia{T}) = RigidBody{T}(inertia)
+eltype{T}(::Type{RigidBody{T}}) = T
+eltype{T}(::RigidBody{T}) = eltype(typeof(T))
 name(b::RigidBody) = b.name
 show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(name(b))\"")
 showcompact(io::IO, b::RigidBody) = print(io, "$(name(b))")

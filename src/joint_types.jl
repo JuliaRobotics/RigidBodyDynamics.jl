@@ -1,19 +1,19 @@
 # TODO: put in separate module
 
 abstract JointType{T<:Real}
-eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
+Base.@pure eltype{T}(::Type{JointType{T}}) = T
 
 # Default implementations
 flip_direction{T}(jt::JointType{T}) = deepcopy(jt)
 
-function _local_coordinates!(jt::JointType,
+function local_coordinates!(jt::JointType,
         ϕ::AbstractVector, ϕ̇::AbstractVector,
         q0::AbstractVector, q::AbstractVector, v::AbstractVector)
     sub!(ϕ, q, q0)
     copy!(ϕ̇, v)
 end
 
-function _global_coordinates!(jt::JointType, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
+function global_coordinates!(jt::JointType, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
     @simd for i = 1 : length(q)
         q[i] = q0[i] + ϕ[i]
     end
@@ -55,29 +55,29 @@ end
 @inline linear_velocity(jt::QuaternionFloating, v::AbstractVector) = begin @inbounds ν = SVector(v[4], v[5], v[6]); ν end
 @inline linear_velocity!(jt::QuaternionFloating, v::AbstractVector, ν::AbstractVector) = @inbounds copy!(v, 4, ν, 1, 3)
 
-function _joint_transform(
+function joint_transform(
         jt::QuaternionFloating, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
-    S = promote_type(eltype(jt), eltype(q))
+    S = promote_type(eltype(typeof(jt)), eltype(q))
     rot = convert(Quat{S}, rotation(jt, q))
     trans = convert(SVector{3, S}, translation(jt, q))
     Transform3D{S}(frameAfter, frameBefore, rot, trans)
 end
 
-function _motion_subspace{T<:Real, X<:Real}(
+function motion_subspace{T<:Real, X<:Real}(
         jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
-    MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
+    GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function _bias_acceleration{T<:Real, X<:Real}(
+function bias_acceleration{T<:Real, X<:Real}(
         jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     S = promote_type(T, X)
     zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
 end
 
-function _configuration_derivative_to_velocity!(jt::QuaternionFloating, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
+function configuration_derivative_to_velocity!(jt::QuaternionFloating, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
     quat = rotation(jt, q)
     @inbounds quatdot = SVector(q̇[1], q̇[2], q̇[3], q̇[4])
     ω = angular_velocity_in_body(quat, quatdot)
@@ -88,7 +88,7 @@ function _configuration_derivative_to_velocity!(jt::QuaternionFloating, v::Abstr
     nothing
 end
 
-function _velocity_to_configuration_derivative!(jt::QuaternionFloating, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
+function velocity_to_configuration_derivative!(jt::QuaternionFloating, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
     quat = rotation(jt, q)
     ω = angular_velocity(jt, v)
     linear = linear_velocity(jt, v)
@@ -102,21 +102,21 @@ function _velocity_to_configuration_derivative!(jt::QuaternionFloating, q̇::Abs
     nothing
 end
 
-function _zero_configuration!(jt::QuaternionFloating, q::AbstractVector)
+function zero_configuration!(jt::QuaternionFloating, q::AbstractVector)
     T = eltype(q)
     rotation!(jt, q, eye(Quat{T}))
     translation!(jt, q, zeros(SVector{3, T}))
     nothing
 end
 
-function _rand_configuration!(jt::QuaternionFloating, q::AbstractVector)
+function rand_configuration!(jt::QuaternionFloating, q::AbstractVector)
     T = eltype(q)
     rotation!(jt, q, rand(Quat{T}))
     translation!(jt, q, randn(SVector{3, T}))
     nothing
 end
 
-function _joint_twist{T<:Real, X<:Real}(
+function joint_twist{T<:Real, X<:Real}(
         jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     S = promote_type(T, X)
     angular = convert(SVector{3, S}, angular_velocity(jt, v))
@@ -124,14 +124,14 @@ function _joint_twist{T<:Real, X<:Real}(
     Twist(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function _joint_torque!(jt::QuaternionFloating, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
+function joint_torque!(jt::QuaternionFloating, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
     angular_velocity!(jt, τ, joint_wrench.angular)
     linear_velocity!(jt, τ, joint_wrench.linear)
     nothing
 end
 
 # uses exponential coordinates centered around q0
-function _local_coordinates!(jt::QuaternionFloating,
+function local_coordinates!(jt::QuaternionFloating,
         ϕ::AbstractVector, ϕ̇::AbstractVector,
         q0::AbstractVector, q::AbstractVector, v::AbstractVector)
     # anonymous helper frames
@@ -154,7 +154,7 @@ function _local_coordinates!(jt::QuaternionFloating,
     nothing
 end
 
-function _global_coordinates!(jt::QuaternionFloating, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
+function global_coordinates!(jt::QuaternionFloating, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
     # anonymous helper frames
     frameBefore = CartesianFrame3D()
     frame0 = CartesianFrame3D()
@@ -181,27 +181,27 @@ abstract OneDegreeOfFreedomFixedAxis{T<:Real} <: JointType{T}
 num_positions(::OneDegreeOfFreedomFixedAxis) = 1
 num_velocities(::OneDegreeOfFreedomFixedAxis) = 1
 
-function _zero_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
+function zero_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
     fill!(q, zero(eltype(q)))
     nothing
 end
 
-function _rand_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
+function rand_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
     randn!(q)
     nothing
  end
 
-function _bias_acceleration{T<:Real, X<:Real}(
+function bias_acceleration{T<:Real, X<:Real}(
         jt::OneDegreeOfFreedomFixedAxis{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     zero(SpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
 end
 
-function _configuration_derivative_to_velocity!(::OneDegreeOfFreedomFixedAxis, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
+function configuration_derivative_to_velocity!(::OneDegreeOfFreedomFixedAxis, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
     copy!(v, q̇)
     nothing
 end
 
-function _velocity_to_configuration_derivative!(::OneDegreeOfFreedomFixedAxis, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
+function velocity_to_configuration_derivative!(::OneDegreeOfFreedomFixedAxis, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
     copy!(q̇, v)
     nothing
 end
@@ -222,27 +222,27 @@ end
 
 flip_direction(jt::Prismatic) = Prismatic(-jt.translation_axis)
 
-function _joint_transform(
+function joint_transform(
         jt::Prismatic, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
     @inbounds translation = q[1] * jt.translation_axis
     Transform3D(frameAfter, frameBefore, translation)
 end
 
-function _joint_twist(
+function joint_twist(
         jt::Prismatic, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
     @inbounds linear = jt.translation_axis * v[1]
     Twist(frameAfter, frameBefore, frameAfter, zeros(linear), linear)
 end
 
-function _motion_subspace{T<:Real, X<:Real}(
+function motion_subspace{T<:Real, X<:Real}(
         jt::Prismatic{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
     angular = zeros(SMatrix{3, 1, X})
     linear = SMatrix{3, 1, X}(jt.translation_axis)
-    MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
+    GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function _joint_torque!(jt::Prismatic, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
+function joint_torque!(jt::Prismatic, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
     @inbounds τ[1] = dot(joint_wrench.linear, jt.translation_axis)
     nothing
 end
@@ -263,25 +263,25 @@ end
 
 flip_direction(jt::Revolute) = Revolute(-jt.rotation_axis)
 
-function _joint_transform(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
+function joint_transform(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
     @inbounds aa = AngleAxis(q[1], jt.rotation_axis[1], jt.rotation_axis[2], jt.rotation_axis[3])
     Transform3D(frameAfter, frameBefore, RotMatrix(aa))
 end
 
-function _joint_twist(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
+function joint_twist(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
     @inbounds angular_velocity = jt.rotation_axis * v[1]
     Twist(frameAfter, frameBefore, frameAfter, angular_velocity, zeros(angular_velocity))
 end
 
-function _motion_subspace{T<:Real, X<:Real}(
+function motion_subspace{T<:Real, X<:Real}(
         jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
     angular = SMatrix{3, 1, S}(jt.rotation_axis)
     linear = zeros(SMatrix{3, 1, S})
-    MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
+    GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function _joint_torque!(jt::Revolute, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
+function joint_torque!(jt::Revolute, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
     @inbounds τ[1] = dot(joint_wrench.angular, jt.rotation_axis)
     nothing
 end
@@ -298,30 +298,30 @@ rand{T}(::Type{Fixed{T}}) = Fixed{T}()
 num_positions(::Fixed) = 0
 num_velocities(::Fixed) = 0
 
-function _joint_transform{T<:Real, X<:Real}(
+function joint_transform{T<:Real, X<:Real}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     Transform3D(promote_type(T, X), frameAfter, frameBefore)
 end
 
-function _joint_twist{T<:Real, X<:Real}(
+function joint_twist{T<:Real, X<:Real}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     zero(Twist{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
 end
 
-function _motion_subspace{T<:Real, X<:Real}(
+function motion_subspace{T<:Real, X<:Real}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
-    MotionSubspace(frameAfter, frameBefore, frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
+    GeometricJacobian(frameAfter, frameBefore, frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
-_zero_configuration!(::Fixed, q::AbstractVector) = nothing
-_rand_configuration!(::Fixed, q::AbstractVector) = nothing
+zero_configuration!(::Fixed, q::AbstractVector) = nothing
+rand_configuration!(::Fixed, q::AbstractVector) = nothing
 
-function _bias_acceleration{T<:Real, X<:Real}(
+function bias_acceleration{T<:Real, X<:Real}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     zero(SpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
 end
 
-_configuration_derivative_to_velocity!(::Fixed, v::AbstractVector, q::AbstractVector, q̇::AbstractVector) = nothing
-_velocity_to_configuration_derivative!(::Fixed, q̇::AbstractVector, q::AbstractVector, v::AbstractVector) = nothing
-_joint_torque!(jt::Fixed, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench) = nothing
+configuration_derivative_to_velocity!(::Fixed, v::AbstractVector, q::AbstractVector, q̇::AbstractVector) = nothing
+velocity_to_configuration_derivative!(::Fixed, q̇::AbstractVector, q::AbstractVector, v::AbstractVector) = nothing
+joint_torque!(jt::Fixed, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench) = nothing

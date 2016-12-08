@@ -36,7 +36,7 @@ type TreeVertex{V, E}
     parentAndEdgeData::Nullable{Pair{TreeVertex{V, E}, E}}
 
     TreeVertex(vertexData::V) = new(vertexData, [], Nullable{Pair{TreeVertex{V, E}, E}}())
-    TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = new(vertexData, [], parent => edgeData)
+    TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = new(vertexData, [], Pair{TreeVertex{V, E}, E}(parent, edgeData))
 end
 TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = TreeVertex{V, E}(vertexData, parent, edgeData)
 

@@ -1,4 +1,4 @@
-function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
+function center_of_mass(state::MechanismState, itr)
     frame = root_body(state.mechanism).frame
     com = Point3D(frame, zeros(SVector{3, C}))
     mass = zero(C)
@@ -16,19 +16,19 @@ end
 
 center_of_mass(state::MechanismState) = center_of_mass(state, non_root_bodies(state.mechanism))
 
-function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{RigidBody{M}, Joint{M}})
+function geometric_jacobian(state::MechanismState, path::Path{RigidBody, Joint})
     copysign = (motionSubspace::GeometricJacobian, sign::Int64) -> sign < 0 ? -motionSubspace : motionSubspace
     motionSubspaces = [copysign(motion_subspace(state, joint), sign)::GeometricJacobian for (joint, sign) in zip(path.edgeData, path.directions)]
     hcat(motionSubspaces...)
 end
 
-function acceleration_wrt_ancestor{X, M, C, V}(state::MechanismState{X, M, C},
-        descendant::TreeVertex{RigidBody{M}, Joint{M}},
-        ancestor::TreeVertex{RigidBody{M}, Joint{M}},
-        v̇::StridedVector{V})
+function acceleration_wrt_ancestor(state::MechanismState,
+        descendant::StateElement,
+        ancestor::StateElement,
+        v̇::StridedVector)
     mechanism = state.mechanism
     T = promote_type(C, V)
-    descendantFrame = default_frame(mechanism, vertex_data(descendant))
+    descendantFrame = default_frame(mechanism, descendant.body)
     accel = zero(SpatialAcceleration{T}, descendantFrame, descendantFrame, root_frame(mechanism))
     descendant == ancestor && return accel
 
