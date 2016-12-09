@@ -93,6 +93,7 @@ export
     crb_inertia,
     setdirty!,
     add_body_fixed_frame!,
+    find_fixed_transform,
     attach!,
     reattach!,
     submechanism,
