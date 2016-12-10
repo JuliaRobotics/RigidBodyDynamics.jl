@@ -21,15 +21,16 @@ function parse_inertia{T}(::Type{T}, xmlInertia::XMLElement)
     @SMatrix [ixx ixy ixz; ixy iyy iyz; ixz iyz izz]
 end
 
-function parse_pose{T}(::Type{T}, xmlPose::Union{Void, XMLElement})
-    if xmlPose == nothing
-        rot = eye(RotMatrix3{T})
-        trans = zeros(SVector{3, T})
-    else
-        rpy = RotZYX(parse_vector(T, xmlPose, "rpy", "0 0 0")...)
-        rot = RotMatrix(rpy)
-        trans = SVector{3}(parse_vector(T, xmlPose, "xyz", "0 0 0"))
-    end
+function parse_pose{T}(::Type{T}, xml_pose::Void)
+    rot = eye(RotMatrix{3, T})
+    trans = zero(SVector{3, T})
+    rot, trans
+end
+
+function parse_pose{T}(::Type{T}, xml_pose::XMLElement)
+    rpy = RotXYZ(parse_vector(T, xml_pose, "rpy", "0 0 0")...)
+    rot = RotMatrix(rpy)
+    trans = SVector{3}(parse_vector(T, xml_pose, "xyz", "0 0 0"))
     rot, trans
 end
 
