@@ -265,8 +265,7 @@ flip_direction(jt::Revolute) = Revolute(-jt.rotation_axis)
 
 function _joint_transform(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
     @inbounds aa = AngleAxis(q[1], jt.rotation_axis[1], jt.rotation_axis[2], jt.rotation_axis[3])
-    rot = angle_axis_to_rotation_matrix(aa) # TODO
-    Transform3D(frameAfter, frameBefore, rot)
+    Transform3D(frameAfter, frameBefore, RotMatrix(aa))
 end
 
 function _joint_twist(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
