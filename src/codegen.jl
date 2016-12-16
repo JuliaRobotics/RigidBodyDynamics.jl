@@ -12,10 +12,7 @@ export
     update_crb_inertias,
     mass_matrix!
 
-
-type StateElement{R<:RigidBody, J<:Joint, X<:Real, C<:Real}
-    body::R
-    joint::J
+type StateElement{X<:Real, C<:Real}
     q::VectorSegment{X}
     v::VectorSegment{X}
     beforeJointToParent::Transform3D{C}
@@ -26,59 +23,68 @@ type StateElement{R<:RigidBody, J<:Joint, X<:Real, C<:Real}
     biasAcceleration::SpatialAcceleration{C}
     crbInertia::SpatialInertia{C}
 
-    function StateElement(body::R, joint::J, q::VectorSegment{X}, v::VectorSegment{X}, beforeJointToParent::Transform3D{C})
-        new(body, joint, q, v, beforeJointToParent)
-    end
+    StateElement(q::VectorSegment{X}, v::VectorSegment{X}, beforeJointToParent::Transform3D{C}) = new(q, v, beforeJointToParent)
 end
-
-function StateElement{R<:RigidBody, J<:Joint, X<:Real}(body::R, joint::J, q::VectorSegment{X}, v::VectorSegment{X}, beforeJointToParent::Transform3D)
-    C = promote_type(eltype(R), eltype(J), X)
-    StateElement{R, J, X, C}(body, joint, q, v, convert(Transform3D{C}, beforeJointToParent))
-end
-
+StateElement{X, C}(q::VectorSegment{X}, v::VectorSegment{X}, beforeJointToParent::Transform3D{C}) = StateElement{X, C}(q, v, beforeJointToParent)
 velocity_range(element::StateElement) = first(parentindexes(element.v))
 
-type MechanismState{X <: Real, Es, Parents}
+type MechanismVertex{R<:RigidBody, J<:Joint}
+    body::R
+    joint::J
+    index::Int64
+end
+
+type MechanismState{X <: Real, C<:Real, V, Parents}
     mechanism::Mechanism
     q::Vector{X}
     v::Vector{X}
-    elements::Es
-    parents::Parents
+    vertices::V
+    elements::Vector{StateElement{X, C}}
 end
 
-state_elements_type{X, Es, Parents}(::Type{MechanismState{X, Es, Parents}}) = Es
-num_elements{T<:MechanismState}(::Type{T}) = length(state_elements_type(T).parameters)
-Base.parent{X, Es, Parents}(::Type{MechanismState{X, Es, Parents}}, i::Int64) = Parents.parameters[i].parameters[1]
+Base.@pure vertices_type{X, C, V, Parents}(::Type{MechanismState{X, C, V, Parents}}) = V
+Base.@pure num_vertices{T<:MechanismState}(::Type{T}) = length(vertices_type(T).parameters)
+parent_index{X, C, V, Parents}(::Type{MechanismState{X, C, V, Parents}}, i::Int64) = Parents.parameters[i].parameters[1]
 
 function MechanismState{X <: Real}(::Type{X}, mechanism::Mechanism)
     q = Vector{X}(num_positions(mechanism))
     v = zeros(X, num_velocities(mechanism))
-    elements = StateElement[]
+    vertices = MechanismVertex[]
     parents = Int64[]
-
-    qStart, vStart = 1, 1
-    for vertex in filter(v -> !isroot(v), toposort(tree(mechanism)))
+    C = X
+    nonRootVertices = filter(v -> !isroot(v), toposort(tree(mechanism)))
+    for (index, vertex) in enumerate(nonRootVertices)
         body = vertex_data(vertex)
         joint = edge_to_parent_data(vertex)
-        parentIndex = findfirst(e -> e.body == vertex_data(parent(vertex)), elements)
+        parentIndex = findfirst(vert -> vert.body == vertex_data(parent(vertex)), vertices)
         push!(parents, parentIndex)
+        vertex = MechanismVertex(body, joint, index)
+        push!(vertices, vertex)
+        C = promote_type(C, eltype(typeof(body)), eltype(typeof(joint)))
+    end
+
+    qStart, vStart = 1, 1
+    elements = StateElement{X, C}[]
+    for (index, vertex) in enumerate(nonRootVertices)
+        joint = edge_to_parent_data(vertex)
         qEnd, vEnd = qStart + num_positions(joint) - 1, vStart + num_velocities(joint) - 1
         beforeJointToParent = mechanism.jointToJointTransforms[joint]
-        element = StateElement(body, joint, view(q, qStart : qEnd), view(v, vStart : vEnd), beforeJointToParent)
+        element = StateElement(view(q, qStart : qEnd), view(v, vStart : vEnd), convert(Transform3D{C}, beforeJointToParent))
         push!(elements, element)
         qStart, vStart = qEnd + 1, vEnd + 1
         zero_configuration!(joint, element.q)
     end
-    MechanismState(mechanism, q, v, tuple(elements...), tuple((Val{p}() for p in parents)...))
+
+    verticesTuple = tuple(vertices...)
+    parentsTuple = tuple((Val{p}() for p in parents)...)
+    MechanismState{X, C, typeof(verticesTuple), typeof(parentsTuple)}(mechanism, q, v, vertices, elements)
 end
 
 @generated function update_joint_transforms(state::MechanismState)
     exprs = [quote
-        let
-            element = state.elements[$i]
-            element.jointTransform = element.beforeJointToParent * joint_transform(element.joint, element.q)
-        end
-    end for i = 1 : num_elements(state)]
+        element = state.elements[$i]
+        element.jointTransform = element.beforeJointToParent * joint_transform(state.vertices[$i].joint, element.q)
+    end for i = 1 : num_vertices(state)]
     push!(exprs, :(return nothing))
     Expr(:block, exprs...)
 end
@@ -87,16 +93,18 @@ end
     exprs = [quote
         let
             element = state.elements[$i]
-            element.crbInertia = spatial_inertia(element.body)
+            element.crbInertia = spatial_inertia(state.vertices[$i].body)
         end
-    end for i = 1 : num_elements(state)]
+    end for i = 1 : num_vertices(state)]
 
-    for i = num_elements(state) : -1 : 1
-        j = parent(state, i)
+    for i = num_vertices(state) : -1 : 1
+        j = parent_index(state, i)
         if j != 0
             push!(exprs, quote
-                toParent = state.elements[$i].jointTransform
-                state.elements[$j].crbInertia += transform(state.elements[$i].crbInertia, toParent)
+                element = state.elements[$i]
+                toParent = element.jointTransform
+                parentElement = state.elements[$j]
+                parentElement.crbInertia += transform(element.crbInertia, toParent)
             end)
         end
     end
@@ -114,30 +122,11 @@ function set_submatrix!(mat::Symmetric, part::AbstractMatrix, rowStart::Int64, c
     end
 end
 
-function _mass_matrix_part(out::Symmetric, F::MomentumMatrix, irange::UnitRange{Int64}, element::StateElement)
-    Sj = motion_subspace(element.joint, element.q)
-    Hij = F.angular' * Sj.angular + F.linear' * Sj.linear
-    jrange = velocity_range(element)
-    set_submatrix!(out, Hij, start(irange), start(jrange))
-end
-
-@generated function _mass_matrix_inner_loop{i}(out::Symmetric, state::MechanismState, F::MomentumMatrix, ::Val{i})
-    exprs = Expr[]
-    push!(exprs, Expr(:meta, :noinline))
-    push!(exprs, :(irange = velocity_range(state.elements[$i])))
-    j = i
-    while parent(state, j) != 0
-        push!(exprs, :(F = transform(F, state.elements[$j].jointTransform)))
-        j = parent(state, j)
-        push!(exprs, :(_mass_matrix_part(out, F, irange, state.elements[$j])))
-    end
-    push!(exprs, :(return nothing))
-    Expr(:block, exprs...)
-end
-
-momentum_matrix(element::StateElement) = element.crbInertia * motion_subspace(element.joint, element.q)
-
 @generated function mass_matrix!(out::Symmetric, state::MechanismState)
+    mass_matrix!_gen_impl(out, state)
+end
+
+function mass_matrix!_gen_impl(out, state)
     exprs = Expr[]
     push!(exprs, quote
         update_joint_transforms(state)
@@ -145,15 +134,42 @@ momentum_matrix(element::StateElement) = element.crbInertia * motion_subspace(el
         fill!(out.data, zero(eltype(out)))
     end)
 
-    for i = 1 : num_elements(state)
-        ival = Val{i}()
+    for i = 1 : num_vertices(state)
+        ival = Val{i}
         push!(exprs, quote
+            element = state.elements[$i]
+            irange = velocity_range(element)
+            Ii = element.crbInertia
             let
-                element = state.elements[$i]
-                F = momentum_matrix(element)
-                irange = velocity_range(element)
-                _mass_matrix_part(out, F, irange, element)
-                _mass_matrix_inner_loop(out, state, F, $ival)
+                local Si = motion_subspace(state.vertices[$i].joint, element.q)
+                local F = Ii * Si
+                local Hii = F.angular' * Si.angular + F.linear' * Si.linear
+                set_submatrix!(out, Hii, start(irange), start(irange))
+                _mass_matrix_inner_loop(out, state, F, irange, $ival)
+            end
+        end)
+    end
+    push!(exprs, :(return nothing))
+    Expr(:block, exprs...)
+end
+
+@generated function _mass_matrix_inner_loop{i}(out::Symmetric, state::MechanismState, F::MomentumMatrix, irange::UnitRange{Int64}, ::Type{Val{i}})
+    exprs = Expr[]
+    # push!(exprs, Expr(:meta, :noinline))
+    j = i
+    while parent_index(state, j) != 0
+        push!(exprs, quote
+            element = state.elements[$j]
+            F = transform(F, element.jointTransform)
+        end)
+        j = parent_index(state, j)
+        push!(exprs, quote
+            element = state.elements[$j]
+            jrange = velocity_range(element)
+            let
+                local Sj = motion_subspace(state.vertices[$j].joint, element.q)
+                local Hij = F.angular' * Sj.angular + F.linear' * Sj.linear
+                set_submatrix!(out, Hij, start(irange), start(jrange))
             end
         end)
     end

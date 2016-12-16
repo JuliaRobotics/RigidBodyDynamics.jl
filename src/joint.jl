@@ -9,7 +9,8 @@ end
 
 Joint{T <: JointType}(name::String, jointType::T) = Joint{T}(name, jointType)
 
-eltype{T}(::Type{Joint{T}}) = eltype(T)
+Base.@pure eltype{T}(::Type{Joint{T}}) = eltype(T)
+@inline eltype{T}(::Joint{T}) = eltype(typeof(T))
 show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
 showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
 
