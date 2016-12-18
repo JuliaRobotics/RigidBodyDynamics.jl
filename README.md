@@ -6,7 +6,8 @@
 RigidBodyDynamics.jl is a small rigid body dynamics library for Julia. It was inspired by the [IHMCRoboticsToolkit](https://bitbucket.org/ihmcrobotics/ihmc-open-robotics-software) from the Institute for Human and Machine Cognition, and by [Drake](http://drake.mit.edu).
 
 ## News
-* December 6, 2016: [tagged version 0.0.3](https://github.com/JuliaLang/METADATA.jl/pull/7183)
+* December 12, 2016: [tagged version 0.0.4](https://github.com/JuliaLang/METADATA.jl/pull/7256).
+* December 6, 2016: [tagged version 0.0.3](https://github.com/JuliaLang/METADATA.jl/pull/7183).
 * October 28, 2016: [tagged version 0.0.2](https://github.com/JuliaLang/METADATA.jl/pull/6896).
 * October 24, 2016: [tagged version 0.0.1](https://github.com/JuliaLang/METADATA.jl/pull/6831).
 
@@ -42,7 +43,7 @@ Run `perf/runbenchmarks.jl` (`-O3` and `--check-bounds=no` flags recommended) to
 1. Do inverse dynamics.
 1. Do forward dynamics.
 
-Note that results on Travis builds are **not at all** representative because of code coverage. Results on a recent, fast machine with version 0.0.3:
+Note that results on Travis builds are **not at all** representative because of code coverage. Results on a recent, fast machine with version 0.0.4:
 
 Output of `versioninfo()`:
 ```
@@ -62,10 +63,10 @@ Mass matrix:
   memory estimate:  0.00 bytes
   allocs estimate:  0
   --------------
-  minimum time:     34.914 μs (0.00% GC)
-  median time:      38.399 μs (0.00% GC)
-  mean time:        39.384 μs (0.00% GC)
-  maximum time:     89.382 μs (0.00% GC)
+  minimum time:     23.034 μs (0.00% GC)
+  median time:      23.364 μs (0.00% GC)
+  mean time:        23.546 μs (0.00% GC)
+  maximum time:     52.605 μs (0.00% GC)
   --------------
   samples:          10000
   evals/sample:     1
@@ -78,10 +79,10 @@ Inverse dynamics:
   memory estimate:  0.00 bytes
   allocs estimate:  0
   --------------
-  minimum time:     41.952 μs (0.00% GC)
-  median time:      42.451 μs (0.00% GC)
-  mean time:        43.191 μs (0.00% GC)
-  maximum time:     95.406 μs (0.00% GC)
+  minimum time:     29.178 μs (0.00% GC)
+  median time:      29.704 μs (0.00% GC)
+  mean time:        30.276 μs (0.00% GC)
+  maximum time:     65.232 μs (0.00% GC)
   --------------
   samples:          10000
   evals/sample:     1
@@ -91,13 +92,13 @@ Inverse dynamics:
 
 Forward dynamics:
 ```
-  memory estimate:  1.50 kb
-  allocs estimate:  33
+  memory estimate:  48.00 bytes
+  allocs estimate:  2
   --------------
-  minimum time:     75.966 μs (0.00% GC)
-  median time:      76.876 μs (0.00% GC)
-  mean time:        82.728 μs (0.27% GC)
-  maximum time:     2.352 ms (94.91% GC)
+  minimum time:     53.336 μs (0.00% GC)
+  median time:      82.928 μs (0.00% GC)
+  mean time:        83.334 μs (0.00% GC)
+  maximum time:     208.453 μs (0.00% GC)
   --------------
   samples:          10000
   evals/sample:     1
