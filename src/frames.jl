@@ -67,14 +67,14 @@ function show(io::IO, t::Transform3D)
     println(io, "rotation: $(angle) rad about $(axis), translation: $(t.trans)") # TODO: use fixed Quaternions.jl version once it's updated
 end
 
-@inline function *(t1::Transform3D, t2::Transform3D)
+function *(t1::Transform3D, t2::Transform3D)
     @framecheck(t1.from, t2.to)
     rot = t1.rot * t2.rot
     trans = t1.trans + t1.rot * t2.trans
     Transform3D(t2.from, t1.to, rot, trans)
 end
 
-@inline function inv(t::Transform3D)
+function inv(t::Transform3D)
     rotinv = inv(t.rot)
     Transform3D(t.to, t.from, rotinv, -(rotinv * t.trans))
 end
