@@ -130,11 +130,6 @@
         @test isapprox(h, hSum; atol = 1e-12)
     end
 
-    @testset "momentum matrix allocation" begin
-        A = momentum_matrix(x)
-        @test @allocated(momentum_matrix!(A, x)) == 0
-    end
-
     @testset "mass matrix / kinetic energy" begin
         Ek = kinetic_energy(x)
         M = mass_matrix(x)
@@ -153,12 +148,6 @@
         # FIXME: changed after updating to ForwardDiff 0.2: chunk size 1 necessary because creating a MechanismState with a max size Dual takes forever...
         M2 = ForwardDiff.hessian!(M2, kinetic_energy_fun, v, ForwardDiff.HessianConfig{1}(v))
         @test isapprox(M2, M; atol = 1e-12)
-    end
-
-    @testset "mass matrix allocation" begin
-        M = Symmetric(Matrix{Float64}(num_velocities(x), num_velocities(x)))
-        mass_matrix!(M, x) # JIT compile
-        @test @allocated(mass_matrix!(M, x)) == 0
     end
 
     @testset "inverse dynamics / acceleration term" begin
