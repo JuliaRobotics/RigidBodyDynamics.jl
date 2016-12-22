@@ -53,6 +53,15 @@ function create_benchmark_suite()
         )
     end
 
+    let
+        state = MechanismState(ScalarType, mechanism)
+        nv = num_velocities(state)
+        angular = Matrix{Float64}(3, nv)
+        linear = Matrix{Float64}(3, nv)
+        out = MomentumMatrix(root_frame(mechanism), angular, linear)
+        suite["momentum_matrix"] = @benchmarkable(momentum_matrix!($out, $state), setup = rand!($state))
+    end
+
     suite
 end
 

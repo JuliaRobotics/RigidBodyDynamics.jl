@@ -130,7 +130,6 @@
         @test isapprox(h, hSum; atol = 1e-12)
     end
 
-
     @testset "mass matrix / kinetic energy" begin
         Ek = kinetic_energy(x)
         M = mass_matrix(x)
@@ -150,13 +149,6 @@
         M2 = ForwardDiff.hessian!(M2, kinetic_energy_fun, v, ForwardDiff.HessianConfig{1}(v))
         @test isapprox(M2, M; atol = 1e-12)
     end
-
-    # TODO: enable once StaticArrays tag with #82 is released
-    # @testset "mass matrix allocation" begin
-    #     M = Symmetric(Matrix{Float64}(num_velocities(x), num_velocities(x)))
-    #     mass_matrix!(M, x) # JIT compile
-    #     @test @allocated(mass_matrix!(M, x)) == 0
-    # end
 
     @testset "inverse dynamics / acceleration term" begin
         M = mass_matrix(x)
