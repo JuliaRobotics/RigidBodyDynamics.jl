@@ -119,9 +119,27 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
     ret
 end
 
-# TODO: make more efficient:
+function momentum_matrix!(out::MomentumMatrix, state::MechanismState)
+    @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
+    pos = 1
+    for vertex in non_root_vertices(state)
+        part = crb_inertia(vertex) * motion_subspace(vertex)
+        @framecheck out.frame part.frame # TODO: transform part to out.frame instead?
+        n = 3 * num_cols(part)
+        copy!(out.angular, pos, part.angular, 1, n)
+        copy!(out.linear, pos, part.linear, 1, n)
+        pos += n
+    end
+end
+
 function momentum_matrix(state::MechanismState)
-    hcat([crb_inertia(state, vertex_data(vertex)) * motion_subspace(state, edge_to_parent_data(vertex)) for vertex in non_root_vertices(state.mechanism)]...)
+    ncols = num_velocities(state)
+    T = cache_eltype(state)
+    angular = Matrix{T}(3, ncols)
+    linear = Matrix{T}(3, ncols)
+    ret = MomentumMatrix(root_frame(state.mechanism), angular, linear)
+    momentum_matrix!(ret, state)
+    ret
 end
 
 function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M})
