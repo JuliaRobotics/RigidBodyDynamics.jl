@@ -53,6 +53,11 @@ function create_benchmark_suite()
         )
     end
 
+    let
+        state = MechanismState(ScalarType, mechanism)
+        suite["momentum_matrix"] = @benchmarkable(momentum_matrix($state), setup = rand!($state))
+    end
+
     suite
 end
 
