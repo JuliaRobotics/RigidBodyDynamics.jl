@@ -6,6 +6,12 @@
     @test name(f1) == f1name
     name(f2) # just to make sure it doesn't crash
     @test f2 != f3
+    @boundscheck begin
+        # only throws when bounds checks are enabled:
+        @test_throws ArgumentError @framecheck(f1, f2)
+        @test_throws ArgumentError @framecheck(f2, f3)
+    end
+    @framecheck(f1, f1)
 
     t1 = rand(Transform3D{Float64}, f2, f1)
     @test isapprox(t1 * inv(t1), Transform3D{Float64}(f1))
