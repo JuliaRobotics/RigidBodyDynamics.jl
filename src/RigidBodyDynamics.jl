@@ -135,6 +135,8 @@ export
     inverse_dynamics,
     dynamics!,
     parse_urdf,
-    simulate
+    simulate,
+    # macros
+    @framecheck
 
 end # module

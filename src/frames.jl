@@ -30,10 +30,17 @@ show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(fr
 
 # Check that frames match (only when bounds checks are turned on).
 macro framecheck(f1, f2)
-    failure = :($f1 != $f2)
-    msg = string(failure)
+    symname1 = string(f1)
+    symname2 = string(f2)
     ret = quote
-        @boundscheck $failure && throw(ArgumentError($msg))
+        @boundscheck begin
+            if $f1 != $f2
+                name1, name2 = name($f1), name($f2)
+                id1, id2 = ($f1).id, ($f2).id
+                msg = "$($symname1) (\"$name1\", id = $id1) ≠ $($symname2) (\"$name2\", id = $id2)"
+                throw(ArgumentError(msg))
+            end
+        end
     end
     :($(esc(ret)))
 end
