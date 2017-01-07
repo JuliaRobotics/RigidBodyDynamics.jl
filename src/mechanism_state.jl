@@ -62,9 +62,10 @@ immutable RigidBodyState{M<:Real, C<:Real}
         crbInertia = CacheElement{SpatialInertia{C}}()
 
         if isroot
-            update!(transformToWorld, Transform3D(C, body.frame))
-            update!(twist, zero(Twist{C}, body.frame, body.frame, body.frame))
-            update!(biasAcceleration, zero(SpatialAcceleration{C}, body.frame, body.frame, body.frame))
+            frame = default_frame(body)
+            update!(transformToWorld, Transform3D(C, frame))
+            update!(twist, zero(Twist{C}, frame, frame, frame))
+            update!(biasAcceleration, zero(SpatialAcceleration{C}, frame, frame, frame))
         end
 
         new(body, transformToWorld, twist, biasAcceleration, motionSubspace, inertia, crbInertia)
@@ -273,10 +274,10 @@ function configuration_derivative{X}(state::MechanismState{X})
 end
 
 function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
-    body = state.mechanism.bodyFixedFrameToBody[frame]
+    body = body_fixed_frame_to_body(state.mechanism, frame) # TODO: expensive
     tf = transform_to_root(state_vertex(state, body))
     if tf.from != frame
-        tf = tf * find_body_fixed_frame_definition(state.mechanism, body, frame) # TODO: consider caching
+        tf = tf * body_fixed_frame_definition(state.mechanism, body, frame) # TODO: consider caching
     end
     tf
 end
@@ -315,7 +316,7 @@ function relative_twist(state::MechanismState, body::RigidBody, base::RigidBody)
  end
 
 function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D)
-    twist = relative_twist(state, state.mechanism.bodyFixedFrameToBody[bodyFrame], state.mechanism.bodyFixedFrameToBody[baseFrame])
+    twist = relative_twist(state, body_fixed_frame_to_body(state.mechanism, bodyFrame), body_fixed_frame_to_body(state.mechanism, baseFrame))
     Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)
 end
 

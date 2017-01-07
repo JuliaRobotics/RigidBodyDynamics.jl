@@ -60,6 +60,8 @@ export
     # functions
     name,
     has_defined_inertia,
+    default_frame,
+    add_frame!,
     transform,
     newton_euler,
     torque,
@@ -93,7 +95,7 @@ export
     crb_inertia,
     setdirty!,
     add_body_fixed_frame!,
-    find_fixed_transform,
+    fixed_transform,
     attach!,
     reattach!,
     submechanism,

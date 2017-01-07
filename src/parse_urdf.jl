@@ -75,14 +75,14 @@ function parse_vertex{T}(mechanism::Mechanism{T}, vertex::TreeVertex{XMLElement,
         parent = root_body(mechanism)
         body = parse_body(T, xmlLink)
         joint = Joint("$(name(body))_to_world", Fixed{T}())
-        jointToParent = Transform3D{T}(joint.frameBefore, parent.frame)
+        jointToParent = Transform3D{T}(joint.frameBefore, default_frame(parent))
     else
         xmlJoint = edge_to_parent_data(vertex)
         parentName = attribute(find_element(xmlJoint, "parent"), "link")
         parent = vertex_data(findfirst(v -> RigidBodyDynamics.name(vertex_data(v)) == parentName, tree(mechanism)))
         joint = parse_joint(T, xmlJoint)
         pose = parse_pose(T, find_element(xmlJoint, "origin"))
-        jointToParent = Transform3D(joint.frameBefore, default_frame(mechanism, parent), pose...)
+        jointToParent = Transform3D(joint.frameBefore, default_frame(parent), pose...)
         body = parse_body(T, xmlLink, joint.frameAfter)
     end
     attach!(mechanism, parent, joint, jointToParent, body)

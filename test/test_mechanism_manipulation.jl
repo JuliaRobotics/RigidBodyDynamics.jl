@@ -9,8 +9,8 @@
         for body in bodies(mechanism2)
             for i = 1 : 5
                 frame = CartesianFrame3D("frame_$i")
-                tf = rand(Transform3D{Float64}, frame, body.frame)
-                add_body_fixed_frame!(mechanism2, body, tf)
+                tf = rand(Transform3D{Float64}, frame, default_frame(body))
+                add_frame!(body, tf)
                 additionalFrames[frame] = body
             end
         end
@@ -27,7 +27,7 @@
             if body == root_body(mechanism2)
                 body = parentBody
             end
-            @test RigidBodyDynamics.is_fixed_to_body(mechanism, frame, body)
+            @test RigidBodyDynamics.is_fixed_to_body(body, frame)
         end
 
         state = MechanismState(Float64, mechanism) # issue 63
@@ -124,8 +124,8 @@
             newFloatingBody = rand(collect(non_root_bodies(mechanism)))
             newFloatingJoint = Joint("newFloating", QuaternionFloating{Float64}())
             world = root_body(mechanism)
-            jointToWorld = Transform3D{Float64}(newFloatingJoint.frameBefore, world.frame)
-            bodyToJoint = Transform3D{Float64}(newFloatingBody.frame, newFloatingJoint.frameAfter)
+            jointToWorld = Transform3D{Float64}(newFloatingJoint.frameBefore, default_frame(world))
+            bodyToJoint = Transform3D{Float64}(default_frame(newFloatingBody), newFloatingJoint.frameAfter)
             rerooted = copy(mechanism)
             flippedJointMapping = reattach!(rerooted, floatingBody, world, newFloatingJoint, jointToWorld, newFloatingBody, bodyToJoint)
 
