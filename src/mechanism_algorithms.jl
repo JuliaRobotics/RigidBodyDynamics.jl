@@ -35,7 +35,7 @@ function acceleration_wrt_ancestor{X, M, C, V}(state::MechanismState{X, M, C},
     current = descendant
     while current != ancestor
         joint = edge_to_parent_data(current)
-        v̇joint = UnsafeVectorView(v̇, mechanism.vRanges[joint])
+        v̇joint = UnsafeVectorView(v̇, velocity_range(state, joint)) # TODO: inefficient lookup of velocity range
         jointAccel = SpatialAcceleration(motion_subspace(state, joint), v̇joint)
         accel = jointAccel + accel
         current = parent(current)

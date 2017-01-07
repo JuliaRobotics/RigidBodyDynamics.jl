@@ -100,18 +100,25 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real}
         tree = Tree{RigidBodyState{M, C}, JointState{X, M, C}}(rootBodyState)
         jointStates = Dict{Joint{M}, JointState{X, M, C}}()
         bodyStates = Dict{RigidBody{M}, RigidBodyState{M, C}}()
+
+        qStart = 1
+        vStart = 1
         for vertex in filter(x -> !isroot(x), mechanism.toposortedTree)
             body = vertex_data(vertex)
             bodyState = RigidBodyState(body, X, false)
             joint = edge_to_parent_data(vertex)
             parentBody = vertex_data(parent(vertex))
             parentStateVertex = findfirst(v -> vertex_data(v).body == parentBody, tree)
-            qJoint = view(q, mechanism.qRanges[joint])
-            vJoint = view(v, mechanism.vRanges[joint])
+            qEnd = qStart + num_positions(joint) - 1
+            vEnd = vStart + num_velocities(joint) - 1
+            qJoint = view(q, qStart : qEnd)
+            vJoint = view(v, vStart : vEnd)
             beforeJointToParent = mechanism.jointToJointTransforms[joint]
             jointState = JointState(joint, beforeJointToParent, qJoint, vJoint)
             insert!(parentStateVertex, bodyState, jointState)
             zero_configuration!(joint, qJoint)
+            qStart = qEnd + 1
+            vStart = vEnd + 1
         end
         vertices = toposort(tree)
         new(mechanism, q, v, vertices, view(vertices, 2 : length(vertices)))
@@ -280,6 +287,10 @@ function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
         tf = tf * body_fixed_frame_definition(state.mechanism, body, frame) # TODO: consider caching
     end
     tf
+end
+
+for fun in (:configuration_range, :velocity_range)
+    @eval $fun(state::MechanismState, joint::Joint) = $fun(edge_to_parent_data(state_vertex(state, joint)))
 end
 
 motion_subspace(state::MechanismState, joint::Joint) = motion_subspace(state_vertex(state, joint))

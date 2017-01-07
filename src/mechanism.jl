@@ -2,21 +2,16 @@ type Mechanism{T<:Real}
     toposortedTree::Vector{TreeVertex{RigidBody{T}, Joint{T}}} # TODO: consider replacing with just the root vertex after creating iterator
     jointToJointTransforms::Dict{Joint{T}, Transform3D{T}}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
-    qRanges::Dict{Joint{T}, UnitRange{Int64}} # TODO: remove
-    vRanges::Dict{Joint{T}, UnitRange{Int64}} # TODO: remove
 
     function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
         tree = Tree{RigidBody{T}, Joint{T}}(rootBody)
         jointToJointTransforms = Dict{Joint{T}, Transform3D{T}}()
         gravitationalAcceleration = FreeVector3D(default_frame(rootBody), gravity)
-        qRanges = Dict{Joint{T}, UnitRange{Int64}}()
-        vRanges = Dict{Joint{T}, UnitRange{Int64}}()
-        new(toposort(tree), jointToJointTransforms, gravitationalAcceleration, qRanges, vRanges)
+        new(toposort(tree), jointToJointTransforms, gravitationalAcceleration)
     end
 
     function Mechanism(m::Mechanism{T})
-        new(toposort(copy(tree(m))), copy(m.jointToJointTransforms),
-            copy(m.gravitationalAcceleration), copy(m.qRanges), copy(m.vRanges))
+        new(toposort(copy(tree(m))), copy(m.jointToJointTransforms), copy(m.gravitationalAcceleration))
     end
 end
 
@@ -82,17 +77,6 @@ function canonicalize_frame_definitions!(m::Mechanism)
     end
 end
 
-function recompute_ranges!(m::Mechanism)
-    empty!(m.qRanges)
-    empty!(m.vRanges)
-    qStart, vStart = 1, 1
-    for joint in joints(m)
-        qEnd, vEnd = qStart + num_positions(joint) - 1, vStart + num_velocities(joint) - 1
-        m.qRanges[joint], m.vRanges[joint] = qStart : qEnd, vStart : vEnd
-        qStart, vStart = qEnd + 1, vEnd + 1
-    end
-end
-
 function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
         childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(default_frame(childBody), joint.frameAfter))
     vertex = insert!(tree(m), childBody, joint, parentBody)
@@ -105,7 +89,6 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
 
     m.toposortedTree = toposort(tree(m))
     canonicalize_frame_definitions!(m, vertex)
-    recompute_ranges!(m)
     m
 end
 
@@ -134,7 +117,6 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     end
 
     m.toposortedTree = toposort(tree(m))
-    recompute_ranges!(m)
 
     m
 end
@@ -146,7 +128,6 @@ function submechanism{T}(m::Mechanism{T}, submechanismRootBody::RigidBody{T})
         insert_subtree!(root_vertex(ret), child)
     end
     ret.toposortedTree = toposort(tree(ret))
-    recompute_ranges!(ret)
     merge!(ret.jointToJointTransforms, Dict(k => v for (k, v) in m.jointToJointTransforms if k ∈ joints(ret)))
     canonicalize_frame_definitions!(ret)
     ret
@@ -196,15 +177,7 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     end
     canonicalize_frame_definitions!(mechanism)
 
-    recompute_ranges!(mechanism)
     flippedJoints
-end
-
-function change_joint_type!(m::Mechanism, joint::Joint, newType::JointType)
-    # TODO: remove ranges from mechanism so that this function isn't necessary
-    joint.jointType = newType
-    recompute_ranges!(m::Mechanism)
-    m
 end
 
 function remove_fixed_joints!(m::Mechanism)
@@ -246,7 +219,6 @@ function remove_fixed_joints!(m::Mechanism)
         end
     end
     m.toposortedTree = toposort(tree(m))
-    recompute_ranges!(m)
     m
 end
 

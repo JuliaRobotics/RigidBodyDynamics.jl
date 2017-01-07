@@ -96,8 +96,7 @@
             Msub = mass_matrix(substate)
             if !isleaf(root_vertex(mechanismPart))
                 firstJoint = edge_to_parent_data(children(root_vertex(mechanismPart))[1])
-                offset = first(mechanism.vRanges[firstJoint]) - 1
-
+                offset = first(velocity_range(state, firstJoint)) - 1
                 vRange = (1 : num_velocities(mechanismPart)) + offset
                 @test isapprox(M[vRange, vRange] - Msub, zeros(Msub.data), atol = 1e-10)
             end
@@ -154,8 +153,8 @@
 
             for joint in filter(j -> j != floatingJoint, joints(mechanism))
                 jointRerooted = get(flippedJointMapping, joint, joint)
-                v̇Mechanism = view(result.v̇, mechanism.vRanges[joint])
-                v̇Rerooted = view(resultRerooted.v̇, rerooted.vRanges[jointRerooted])
+                v̇Mechanism = view(result.v̇, velocity_range(x, joint))
+                v̇Rerooted = view(resultRerooted.v̇, velocity_range(xRerooted, jointRerooted))
                 @test isapprox(v̇Mechanism, v̇Rerooted)
             end
 
