@@ -9,15 +9,10 @@ type Mechanism{T<:Real}
         gravitationalAcceleration = FreeVector3D(default_frame(rootBody), gravity)
         new(toposort(tree), jointToJointTransforms, gravitationalAcceleration)
     end
-
-    function Mechanism(m::Mechanism{T})
-        new(toposort(copy(tree(m))), copy(m.jointToJointTransforms), copy(m.gravitationalAcceleration))
-    end
 end
 
 Mechanism{T}(rootBody::RigidBody{T}; kwargs...) = Mechanism{T}(rootBody; kwargs...)
 Mechanism{T}(m::Mechanism{T}) = Mechanism{T}(m)
-copy(m::Mechanism) = Mechanism(m)
 eltype{T}(::Mechanism{T}) = T
 root_vertex(m::Mechanism) = m.toposortedTree[1]
 non_root_vertices(m::Mechanism) = view(m.toposortedTree, 2 : length(m.toposortedTree)) # TODO: allocates
@@ -53,7 +48,7 @@ function fixed_transform(m::Mechanism, from::CartesianFrame3D, to::CartesianFram
     fixed_transform(body_fixed_frame_to_body(m, from), from, to)
 end
 
-Base.@deprecate add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T}) add_frame!(body, transform) # FIXME: test
+Base.@deprecate add_body_fixed_frame!{T}(m::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T}) add_frame!(body, transform)
 
 function add_body_fixed_frame!{T}(m::Mechanism{T}, transform::Transform3D{T})
     add_frame!(body_fixed_frame_to_body(m, transform.to), transform)
