@@ -79,7 +79,7 @@ export
     bodies,
     toposort,
     path,
-    joints,
+    tree_joints,
     configuration_derivative,
     velocity_to_configuration_derivative!,
     configuration_derivative_to_velocity!,

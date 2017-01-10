@@ -255,23 +255,28 @@ type DynamicsResult{M, T}
     massMatrixInversionCache::Symmetric{T, Matrix{T}}
     dynamicsBias::Vector{T}
     biasedTorques::Vector{T}
-    v̇::Vector{T}
+    v̇Andλ::Vector{T}
+    v̇::VectorSegment{T}
+    λ::VectorSegment{T}
     accelerations::Dict{RigidBody{M}, SpatialAcceleration{T}}
     jointWrenches::Dict{RigidBody{M}, Wrench{T}}
 
     function DynamicsResult(::Type{T}, mechanism::Mechanism{M})
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
+        nvLoopJoints = num_velocities(loop.joint for loop in mechanism.loopJoints)
         massMatrix = Symmetric(zeros(T, nv, nv))
         massMatrixInversionCache = Symmetric(zeros(T, nv, nv))
-        v̇ = Vector{T}(nv)
+        v̇Andλ = Vector{T}(nv + nvLoopJoints)
+        v̇ = view(v̇Andλ, 1 : nv)
+        λ = view(v̇Andλ, nv + 1 : nv + nvLoopJoints)
         dynamicsBias = zeros(T, nv)
         biasedTorques = zeros(T, nv)
         accelerations = Dict{RigidBody{M}, SpatialAcceleration{T}}()
         sizehint!(accelerations, num_bodies(mechanism))
         jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
         sizehint!(jointWrenches, num_bodies(mechanism))
-        new(massMatrix, massMatrixInversionCache, dynamicsBias, biasedTorques, v̇, accelerations, jointWrenches)
+        new(massMatrix, massMatrixInversionCache, dynamicsBias, biasedTorques, v̇Andλ, v̇, λ, accelerations, jointWrenches)
     end
 end
 

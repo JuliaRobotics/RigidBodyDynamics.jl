@@ -89,7 +89,7 @@
             @test mechanism.gravitationalAcceleration.v == mechanismPart.gravitationalAcceleration.v
 
             substate = MechanismState(Float64, mechanismPart)
-            for joint in joints(mechanismPart)
+            for joint in tree_joints(mechanismPart)
                 set_configuration!(substate, joint, configuration(state, joint))
                 set_velocity!(substate, joint, velocity(state, joint))
             end
@@ -116,7 +116,7 @@
 
             # copy and set up mapping from bodies and joints of mechanism1 to those of mechanism2
             bodies1 = collect(bodies(mechanism1))
-            joints1 = collect(joints(mechanism1))
+            joints1 = collect(tree_joints(mechanism1))
             (bodies2, joints2, mechanism2) = deepcopy((bodies1, joints1, mechanism1))
             bodymap = Dict(zip(bodies1, bodies2))
             jointmap = Dict(zip(joints1, joints2))

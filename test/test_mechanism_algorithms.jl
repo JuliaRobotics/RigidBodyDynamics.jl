@@ -20,14 +20,14 @@
 
         qcopy = copy(configuration_vector(x))
         zero_configuration!(x)
-        for joint in joints(mechanism)
+        for joint in tree_joints(mechanism)
             set_configuration!(x, joint, qcopy[configuration_range(x, joint)])
         end
         @test q == configuration_vector(x)
 
         vcopy = copy(velocity_vector(x))
         zero_velocity!(x)
-        for joint in joints(mechanism)
+        for joint in tree_joints(mechanism)
             set_velocity!(x, joint, vcopy[velocity_range(x, joint)])
         end
         @test v == velocity_vector(x)
@@ -43,7 +43,7 @@
         q = configuration_vector(x)
         q̇ = configuration_derivative(x)
         v = velocity_vector(x)
-        for joint in joints(mechanism)
+        for joint in tree_joints(mechanism)
             qJoint = configuration(x, joint)
             q̇Joint = q̇[configuration_range(x, joint)]
             vJoint = velocity(x, joint)
@@ -54,7 +54,7 @@
     end
 
     @testset "joint_torque! / geometric_jacobian" begin
-        for joint in joints(mechanism)
+        for joint in tree_joints(mechanism)
             qjoint = configuration(x, joint)
             wrench = rand(Wrench{Float64}, joint.frameAfter)
             τ = Vector{Float64}(num_velocities(joint))
@@ -309,7 +309,7 @@
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
         state = MechanismState(Float64, mechanism)
         rand!(state)
-        for joint in joints(mechanism)
+        for joint in tree_joints(mechanism)
             # back and forth between local and global
             ϕ = Vector{Float64}(num_velocities(joint))
             ϕ̇ = Vector{Float64}(num_velocities(joint))

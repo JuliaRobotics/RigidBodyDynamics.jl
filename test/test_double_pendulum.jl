@@ -68,8 +68,8 @@
     doublePendulumUrdf = parse_urdf(Float64, "urdf/Acrobot.urdf")
     remove_fixed_joints!(doublePendulumUrdf)
     x_urdf = MechanismState(Float64, doublePendulumUrdf)
-    for (i, j) in enumerate(joints(doublePendulum))
-        urdf_joints = collect(joints(doublePendulumUrdf))
+    for (i, j) in enumerate(tree_joints(doublePendulum))
+        urdf_joints = collect(tree_joints(doublePendulumUrdf))
         index = findfirst(joint -> joint.name == j.name, urdf_joints)
         j_urdf = urdf_joints[index]
         set_configuration!(x_urdf, j_urdf, configuration(x, j))
