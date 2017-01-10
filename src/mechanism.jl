@@ -32,7 +32,8 @@ num_bodies(m::Mechanism) = length(m.toposortedTree)
 
 function body_fixed_frame_to_body(m::Mechanism, frame::CartesianFrame3D)
     # linear in number of bodies and number of frames; not meant to be super fast
-    for body in bodies(m)
+    for vertex in m.toposortedTree
+        body = vertex_data(vertex)
         if is_fixed_to_body(body, frame)
             return body
         end

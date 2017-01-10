@@ -284,7 +284,7 @@ function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
     body = body_fixed_frame_to_body(state.mechanism, frame) # TODO: expensive
     tf = transform_to_root(state_vertex(state, body))
     if tf.from != frame
-        tf = tf * body_fixed_frame_definition(state.mechanism, body, frame) # TODO: consider caching
+        tf = tf * body_fixed_frame_definition(state.mechanism, frame) # TODO: consider caching
     end
     tf
 end
