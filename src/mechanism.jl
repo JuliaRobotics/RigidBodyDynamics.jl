@@ -12,7 +12,6 @@ type Mechanism{T<:Real}
 end
 
 Mechanism{T}(rootBody::RigidBody{T}; kwargs...) = Mechanism{T}(rootBody; kwargs...)
-Mechanism{T}(m::Mechanism{T}) = Mechanism{T}(m)
 eltype{T}(::Mechanism{T}) = T
 root_vertex(m::Mechanism) = m.toposortedTree[1]
 non_root_vertices(m::Mechanism) = view(m.toposortedTree, 2 : length(m.toposortedTree)) # TODO: allocates
