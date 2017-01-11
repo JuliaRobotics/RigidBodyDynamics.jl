@@ -21,14 +21,14 @@
         qcopy = copy(configuration_vector(x))
         zero_configuration!(x)
         for joint in joints(mechanism)
-            set_configuration!(x, joint, qcopy[mechanism.qRanges[joint]])
+            set_configuration!(x, joint, qcopy[configuration_range(x, joint)])
         end
         @test q == configuration_vector(x)
 
         vcopy = copy(velocity_vector(x))
         zero_velocity!(x)
         for joint in joints(mechanism)
-            set_velocity!(x, joint, vcopy[mechanism.vRanges[joint]])
+            set_velocity!(x, joint, vcopy[velocity_range(x, joint)])
         end
         @test v == velocity_vector(x)
 
@@ -44,8 +44,8 @@
         q̇ = configuration_derivative(x)
         v = velocity_vector(x)
         for joint in joints(mechanism)
-            qJoint = q[mechanism.qRanges[joint]]
-            q̇Joint = q̇[mechanism.qRanges[joint]]
+            qJoint = configuration(x, joint)
+            q̇Joint = q̇[configuration_range(x, joint)]
             vJoint = velocity(x, joint)
             vJointFromq̇ = similar(vJoint)
             configuration_derivative_to_velocity!(joint, vJointFromq̇, qJoint, q̇Joint)
@@ -120,7 +120,7 @@
         for vertex in non_root_vertices(mechanism)
             body = vertex_data(vertex)
             joint = edge_to_parent_data(vertex)
-            Ajoint = Amat[:, mechanism.vRanges[joint]]
+            Ajoint = Amat[:, velocity_range(x, joint)]
             @test isapprox(Array(crb_inertia(x, body) * motion_subspace(x, joint)), Ajoint; atol = 1e-12)
         end
 
@@ -255,7 +255,7 @@
         τ = inverse_dynamics(x, v̇, externalWrenches)
         floatingBodyVertex = children(root_vertex(mechanism))[1]
         floatingJoint = edge_to_parent_data(floatingBodyVertex)
-        τfloating = τ[mechanism.vRanges[floatingJoint]]
+        τfloating = τ[velocity_range(x, floatingJoint)]
         floatingJointWrench = Wrench(edge_to_parent_data(floatingBodyVertex).frameAfter, SVector{3}(τfloating[1 : 3]), SVector{3}(τfloating[4 : 6]))
         floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
         ḣ = Wrench(momentum_matrix(x), v̇) + momentum_rate_bias(x) # momentum rate of change

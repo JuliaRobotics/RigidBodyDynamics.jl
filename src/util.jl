@@ -17,6 +17,24 @@ Base.getindex{T}(A::NullVector{T}, i::Int) = zero(T)
 # Base.setindex!{N}(A::NullVector, v, I::Vararg{Int, N}) = error()
 Base.linearindexing{T}(::Type{NullVector{T}}) = Base.LinearFast()
 
+# https://github.com/JuliaLang/julia/issues/19921
+function Base.deepcopy_internal(x::Dict, stackdict::ObjectIdDict)
+    if haskey(stackdict, x)
+        return stackdict[x]::typeof(x)
+    end
+
+    if isbits(eltype(x))
+        return (stackdict[x] = copy(x))
+    end
+
+    dest = similar(x)
+    stackdict[x] = dest
+    for (k, v) in x
+        dest[Base.deepcopy_internal(k, stackdict)] = Base.deepcopy_internal(v, stackdict)
+    end
+    dest
+end
+
 # type of a view of a vector
 # TODO: a bit too specific
 typealias VectorSegment{T} SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true}

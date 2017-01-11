@@ -17,13 +17,13 @@
     inertia1 = SpatialInertia(CartesianFrame3D("upper_link"), I1 * axis * axis', SVector(0, 0, lc1), m1)
     body1 = RigidBody(inertia1)
     joint1 = Joint("shoulder", Revolute(axis))
-    joint1ToWorld = Transform3D{Float64}(joint1.frameBefore, world.frame)
+    joint1ToWorld = Transform3D{Float64}(joint1.frameBefore, default_frame(world))
     attach!(doublePendulum, world, joint1, joint1ToWorld, body1)
 
     inertia2 = SpatialInertia(CartesianFrame3D("lower_link"), I2 * axis * axis', SVector(0, 0, lc2), m2)
     body2 = RigidBody(inertia2)
     joint2 = Joint("elbow", Revolute(axis))
-    joint2ToBody1 = Transform3D(joint2.frameBefore, body1.frame, SVector(0, 0, l1))
+    joint2ToBody1 = Transform3D(joint2.frameBefore, default_frame(body1), SVector(0, 0, l1))
     attach!(doublePendulum, body1, joint2, joint2ToBody1, body2)
 
     x = MechanismState(Float64, doublePendulum)

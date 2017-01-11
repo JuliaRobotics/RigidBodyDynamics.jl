@@ -62,9 +62,10 @@ immutable RigidBodyState{M<:Real, C<:Real}
         crbInertia = CacheElement{SpatialInertia{C}}()
 
         if isroot
-            update!(transformToWorld, Transform3D(C, body.frame))
-            update!(twist, zero(Twist{C}, body.frame, body.frame, body.frame))
-            update!(biasAcceleration, zero(SpatialAcceleration{C}, body.frame, body.frame, body.frame))
+            frame = default_frame(body)
+            update!(transformToWorld, Transform3D(C, frame))
+            update!(twist, zero(Twist{C}, frame, frame, frame))
+            update!(biasAcceleration, zero(SpatialAcceleration{C}, frame, frame, frame))
         end
 
         new(body, transformToWorld, twist, biasAcceleration, motionSubspace, inertia, crbInertia)
@@ -99,18 +100,25 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real}
         tree = Tree{RigidBodyState{M, C}, JointState{X, M, C}}(rootBodyState)
         jointStates = Dict{Joint{M}, JointState{X, M, C}}()
         bodyStates = Dict{RigidBody{M}, RigidBodyState{M, C}}()
+
+        qStart = 1
+        vStart = 1
         for vertex in filter(x -> !isroot(x), mechanism.toposortedTree)
             body = vertex_data(vertex)
             bodyState = RigidBodyState(body, X, false)
             joint = edge_to_parent_data(vertex)
             parentBody = vertex_data(parent(vertex))
             parentStateVertex = findfirst(v -> vertex_data(v).body == parentBody, tree)
-            qJoint = view(q, mechanism.qRanges[joint])
-            vJoint = view(v, mechanism.vRanges[joint])
+            qEnd = qStart + num_positions(joint) - 1
+            vEnd = vStart + num_velocities(joint) - 1
+            qJoint = view(q, qStart : qEnd)
+            vJoint = view(v, vStart : vEnd)
             beforeJointToParent = mechanism.jointToJointTransforms[joint]
             jointState = JointState(joint, beforeJointToParent, qJoint, vJoint)
             insert!(parentStateVertex, bodyState, jointState)
             zero_configuration!(joint, qJoint)
+            qStart = qEnd + 1
+            vStart = vEnd + 1
         end
         vertices = toposort(tree)
         new(mechanism, q, v, vertices, view(vertices, 2 : length(vertices)))
@@ -273,12 +281,16 @@ function configuration_derivative{X}(state::MechanismState{X})
 end
 
 function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
-    body = state.mechanism.bodyFixedFrameToBody[frame]
+    body = body_fixed_frame_to_body(state.mechanism, frame) # TODO: expensive
     tf = transform_to_root(state_vertex(state, body))
     if tf.from != frame
-        tf = tf * find_body_fixed_frame_definition(state.mechanism, body, frame) # TODO: consider caching
+        tf = tf * body_fixed_frame_definition(state.mechanism, frame) # TODO: consider caching
     end
     tf
+end
+
+for fun in (:configuration_range, :velocity_range)
+    @eval $fun(state::MechanismState, joint::Joint) = $fun(edge_to_parent_data(state_vertex(state, joint)))
 end
 
 motion_subspace(state::MechanismState, joint::Joint) = motion_subspace(state_vertex(state, joint))
@@ -315,7 +327,7 @@ function relative_twist(state::MechanismState, body::RigidBody, base::RigidBody)
  end
 
 function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D)
-    twist = relative_twist(state, state.mechanism.bodyFixedFrameToBody[bodyFrame], state.mechanism.bodyFixedFrameToBody[baseFrame])
+    twist = relative_twist(state, body_fixed_frame_to_body(state.mechanism, bodyFrame), body_fixed_frame_to_body(state.mechanism, baseFrame))
     Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)
 end
 

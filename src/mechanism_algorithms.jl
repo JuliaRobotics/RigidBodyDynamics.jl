@@ -1,5 +1,5 @@
 function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
-    frame = root_body(state.mechanism).frame
+    frame = root_frame(state.mechanism)
     com = Point3D(frame, zeros(SVector{3, C}))
     mass = zero(C)
     for body in itr
@@ -28,14 +28,14 @@ function acceleration_wrt_ancestor{X, M, C, V}(state::MechanismState{X, M, C},
         v̇::StridedVector{V})
     mechanism = state.mechanism
     T = promote_type(C, V)
-    descendantFrame = default_frame(mechanism, vertex_data(descendant))
+    descendantFrame = default_frame(vertex_data(descendant))
     accel = zero(SpatialAcceleration{T}, descendantFrame, descendantFrame, root_frame(mechanism))
     descendant == ancestor && return accel
 
     current = descendant
     while current != ancestor
         joint = edge_to_parent_data(current)
-        v̇joint = UnsafeVectorView(v̇, mechanism.vRanges[joint])
+        v̇joint = UnsafeVectorView(v̇, velocity_range(state, joint)) # TODO: inefficient lookup of velocity range
         jointAccel = SpatialAcceleration(motion_subspace(state, joint), v̇joint)
         accel = jointAccel + accel
         current = parent(current)

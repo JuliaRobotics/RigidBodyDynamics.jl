@@ -11,7 +11,7 @@ function create_floating_atlas()
     atlas = parse_urdf(ScalarType, atlasUrdf)
     for child in children(root_vertex(atlas))
         joint = edge_to_parent_data(child)
-        change_joint_type!(atlas, joint, QuaternionFloating{ScalarType}())
+        joint.jointType = QuaternionFloating{ScalarType}()
     end
     atlas
 end

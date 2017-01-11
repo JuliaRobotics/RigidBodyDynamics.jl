@@ -9,8 +9,8 @@
         for body in bodies(mechanism2)
             for i = 1 : 5
                 frame = CartesianFrame3D("frame_$i")
-                tf = rand(Transform3D{Float64}, frame, body.frame)
-                add_body_fixed_frame!(mechanism2, body, tf)
+                tf = rand(Transform3D{Float64}, frame, default_frame(body))
+                add_frame!(body, tf)
                 additionalFrames[frame] = body
             end
         end
@@ -27,7 +27,7 @@
             if body == root_body(mechanism2)
                 body = parentBody
             end
-            @test RigidBodyDynamics.is_fixed_to_body(mechanism, frame, body)
+            @test RigidBodyDynamics.is_fixed_to_body(body, frame)
         end
 
         state = MechanismState(Float64, mechanism) # issue 63
@@ -96,8 +96,7 @@
             Msub = mass_matrix(substate)
             if !isleaf(root_vertex(mechanismPart))
                 firstJoint = edge_to_parent_data(children(root_vertex(mechanismPart))[1])
-                offset = first(mechanism.vRanges[firstJoint]) - 1
-
+                offset = first(velocity_range(state, firstJoint)) - 1
                 vRange = (1 : num_velocities(mechanismPart)) + offset
                 @test isapprox(M[vRange, vRange] - Msub, zeros(Msub.data), atol = 1e-10)
             end
@@ -109,61 +108,75 @@
             # create random floating mechanism
             jointTypes = [[Prismatic{Float64} for i = 1 : 10]; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
             shuffle!(jointTypes)
-            mechanism = rand_floating_tree_mechanism(Float64, jointTypes)
-            subtreeRootVertex = children(root_vertex(mechanism))[1]
+            mechanism1 = rand_floating_tree_mechanism(Float64, jointTypes)
+
+            # random state
+            x1 = MechanismState(Float64, mechanism1)
+            rand!(x1)
+
+            # copy and set up mapping from bodies and joints of mechanism1 to those of mechanism2
+            bodies1 = collect(bodies(mechanism1))
+            joints1 = collect(joints(mechanism1))
+            (bodies2, joints2, mechanism2) = deepcopy((bodies1, joints1, mechanism1))
+            bodymap = Dict(zip(bodies1, bodies2))
+            jointmap = Dict(zip(joints1, joints2))
+
+            # find world, floating joint, floating body of mechanism1, and determine a new floating body
+            world = root_body(mechanism1)
+            subtreeRootVertex = children(root_vertex(mechanism1))[1]
             floatingJoint = edge_to_parent_data(subtreeRootVertex)
             floatingBody = vertex_data(subtreeRootVertex)
+            newFloatingBody = rand(collect(non_root_bodies(mechanism1)))
 
-            # do dynamics at random mechanism state
-            x = MechanismState(Float64, mechanism)
-            rand!(x)
-            result = DynamicsResult(Float64, mechanism)
-            dynamics!(result, x)
-
-            # reattach at different body
-            newFloatingBody = rand(collect(non_root_bodies(mechanism)))
+            # reroot mechanism2
             newFloatingJoint = Joint("newFloating", QuaternionFloating{Float64}())
-            world = root_body(mechanism)
-            jointToWorld = Transform3D{Float64}(newFloatingJoint.frameBefore, world.frame)
-            bodyToJoint = Transform3D{Float64}(newFloatingBody.frame, newFloatingJoint.frameAfter)
-            rerooted = copy(mechanism)
-            flippedJointMapping = reattach!(rerooted, floatingBody, world, newFloatingJoint, jointToWorld, newFloatingBody, bodyToJoint)
+            jointToWorld = Transform3D{Float64}(newFloatingJoint.frameBefore, default_frame(world))
+            bodyToJoint = Transform3D{Float64}(default_frame(newFloatingBody), newFloatingJoint.frameAfter)
+            flippedJointMapping = reattach!(mechanism2, bodymap[floatingBody], bodymap[world], newFloatingJoint, jointToWorld, bodymap[newFloatingBody], bodyToJoint)
 
             # mimic the same state for the rerooted mechanism
             # copy non-floating joint configurations and velocities
-            xRerooted = MechanismState(Float64, rerooted)
-            for joint in filter(j -> j != floatingJoint, joints(mechanism))
-                jointRerooted = get(flippedJointMapping, joint, joint)
-                set_configuration!(xRerooted, jointRerooted, configuration(x, joint))
-                set_velocity!(xRerooted, jointRerooted, velocity(x, joint))
+            x2 = MechanismState(Float64, mechanism2)
+            for (joint1, joint2) in jointmap
+                if joint1 != floatingJoint
+                    joint2Rerooted = get(flippedJointMapping, joint2, joint2)
+                    set_configuration!(x2, joint2Rerooted, configuration(x1, joint1))
+                    set_velocity!(x2, joint2Rerooted, velocity(x1, joint1))
+                end
             end
 
             # set configuration and velocity of new floating joint
-            newFloatingJointTransform = newFloatingJointTransform = inv(jointToWorld) * relative_transform(x, bodyToJoint.from, jointToWorld.to) * inv(bodyToJoint)
+            newFloatingJointTransform = inv(jointToWorld) * relative_transform(x1, bodyToJoint.from, jointToWorld.to) * inv(bodyToJoint)
             quat = Quat(newFloatingJointTransform.rot)
             trans = newFloatingJointTransform.trans
-            set_configuration!(xRerooted, newFloatingJoint, [quat.w; quat.x; quat.y; quat.z; trans])# TODO: add Joint function that does mapping
+            set_configuration!(x2, newFloatingJoint, [quat.w; quat.x; quat.y; quat.z; trans])# TODO: add Joint function that does mapping
 
-            newFloatingJointTwist = transform(x, relative_twist(x, newFloatingBody, world), bodyToJoint.from)
+            newFloatingJointTwist = transform(x1, relative_twist(x1, newFloatingBody, world), bodyToJoint.from)
             newFloatingJointTwist = transform(newFloatingJointTwist, bodyToJoint)
-            set_velocity!(xRerooted, newFloatingJoint, [newFloatingJointTwist.angular; newFloatingJointTwist.linear]) # TODO: add Joint function that does mapping
+            set_velocity!(x2, newFloatingJoint, [newFloatingJointTwist.angular; newFloatingJointTwist.linear]) # TODO: add Joint function that does mapping
+
+            # do dynamics
+            result1 = DynamicsResult(Float64, mechanism1)
+            dynamics!(result1, x1)
+            result2 = DynamicsResult(Float64, mechanism2)
+            dynamics!(result2, x2)
 
             # make sure that joint accelerations for non-floating joints are the same
-            resultRerooted = DynamicsResult(Float64, rerooted)
-            dynamics!(resultRerooted, xRerooted)
-
-            for joint in filter(j -> j != floatingJoint, joints(mechanism))
-                jointRerooted = get(flippedJointMapping, joint, joint)
-                v̇Mechanism = view(result.v̇, mechanism.vRanges[joint])
-                v̇Rerooted = view(resultRerooted.v̇, rerooted.vRanges[jointRerooted])
-                @test isapprox(v̇Mechanism, v̇Rerooted)
+            for (joint1, joint2) in jointmap
+                if joint1 != floatingJoint
+                    joint2Rerooted = get(flippedJointMapping, joint2, joint2)
+                    v̇1 = view(result1.v̇, velocity_range(x1, joint1))
+                    v̇2 = view(result2.v̇, velocity_range(x2, joint2Rerooted))
+                    @test isapprox(v̇1, v̇2)
+                end
             end
 
-            for body in non_root_bodies(mechanism)
-                accel = relative_acceleration(x, body, world, result.v̇)
-                accel_rerooted = relative_acceleration(xRerooted, body, world, resultRerooted.v̇)
-                @test isapprox(accel.angular, accel_rerooted.angular)
-                @test isapprox(accel.linear, accel_rerooted.linear)
+            # make sure that body spatial accelerations are the same
+            for (body1, body2) in bodymap
+                accel1 = relative_acceleration(x1, body1, world, result1.v̇)
+                accel2 = relative_acceleration(x2, body2, bodymap[world], result2.v̇)
+                @test isapprox(accel1.angular, accel2.angular)
+                @test isapprox(accel1.linear, accel2.linear)
             end
         end # for
     end # reattach
