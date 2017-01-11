@@ -3,41 +3,34 @@ immutable JointState{X<:Real, M<:Real, C<:Real}
     joint::Joint{M}
     q::VectorSegment{X}
     v::VectorSegment{X}
-    beforeJointToParent::Transform3D{C}
-    afterJointToParent::CacheElement{Transform3D{C}}
+    jointTransform::CacheElement{Transform3D{C}}
     twist::CacheElement{Twist{C}}
     biasAcceleration::CacheElement{SpatialAcceleration{C}}
     motionSubspace::CacheElement{MotionSubspace{C}}
 
-    function JointState(joint::Joint{M}, beforeJointToParent::Transform3D{C}, q::VectorSegment{X}, v::VectorSegment{X})
-        afterJointToParent = CacheElement{Transform3D{C}}()
+    function JointState(joint::Joint{M}, q::VectorSegment{X}, v::VectorSegment{X})
+        jointTransform = CacheElement{Transform3D{C}}()
         twist = CacheElement{Twist{C}}()
         biasAcceleration = CacheElement{SpatialAcceleration{C}}()
         motionSubspace = CacheElement{MotionSubspace{C}}()
-        new(joint, q, v, beforeJointToParent, afterJointToParent, twist, biasAcceleration, motionSubspace)
+        new(joint, q, v, jointTransform, twist, biasAcceleration, motionSubspace)
     end
 end
-
-function JointState{X, M}(joint::Joint{M}, beforeJointToParent::Transform3D{M}, q::VectorSegment{X}, v::VectorSegment{X})
-    C = promote_type(M, X)
-    JointState{X, M, C}(joint, convert(Transform3D{C}, beforeJointToParent), q, v)
-end
+JointState{X, M}(joint::Joint{M}, q::VectorSegment{X}, v::VectorSegment{X}) = JointState{X, M, promote_type(M, X)}(joint, q, v)
 
 configuration(state::JointState) = state.q
 velocity(state::JointState) = state.v
 configuration_range(state::JointState) = first(parentindexes(state.q))
 velocity_range(state::JointState) = first(parentindexes(state.v))
-parent_frame(state::JointState) = state.beforeJointToParent.to
-transform(state::JointState) = @cache_element_get!(state.afterJointToParent, state.beforeJointToParent * joint_transform(state.joint, state.q))
-twist(state::JointState) = @cache_element_get!(state.twist, change_base(joint_twist(state.joint, state.q, state.v), parent_frame(state)))
-bias_acceleration(state::JointState) = @cache_element_get!(state.biasAcceleration, change_base(bias_acceleration(state.joint, state.q, state.v), parent_frame(state)))
-motion_subspace(state::JointState) = @cache_element_get!(state.motionSubspace, change_base(motion_subspace(state.joint, state.q), parent_frame(state)))
-
+transform(state::JointState) = @cache_element_get!(state.jointTransform, joint_transform(state.joint, state.q))
+twist(state::JointState) = @cache_element_get!(state.twist, joint_twist(state.joint, state.q, state.v))
+bias_acceleration(state::JointState) = @cache_element_get!(state.biasAcceleration, bias_acceleration(state.joint, state.q, state.v))
+motion_subspace(state::JointState) = @cache_element_get!(state.motionSubspace, motion_subspace(state.joint, state.q))
 zero_configuration!(state::JointState) = (zero_configuration!(state.joint, state.q))
 rand_configuration!(state::JointState) = (rand_configuration!(state.joint, state.q))
 
 function setdirty!(state::JointState)
-    setdirty!(state.afterJointToParent)
+    setdirty!(state.jointTransform)
     setdirty!(state.twist)
     setdirty!(state.biasAcceleration)
     setdirty!(state.motionSubspace)
@@ -113,8 +106,7 @@ immutable MechanismState{X<:Real, M<:Real, C<:Real}
             vEnd = vStart + num_velocities(joint) - 1
             qJoint = view(q, qStart : qEnd)
             vJoint = view(v, vStart : vEnd)
-            beforeJointToParent = mechanism.jointToJointTransforms[joint]
-            jointState = JointState(joint, beforeJointToParent, qJoint, vJoint)
+            jointState = JointState(joint, qJoint, vJoint)
             insert!(parentStateVertex, bodyState, jointState)
             zero_configuration!(joint, qJoint)
             qStart = qEnd + 1
@@ -212,31 +204,48 @@ end
 
 # the following functions return quantities expressed in world frame and w.r.t. world frame (where applicable)
 function transform_to_root{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
-    @cache_element_get!(vertex_data(vertex).transformToWorld,
-        transform_to_root(parent(vertex)) * transform(edge_to_parent_data(vertex)))
+    @cache_element_get!(vertex_data(vertex).transformToWorld, begin
+        parentVertex = parent(vertex)
+        parentBody = vertex_data(parentVertex).body
+        jointState = edge_to_parent_data(vertex)
+        parentToWorld = transform_to_root(parentVertex)
+        beforeJointToParent = frame_definition(parentBody, jointState.joint.frameBefore)
+        afterJointToBeforeJoint = transform(jointState)
+        parentToWorld * beforeJointToParent * afterJointToBeforeJoint
+    end)
 end
 
 function twist_wrt_world{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
-    @cache_element_get!(vertex_data(vertex).twist,
-        twist_wrt_world(parent(vertex)) + transform(twist(edge_to_parent_data(vertex)), transform_to_root(vertex)))
+    @cache_element_get!(vertex_data(vertex).twist, begin
+        parentVertex = parent(vertex)
+        parentFrame = default_frame(vertex_data(parentVertex).body)
+        parentTwist = twist_wrt_world(parentVertex)
+        jointTwist = change_base(twist(edge_to_parent_data(vertex)), parentFrame) # to make frames line up
+        parentTwist + transform(jointTwist, transform_to_root(vertex))
+    end)
 end
 
 function bias_acceleration{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
     @cache_element_get!(vertex_data(vertex).biasAcceleration, begin
         parentVertex = parent(vertex)
+        parentFrame = default_frame(vertex_data(parentVertex).body)
         parentBias = bias_acceleration(parentVertex)
         toRoot = transform_to_root(vertex)
-        jointBias = bias_acceleration(edge_to_parent_data(vertex))
-        twistWrtWorld = transform(twist_wrt_world(vertex), inv(toRoot)) # TODO
-        jointTwist = twist(edge_to_parent_data(vertex))
+        jointBias = change_base(bias_acceleration(edge_to_parent_data(vertex)), parentFrame) # to make frames line up
+        twistWrtWorld = transform(twist_wrt_world(vertex), inv(toRoot)) # TODO: awkward way of doing this
+        jointTwist = change_base(twist(edge_to_parent_data(vertex)), parentFrame) # to make frames line up
         jointBias = transform(jointBias, toRoot, twistWrtWorld, jointTwist)
         parentBias + jointBias
     end)
 end
 
 function motion_subspace{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
-    @cache_element_get!(vertex_data(vertex).motionSubspace,
-        transform(motion_subspace(edge_to_parent_data(vertex)), transform_to_root(vertex)))
+    @cache_element_get!(vertex_data(vertex).motionSubspace, begin
+        parentVertex = parent(vertex)
+        parentFrame = default_frame(vertex_data(parentVertex).body)
+        motionSubspace = change_base(motion_subspace(edge_to_parent_data(vertex)), parentFrame)
+        transform(motionSubspace, transform_to_root(vertex))
+    end)
 end
 
 function spatial_inertia{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})

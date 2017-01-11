@@ -1,13 +1,11 @@
 type Mechanism{T<:Real}
     toposortedTree::Vector{TreeVertex{RigidBody{T}, Joint{T}}} # TODO: consider replacing with just the root vertex after creating iterator
-    jointToJointTransforms::Dict{Joint{T}, Transform3D{T}}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
     function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
         tree = Tree{RigidBody{T}, Joint{T}}(rootBody)
-        jointToJointTransforms = Dict{Joint{T}, Transform3D{T}}()
         gravitationalAcceleration = FreeVector3D(default_frame(rootBody), gravity)
-        new(toposort(tree), jointToJointTransforms, gravitationalAcceleration)
+        new(toposort(tree), gravitationalAcceleration)
     end
 end
 
@@ -60,8 +58,6 @@ function canonicalize_frame_definitions!{T}(m::Mechanism{T}, vertex::TreeVertex{
         joint = edge_to_parent_data(vertex)
         parentBody = vertex_data(parent(vertex))
         newDefaultFrame = joint.frameAfter
-        parentDefaultFrame = default_frame(parentBody)
-        m.jointToJointTransforms[joint] = fixed_transform(parentBody, joint.frameBefore, parentDefaultFrame)
         change_default_frame!(body, newDefaultFrame)
     end
 end
@@ -102,9 +98,6 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     end
     canonicalize_frame_definitions!(m, parentVertex)
 
-    # merge joint-to-joint transforms
-    merge!(m.jointToJointTransforms, childMechanism.jointToJointTransforms)
-
     # merge trees
     for child in children(childRootVertex)
         vertex = insert_subtree!(parentVertex, child)
@@ -123,7 +116,6 @@ function submechanism{T}(m::Mechanism{T}, submechanismRootBody::RigidBody{T})
         insert_subtree!(root_vertex(ret), child)
     end
     ret.toposortedTree = toposort(tree(ret))
-    merge!(ret.jointToJointTransforms, Dict(k => v for (k, v) in m.jointToJointTransforms if k ∈ joints(ret)))
     canonicalize_frame_definitions!(ret)
     ret
 end
@@ -143,9 +135,7 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     @assert newSubtreeRoot ∈ toposort(oldSubtreeRoot)
     @assert parentVertex ∉ toposort(oldSubtreeRoot)
 
-    # detach oldSubtreeRoot (but keep body-fixed frame information)
-    oldRootJoint = edge_to_parent_data(oldSubtreeRoot)
-    delete!(mechanism.jointToJointTransforms, oldRootJoint)
+    # detach oldSubtreeRoot
     detach!(oldSubtreeRoot)
 
     # reroot
@@ -187,7 +177,6 @@ function remove_fixed_joints!(m::Mechanism)
                 # add identity joint transform as a body-fixed frame definition
                 jointTransform = Transform3D{T}(joint.frameAfter, joint.frameBefore)
                 add_frame!(parentBody, jointTransform)
-                delete!(m.jointToJointTransforms, joint)
 
                 # migrate body fixed frames to parent body
                 for tf in frame_definitions(body)
