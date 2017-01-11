@@ -32,7 +32,6 @@ function frame_definition(body::RigidBody, frame::CartesianFrame3D)
     for transform in body.frameDefinitions
         transform.from == frame && return transform
     end
-    println(body.frameDefinitions)
     error("$frame not found among body fixed frame definitions for $body")
 end
 
