@@ -265,7 +265,30 @@ function joint_accelerations!{T<:Union{Float32, Float64}}(out::AbstractVector{T}
     nothing
 end
 
+function dynamics_solve!{T}(result::DynamicsResult{T}, τ::AbstractVector{T})
+    # version for general T
+    # TODO: make more efficient
+    M = result.massMatrix
+    c = result.dynamicsBias
+    v̇ = result.v̇
+
+    K = result.constraintJacobian
+    k = result.constraintRhs
+    λ = result.λ
+
+    nv = size(M, 1)
+    nl = size(K, 1)
+    A = [M K';
+         K zeros(nl, nl)]
+    b = [τ - c; -k]
+    v̇λ = A \ b
+    v̇ = view(v̇λ, 1 : nv)
+    λ = view(v̇λ, nv + 1 : nv + nl)
+    nothing
+end
+
 function dynamics_solve!{T<:Union{Float32, Float64}}(result::DynamicsResult{T}, τ::AbstractVector{T})
+    # optimized version for BLAS floats
     M = result.massMatrix
     c = result.dynamicsBias
     v̇ = result.v̇
@@ -338,7 +361,7 @@ function dynamics_solve!{T<:Union{Float32, Float64}}(result::DynamicsResult{T}, 
         # No loops.
         LinAlg.LAPACK.potrs!(uplo, L, τBiased) # τBiased == v̇ <- M⁻¹ * (τ - c)
     end
-    v̇
+    nothing
 end
 
 function dynamics!{T, X, M, Tau, W}(out::DynamicsResult{T}, state::MechanismState{X, M},
