@@ -1,30 +1,39 @@
 type DynamicsResult{M, T}
     massMatrix::Symmetric{T, Matrix{T}}
-    massMatrixInversionCache::Symmetric{T, Matrix{T}}
     dynamicsBias::Vector{T}
-    biasedTorques::Vector{T}
-    v̇Andλ::Vector{T}
-    v̇::VectorSegment{T}
-    λ::VectorSegment{T}
+    constraintJacobian::Matrix{T}
+    constraintRhs::Vector{T}
+    v̇::Vector{T}
+    λ::Vector{T}
     accelerations::Dict{RigidBody{M}, SpatialAcceleration{T}}
     jointWrenches::Dict{RigidBody{M}, Wrench{T}}
+    # see solve_dynamics! for meaning of the following variables:
+    L::Matrix{T} # lower triangular
+    A::Matrix{T} # symmetric
+    z::Vector{T}
+    Y::Matrix{T}
 
     function DynamicsResult(::Type{T}, mechanism::Mechanism{M})
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
-        nvLoopClosures = num_velocities(loop.joint for loop in mechanism.closures)
-        massMatrix = Symmetric(zeros(T, nv, nv))
-        massMatrixInversionCache = Symmetric(zeros(T, nv, nv))
-        v̇Andλ = Vector{T}(nv + nvLoopClosures)
-        v̇ = view(v̇Andλ, 1 : nv)
-        λ = view(v̇Andλ, nv + 1 : nv + nvLoopClosures)
-        dynamicsBias = zeros(T, nv)
-        biasedTorques = zeros(T, nv)
+        nl = num_velocities(loop.joint for loop in mechanism.closures)
+
+        massMatrix = Symmetric(Matrix{T}(nv, nv), :L)
+        dynamicsBias = Vector{T}(nv)
+        constraintJacobian = Matrix{T}(nl, nv)
+        constraintRhs = Vector{T}(nl)
+        v̇ = Vector{T}(nv)
+        λ = Vector{T}(nl)
         accelerations = Dict{RigidBody{M}, SpatialAcceleration{T}}()
         sizehint!(accelerations, num_bodies(mechanism))
         jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
         sizehint!(jointWrenches, num_bodies(mechanism))
-        new(massMatrix, massMatrixInversionCache, dynamicsBias, biasedTorques, v̇Andλ, v̇, λ, accelerations, jointWrenches)
+        L = Matrix{T}(nv, nv)
+        A = Matrix{T}(nl, nl)
+        z = Vector{T}(nv)
+        Y = Matrix{T}(nl, nv)
+
+        new(massMatrix, dynamicsBias, constraintJacobian, constraintRhs, v̇, λ, accelerations, jointWrenches, L, A, z, Y)
     end
 end
 
