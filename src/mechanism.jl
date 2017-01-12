@@ -1,4 +1,4 @@
-type LoopJoint{T}
+type LoopClosure{T}
     joint::Joint{T}
     predecessor::RigidBody{T}
     successor::RigidBody{T}
@@ -6,14 +6,14 @@ end
 
 type Mechanism{T<:Real}
     toposortedTree::Vector{TreeVertex{RigidBody{T}, Joint{T}}} # TODO: consider replacing with just the root vertex after creating iterator
-    loopJoints::Vector{LoopJoint{T}}
+    closures::Vector{LoopClosure{T}}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
     function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
         tree = Tree{RigidBody{T}, Joint{T}}(rootBody)
-        loopJoints = Vector{LoopJoint{T}}()
+        closures = Vector{LoopClosure{T}}()
         gravitationalAcceleration = FreeVector3D(default_frame(rootBody), gravity)
-        new(toposort(tree), loopJoints, gravitationalAcceleration)
+        new(toposort(tree), closures, gravitationalAcceleration)
     end
 end
 
