@@ -1,4 +1,5 @@
 # TODO: put in separate module
+# TODO: precompute and store results of motion_subspace, constraint_wrench_subspace
 
 abstract JointType{T<:Real}
 eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
@@ -69,6 +70,11 @@ function _motion_subspace{T<:Real, X<:Real}(
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
+end
+
+function _constraint_wrench_subspace{T<:Real, X<:Real}(::QuaternionFloating{T}, frameAfter::CartesianFrame3D, q::AbstractVector{X})
+    S = promote_type(T, X)
+    WrenchSubspace(frameAfter, zero(SMatrix{3, 0, S}), zero(SMatrix{3, 0, S}))
 end
 
 function _bias_acceleration{T<:Real, X<:Real}(
@@ -242,6 +248,14 @@ function _motion_subspace{T<:Real, X<:Real}(
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
+function _constraint_wrench_subspace{T<:Real, X<:Real}(jt::Prismatic{T}, frameAfter::CartesianFrame3D, q::AbstractVector{X})
+    S = promote_type(T, X)
+    R = RotMatrix(AngleAxis(SVector(zero(S), zero(S), one(S)), jt.translation_axis))
+    angular = hcat(R, zeros(SMatrix{3, 2, S}))
+    linear = hcat(zeros(SMatrix{3, 3, S}), R[:, (1, 2)])
+    WrenchSubspace(frameAfter, angular, linear)
+end
+
 function _joint_torque!(jt::Prismatic, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
     @inbounds τ[1] = dot(joint_wrench.linear, jt.translation_axis)
     nothing
@@ -281,6 +295,14 @@ function _motion_subspace{T<:Real, X<:Real}(
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
+function _constraint_wrench_subspace{T<:Real, X<:Real}(jt::Revolute{T}, frameAfter::CartesianFrame3D, q::AbstractVector{X})
+    S = promote_type(T, X)
+    R = RotMatrix(AngleAxis(SVector(zero(S), zero(S), one(S)), jt.rotation_axis))
+    angular = hcat(R[:, (1, 2)], zeros(SMatrix{3, 3, S}))
+    linear = hcat(zeros(SMatrix{3, 2, S}), R)
+    WrenchSubspace(frameAfter, angular, linear)
+end
+
 function _joint_torque!(jt::Revolute, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
     @inbounds τ[1] = dot(joint_wrench.angular, jt.rotation_axis)
     nothing
@@ -312,6 +334,13 @@ function _motion_subspace{T<:Real, X<:Real}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
     MotionSubspace(frameAfter, frameBefore, frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
+end
+
+function _constraint_wrench_subspace{T<:Real, X<:Real}(::Fixed{T}, frameAfter::CartesianFrame3D, q::AbstractVector{X})
+    S = promote_type(T, X)
+    angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
+    linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
+    WrenchSubspace(frameAfter, angular, linear)
 end
 
 _zero_configuration!(::Fixed, q::AbstractVector) = nothing
