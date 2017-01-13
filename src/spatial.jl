@@ -40,7 +40,7 @@ immutable GeometricJacobian{A<:AbstractMatrix}
     end
 end
 
-for ForceSpaceMatrix in (:MomentumMatrix, :WrenchBasis)
+for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
     @eval immutable $ForceSpaceMatrix{A<:AbstractMatrix}
         frame::CartesianFrame3D
         angular::A
@@ -422,7 +422,7 @@ end
 
 
 # Force space matrix-specific functions
-for ForceSpaceMatrix in (:MomentumMatrix, :WrenchBasis)
+for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
     @eval begin
         function $ForceSpaceMatrix{A<:AbstractMatrix}(frame::CartesianFrame3D, angular::A, linear::A)
             $ForceSpaceMatrix{A}(frame, angular, linear)
@@ -477,10 +477,10 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     end
 end
 
-for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :MomentumMatrix => :Wrench, :WrenchBasis => :Wrench)
+for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :MomentumMatrix => :Wrench, :WrenchMatrix => :Wrench)
     # MomentumMatrix * velocity vector --> Momentum
     # MomentumMatrix * acceleration vector --> Wrench
-    # WrenchBasis * dimensionless multipliers --> Wrench
+    # WrenchMatrix * dimensionless multipliers --> Wrench
     @eval function $ForceSpaceElement(mat::$ForceSpaceMatrix, x::AbstractVector)
         angular = convert(SVector{3}, _mul(mat.angular, x))
         linear = convert(SVector{3}, _mul(mat.linear, x))
