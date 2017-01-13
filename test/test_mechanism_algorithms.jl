@@ -76,6 +76,16 @@
         @test isapprox(Twist(J, vpath), T; atol = 1e-12)
     end
 
+    @testset "motion_subspace / constraint_wrench_subspace" begin
+        for joint in tree_joints(mechanism)
+            @show joint
+            qjoint = configuration(x, joint)
+            S = motion_subspace(joint, qjoint)
+            T = constraint_wrench_subspace(joint, qjoint)
+            @test isapprox(T.angular' * S.angular + T.linear' * S.linear, zeros(6 - num_velocities(joint), num_velocities(joint)); atol = 1e-14)
+        end
+    end
+
     @testset "relative_acceleration" begin
         for body in bodies(mechanism)
             for base in bodies(mechanism)

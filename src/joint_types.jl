@@ -74,7 +74,7 @@ end
 
 function _constraint_wrench_subspace{T<:Real, X<:Real}(::QuaternionFloating{T}, frameAfter::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
-    WrenchSubspace(frameAfter, zero(SMatrix{3, 0, S}), zero(SMatrix{3, 0, S}))
+    WrenchSubspace(frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
 function _bias_acceleration{T<:Real, X<:Real}(

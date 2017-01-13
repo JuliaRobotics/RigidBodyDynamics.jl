@@ -93,6 +93,7 @@ export
     num_cols,
     joint_transform,
     motion_subspace,
+    constraint_wrench_subspace,
     bias_acceleration,
     spatial_inertia,
     crb_inertia,
