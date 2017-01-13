@@ -58,18 +58,19 @@ Base.linearindexing{T}(::Type{UnsafeVectorView{T}}) = Base.LinearFast()
 # See https://github.com/tkoolen/RigidBodyDynamics.jl/issues/84.
 @generated function smatrix3x6view{N, T}(mat::SMatrix{3, N, T})
     colrange = 1 : N
-    expr = if N == 0
-        :(data = fill(NaN, SMatrix{3, 6, T, 18}))
+    if N == 0
+        data = fill(NaN, SMatrix{3, 6, T, 18})
+        ret = view(data, :, 1 : 0)
+        return :($ret)
     elseif N == 6
-        :(data = mat)
+        return :(ContiguousSMatrixColumnView{3, 6, $T, 18}(mat, (:, $colrange), 0, 1)) # faster way to create view)
     else
         fillerSize = 6 - N
         filler = fill(NaN, SMatrix{3, fillerSize, T, 3 * fillerSize})
-        :(data = hcat(mat, $filler)::SMatrix{3, 6, T, 18})
-    end
-    return quote
-        $expr
-        ContiguousSMatrixColumnView{3, 6, T, 18}(data, (:, $colrange), 0, 1) # faster way to create view
+        return quote
+            data = hcat(mat, $filler)::SMatrix{3, 6, $T, 18}
+            ContiguousSMatrixColumnView{3, 6, $T, 18}(data, (:, $colrange), 0, 1)
+        end
     end
 end
 
