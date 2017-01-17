@@ -78,10 +78,9 @@
 
     @testset "motion_subspace / constraint_wrench_subspace" begin
         for joint in tree_joints(mechanism)
-            @show joint
             qjoint = configuration(x, joint)
             S = motion_subspace(joint, qjoint)
-            T = constraint_wrench_subspace(joint, qjoint)
+            T = constraint_wrench_subspace(joint, qjoint)::RigidBodyDynamics.WrenchSubspace{Float64}
             @test isapprox(T.angular' * S.angular + T.linear' * S.linear, zeros(6 - num_velocities(joint), num_velocities(joint)); atol = 1e-14)
         end
     end
