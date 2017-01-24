@@ -13,6 +13,6 @@ notifications:
 before_install:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("RigidBodyDynamics"); Pkg.test("RigidBodyDynamics"; coverage=true)'
+  - julia -e 'Pkg.clone(pwd()); Pkg.add("Rotations"); Pkg.checkout("Rotations"); Pkg.build("RigidBodyDynamics"); Pkg.test("RigidBodyDynamics"; coverage=true)'
 after_success:
   - julia -e 'cd(Pkg.dir("RigidBodyDynamics")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
