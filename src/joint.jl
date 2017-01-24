@@ -42,6 +42,11 @@ function motion_subspace{M, X}(joint::Joint{M}, q::AbstractVector{X})::MotionSub
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _motion_subspace(joint.jointType, joint.frameAfter, joint.frameBefore, q)
 end
 
+function constraint_wrench_subspace{M, X}(joint::Joint{M}, q::AbstractVector{X})#::WrenchSubspace{promote_type(M, X)} # FIXME: type assertion causes segfault! see https://github.com/JuliaLang/julia/issues/20034. should be fixed in 0.6
+    @boundscheck check_num_positions(joint, q)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _constraint_wrench_subspace(joint.jointType, joint.frameAfter, q)
+end
+
 function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::SpatialAcceleration{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)

@@ -53,6 +53,27 @@ Base.setindex!(v::UnsafeVectorView, value, idx) = unsafe_store!(v.ptr, value, id
 Base.length(v::UnsafeVectorView) = v.len
 Base.linearindexing{T}(::Type{UnsafeVectorView{T}}) = Base.LinearFast()
 
+# Functions such as motion_subspace(::Joint, ...) need to return types with a number of columns that depends on the joint type.
+# Using a 'view' of a 3×6 SMatrix as the underlying data type gets around type instabilities in motion_subspace while still using an isbits type.
+# See https://github.com/tkoolen/RigidBodyDynamics.jl/issues/84.
+@generated function smatrix3x6view{N, T}(mat::SMatrix{3, N, T})
+    colrange = 1 : N
+    if N == 0
+        data = fill(NaN, SMatrix{3, 6, T, 18})
+        ret = view(data, :, 1 : 0)
+        return :($ret)
+    elseif N == 6
+        return :(ContiguousSMatrixColumnView{3, 6, $T, 18}(mat, (:, $colrange), 0, 1)) # faster way to create view)
+    else
+        fillerSize = 6 - N
+        filler = fill(NaN, SMatrix{3, fillerSize, T, 3 * fillerSize})
+        return quote
+            data = hcat(mat, $filler)::SMatrix{3, 6, $T, 18}
+            ContiguousSMatrixColumnView{3, 6, $T, 18}(data, (:, $colrange), 0, 1)
+        end
+    end
+end
+
 const module_tempdir = joinpath(Base.tempdir(), string(module_name(current_module())))
 
 function cached_download(url::String, localFileName::String, cacheDir::String = joinpath(module_tempdir, string(hash(url))))

@@ -7,25 +7,21 @@ immutable SpatialInertia{T<:Real}
 end
 
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
-    @eval begin
-        immutable $MotionSpaceElement{T<:Real}
-            # describes motion of body w.r.t. base, expressed in frame
-            body::CartesianFrame3D
-            base::CartesianFrame3D
-            frame::CartesianFrame3D
-            angular::SVector{3, T}
-            linear::SVector{3, T}
-        end
+    @eval immutable $MotionSpaceElement{T<:Real}
+        # describes motion of body w.r.t. base, expressed in frame
+        body::CartesianFrame3D
+        base::CartesianFrame3D
+        frame::CartesianFrame3D
+        angular::SVector{3, T}
+        linear::SVector{3, T}
     end
 end
 
 for ForceSpaceElement in (:Momentum, :Wrench)
-    @eval begin
-        immutable $ForceSpaceElement{T<:Real}
-            frame::CartesianFrame3D
-            angular::SVector{3, T}
-            linear::SVector{3, T}
-        end
+    @eval immutable $ForceSpaceElement{T<:Real}
+        frame::CartesianFrame3D
+        angular::SVector{3, T}
+        linear::SVector{3, T}
     end
 end
 
@@ -44,16 +40,18 @@ immutable GeometricJacobian{A<:AbstractMatrix}
     end
 end
 
-immutable MomentumMatrix{A<:AbstractMatrix}
-    frame::CartesianFrame3D
-    angular::A
-    linear::A
+for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
+    @eval immutable $ForceSpaceMatrix{A<:AbstractMatrix}
+        frame::CartesianFrame3D
+        angular::A
+        linear::A
 
-    function MomentumMatrix(frame::CartesianFrame3D, angular::A, linear::A)
-        @assert size(angular, 1) == 3
-        @assert size(linear, 1) == 3
-        @assert size(angular, 2) == size(linear, 2)
-        new(frame, angular, linear)
+        function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A)
+            @assert size(angular, 1) == 3
+            @assert size(linear, 1) == 3
+            @assert size(angular, 2) == size(linear, 2)
+            new(frame, angular, linear)
+        end
     end
 end
 
@@ -375,43 +373,22 @@ for ForceSpaceElement in (:Momentum, :Wrench)
     end
 end
 
+# WrenchSubspace is the return type of e.g. constraint_wrench_subspace(::Joint, ...)
+typealias WrenchSubspace{T} WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
+function WrenchSubspace(frame::CartesianFrame3D, angular, linear)
+    WrenchMatrix(frame, smatrix3x6view(angular), smatrix3x6view(linear))
+end
+
 
 # GeometricJacobian-specific functions
 function GeometricJacobian{A<:AbstractMatrix}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A)
     GeometricJacobian{A}(body, base, frame, angular, linear)
 end
 
-# MotionSubspace is the return type of the motion_subspace(::Joint, ...) method. Defining it as a
-# GeometricJacobian with a view of a 3×6 SMatrix as the underlying data type gets around type
-# instabilities in motion_subspace while still using an isbits type.
-# See https://github.com/tkoolen/RigidBodyDynamics.jl/issues/84.
-typealias MotionSubspaceArrayType{T} ContiguousSMatrixColumnView{3, 6, T, 18}
-typealias MotionSubspace{T} GeometricJacobian{MotionSubspaceArrayType{T}}
-@inline function fast_view_for_motion_subspace{T}(data::SMatrix{3, 6, T, 18}, colrange::UnitRange{Int64})
-    MotionSubspaceArrayType{T}(data, (:, colrange), 0, 1)
-end
-
-@generated function MotionSubspace{N, T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::SMatrix{3, N, T}, linear::SMatrix{3, N, T})
-    colrange = 1 : N
-    if N == 0
-        angularView = fast_view_for_motion_subspace(fill(NaN, SMatrix{3, 6, T, 18}), colrange)
-        linearView = fast_view_for_motion_subspace(fill(NaN, SMatrix{3, 6, T, 18}), colrange)
-        return quote
-            MotionSubspace{T}(body, base, frame, $angularView, $linearView)
-        end
-    elseif N == 6
-        return quote
-            MotionSubspace{T}(body, base, frame, fast_view_for_motion_subspace(angular, $colrange), fast_view_for_motion_subspace(linear, $colrange))
-        end
-    else
-        fillerSize = 6 - N
-        filler = fill(NaN, SMatrix{3, fillerSize, T, 3 * fillerSize})
-        return quote
-            angularData = hcat(angular, $filler)::SMatrix{3, 6, T, 18}
-            linearData = hcat(linear, $filler)::SMatrix{3, 6, T, 18}
-            MotionSubspace{T}(body, base, frame, fast_view_for_motion_subspace(angularData, $colrange), fast_view_for_motion_subspace(linearData, $colrange))
-        end
-    end
+# MotionSubspace is the return type of motion_subspace(::Joint, ...)
+typealias MotionSubspace{T} GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
+function MotionSubspace(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular, linear)
+    GeometricJacobian(body, base, frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end
 
 convert{A}(::Type{GeometricJacobian{A}}, jac::GeometricJacobian{A}) = jac
@@ -450,39 +427,43 @@ function transform(jac::GeometricJacobian, transform::Transform3D)
 end
 
 
-# MomentumMatrix-specific functions
-function MomentumMatrix{A<:AbstractMatrix}(frame::CartesianFrame3D, angular::A, linear::A)
-    MomentumMatrix{A}(frame, angular, linear)
-end
+# Force space matrix-specific functions
+for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
+    @eval begin
+        function $ForceSpaceMatrix{A<:AbstractMatrix}(frame::CartesianFrame3D, angular::A, linear::A)
+            $ForceSpaceMatrix{A}(frame, angular, linear)
+        end
 
-convert{A}(::Type{MomentumMatrix{A}}, mat::MomentumMatrix{A}) = mat
-convert{A}(::Type{MomentumMatrix{A}}, mat::MomentumMatrix) = MomentumMatrix(mat.frame, convert(A, mat.angular), convert(A, mat.linear))
-Array(mat::MomentumMatrix) = [Array(mat.angular); Array(mat.linear)]
+        convert{A}(::Type{$ForceSpaceMatrix{A}}, mat::$ForceSpaceMatrix{A}) = mat
+        convert{A}(::Type{$ForceSpaceMatrix{A}}, mat::$ForceSpaceMatrix) = $ForceSpaceMatrix(mat.frame, convert(A, mat.angular), convert(A, mat.linear))
+        Array(mat::$ForceSpaceMatrix) = [Array(mat.angular); Array(mat.linear)]
 
-eltype{A}(::Type{MomentumMatrix{A}}) = eltype(A)
-num_cols(mat::MomentumMatrix) = size(mat.angular, 2)
-angular_part(mat::MomentumMatrix) = mat.angular
-linear_part(mat::MomentumMatrix) = mat.linear
+        eltype{A}(::Type{$ForceSpaceMatrix{A}}) = eltype(A)
+        num_cols(mat::$ForceSpaceMatrix) = size(mat.angular, 2)
+        angular_part(mat::$ForceSpaceMatrix) = mat.angular
+        linear_part(mat::$ForceSpaceMatrix) = mat.linear
 
-show(io::IO, m::MomentumMatrix) = print(io, "MomentumMatrix expressed in \"$(name(m.frame))\":\n$(Array(m))")
+        show(io::IO, m::$ForceSpaceMatrix) = print(io, "$($(ForceSpaceMatrix).name.name) expressed in \"$(name(m.frame))\":\n$(Array(m))")
 
-function hcat(mats::MomentumMatrix...)
-    frame = mats[1].frame
-    for j = 2 : length(mats)
-        @framecheck(mats[j].frame, frame)
+        function hcat(mats::$ForceSpaceMatrix...)
+            frame = mats[1].frame
+            for j = 2 : length(mats)
+                @framecheck(mats[j].frame, frame)
+            end
+            angular = hcat((m.angular for m in mats)...)
+            linear = hcat((m.linear for m in mats)...)
+            $ForceSpaceMatrix(frame, angular, linear)
+        end
+
+        function transform(mat::$ForceSpaceMatrix, transform::Transform3D)
+            @framecheck(mat.frame, transform.from)
+            R = transform.rot
+            linear = R * linear_part(mat)
+            T = eltype(linear)
+            angular = R * angular_part(mat) + cross(transform.trans, linear)
+            $ForceSpaceMatrix(transform.to, angular, linear)
+        end
     end
-    angular = hcat((m.angular for m in mats)...)
-    linear = hcat((m.linear for m in mats)...)
-    MomentumMatrix(frame, angular, linear)
-end
-
-function transform(mat::MomentumMatrix, transform::Transform3D)
-    @framecheck(mat.frame, transform.from)
-    R = transform.rot
-    linear = R * linear_part(mat)
-    T = eltype(linear)
-    angular = R * angular_part(mat) + cross(transform.trans, linear)
-    MomentumMatrix(transform.to, angular, linear)
 end
 
 
@@ -502,10 +483,11 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     end
 end
 
-for ForceSpaceElement in (:Momentum, :Wrench)
+for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :MomentumMatrix => :Wrench, :WrenchMatrix => :Wrench)
     # MomentumMatrix * velocity vector --> Momentum
     # MomentumMatrix * acceleration vector --> Wrench
-    @eval function $ForceSpaceElement(mat::MomentumMatrix, x::AbstractVector)
+    # WrenchMatrix * dimensionless multipliers --> Wrench
+    @eval function $ForceSpaceElement(mat::$ForceSpaceMatrix, x::AbstractVector)
         angular = convert(SVector{3}, _mul(mat.angular, x))
         linear = convert(SVector{3}, _mul(mat.linear, x))
         $ForceSpaceElement(mat.frame, angular, linear)
