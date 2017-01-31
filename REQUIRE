@@ -1,5 +1,5 @@
 julia 0.5
-StaticArrays 0.1.0
+StaticArrays 0.1.3
 Rotations 0.3.3
 DataStructures 0.4.6
 LightXML 0.4.0
