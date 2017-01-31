@@ -1,4 +1,4 @@
-type Joint{T<:Real}
+type Joint{T<:Number}
     name::String
     frameBefore::CartesianFrame3D
     frameAfter::CartesianFrame3D
@@ -7,7 +7,7 @@ type Joint{T<:Real}
     Joint(name::String, jointType::JointType{T}) = new(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
 end
 
-Joint{T<:Real}(name::String, jointType::JointType{T}) = Joint{T}(name, jointType)
+Joint{T<:Number}(name::String, jointType::JointType{T}) = Joint{T}(name, jointType)
 
 show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
 showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")

@@ -47,7 +47,7 @@ end
 
 
 # Transform between frames
-immutable Transform3D{T<:Real}
+immutable Transform3D{T<:Number}
     from::CartesianFrame3D
     to::CartesianFrame3D
     rot::RotMatrix3{T}
@@ -105,14 +105,14 @@ for VectorType in (:FreeVector3D, :Point3D)
         end
 
         $VectorType{V}(frame::CartesianFrame3D, v::V) = $VectorType{V}(frame, v)
-        $VectorType{T<:Real}(::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, zeros(SVector{3, T}))
+        $VectorType{T<:Number}(::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, zeros(SVector{3, T}))
 
         convert{V}(::Type{$VectorType{V}}, p::$VectorType{V}) = p
         convert{V}(::Type{$VectorType{V}}, p::$VectorType) = $VectorType(p.frame, convert(V, p.v))
 
-        (/){S<:Real}(p::$VectorType, s::S) = $VectorType(p.frame, p.v / s)
-        (*){S<:Real}(p::$VectorType, s::S) = $VectorType(p.frame, p.v * s)
-        (*){S<:Real}(s::S, p::$VectorType) = $VectorType(p.frame, s * p.v)
+        (/){S<:Number}(p::$VectorType, s::S) = $VectorType(p.frame, p.v / s)
+        (*){S<:Number}(p::$VectorType, s::S) = $VectorType(p.frame, p.v * s)
+        (*){S<:Number}(s::S, p::$VectorType) = $VectorType(p.frame, s * p.v)
 
         rand{T}(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, rand(SVector{3, T}))
         show(io::IO, p::$VectorType) = print(io, "$($(VectorType).name.name) in \"$(name(p.frame))\": $(p.v)")

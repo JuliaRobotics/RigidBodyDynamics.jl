@@ -1,4 +1,4 @@
-type RigidBody{T<:Real}
+type RigidBody{T<:Number}
     name::String
     inertia::Nullable{SpatialInertia{T}}
     frameDefinitions::Set{Transform3D{T}}
