@@ -80,8 +80,26 @@
         for joint in joints(mechanism)
             qjoint = configuration(x, joint)
             S = motion_subspace(joint, qjoint)
-            T = constraint_wrench_subspace(joint, qjoint)::RigidBodyDynamics.WrenchSubspace{Float64}
+            T = constraint_wrench_subspace(joint, qjoint)::RigidBodyDynamics.WrenchSubspace{Float64} # TODO
             @test isapprox(T.angular' * S.angular + T.linear' * S.linear, zeros(6 - num_velocities(joint), num_velocities(joint)); atol = 1e-14)
+        end
+    end
+
+    @testset "constraint_bias" begin
+        for joint in joints(mechanism)
+            qjoint = configuration(x, joint)
+            vjoint = velocity(x, joint)
+            q̇joint = similar(qjoint)
+            velocity_to_configuration_derivative!(joint, q̇joint, qjoint, vjoint)
+            qjointAutodiff = create_autodiff(qjoint, q̇joint)
+            TAutodiff = constraint_wrench_subspace(joint, qjointAutodiff)#::RigidBodyDynamics.WrenchSubspace{eltype(qjointAutodiff)} # TODO
+            angular = map(x -> ForwardDiff.partials(x, 1), TAutodiff.angular)
+            linear = map(x -> ForwardDiff.partials(x, 1), TAutodiff.linear)
+            Ṫ = WrenchMatrix(joint.frameAfter, angular, linear)
+            jointTwist = transform(x, relative_twist(x, joint.frameAfter, joint.frameBefore), joint.frameAfter)
+            bias = fill(NaN, 6 - num_velocities(joint))
+            constraint_bias!(joint, bias, jointTwist)
+            @test isapprox(Ṫ.angular' * jointTwist.angular + Ṫ.linear' * jointTwist.linear, bias; atol = 1e-14)
         end
     end
 

@@ -53,6 +53,14 @@ function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::Abstr
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _bias_acceleration(joint.jointType, joint.frameAfter, joint.frameBefore, q, v)
 end
 
+function constraint_bias!{M}(joint::Joint{M}, bias::AbstractVector, jointTwist::Twist)
+    @framecheck jointTwist.body joint.frameAfter
+    @framecheck jointTwist.base joint.frameBefore
+    @framecheck jointTwist.frame joint.frameAfter
+    @boundscheck length(bias) == 6 - num_velocities(joint) || error("wrong size")
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _constraint_bias!(joint.jointType, bias, jointTwist)
+end
+
 function configuration_derivative_to_velocity!{M}(joint::Joint{M}, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)::Void
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_positions(joint, q)

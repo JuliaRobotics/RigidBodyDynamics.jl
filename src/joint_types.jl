@@ -83,6 +83,11 @@ function _bias_acceleration{T<:Number, X<:Number}(
     zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
 end
 
+function _constraint_bias!(jt::QuaternionFloating, bias::AbstractVector, jointTwist::Twist)
+    bias[:] = 0
+    nothing
+end
+
 function _configuration_derivative_to_velocity!(jt::QuaternionFloating, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
     quat = rotation(jt, q)
     @inbounds quatdot = SVector(q̇[1], q̇[2], q̇[3], q̇[4])
@@ -200,6 +205,11 @@ function _rand_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
 function _bias_acceleration{T<:Number, X<:Number}(
         jt::OneDegreeOfFreedomFixedAxis{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     zero(SpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
+end
+
+function _constraint_bias!(jt::OneDegreeOfFreedomFixedAxis, bias::AbstractVector, jointTwist::Twist)
+    bias[:] = 0
+    nothing
 end
 
 function _configuration_derivative_to_velocity!(::OneDegreeOfFreedomFixedAxis, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
@@ -351,6 +361,7 @@ function _bias_acceleration{T<:Number, X<:Number}(
     zero(SpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
 end
 
+_constraint_bias!(jt::Fixed, bias::AbstractVector, jointTwist::Twist) = (bias[:] = 0; nothing)
 _configuration_derivative_to_velocity!(::Fixed, v::AbstractVector, q::AbstractVector, q̇::AbstractVector) = nothing
 _velocity_to_configuration_derivative!(::Fixed, q̇::AbstractVector, q::AbstractVector, v::AbstractVector) = nothing
 _joint_torque!(jt::Fixed, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench) = nothing
