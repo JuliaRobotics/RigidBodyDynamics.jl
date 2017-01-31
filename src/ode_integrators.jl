@@ -13,7 +13,7 @@ export runge_kutta_4,
 import Base: eltype, length, step
 import RigidBodyDynamics: scaleadd!
 
-immutable ButcherTableau{N, T<:Real, L}
+immutable ButcherTableau{N, T<:Number, L}
     a::SMatrix{N, N, T, L}
     b::SVector{N, T}
     c::SVector{N, T}
@@ -79,7 +79,7 @@ function process{T}(storage::OdeRingBufferStorage{T}, t::T, state)
     nothing
 end
 
-type MuntheKaasStageCache{N, T<:Real}
+type MuntheKaasStageCache{N, T<:Number}
     q0::Vector{T} # global coordinates
     vs::SVector{N, Vector{T}} # velocity vector for each stage
     vds::SVector{N, Vector{T}} # time derivatives of vs
@@ -131,7 +131,7 @@ end
 # Another useful reference is Park and Chung,
 # 'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005).
 # http://www.ent.mrt.ac.lk/iml/paperbase/TRO%20Collection/TRO/2005/october/7.pdf
-immutable MuntheKaasIntegrator{N, T<:Real, F, S<:OdeResultsSink, L}
+immutable MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}
     dynamics!::F # dynamics!(vd, t, state), sets vd (time derivative of v) given time t and state
     tableau::ButcherTableau{N, T, L}
     sink::S
@@ -143,7 +143,7 @@ immutable MuntheKaasIntegrator{N, T<:Real, F, S<:OdeResultsSink, L}
         new(dynamics!, tableau, sink, stages)
     end
 end
-function MuntheKaasIntegrator{N, T<:Real, F, S<:OdeResultsSink, L}(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S)
+function MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S)
     MuntheKaasIntegrator{N, T, F, S, L}(dynamics!, tableau, sink)
 end
 num_stages{N}(::MuntheKaasIntegrator{N}) = N

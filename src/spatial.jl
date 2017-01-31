@@ -1,5 +1,5 @@
 # Types
-immutable SpatialInertia{T<:Real}
+immutable SpatialInertia{T<:Number}
     frame::CartesianFrame3D
     moment::SMatrix{3, 3, T, 9}
     crossPart::SVector{3, T} # mass times center of mass
@@ -7,7 +7,7 @@ immutable SpatialInertia{T<:Real}
 end
 
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
-    @eval immutable $MotionSpaceElement{T<:Real}
+    @eval immutable $MotionSpaceElement{T<:Number}
         # describes motion of body w.r.t. base, expressed in frame
         body::CartesianFrame3D
         base::CartesianFrame3D
@@ -18,7 +18,7 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
 end
 
 for ForceSpaceElement in (:Momentum, :Wrench)
-    @eval immutable $ForceSpaceElement{T<:Real}
+    @eval immutable $ForceSpaceElement{T<:Number}
         frame::CartesianFrame3D
         angular::SVector{3, T}
         linear::SVector{3, T}
@@ -59,7 +59,7 @@ end
 # SpatialInertia-specific functions
 convert{T}(::Type{SpatialInertia{T}}, inertia::SpatialInertia{T}) = inertia
 
-function convert{T<:Real}(::Type{SpatialInertia{T}}, inertia::SpatialInertia)
+function convert{T<:Number}(::Type{SpatialInertia{T}}, inertia::SpatialInertia)
     SpatialInertia(inertia.frame, convert(SMatrix{3, 3, T}, inertia.moment), convert(SVector{3, T}, inertia.crossPart), convert(T, inertia.mass))
 end
 
@@ -157,8 +157,8 @@ end
 # MotionSpaceElement-specific
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     @eval begin
-        convert{T<:Real}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement{T}) = m
-        convert{T<:Real}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement) = $MotionSpaceElement(m.body, m.base, m.frame, convert(SVector{3, T}, m.angular), convert(SVector{3, T}, m.linear))
+        convert{T<:Number}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement{T}) = m
+        convert{T<:Number}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement) = $MotionSpaceElement(m.body, m.base, m.frame, convert(SVector{3, T}, m.angular), convert(SVector{3, T}, m.linear))
         convert{T}(::Type{Vector{T}}, m::$MotionSpaceElement{T}) = [m.angular...; m.linear...]
         Array{T}(m::$MotionSpaceElement{T}) = convert(Vector{T}, m)
 
@@ -336,9 +336,9 @@ end
 # ForceSpaceElement-specific
 for ForceSpaceElement in (:Momentum, :Wrench)
     @eval begin
-        convert{T<:Real}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) = f
+        convert{T<:Number}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) = f
 
-        function convert{T<:Real}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement)
+        function convert{T<:Number}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement)
             $ForceSpaceElement(f.frame, convert(SVector{3, T}, f.angular), convert(SVector{3, T}, f.linear))
         end
 
@@ -542,5 +542,5 @@ function kinetic_energy(I::SpatialInertia, twist::Twist)
     J = I.moment
     c = I.crossPart
     m = I.mass
-    1/2 * (dot(ω, J * ω) + dot(v, m * v + 2 * cross(ω, c)))
+    (dot(ω, J * ω) + dot(v, m * v + 2 * cross(ω, c))) / 2
 end

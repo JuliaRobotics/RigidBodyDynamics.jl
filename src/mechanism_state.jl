@@ -1,5 +1,5 @@
 # State information pertaining to a single joint
-immutable JointState{X<:Real, M<:Real, C<:Real}
+immutable JointState{X<:Number, M<:Number, C<:Number}
     joint::Joint{M}
     q::VectorSegment{X}
     v::VectorSegment{X}
@@ -37,7 +37,7 @@ function setdirty!(state::JointState)
 end
 
 # State information pertaining to a single rigid body
-immutable RigidBodyState{M<:Real, C<:Real}
+immutable RigidBodyState{M<:Number, C<:Number}
     body::RigidBody{M}
     transformToWorld::CacheElement{Transform3D{C}}
     twist::CacheElement{Twist{C}}
@@ -79,7 +79,7 @@ end
 # State of an entire Mechanism
 # The state information pertaining to rigid bodies in toposortedStateVertices is
 # currently stored in the Mechanism's root frame.
-immutable MechanismState{X<:Real, M<:Real, C<:Real}
+immutable MechanismState{X<:Number, M<:Number, C<:Number}
     mechanism::Mechanism{M}
     q::Vector{X}
     v::Vector{X}

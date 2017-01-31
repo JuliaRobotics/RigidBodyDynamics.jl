@@ -1,7 +1,7 @@
 # TODO: put in separate module
 # TODO: precompute and store results of motion_subspace, constraint_wrench_subspace
 
-abstract JointType{T<:Real}
+abstract JointType{T<:Number}
 eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
 
 # Default implementations
@@ -64,7 +64,7 @@ function _joint_transform(
     Transform3D{S}(frameAfter, frameBefore, rot, trans)
 end
 
-function _motion_subspace{T<:Real, X<:Real}(
+function _motion_subspace{T<:Number, X<:Number}(
         jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
@@ -77,7 +77,7 @@ function _constraint_wrench_subspace{T<:Real, X<:Real}(::QuaternionFloating{T}, 
     WrenchSubspace(frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
-function _bias_acceleration{T<:Real, X<:Real}(
+function _bias_acceleration{T<:Number, X<:Number}(
         jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     S = promote_type(T, X)
     zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
@@ -122,7 +122,7 @@ function _rand_configuration!(jt::QuaternionFloating, q::AbstractVector)
     nothing
 end
 
-function _joint_twist{T<:Real, X<:Real}(
+function _joint_twist{T<:Number, X<:Number}(
         jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     S = promote_type(T, X)
     angular = convert(SVector{3, S}, angular_velocity(jt, v))
@@ -182,7 +182,7 @@ end
 #=
 OneDegreeOfFreedomFixedAxis
 =#
-abstract OneDegreeOfFreedomFixedAxis{T<:Real} <: JointType{T}
+abstract OneDegreeOfFreedomFixedAxis{T<:Number} <: JointType{T}
 
 num_positions(::OneDegreeOfFreedomFixedAxis) = 1
 num_velocities(::OneDegreeOfFreedomFixedAxis) = 1
@@ -197,7 +197,7 @@ function _rand_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
     nothing
  end
 
-function _bias_acceleration{T<:Real, X<:Real}(
+function _bias_acceleration{T<:Number, X<:Number}(
         jt::OneDegreeOfFreedomFixedAxis{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     zero(SpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
 end
@@ -216,7 +216,7 @@ end
 #=
 Prismatic
 =#
-immutable Prismatic{T<:Real} <: OneDegreeOfFreedomFixedAxis{T}
+immutable Prismatic{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
     translation_axis::SVector{3, T}
 end
 
@@ -240,7 +240,7 @@ function _joint_twist(
     Twist(frameAfter, frameBefore, frameAfter, zeros(linear), linear)
 end
 
-function _motion_subspace{T<:Real, X<:Real}(
+function _motion_subspace{T<:Number, X<:Number}(
         jt::Prismatic{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
     angular = zeros(SMatrix{3, 1, X})
@@ -265,7 +265,7 @@ end
 #=
 Revolute
 =#
-immutable Revolute{T<:Real} <: OneDegreeOfFreedomFixedAxis{T}
+immutable Revolute{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
     rotation_axis::SVector{3, T}
 end
 
@@ -287,7 +287,7 @@ function _joint_twist(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::C
     Twist(frameAfter, frameBefore, frameAfter, angular_velocity, zeros(angular_velocity))
 end
 
-function _motion_subspace{T<:Real, X<:Real}(
+function _motion_subspace{T<:Number, X<:Number}(
         jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
     angular = SMatrix{3, 1, S}(jt.rotation_axis)
@@ -312,7 +312,7 @@ end
 #=
 Fixed
 =#
-immutable Fixed{T<:Real} <: JointType{T}
+immutable Fixed{T<:Number} <: JointType{T}
 end
 show(io::IO, jt::Fixed) = print(io, "Fixed joint")
 rand{T}(::Type{Fixed{T}}) = Fixed{T}()
@@ -320,17 +320,17 @@ rand{T}(::Type{Fixed{T}}) = Fixed{T}()
 num_positions(::Fixed) = 0
 num_velocities(::Fixed) = 0
 
-function _joint_transform{T<:Real, X<:Real}(
+function _joint_transform{T<:Number, X<:Number}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     Transform3D(promote_type(T, X), frameAfter, frameBefore)
 end
 
-function _joint_twist{T<:Real, X<:Real}(
+function _joint_twist{T<:Number, X<:Number}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     zero(Twist{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
 end
 
-function _motion_subspace{T<:Real, X<:Real}(
+function _motion_subspace{T<:Number, X<:Number}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
     MotionSubspace(frameAfter, frameBefore, frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
@@ -346,7 +346,7 @@ end
 _zero_configuration!(::Fixed, q::AbstractVector) = nothing
 _rand_configuration!(::Fixed, q::AbstractVector) = nothing
 
-function _bias_acceleration{T<:Real, X<:Real}(
+function _bias_acceleration{T<:Number, X<:Number}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     zero(SpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
 end

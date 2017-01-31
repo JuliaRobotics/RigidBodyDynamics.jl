@@ -1,4 +1,4 @@
-type Mechanism{T<:Real}
+type Mechanism{T<:Number}
     toposortedTree::Vector{TreeVertex{RigidBody{T}, Joint{T}}} # TODO: consider replacing with just the root vertex after creating iterator
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
