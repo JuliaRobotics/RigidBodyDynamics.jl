@@ -103,6 +103,27 @@
         end
     end
 
+    @testset "linearized_constraint_error" begin
+        for joint in joints(mechanism)
+            δ = fill(NaN, 6 - num_velocities(joint))
+            jointTransform = relative_transform(x, joint.frameAfter, joint.frameBefore)
+
+            # Ensure that a joint transform without error results in zero constraint error.
+            linearized_constraint_error!(joint, δ, jointTransform)
+            @test isapprox(δ, zeros(6 - num_velocities(joint)); atol = 1e-14)
+
+            # Ensure that the property δ = Tᵀd holds for small d, where d are the exponential coordinates of the error transform.
+            # Note that Featherstone defines d as the inverse of this error transform, corresponding to a sign flip in δ.
+            T = constraint_wrench_subspace(joint, configuration(x, joint))
+            dangular = 1e-5 * normalize(randn(SVector{3}))
+            dlinear = 1e-5 * normalize(randn(SVector{3}))
+            d = Twist(joint.frameAfter, joint.frameAfter, joint.frameAfter, dangular, dlinear) # cheating a little with the frames here
+            errorTransform = exp(d)
+            linearized_constraint_error!(joint, δ, jointTransform * errorTransform)
+            @test isapprox(T.angular' * d.angular + T.linear' * d.linear, δ; atol = 1e-14)
+        end
+    end
+
     @testset "relative_acceleration" begin
         for body in bodies(mechanism)
             for base in bodies(mechanism)

@@ -182,6 +182,8 @@ function _global_coordinates!(jt::QuaternionFloating, q::AbstractVector, q0::Abs
     nothing
 end
 
+_linearized_constraint_error!(jt::QuaternionFloating, δ::AbstractVector, jointTransform::Transform3D) = nothing
+
 
 
 #=
@@ -271,6 +273,20 @@ function _joint_torque!(jt::Prismatic, τ::AbstractVector, q::AbstractVector, jo
     nothing
 end
 
+function _linearized_constraint_error!(jt::Prismatic, δ::AbstractVector, jointTransform::Transform3D)
+    R = jointTransform.rot
+    p = jointTransform.trans
+    # FIXME: this is for translation along the z axis
+    @inbounds begin
+        δ[1] = (R[3, 2] - R[2, 3]) / 2
+        δ[2] = (R[1, 3] - R[3, 1]) / 2
+        δ[3] = (R[2, 1] - R[1, 2]) / 2
+        δ[4] = R[3, 3] * p[1] - R[1, 3] * p[3]
+        δ[5] = R[3, 3] * p[2] - R[2, 3] * p[3]
+    end
+    nothing
+end
+
 
 #=
 Revolute
@@ -315,6 +331,20 @@ end
 
 function _joint_torque!(jt::Revolute, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
     @inbounds τ[1] = dot(joint_wrench.angular, jt.rotation_axis)
+    nothing
+end
+
+function _linearized_constraint_error!(jt::Revolute, δ::AbstractVector, jointTransform::Transform3D)
+    R = jointTransform.rot
+    p = jointTransform.trans
+    # FIXME: this is for rotation about the z axis
+    @inbounds begin
+        δ[1] = -R[2, 3]
+        δ[2] = R[1, 3]
+        δ[3] = R[3, 3] * p[1] - R[1, 3] * p[3]
+        δ[4] = R[3, 3] * p[2] - R[2, 3] * p[3]
+        δ[5] = R[2, 1] * (R[2, 1] * p[3] - R[3, 1] * p[2]) + R[2, 2] * (R[2, 2] * p[3] - R[3, 2] * p[2])
+    end
     nothing
 end
 
@@ -365,3 +395,17 @@ _constraint_bias!(jt::Fixed, bias::AbstractVector, jointTwist::Twist) = (bias[:]
 _configuration_derivative_to_velocity!(::Fixed, v::AbstractVector, q::AbstractVector, q̇::AbstractVector) = nothing
 _velocity_to_configuration_derivative!(::Fixed, q̇::AbstractVector, q::AbstractVector, v::AbstractVector) = nothing
 _joint_torque!(jt::Fixed, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench) = nothing
+
+function _linearized_constraint_error!(jt::Fixed, δ::AbstractVector, jointTransform::Transform3D)
+    R = jointTransform.rot
+    p = jointTransform.trans
+    @inbounds begin
+        δ[1] = (R[3, 2] - R[2, 3]) / 2
+        δ[2] = (R[1, 3] - R[3, 1]) / 2
+        δ[3] = (R[2, 1] - R[1, 2]) / 2
+        δ[4] = -(R[1, 2] * p[2] + R[1, 3] * p[3] - R[2, 2] * p[1] - R[3, 3] * p[1]) / 2
+        δ[5] = -(R[2, 1] * p[1] - R[1, 1] * p[2] + R[2, 3] * p[3] - R[3, 3] * p[2]) / 2
+        δ[6] = -(R[3, 1] * p[1] - R[2, 2] * p[3] - R[1, 1] * p[3] + R[3, 2] * p[2]) / 2
+    end
+    nothing
+end

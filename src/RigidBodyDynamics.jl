@@ -96,6 +96,7 @@ export
     constraint_wrench_subspace,
     bias_acceleration,
     constraint_bias!,
+    linearized_constraint_error!,
     spatial_inertia,
     crb_inertia,
     setdirty!,

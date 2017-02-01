@@ -115,3 +115,10 @@ function global_coordinates!{M}(joint::Joint{M}, q::AbstractVector, q0::Abstract
     @boundscheck check_num_velocities(joint, ϕ)
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _global_coordinates!(joint.jointType, q, q0, ϕ)
 end
+
+function linearized_constraint_error!{M}(joint::Joint{M}, δ::AbstractVector, jointTransform::Transform3D)
+    @boundscheck length(δ) == 6 - num_velocities(joint) || error("wrong size")
+    @framecheck joint.frameAfter jointTransform.from
+    @framecheck joint.frameBefore jointTransform.to
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _linearized_constraint_error!(joint.jointType, δ, jointTransform)
+end
