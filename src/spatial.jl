@@ -530,8 +530,26 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
 end
 
 function torque(jac::GeometricJacobian, wrench::Wrench)
-    @framecheck(jac.frame, wrench.frame)
-    jac.angular' * wrench.angular + jac.linear' * wrench.linear
+    ret = Vector{promote_type(eltype(jac), eltype(wrench))}(num_cols(jac))
+    At_mul_B!(ret, jac, wrench)
+    ret
+end
+
+for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAcceleration}), :GeometricJacobian => :(Union{Momentum, Wrench}))
+    @eval function Base.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
+        @boundscheck length(x) == num_cols(mat) || error("size mismatch")
+        @framecheck mat.frame vec.frame
+        @simd for row in eachindex(x)
+            @inbounds begin x[row] =
+                mat.angular[1, row] * vec.angular[1] +
+                mat.angular[2, row] * vec.angular[2] +
+                mat.angular[3, row] * vec.angular[3] +
+                mat.linear[1, row] * vec.linear[1] +
+                mat.linear[2, row] * vec.linear[2] +
+                mat.linear[3, row] * vec.linear[3]
+            end
+        end
+    end
 end
 
 function kinetic_energy(I::SpatialInertia, twist::Twist)

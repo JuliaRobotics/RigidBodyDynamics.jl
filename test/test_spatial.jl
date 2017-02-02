@@ -72,6 +72,14 @@ end
         @test_throws ArgumentError torque(transform(J, H), W)
     end
 
+    @testset "At_mul_B!" begin
+        mat = WrenchMatrix(f1, rand(SMatrix{3, 4}), rand(SMatrix{3, 4}))
+        vec = rand(SpatialAcceleration{Float64}, f2, f3, f1)
+        k = fill(NaN, num_cols(mat))
+        At_mul_B!(k, mat, vec)
+        @test isapprox(k, mat.angular' * vec.angular + mat.linear' * vec.linear, atol = 1e-14)
+    end
+
     @testset "momentum matrix" begin
         n = 13
         A = MomentumMatrix(f3, rand(SMatrix{3, n}), rand(SMatrix{3, n}))
