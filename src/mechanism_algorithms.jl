@@ -293,8 +293,8 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintJacobian
     end
 end
 
-function dynamics_solve!{T}(result::DynamicsResult{T}, τ::AbstractVector{T})
-    # version for general T
+function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
+    # version for general scalar types
     # TODO: make more efficient
     M = result.massMatrix
     c = result.dynamicsBias
@@ -310,12 +310,12 @@ function dynamics_solve!{T}(result::DynamicsResult{T}, τ::AbstractVector{T})
          K zeros(nl, nl)]
     b = [τ - c; -k]
     v̇λ = A \ b
-    v̇ = view(v̇λ, 1 : nv)
-    λ = view(v̇λ, nv + 1 : nv + nl)
+    result.v̇ = view(v̇λ, 1 : nv)
+    result.λ = view(v̇λ, nv + 1 : nv + nl)
     nothing
 end
 
-function dynamics_solve!{T<:Union{Float32, Float64}}(result::DynamicsResult{T}, τ::AbstractVector{T})
+function dynamics_solve!{S, T<:LinAlg.BlasReal}(result::DynamicsResult{S, T}, τ::AbstractVector{T})
     # optimized version for BLAS floats
     M = result.massMatrix
     c = result.dynamicsBias

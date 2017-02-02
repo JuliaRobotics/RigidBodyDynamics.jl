@@ -132,14 +132,14 @@ function rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
 
     # Scale the inertias to make the length scale of the
     # equivalent inertial ellipsoid roughly ~1 unit
-    principalMoments[1:2] = rand(2) / 10.
+    principalMoments[1:2] = rand(T, 2) / 10.
 
     # Ensure that the principal moments of inertia obey the triangle
     # inequalities:
     # http://www.mathworks.com/help/physmod/sm/mech/vis/about-body-color-and-geometry.html
     lb = abs(principalMoments[1] - principalMoments[2])
     ub = principalMoments[1] + principalMoments[2]
-    principalMoments[3] = rand() * (ub - lb) + lb
+    principalMoments[3] = rand(T) * (ub - lb) + lb
 
     # Construct the moment of inertia tensor
     J = SMatrix{3, 3, T}(Q * diagm(principalMoments) * Q')
@@ -149,7 +149,7 @@ function rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
     spatialInertia = SpatialInertia(comFrame, J, zeros(SVector{3, T}), rand(T))
 
     # Put the center of mass at a random offset
-    comFrameToDesiredFrame = Transform3D(comFrame, frame, rand(SVector{3, T}) - 0.5)
+    comFrameToDesiredFrame = Transform3D(comFrame, frame, rand(SVector{3, T}) - T(0.5))
     transform(spatialInertia, comFrameToDesiredFrame)
 end
 

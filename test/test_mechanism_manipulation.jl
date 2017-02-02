@@ -234,4 +234,36 @@ end
             @test isapprox(treeAccel, mcAccel; atol = 1e-12)
         end
     end # maximal coordinates
+
+    @testset "generic scalar dynamics" begin # TODO: move to a better place
+        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
+        mechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(mechanism)
+
+        stateFloat64 = MechanismState(Float64, mechanism)
+        rand!(stateFloat64)
+        stateDual = MechanismState(ForwardDiff.Dual{0, Float64}, mechanism)
+        configuration_vector(stateDual)[:] = configuration_vector(stateFloat64)
+        velocity_vector(stateDual)[:] = velocity_vector(stateFloat64)
+
+        dynamicsResultFloat64 = DynamicsResult(Float64, mechanism)
+        dynamics!(dynamicsResultFloat64, stateFloat64)
+
+        dynamicsResultDual = DynamicsResult(ForwardDiff.Dual{0, Float64}, mechanism)
+        dynamics!(dynamicsResultDual, stateDual)
+        #
+        # @show stateFloat64.q
+        # @show stateFloat64.v
+        # println()
+        #
+        # @show stateDual.q
+        # @show stateDual.v
+        # println()
+        #
+        # @show dynamicsResultFloat64.v̇
+        # @show dynamicsResultDual.v̇
+        # println()
+
+        @test isapprox(dynamicsResultFloat64.v̇, dynamicsResultDual.v̇; atol = 1e-3)
+        @test isapprox(dynamicsResultFloat64.λ, dynamicsResultDual.λ; atol = 1e-3)
+    end
 end # mechanism manipulation

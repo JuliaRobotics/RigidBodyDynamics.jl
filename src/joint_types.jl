@@ -254,7 +254,7 @@ end
 
 function _constraint_wrench_subspace{T<:Number, X<:Number}(jt::Prismatic{T}, jointTransform::Transform3D{X})
     S = promote_type(T, X)
-    R = RotMatrix(rotation_between(SVector(zero(S), zero(S), one(S)), jt.translation_axis))
+    R = convert(RotMatrix{3, S}, rotation_between(SVector(zero(S), zero(S), one(S)), jt.translation_axis))
     angular = hcat(R, zeros(SMatrix{3, 2, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), R[:, (1, 2)])
     WrenchSubspace(jointTransform.from, angular, linear)
@@ -283,7 +283,7 @@ flip_direction(jt::Revolute) = Revolute(-jt.rotation_axis)
 
 function _joint_transform(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
     @inbounds aa = AngleAxis(q[1], jt.rotation_axis[1], jt.rotation_axis[2], jt.rotation_axis[3])
-    Transform3D(frameAfter, frameBefore, RotMatrix(aa))
+    Transform3D(frameAfter, frameBefore, convert(RotMatrix{3, eltype(aa)}, aa))
 end
 
 function _joint_twist(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
@@ -301,7 +301,7 @@ end
 
 function _constraint_wrench_subspace{T<:Number, X<:Number}(jt::Revolute{T}, jointTransform::Transform3D{X})
     S = promote_type(T, X)
-    R = RotMatrix(rotation_between(SVector(zero(S), zero(S), one(S)), jt.rotation_axis))
+    R = convert(RotMatrix{3, S}, rotation_between(SVector(zero(S), zero(S), one(S)), jt.rotation_axis))
     angular = hcat(R[:, (1, 2)], zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 2, S}), R)
     WrenchSubspace(jointTransform.from, angular, linear)
