@@ -57,31 +57,35 @@ function potential_energy{X, M, C}(state::MechanismState{X, M, C})
     -dot(gravitationalForce, FreeVector3D(centerOfMass))
  end
 
- function _mass_matrix_part!(out::Symmetric, rowstart::Int64, colstart::Int64, jac::GeometricJacobian, mat::MomentumMatrix)
-    # more efficient version of
-    # @view out[rowstart : rowstart + n - 1, colstart : colstart + n - 1] = jac.angular' * mat.angular + jac.linear' * mat.linear
-    n = num_cols(jac)
-    m = num_cols(mat)
-    @boundscheck (rowstart > 0 && rowstart + n - 1 <= size(out, 1)) || error("size mismatch")
-    @boundscheck (colstart > 0 && colstart + m - 1 <= size(out, 2)) || error("size mismatch")
-    @framecheck(jac.frame, mat.frame)
+ function force_space_matrix_transpose_mul_jacobian!(out::Matrix, rowstart::Int64, colstart::Int64,
+        mat::Union{MomentumMatrix, WrenchMatrix}, jac::GeometricJacobian, sign::Int64)
+     @framecheck(jac.frame, mat.frame)
+     n = num_cols(mat)
+     m = num_cols(jac)
+     @boundscheck (rowstart > 0 && rowstart + n - 1 <= size(out, 1)) || error("size mismatch")
+     @boundscheck (colstart > 0 && colstart + m - 1 <= size(out, 2)) || error("size mismatch")
 
-    for col = 1 : m
-        outcol = colstart + col - 1
-        for row = 1 : n
-            outrow = rowstart + row - 1
-            @inbounds out.data[outrow, outcol] = zero(eltype(out))
-            for i = 1 : 3
-                @inbounds out.data[outrow, outcol] += jac.angular[i, row] * mat.angular[i, col]
-                @inbounds out.data[outrow, outcol] += jac.linear[i, row] * mat.linear[i, col]
-            end
-        end
-    end
+     # more efficient version of
+     # view(out, rowstart : rowstart + n - 1, colstart : colstart + n - 1)[:] = mat.angular' * jac.angular + mat.linear' * jac.linear
+
+     @inbounds begin
+         for col = 1 : m
+             outcol = colstart + col - 1
+             for row = 1 : n
+                 outrow = rowstart + row - 1
+                 out[outrow, outcol] = zero(eltype(out))
+                 for i = 1 : 3
+                     out[outrow, outcol] += flipsign(mat.angular[i, row] * jac.angular[i, col], sign)
+                     out[outrow, outcol] += flipsign(mat.linear[i, row] * jac.linear[i, col], sign)
+                 end
+             end
+         end
+     end
  end
 
 function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
     @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
-    @boundscheck out.uplo == 'U' || error("expected an upper triangular symmetric matrix type as the mass matrix")
+    @boundscheck out.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
     fill!(out.data, zero(C))
     mechanism = state.mechanism
 
@@ -94,7 +98,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             Ii = crb_inertia(vi)
             F = Ii * Si
             istart = first(irange)
-            _mass_matrix_part!(out, istart, istart, Si, F)
+            force_space_matrix_transpose_mul_jacobian!(out.data, istart, istart, F, Si, 1)
 
             # Hji, Hij
             vj = parent(vi)
@@ -104,7 +108,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                 if length(jrange) > 0
                     Sj = motion_subspace(vj)
                     jstart = first(jrange)
-                    _mass_matrix_part!(out, jstart, istart, Sj, F)
+                    force_space_matrix_transpose_mul_jacobian!(out.data, istart, jstart, F, Sj, 1)
                 end
                 vj = parent(vj)
             end
@@ -114,7 +118,7 @@ end
 
 function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
     nv = num_velocities(state)
-    ret = Symmetric(Matrix{C}(nv, nv))
+    ret = Symmetric(Matrix{C}(nv, nv), :L)
     mass_matrix!(ret, state)
     ret
 end
@@ -250,44 +254,141 @@ function inverse_dynamics{X, M, V, W}(
     torques
 end
 
-type DynamicsResult{M, T}
-    massMatrix::Symmetric{T, Matrix{T}}
-    massMatrixInversionCache::Symmetric{T, Matrix{T}}
-    dynamicsBias::Vector{T}
-    biasedTorques::Vector{T}
-    v̇::Vector{T}
-    accelerations::Dict{RigidBody{M}, SpatialAcceleration{T}}
-    jointWrenches::Dict{RigidBody{M}, Wrench{T}}
+function constraint_jacobian_and_bias!(state::MechanismState, constraintJacobian::AbstractMatrix, constraintBias::AbstractVector)
+    # TODO: allocations
+    structure = state.constraintJacobianStructure
+    rows = rowvals(structure)
+    signs = nonzeros(structure)
+    nNonTreeEdges = size(structure, 2)
+    rowstart = 1
+    constraintJacobian[:] = 0
+    for i = 1 : nNonTreeEdges
+        edge = state.mechanism.nonTreeEdges[i]
+        joint = edge.joint
+        nextrowstart = rowstart + num_constraints(joint)
+        range = rowstart : nextrowstart - 1
 
-    function DynamicsResult(::Type{T}, mechanism::Mechanism{M})
-        nq = num_positions(mechanism)
-        nv = num_velocities(mechanism)
-        massMatrix = Symmetric(zeros(T, nv, nv))
-        massMatrixInversionCache = Symmetric(zeros(T, nv, nv))
-        v̇ = Vector{T}(nv)
-        dynamicsBias = zeros(T, nv)
-        biasedTorques = zeros(T, nv)
-        accelerations = Dict{RigidBody{M}, SpatialAcceleration{T}}()
-        sizehint!(accelerations, num_bodies(mechanism))
-        jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
-        sizehint!(jointWrenches, num_bodies(mechanism))
-        new(massMatrix, massMatrixInversionCache, dynamicsBias, biasedTorques, v̇, accelerations, jointWrenches)
+        # Constraint wrench subspace.
+        jointTransform = relative_transform(state, joint.frameAfter, joint.frameBefore) # TODO: expensive
+        T = constraint_wrench_subspace(joint, jointTransform)
+        T = transform(T, transform_to_root(state, T.frame)) # TODO: expensive
+
+        # Jacobian rows.
+        for j in nzrange(structure, i)
+            treevertex = state.toposortedStateVertices[rows[j]]
+            J = motion_subspace(treevertex)
+            sign = signs[j]
+            colstart = first(velocity_range(edge_to_parent_data(treevertex)))
+            force_space_matrix_transpose_mul_jacobian!(constraintJacobian, rowstart, colstart, T, J, sign)
+        end
+
+        # Constraint bias.
+        has_fixed_subspaces(joint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.")
+        kjoint = UnsafeVectorView(constraintBias, range)
+        predecessorTwist = twist_wrt_world(state, edge.predecessor)
+        successorTwist = twist_wrt_world(state, edge.successor)
+        biasAccel = cross(successorTwist, predecessorTwist) + (bias_acceleration(state, edge.successor) + -bias_acceleration(state, edge.predecessor)) # 8.47 in Featherstone
+        At_mul_B!(kjoint, T, biasAccel)
+        rowstart = nextrowstart
     end
 end
 
-DynamicsResult{M, T}(t::Type{T}, mechanism::Mechanism{M}) = DynamicsResult{M, T}(t, mechanism)
+function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
+    # version for general scalar types
+    # TODO: make more efficient
+    M = result.massMatrix
+    c = result.dynamicsBias
+    v̇ = result.v̇
 
-function joint_accelerations!(out::AbstractVector, massMatrixInversionCache::Symmetric,
-        massMatrix::Symmetric, biasedTorques::Vector)
-    out[:] = massMatrix \ biasedTorques # TODO: make more efficient
+    K = result.constraintJacobian
+    k = result.constraintBias
+    λ = result.λ
+
+    nv = size(M, 1)
+    nl = size(K, 1)
+    G = [M K';
+         K zeros(nl, nl)]
+    r = [τ - c; -k]
+    v̇λ = G \ r
+    v̇[:] = view(v̇λ, 1 : nv)
+    λ[:] = view(v̇λ, nv + 1 : nv + nl)
     nothing
 end
 
-function joint_accelerations!{T<:Union{Float32, Float64}}(out::AbstractVector{T}, massMatrixInversionCache::Symmetric{T, Matrix{T}},
-        massMatrix::Symmetric{T, Matrix{T}}, biasedTorques::Vector{T})
-    @inbounds copy!(out, biasedTorques)
-    @inbounds copy!(massMatrixInversionCache.data, massMatrix.data)
-    Base.LinAlg.LAPACK.posv!(massMatrixInversionCache.uplo, massMatrixInversionCache.data, out)
+function dynamics_solve!{S, T<:LinAlg.BlasReal}(result::DynamicsResult{S, T}, τ::AbstractVector{T})
+    # optimized version for BLAS floats
+    M = result.massMatrix
+    c = result.dynamicsBias
+    v̇ = result.v̇
+
+    K = result.constraintJacobian
+    k = result.constraintBias
+    λ = result.λ
+
+    L = result.L
+    A = result.A
+    z = result.z
+    Y = result.Y
+
+    L[:] = M.data
+    uplo = M.uplo
+    LinAlg.LAPACK.potrf!(uplo, L) # L <- Cholesky decomposition of M; M == L Lᵀ (note: Featherstone, page 151 uses M == Lᵀ L instead)
+    τBiased = v̇
+    @simd for i in eachindex(τ)
+        @inbounds τBiased[i] = τ[i] - c[i]
+    end
+    # TODO: use τBiased .= τ .- c in 0.6
+
+    if size(K, 1) > 0
+        # Loops.
+        # Basic math:
+        # DAE:
+        #   [M Kᵀ] [v̇] = [τ - c]
+        #   [K 0 ] [λ]  = [-k]
+        # Solve for v̇:
+        #   v̇ = M⁻¹ (τ - c - Kᵀ λ)
+        # Plug into λ equation:
+        #   K M⁻¹ (τ - c - Kᵀ λ) = -k
+        #   K M⁻¹ Kᵀ λ = K M⁻¹(τ - c) + k
+        # which can be solved for λ, after which λ can be used to solve for v̇.
+
+        # Implementation loosely follows page 151 of Featherstone, Rigid Body Dynamics Algorithms.
+        # It is slightly different because Featherstone uses M = Lᵀ L, whereas BLAS uses M = L Lᵀ.
+        # M = L Lᵀ (Cholesky decomposition)
+        # Y = K L⁻ᵀ, so that Y Yᵀ = K L⁻ᵀ L⁻¹ Kᵀ = K M⁻¹ Kᵀ = A
+        # z = L⁻¹ (τ - c)
+        # b = Y z + k
+        # solve A λ = b for λ
+        # solve M v̇  = τ - c for v̇
+
+        # Compute Y = K L⁻ᵀ
+        Y[:] = K
+        LinAlg.BLAS.trsm!('R', uplo, 'T', 'N', one(T), L, Y)
+
+        # Compute z = L⁻¹ (τ - c)
+        z[:] = τBiased
+        LinAlg.BLAS.trsv!(uplo, 'N', 'N', L, z) # z <- L⁻¹ (τ - c)
+
+        # Compute A = Y Yᵀ == K * M⁻¹ * K'
+        LinAlg.BLAS.gemm!('N', 'T', one(T), Y, Y, zero(T), A) # A <- K * M⁻¹ * K'
+
+        # Compute b = Y z + k
+        b = λ
+        b[:] = k
+        LinAlg.BLAS.gemv!('N', one(T), Y, z, one(T), b) # b <- Y z + k
+
+        # Compute λ = A⁻¹ b == (K * M⁻¹ * K')⁻¹ * (K * M⁻¹ * (τ - c) + k)
+        LinAlg.LAPACK.posv!(uplo, A, b) # b == λ <- (K * M⁻¹ * K')⁻¹ * (K * M⁻¹ * (τ - c) + k)
+
+        # Update τBiased: subtract K' * λ
+        LinAlg.BLAS.gemv!('T', -one(T), K, λ, one(T), τBiased) # τBiased <- τ - c - K' * λ
+
+        # Solve for v̇ = M⁻¹ * (τ - c - K' * λ)
+        LinAlg.LAPACK.potrs!(uplo, L, τBiased) # τBiased ==v̇ <- M⁻¹ * (τ - c - K' * λ)
+    else
+        # No loops.
+        LinAlg.LAPACK.potrs!(uplo, L, τBiased) # τBiased == v̇ <- M⁻¹ * (τ - c)
+    end
     nothing
 end
 
@@ -295,10 +396,9 @@ function dynamics!{T, X, M, Tau, W}(out::DynamicsResult{T}, state::MechanismStat
         torques::AbstractVector{Tau} = NullVector{T}(num_velocities(state)),
         externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
     dynamics_bias!(out.dynamicsBias, out.accelerations, out.jointWrenches, state, externalWrenches)
-    @inbounds copy!(out.biasedTorques, out.dynamicsBias)
-    sub!(out.biasedTorques, torques, out.dynamicsBias)
     mass_matrix!(out.massMatrix, state)
-    joint_accelerations!(out.v̇, out.massMatrixInversionCache, out.massMatrix, out.biasedTorques)
+    constraint_jacobian_and_bias!(state, out.constraintJacobian, out.constraintBias)
+    dynamics_solve!(out, torques)
     nothing
 end
 

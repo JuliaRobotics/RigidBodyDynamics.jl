@@ -85,6 +85,7 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
     v::Vector{X}
     toposortedStateVertices::Vector{TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}}
     nonRootTopoSortedStateVertices::VectorSegment{TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}} # because of https://github.com/JuliaLang/julia/issues/14955
+    constraintJacobianStructure::SparseMatrixCSC{Int64,Int64} # TODO: consider just using a Vector{Vector{Pair{Int64, Int64}}}
 
     function MechanismState(::Type{X}, mechanism::Mechanism{M})
         q = Vector{X}(num_positions(mechanism))
@@ -113,7 +114,8 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
             vStart = vEnd + 1
         end
         vertices = toposort(tree)
-        new(mechanism, q, v, vertices, view(vertices, 2 : length(vertices)))
+        constraintJacobianStructure = constraint_jacobian_structure(mechanism)
+        new(mechanism, q, v, vertices, view(vertices, 2 : length(vertices)), constraintJacobianStructure)
     end
 end
 MechanismState{X, M}(t::Type{X}, mechanism::Mechanism{M}) = MechanismState{X, M, promote_type(X, M)}(t, mechanism)

@@ -1,11 +1,19 @@
+type NonTreeEdge{T}
+    joint::Joint{T}
+    predecessor::RigidBody{T}
+    successor::RigidBody{T}
+end
+
 type Mechanism{T<:Number}
     toposortedTree::Vector{TreeVertex{RigidBody{T}, Joint{T}}} # TODO: consider replacing with just the root vertex after creating iterator
+    nonTreeEdges::Vector{NonTreeEdge{T}}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
     function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
         tree = Tree{RigidBody{T}, Joint{T}}(rootBody)
+        nonTreeEdges = Vector{NonTreeEdge{T}}()
         gravitationalAcceleration = FreeVector3D(default_frame(rootBody), gravity)
-        new(toposort(tree), gravitationalAcceleration)
+        new(toposort(tree), nonTreeEdges, gravitationalAcceleration)
     end
 end
 
@@ -68,23 +76,31 @@ function canonicalize_frame_definitions!(m::Mechanism)
     end
 end
 
-function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
-        childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(default_frame(childBody), joint.frameAfter))
-    vertex = insert!(tree(m), childBody, joint, parentBody)
-
-    # define where joint is attached on parent body
-    add_frame!(parentBody, jointToParent)
+function attach!{T}(m::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint, jointToPredecessor::Transform3D{T},
+        successor::RigidBody{T}, successorToJoint::Transform3D{T} = Transform3D{T}(default_frame(successor), joint.frameAfter))
+    # define where joint is attached on predecessor
+    add_frame!(predecessor, jointToPredecessor)
 
     # define where child is attached to joint
-    add_frame!(childBody, inv(childToJoint))
+    add_frame!(successor, inv(successorToJoint))
 
-    m.toposortedTree = toposort(tree(m))
-    canonicalize_frame_definitions!(m, vertex)
+    if successor ∈ bodies(m)
+        push!(m.nonTreeEdges, NonTreeEdge(joint, predecessor, successor))
+    else
+        vertex = insert!(tree(m), successor, joint, predecessor)
+        m.toposortedTree = toposort(tree(m))
+        canonicalize_frame_definitions!(m, vertex)
+    end
     m
 end
 
+check_no_cycles(m::Mechanism) = (length(m.nonTreeEdges) == 0 || error("Mechanisms with cycles not yet supported."))
+
 # Essentially replaces the root body of childMechanism with parentBody (which belongs to m)
 function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::Mechanism{T})
+    check_no_cycles(m)
+    check_no_cycles(childMechanism)
+
     # note: gravitational acceleration for childMechanism is ignored.
     parentVertex = findfirst(tree(m), parentBody)
     childRootVertex = root_vertex(childMechanism)
@@ -110,6 +126,8 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
 end
 
 function submechanism{T}(m::Mechanism{T}, submechanismRootBody::RigidBody{T})
+    check_no_cycles(m)
+
     # Create mechanism and set up tree
     ret = Mechanism{T}(submechanismRootBody; gravity = m.gravitationalAcceleration.v)
     for child in children(findfirst(tree(m), submechanismRootBody))
@@ -128,6 +146,7 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
         parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
         newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D{T} = Transform3D{T}(default_frame(newSubtreeRootBody), joint.frameAfter))
     # TODO: add option to prune frames related to old joints
+    check_no_cycles(mechanism)
 
     newSubtreeRoot = findfirst(tree(mechanism), newSubtreeRootBody)
     oldSubtreeRoot = findfirst(tree(mechanism), oldSubtreeRootBody)
@@ -166,6 +185,7 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
 end
 
 function remove_fixed_joints!(m::Mechanism)
+    check_no_cycles(m)
     T = eltype(m)
     for vertex in copy(m.toposortedTree)
         if !isroot(vertex)
@@ -206,6 +226,43 @@ function remove_fixed_joints!(m::Mechanism)
     m
 end
 
+function maximal_coordinates(mechanism::Mechanism)
+    T = eltype(mechanism)
+    bodymap = Dict{RigidBody{T}, RigidBody{T}}()
+    jointmap = Dict{Joint{T}, Joint{T}}()
+    newfloatingjoints = Dict{RigidBody{T}, Joint{T}}()
+    oldroot = root_body(mechanism)
+    newroot = bodymap[oldroot] = deepcopy(oldroot)
+    ret = Mechanism(newroot, gravity = mechanism.gravitationalAcceleration.v)
+
+    # Copy bodies and attach them to the root with a floating joint.
+    for oldbody in non_root_bodies(mechanism)
+        newbody = bodymap[oldbody] = deepcopy(oldbody)
+        frameBefore = default_frame(newroot)
+        frameAfter = default_frame(newbody)
+        floatingjoint = newfloatingjoints[newbody] = Joint(name(newbody), frameBefore, frameAfter, QuaternionFloating{T}())
+        attach!(ret, newroot, floatingjoint, Transform3D(T, frameBefore), newbody, Transform3D(T, frameAfter))
+    end
+
+    # Copy input Mechanism's joints.
+    function copy_edge(oldpredecessor::RigidBody, oldjoint::Joint, oldsuccessor::RigidBody)
+        newjoint = jointmap[oldjoint] = deepcopy(oldjoint)
+        jointToPredecessor = fixed_transform(mechanism, newjoint.frameBefore, default_frame(oldpredecessor))
+        successorToJoint = fixed_transform(mechanism, default_frame(oldsuccessor), newjoint.frameAfter)
+        attach!(ret, bodymap[oldpredecessor], newjoint, jointToPredecessor, bodymap[oldsuccessor], successorToJoint)
+    end
+
+    for vertex in non_root_vertices(mechanism)
+        copy_edge(vertex_data(parent(vertex)), edge_to_parent_data(vertex), vertex_data(vertex))
+    end
+
+    for nonTreeEdge in mechanism.nonTreeEdges
+        copy_edge(nonTreeEdge.predecessor, nonTreeEdge.successor, nonTreeEdge.joint)
+    end
+
+    ret, newfloatingjoints, bodymap, jointmap
+end
+
 function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
     parentBody = RigidBody{T}("world")
     m = Mechanism(parentBody)
@@ -244,3 +301,20 @@ function subtree_mass{T}(base::Tree{RigidBody{T}, Joint{T}})
     result
 end
 mass(m::Mechanism) = subtree_mass(tree(m))
+
+function constraint_jacobian_structure(mechanism::Mechanism)
+    # columns correspond to non-tree edges, rows correspond to tree joints
+    ret = spzeros(Int64, length(mechanism.toposortedTree), length(mechanism.nonTreeEdges))
+    for (col, nonTreeEdge) in enumerate(mechanism.nonTreeEdges)
+        predecessorVertex = findfirst(v -> vertex_data(v) == nonTreeEdge.predecessor, tree(mechanism))
+        successorVertex = findfirst(v -> vertex_data(v) == nonTreeEdge.successor, tree(mechanism))
+        for (vertex, sign) in Dict(successorVertex => 1, predecessorVertex => -1)
+            while !isroot(vertex)
+                row = findfirst(mechanism.toposortedTree, vertex)
+                ret[row, col] += sign
+                vertex = parent(vertex)
+            end
+        end
+    end
+    dropzeros!(ret)
+end

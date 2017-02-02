@@ -29,6 +29,7 @@ include("cache_element.jl")
 importall .TreeDataStructure
 include("mechanism.jl")
 include("mechanism_state.jl")
+include("dynamics_result.jl")
 include("mechanism_algorithms.jl")
 include("parse_urdf.jl")
 include("ode_integrators.jl")
@@ -94,8 +95,8 @@ export
     joint_transform,
     motion_subspace,
     constraint_wrench_subspace,
+    has_fixed_subspaces,
     bias_acceleration,
-    constraint_bias!,
     spatial_inertia,
     crb_inertia,
     setdirty!,
@@ -103,6 +104,7 @@ export
     fixed_transform,
     attach!,
     reattach!,
+    maximal_coordinates,
     submechanism,
     change_joint_type!,
     remove_fixed_joints!,

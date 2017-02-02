@@ -72,7 +72,7 @@ function runbenchmarks()
     results = run(suite, verbose = true)
     for result in results
         println("$(first(result)):")
-        println(last(result))
+        display(last(result))
         println()
     end
 end

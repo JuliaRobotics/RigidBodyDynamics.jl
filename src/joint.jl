@@ -3,11 +3,9 @@ type Joint{T<:Number}
     frameBefore::CartesianFrame3D
     frameAfter::CartesianFrame3D
     jointType::JointType{T}
-
-    Joint(name::String, jointType::JointType{T}) = new(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
 end
 
-Joint{T<:Number}(name::String, jointType::JointType{T}) = Joint{T}(name, jointType)
+Joint(name::String, jointType::JointType) = Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
 
 show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
 showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
@@ -31,6 +29,7 @@ end
 
 num_positions{M}(joint::Joint{M})::Int64 = @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) num_positions(joint.jointType)
 num_velocities{M}(joint::Joint{M})::Int64 = @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) num_velocities(joint.jointType)
+num_constraints(joint::Joint) = 6 - num_velocities(joint)
 
 function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform3D{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
@@ -42,9 +41,10 @@ function motion_subspace{M, X}(joint::Joint{M}, q::AbstractVector{X})::MotionSub
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _motion_subspace(joint.jointType, joint.frameAfter, joint.frameBefore, q)
 end
 
-function constraint_wrench_subspace{M, X}(joint::Joint{M}, q::AbstractVector{X})#::WrenchSubspace{promote_type(M, X)} # FIXME: type assertion causes segfault! see https://github.com/JuliaLang/julia/issues/20034. should be fixed in 0.6
-    @boundscheck check_num_positions(joint, q)
-    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _constraint_wrench_subspace(joint.jointType, joint.frameAfter, q)
+function constraint_wrench_subspace{M, X}(joint::Joint{M}, jointTransform::Transform3D{X})#::WrenchSubspace{promote_type(M, X)} # FIXME: type assertion causes segfault! see https://github.com/JuliaLang/julia/issues/20034. should be fixed in 0.6
+    @framecheck jointTransform.from joint.frameAfter
+    @framecheck jointTransform.to joint.frameBefore
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _constraint_wrench_subspace(joint.jointType, jointTransform)
 end
 
 function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::SpatialAcceleration{promote_type(M, X)}
@@ -53,12 +53,8 @@ function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::Abstr
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _bias_acceleration(joint.jointType, joint.frameAfter, joint.frameBefore, q, v)
 end
 
-function constraint_bias!{M}(joint::Joint{M}, bias::AbstractVector, jointTwist::Twist)
-    @framecheck jointTwist.body joint.frameAfter
-    @framecheck jointTwist.base joint.frameBefore
-    @framecheck jointTwist.frame joint.frameAfter
-    @boundscheck length(bias) == 6 - num_velocities(joint) || error("wrong size")
-    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _constraint_bias!(joint.jointType, bias, jointTwist)
+function has_fixed_subspaces{M}(joint::Joint{M})
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _has_fixed_subspaces(joint.jointType)
 end
 
 function configuration_derivative_to_velocity!{M}(joint::Joint{M}, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)::Void

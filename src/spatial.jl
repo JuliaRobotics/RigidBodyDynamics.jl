@@ -132,14 +132,14 @@ function rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
 
     # Scale the inertias to make the length scale of the
     # equivalent inertial ellipsoid roughly ~1 unit
-    principalMoments[1:2] = rand(2) / 10.
+    principalMoments[1:2] = rand(T, 2) / 10.
 
     # Ensure that the principal moments of inertia obey the triangle
     # inequalities:
     # http://www.mathworks.com/help/physmod/sm/mech/vis/about-body-color-and-geometry.html
     lb = abs(principalMoments[1] - principalMoments[2])
     ub = principalMoments[1] + principalMoments[2]
-    principalMoments[3] = rand() * (ub - lb) + lb
+    principalMoments[3] = rand(T) * (ub - lb) + lb
 
     # Construct the moment of inertia tensor
     J = SMatrix{3, 3, T}(Q * diagm(principalMoments) * Q')
@@ -149,7 +149,7 @@ function rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
     spatialInertia = SpatialInertia(comFrame, J, zeros(SVector{3, T}), rand(T))
 
     # Put the center of mass at a random offset
-    comFrameToDesiredFrame = Transform3D(comFrame, frame, rand(SVector{3, T}) - 0.5)
+    comFrameToDesiredFrame = Transform3D(comFrame, frame, rand(SVector{3, T}) - T(0.5))
     transform(spatialInertia, comFrameToDesiredFrame)
 end
 
@@ -302,6 +302,12 @@ function exp(twist::Twist)
     Transform3D(twist.body, twist.base, rot, trans)
 end
 
+
+function Base.cross(twist1::Twist, twist2::Twist)
+    @framecheck(twist1.frame, twist2.frame)
+    angular, linear = se3_commutator(twist1.angular, twist1.linear, twist2.angular, twist2.linear)
+    SpatialAcceleration(twist2.body, twist2.base, twist2.frame, angular, linear)
+end
 
 # SpatialAcceleration-specific functions
 function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCurrentWrtNew::Twist, twistOfBodyWrtBase::Twist)
@@ -530,8 +536,26 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
 end
 
 function torque(jac::GeometricJacobian, wrench::Wrench)
-    @framecheck(jac.frame, wrench.frame)
-    jac.angular' * wrench.angular + jac.linear' * wrench.linear
+    ret = Vector{promote_type(eltype(jac), eltype(wrench))}(num_cols(jac))
+    At_mul_B!(ret, jac, wrench)
+    ret
+end
+
+for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAcceleration}), :GeometricJacobian => :(Union{Momentum, Wrench}))
+    @eval function Base.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
+        @boundscheck length(x) == num_cols(mat) || error("size mismatch")
+        @framecheck mat.frame vec.frame
+        @simd for row in eachindex(x)
+            @inbounds begin x[row] =
+                mat.angular[1, row] * vec.angular[1] +
+                mat.angular[2, row] * vec.angular[2] +
+                mat.angular[3, row] * vec.angular[3] +
+                mat.linear[1, row] * vec.linear[1] +
+                mat.linear[2, row] * vec.linear[2] +
+                mat.linear[3, row] * vec.linear[3]
+            end
+        end
+    end
 end
 
 function kinetic_energy(I::SpatialInertia, twist::Twist)
