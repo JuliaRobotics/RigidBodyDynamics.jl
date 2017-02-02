@@ -252,3 +252,20 @@ function subtree_mass{T}(base::Tree{RigidBody{T}, Joint{T}})
     result
 end
 mass(m::Mechanism) = subtree_mass(tree(m))
+
+function constraint_jacobian_structure(mechanism::Mechanism)
+    # columns correspond to non-tree edges, rows correspond to tree joints
+    ret = spzeros(Int64, length(mechanism.toposortedTree), length(mechanism.nonTreeEdges))
+    for (col, nonTreeEdge) in enumerate(mechanism.nonTreeEdges)
+        predecessorVertex = findfirst(v -> vertex_data(v) == nonTreeEdge.predecessor, tree(mechanism))
+        successorVertex = findfirst(v -> vertex_data(v) == nonTreeEdge.successor, tree(mechanism))
+        for (vertex, sign) in Dict(successorVertex => 1, predecessorVertex => -1)
+            while !isroot(vertex)
+                row = findfirst(mechanism.toposortedTree, vertex)
+                ret[row, col] += sign
+                vertex = parent(vertex)
+            end
+        end
+    end
+    dropzeros!(ret)
+end
