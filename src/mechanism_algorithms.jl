@@ -254,18 +254,41 @@ function inverse_dynamics{X, M, V, W}(
     torques
 end
 
-function joint_accelerations!(out::AbstractVector, massMatrixInversionCache::Symmetric,
-        massMatrix::Symmetric, biasedTorques::Vector)
-    out[:] = massMatrix \ biasedTorques # TODO: make more efficient
-    nothing
-end
+function constraint_jacobian_and_bias!(state::MechanismState, constraintJacobian::AbstractMatrix, constraintBias::AbstractVector)
+    # TODO: allocations
+    structure = state.constraintJacobianStructure
+    rows = rowvals(structure)
+    signs = nonzeros(structure)
+    nNonTreeEdges = size(structure, 2)
+    rowstart = 1
+    constraintJacobian[:] = 0
+    for i = 1 : nNonTreeEdges
+        edge = mechanism.nonTreeEdges[i]
+        joint = edge.joint
+        nextrowstart = rowstart + num_constraints(joint)
+        range = rowstart : nextrowstart - 1
 
-function joint_accelerations!{T<:Union{Float32, Float64}}(out::AbstractVector{T}, massMatrixInversionCache::Symmetric{T, Matrix{T}},
-        massMatrix::Symmetric{T, Matrix{T}}, biasedTorques::Vector{T})
-    @inbounds copy!(out, biasedTorques)
-    @inbounds copy!(massMatrixInversionCache.data, massMatrix.data)
-    Base.LinAlg.LAPACK.posv!(massMatrixInversionCache.uplo, massMatrixInversionCache.data, out)
-    nothing
+        # Constraint wrench subspace.
+        jointTransform = relative_transform(state, joint.frameAfter, joint.frameBefore) # TODO: expensive
+        T = constraint_wrench_subspace(joint, jointTransform)
+        T = transform(T, transform_to_root(state, T.frame)) # TODO: expensive
+
+        # Jacobian rows.
+        for j in nzrange(structure, i)
+            treevertex = state.toposortedStateVertices[rows[j]]
+            J = motion_subspace(treevertex)
+            sign = signs[j]
+            colstart = first(velocity_range(edge_to_parent_data(treevertex)))
+            force_space_matrix_transpose_mul_jacobian!(constraintJacobian, rowstart, colstart, T, J, sign)
+        end
+
+        # Constraint bias.
+        has_fixed_subspaces(joint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.")
+        kjoint = UnsafeVectorView(constraintBias, range)
+        biasAccel = bias_acceleration(state, edge.successor) + -bias_acceleration(state, edge.predecessor)
+        At_mul_B!(kjoint, T, biasAccel)
+        rowstart = nextrowstart
+    end
 end
 
 function dynamics_solve!{T}(result::DynamicsResult{T}, τ::AbstractVector{T})
@@ -276,7 +299,7 @@ function dynamics_solve!{T}(result::DynamicsResult{T}, τ::AbstractVector{T})
     v̇ = result.v̇
 
     K = result.constraintJacobian
-    k = result.constraintRhs
+    k = result.constraintBias
     λ = result.λ
 
     nv = size(M, 1)
@@ -297,7 +320,7 @@ function dynamics_solve!{T<:Union{Float32, Float64}}(result::DynamicsResult{T}, 
     v̇ = result.v̇
 
     K = result.constraintJacobian
-    k = result.constraintRhs
+    k = result.constraintBias
     λ = result.λ
 
     L = result.L
@@ -372,6 +395,7 @@ function dynamics!{T, X, M, Tau, W}(out::DynamicsResult{T}, state::MechanismStat
         externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
     dynamics_bias!(out.dynamicsBias, out.accelerations, out.jointWrenches, state, externalWrenches)
     mass_matrix!(out.massMatrix, state)
+    constraint_jacobian_and_bias!(state, out.constraintJacobian, out.constraintBias)
     dynamics_solve!(out, torques)
     nothing
 end

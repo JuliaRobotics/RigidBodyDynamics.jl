@@ -2,7 +2,7 @@ type DynamicsResult{M, T}
     massMatrix::Symmetric{T, Matrix{T}}
     dynamicsBias::Vector{T}
     constraintJacobian::Matrix{T}
-    constraintRhs::Vector{T}
+    constraintBias::Vector{T}
     v̇::Vector{T}
     λ::Vector{T}
     accelerations::Dict{RigidBody{M}, SpatialAcceleration{T}}
@@ -21,7 +21,7 @@ type DynamicsResult{M, T}
         massMatrix = Symmetric(Matrix{T}(nv, nv), :L)
         dynamicsBias = Vector{T}(nv)
         constraintJacobian = Matrix{T}(nconstraints, nv)
-        constraintRhs = Vector{T}(nconstraints)
+        constraintBias = Vector{T}(nconstraints)
         v̇ = Vector{T}(nv)
         λ = Vector{T}(nconstraints)
         accelerations = Dict{RigidBody{M}, SpatialAcceleration{T}}()
@@ -33,7 +33,7 @@ type DynamicsResult{M, T}
         z = Vector{T}(nv)
         Y = Matrix{T}(nconstraints, nv)
 
-        new(massMatrix, dynamicsBias, constraintJacobian, constraintRhs, v̇, λ, accelerations, jointWrenches, L, A, z, Y)
+        new(massMatrix, dynamicsBias, constraintJacobian, constraintBias, v̇, λ, accelerations, jointWrenches, L, A, z, Y)
     end
 end
 
