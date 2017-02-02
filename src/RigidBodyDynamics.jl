@@ -104,6 +104,7 @@ export
     fixed_transform,
     attach!,
     reattach!,
+    maximal_coordinates,
     submechanism,
     change_joint_type!,
     remove_fixed_joints!,

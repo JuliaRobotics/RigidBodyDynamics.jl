@@ -303,6 +303,12 @@ function exp(twist::Twist)
 end
 
 
+function Base.cross(twist1::Twist, twist2::Twist)
+    @framecheck(twist1.frame, twist2.frame)
+    angular, linear = se3_commutator(twist1.angular, twist1.linear, twist2.angular, twist2.linear)
+    SpatialAcceleration(twist2.body, twist2.base, twist2.frame, angular, linear)
+end
+
 # SpatialAcceleration-specific functions
 function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCurrentWrtNew::Twist, twistOfBodyWrtBase::Twist)
     # trivial case

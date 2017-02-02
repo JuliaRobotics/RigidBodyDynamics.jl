@@ -1,3 +1,20 @@
+function floating_joint_transform_to_configuration!(joint::Joint, q::AbstractVector, jointTransform::Transform3D)
+    @framecheck joint.frameBefore jointTransform.to
+    @framecheck joint.frameAfter jointTransform.from
+    joint.jointType::QuaternionFloating
+    RigidBodyDynamics.rotation!(joint.jointType, q, jointTransform.rot)
+    RigidBodyDynamics.translation!(joint.jointType, q, jointTransform.trans)
+end
+
+function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, jointTwist::Twist)
+    @framecheck joint.frameBefore jointTwist.base
+    @framecheck joint.frameAfter jointTwist.body
+    @framecheck joint.frameAfter jointTwist.frame
+    joint.jointType::QuaternionFloating
+    RigidBodyDynamics.angular_velocity!(joint.jointType, v, jointTwist.angular)
+    RigidBodyDynamics.linear_velocity!(joint.jointType, v, jointTwist.linear)
+end
+
 @testset "mechanism manipulation" begin
     @testset "attach mechanism" begin
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
@@ -147,13 +164,12 @@
 
             # set configuration and velocity of new floating joint
             newFloatingJointTransform = inv(jointToWorld) * relative_transform(x1, bodyToJoint.from, jointToWorld.to) * inv(bodyToJoint)
-            quat = Quat(newFloatingJointTransform.rot)
-            trans = newFloatingJointTransform.trans
-            set_configuration!(x2, newFloatingJoint, [quat.w; quat.x; quat.y; quat.z; trans])# TODO: add Joint function that does mapping
+            floating_joint_transform_to_configuration!(newFloatingJoint, configuration(x2, newFloatingJoint), newFloatingJointTransform)
 
             newFloatingJointTwist = transform(x1, relative_twist(x1, newFloatingBody, world), bodyToJoint.from)
             newFloatingJointTwist = transform(newFloatingJointTwist, bodyToJoint)
-            set_velocity!(x2, newFloatingJoint, [newFloatingJointTwist.angular; newFloatingJointTwist.linear]) # TODO: add Joint function that does mapping
+            newFloatingJointTwist = Twist(bodyToJoint.to, jointToWorld.from, newFloatingJointTwist.frame, newFloatingJointTwist.angular, newFloatingJointTwist.linear)
+            floating_joint_twist_to_velocity!(newFloatingJoint, velocity(x2, newFloatingJoint), newFloatingJointTwist)
 
             # do dynamics
             result1 = DynamicsResult(Float64, mechanism1)
@@ -180,4 +196,42 @@
             end
         end # for
     end # reattach
+
+    @testset "maximal coordinates" begin
+        # create random tree mechanism and equivalent mechanism in maximal coordinates
+        treeMechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
+        mcMechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(treeMechanism)
+
+        # randomize state of tree mechanism
+        treeState = MechanismState(Float64, treeMechanism)
+        rand!(treeState)
+
+        # put maximal coordinate system in state that is equivalent to tree mechanism state
+        mcState = MechanismState(Float64, mcMechanism)
+        for oldbody in non_root_bodies(treeMechanism)
+            newbody = bodymap[oldbody]
+            joint = newfloatingjoints[newbody]
+
+            tf = relative_transform(treeState, joint.frameAfter, joint.frameBefore)
+            floating_joint_transform_to_configuration!(joint, configuration(mcState, joint), tf)
+
+            twist = transform(relative_twist(treeState, joint.frameAfter, joint.frameBefore), inv(tf))
+            floating_joint_twist_to_velocity!(joint, velocity(mcState, joint), twist)
+        end
+        setdirty!(mcState)
+
+        # do dynamics
+        treeDynamicsResult = DynamicsResult(Float64, treeMechanism);
+        dynamics!(treeDynamicsResult, treeState)
+
+        mcDynamicsResult = DynamicsResult(Float64, mcMechanism);
+        dynamics!(mcDynamicsResult, mcState)
+
+        # compare spatial accelerations of bodies
+        for (treebody, mcbody) in bodymap
+            treeAccel = relative_acceleration(treeState, treebody, root_body(treeMechanism), treeDynamicsResult.v̇)
+            mcAccel = relative_acceleration(mcState, mcbody, root_body(mcMechanism), mcDynamicsResult.v̇)
+            @test isapprox(treeAccel, mcAccel; atol = 1e-12)
+        end
+    end # maximal coordinates
 end # mechanism manipulation

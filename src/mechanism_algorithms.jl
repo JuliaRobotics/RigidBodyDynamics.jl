@@ -263,7 +263,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintJacobian
     rowstart = 1
     constraintJacobian[:] = 0
     for i = 1 : nNonTreeEdges
-        edge = mechanism.nonTreeEdges[i]
+        edge = state.mechanism.nonTreeEdges[i]
         joint = edge.joint
         nextrowstart = rowstart + num_constraints(joint)
         range = rowstart : nextrowstart - 1
@@ -285,7 +285,9 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintJacobian
         # Constraint bias.
         has_fixed_subspaces(joint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.")
         kjoint = UnsafeVectorView(constraintBias, range)
-        biasAccel = bias_acceleration(state, edge.successor) + -bias_acceleration(state, edge.predecessor)
+        predecessorTwist = twist_wrt_world(state, edge.predecessor)
+        successorTwist = twist_wrt_world(state, edge.successor)
+        biasAccel = cross(successorTwist, predecessorTwist) + (bias_acceleration(state, edge.successor) + -bias_acceleration(state, edge.predecessor)) # 8.47 in Featherstone
         At_mul_B!(kjoint, T, biasAccel)
         rowstart = nextrowstart
     end
