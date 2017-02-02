@@ -57,27 +57,30 @@ function potential_energy{X, M, C}(state::MechanismState{X, M, C})
     -dot(gravitationalForce, FreeVector3D(centerOfMass))
  end
 
- function _mass_matrix_part!(out::Symmetric, rowstart::Int64, colstart::Int64, mat::MomentumMatrix, jac::GeometricJacobian)
-    @framecheck(jac.frame, mat.frame)
-    n = num_cols(mat)
-    m = num_cols(jac)
-    @boundscheck (rowstart > 0 && rowstart + n - 1 <= size(out, 1)) || error("size mismatch")
-    @boundscheck (colstart > 0 && colstart + m - 1 <= size(out, 2)) || error("size mismatch")
+ function force_space_matrix_transpose_mul_jacobian!(out::Matrix, rowstart::Int64, colstart::Int64,
+        mat::Union{MomentumMatrix, WrenchMatrix}, jac::GeometricJacobian, sign::Int64)
+     @framecheck(jac.frame, mat.frame)
+     n = num_cols(mat)
+     m = num_cols(jac)
+     @boundscheck (rowstart > 0 && rowstart + n - 1 <= size(out, 1)) || error("size mismatch")
+     @boundscheck (colstart > 0 && colstart + m - 1 <= size(out, 2)) || error("size mismatch")
 
-    # more efficient version of
-    # view(out.data, rowstart : rowstart + n - 1, colstart : colstart + n - 1)[:] = mat.angular' * jac.angular + mat.linear' * jac.linear
+     # more efficient version of
+     # view(out, rowstart : rowstart + n - 1, colstart : colstart + n - 1)[:] = mat.angular' * jac.angular + mat.linear' * jac.linear
 
-    for col = 1 : m
-        outcol = colstart + col - 1
-        for row = 1 : n
-            outrow = rowstart + row - 1
-            out.data[outrow, outcol] = zero(eltype(out))
-            for i = 1 : 3
-                @inbounds out.data[outrow, outcol] += mat.angular[i, row] * jac.angular[i, col]
-                @inbounds out.data[outrow, outcol] += mat.linear[i, row] * jac.linear[i, col]
-            end
-        end
-    end
+     @inbounds begin
+         for col = 1 : m
+             outcol = colstart + col - 1
+             for row = 1 : n
+                 outrow = rowstart + row - 1
+                 out[outrow, outcol] = zero(eltype(out))
+                 for i = 1 : 3
+                     out[outrow, outcol] += flipsign(mat.angular[i, row] * jac.angular[i, col], sign)
+                     out[outrow, outcol] += flipsign(mat.linear[i, row] * jac.linear[i, col], sign)
+                 end
+             end
+         end
+     end
  end
 
 function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
@@ -95,7 +98,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             Ii = crb_inertia(vi)
             F = Ii * Si
             istart = first(irange)
-            _mass_matrix_part!(out, istart, istart, F, Si)
+            force_space_matrix_transpose_mul_jacobian!(out.data, istart, istart, F, Si, 1)
 
             # Hji, Hij
             vj = parent(vi)
@@ -105,7 +108,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                 if length(jrange) > 0
                     Sj = motion_subspace(vj)
                     jstart = first(jrange)
-                    _mass_matrix_part!(out, istart, jstart, F, Sj)
+                    force_space_matrix_transpose_mul_jacobian!(out.data, istart, jstart, F, Sj, 1)
                 end
                 vj = parent(vj)
             end
