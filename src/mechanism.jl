@@ -91,8 +91,13 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, joi
     m
 end
 
+check_no_cycles(m::Mechanism) = (length(m.nonTreeEdges) == 0 || error("Mechanisms with cycles not yet supported."))
+
 # Essentially replaces the root body of childMechanism with parentBody (which belongs to m)
 function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::Mechanism{T})
+    check_no_cycles(m)
+    check_no_cycles(childMechanism)
+
     # note: gravitational acceleration for childMechanism is ignored.
     parentVertex = findfirst(tree(m), parentBody)
     childRootVertex = root_vertex(childMechanism)
@@ -118,6 +123,8 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
 end
 
 function submechanism{T}(m::Mechanism{T}, submechanismRootBody::RigidBody{T})
+    check_no_cycles(m)
+
     # Create mechanism and set up tree
     ret = Mechanism{T}(submechanismRootBody; gravity = m.gravitationalAcceleration.v)
     for child in children(findfirst(tree(m), submechanismRootBody))
@@ -136,6 +143,7 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
         parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
         newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D{T} = Transform3D{T}(default_frame(newSubtreeRootBody), joint.frameAfter))
     # TODO: add option to prune frames related to old joints
+    check_no_cycles(mechanism)
 
     newSubtreeRoot = findfirst(tree(mechanism), newSubtreeRootBody)
     oldSubtreeRoot = findfirst(tree(mechanism), oldSubtreeRootBody)
@@ -174,6 +182,7 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
 end
 
 function remove_fixed_joints!(m::Mechanism)
+    check_no_cycles(m)
     T = eltype(m)
     for vertex in copy(m.toposortedTree)
         if !isroot(vertex)
