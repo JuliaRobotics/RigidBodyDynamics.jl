@@ -306,12 +306,12 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
 
     nv = size(M, 1)
     nl = size(K, 1)
-    A = [M K';
+    G = [M K';
          K zeros(nl, nl)]
-    b = [τ - c; -k]
-    v̇λ = A \ b
-    result.v̇ = view(v̇λ, 1 : nv)
-    result.λ = view(v̇λ, nv + 1 : nv + nl)
+    r = [τ - c; -k]
+    v̇λ = G \ r
+    v̇[:] = view(v̇λ, 1 : nv)
+    λ[:] = view(v̇λ, nv + 1 : nv + nl)
     nothing
 end
 

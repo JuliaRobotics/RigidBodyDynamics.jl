@@ -250,18 +250,6 @@ end
 
         dynamicsResultDual = DynamicsResult(ForwardDiff.Dual{0, Float64}, mechanism)
         dynamics!(dynamicsResultDual, stateDual)
-        #
-        # @show stateFloat64.q
-        # @show stateFloat64.v
-        # println()
-        #
-        # @show stateDual.q
-        # @show stateDual.v
-        # println()
-        #
-        # @show dynamicsResultFloat64.v̇
-        # @show dynamicsResultDual.v̇
-        # println()
 
         @test isapprox(dynamicsResultFloat64.v̇, dynamicsResultDual.v̇; atol = 1e-3)
         @test isapprox(dynamicsResultFloat64.λ, dynamicsResultDual.λ; atol = 1e-3)
