@@ -31,6 +31,7 @@ end
 
 num_positions{M}(joint::Joint{M})::Int64 = @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) num_positions(joint.jointType)
 num_velocities{M}(joint::Joint{M})::Int64 = @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) num_velocities(joint.jointType)
+num_constraints(joint::Joint) = 6 - num_velocities(joint)
 
 function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform3D{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
@@ -57,7 +58,7 @@ function constraint_bias!{M}(joint::Joint{M}, bias::AbstractVector, jointTwist::
     @framecheck jointTwist.body joint.frameAfter
     @framecheck jointTwist.base joint.frameBefore
     @framecheck jointTwist.frame joint.frameAfter
-    @boundscheck length(bias) == 6 - num_velocities(joint) || error("wrong size")
+    @boundscheck length(bias) == num_constraints(joint) || error("wrong size")
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _constraint_bias!(joint.jointType, bias, jointTwist)
 end
 
