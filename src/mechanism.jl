@@ -76,18 +76,21 @@ function canonicalize_frame_definitions!(m::Mechanism)
     end
 end
 
-function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
-        childBody::RigidBody{T}, childToJoint::Transform3D{T} = Transform3D{T}(default_frame(childBody), joint.frameAfter))
-    vertex = insert!(tree(m), childBody, joint, parentBody)
-
-    # define where joint is attached on parent body
-    add_frame!(parentBody, jointToParent)
+function attach!{T}(m::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint, jointToPredecessor::Transform3D{T},
+        successor::RigidBody{T}, successorToJoint::Transform3D{T} = Transform3D{T}(default_frame(successor), joint.frameAfter))
+    # define where joint is attached on predecessor
+    add_frame!(predecessor, jointToPredecessor)
 
     # define where child is attached to joint
-    add_frame!(childBody, inv(childToJoint))
+    add_frame!(successor, inv(successorToJoint))
 
-    m.toposortedTree = toposort(tree(m))
-    canonicalize_frame_definitions!(m, vertex)
+    if successor ∈ bodies(m)
+        push!(m.nonTreeEdges, NonTreeEdge(joint, predecessor, successor))
+    else
+        vertex = insert!(tree(m), successor, joint, predecessor)
+        m.toposortedTree = toposort(tree(m))
+        canonicalize_frame_definitions!(m, vertex)
+    end
     m
 end
 
