@@ -24,4 +24,8 @@
     @test isapprox(inv(t1) * (t1 * p), p)
     @test isapprox(inv(t1) * (t1 * v), v)
     @test isapprox(t1 * p - t1 * v, Point3D(f1, t1.trans))
+
+    show(DevNull, t1)
+    show(DevNull, p)
+    show(DevNull, v)
 end
