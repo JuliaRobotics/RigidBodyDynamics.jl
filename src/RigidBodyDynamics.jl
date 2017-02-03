@@ -12,7 +12,7 @@ using Rotations
 using DataStructures
 using LightXML
 
-if VERSION > v"0.5"
+if isdefined(Base, :Iterators)
     import Base.Iterators: filter
 end
 
