@@ -13,7 +13,7 @@ type DynamicsResult{M, T}
     z::Vector{T}
     Y::Matrix{T}
 
-    function DynamicsResult(::Type{T}, mechanism::Mechanism{M})
+    function DynamicsResult(mechanism::Mechanism{M})
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
         nconstraints = isempty(mechanism.nonTreeEdges)? 0 : sum(num_constraints, edge.joint for edge in mechanism.nonTreeEdges)
@@ -37,4 +37,4 @@ type DynamicsResult{M, T}
     end
 end
 
-DynamicsResult{M, T}(t::Type{T}, mechanism::Mechanism{M}) = DynamicsResult{M, T}(t, mechanism)
+DynamicsResult{M, T}(::Type{T}, mechanism::Mechanism{M}) = DynamicsResult{M, T}(mechanism)

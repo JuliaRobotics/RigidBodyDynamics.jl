@@ -50,7 +50,7 @@ function relative_acceleration(state::MechanismState, body::RigidBody, base::Rig
     -acceleration_wrt_ancestor(state, baseVertex, lca, v̇) + acceleration_wrt_ancestor(state, bodyVertex, lca, v̇)
 end
 
-function potential_energy{X, M, C}(state::MechanismState{X, M, C})
+function gravitational_potential_energy{X, M, C}(state::MechanismState{X, M, C})
     m = mass(state.mechanism)
     gravitationalForce = m * state.mechanism.gravitationalAcceleration
     centerOfMass = transform(state, center_of_mass(state), gravitationalForce.frame)
@@ -245,7 +245,6 @@ function inverse_dynamics{X, M, V, W}(
         state::MechanismState{X, M},
         v̇::AbstractVector{V},
         externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}())
-
     T = promote_type(X, M, V, W)
     torques = Vector{T}(num_velocities(state))
     jointWrenches = Dict{RigidBody{M}, Wrench{T}}()
@@ -369,22 +368,22 @@ function dynamics_solve!{S, T<:LinAlg.BlasReal}(result::DynamicsResult{S, T}, τ
         z[:] = τBiased
         LinAlg.BLAS.trsv!(uplo, 'N', 'N', L, z) # z <- L⁻¹ (τ - c)
 
-        # Compute A = Y Yᵀ == K * M⁻¹ * K'
-        LinAlg.BLAS.gemm!('N', 'T', one(T), Y, Y, zero(T), A) # A <- K * M⁻¹ * K'
+        # Compute A = Y Yᵀ == K * M⁻¹ * Kᵀ
+        LinAlg.BLAS.gemm!('N', 'T', one(T), Y, Y, zero(T), A) # A <- K * M⁻¹ * Kᵀ
 
         # Compute b = Y z + k
         b = λ
         b[:] = k
         LinAlg.BLAS.gemv!('N', one(T), Y, z, one(T), b) # b <- Y z + k
 
-        # Compute λ = A⁻¹ b == (K * M⁻¹ * K')⁻¹ * (K * M⁻¹ * (τ - c) + k)
-        LinAlg.LAPACK.posv!(uplo, A, b) # b == λ <- (K * M⁻¹ * K')⁻¹ * (K * M⁻¹ * (τ - c) + k)
+        # Compute λ = A⁻¹ b == (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
+        LinAlg.LAPACK.posv!(uplo, A, b) # b == λ <- (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
 
-        # Update τBiased: subtract K' * λ
-        LinAlg.BLAS.gemv!('T', -one(T), K, λ, one(T), τBiased) # τBiased <- τ - c - K' * λ
+        # Update τBiased: subtract Kᵀ * λ
+        LinAlg.BLAS.gemv!('T', -one(T), K, λ, one(T), τBiased) # τBiased <- τ - c - Kᵀ * λ
 
-        # Solve for v̇ = M⁻¹ * (τ - c - K' * λ)
-        LinAlg.LAPACK.potrs!(uplo, L, τBiased) # τBiased ==v̇ <- M⁻¹ * (τ - c - K' * λ)
+        # Solve for v̇ = M⁻¹ * (τ - c - Kᵀ * λ)
+        LinAlg.LAPACK.potrs!(uplo, L, τBiased) # τBiased ==v̇ <- M⁻¹ * (τ - c - Kᵀ * λ)
     else
         # No loops.
         LinAlg.LAPACK.potrs!(uplo, L, τBiased) # τBiased == v̇ <- M⁻¹ * (τ - c)

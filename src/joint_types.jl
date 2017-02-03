@@ -1,5 +1,4 @@
 # TODO: put in separate module
-# TODO: precompute and store results of motion_subspace, constraint_wrench_subspace
 
 abstract JointType{T<:Number}
 eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
@@ -47,13 +46,13 @@ end
     nothing
 end
 
-@inline translation(jt::QuaternionFloating, q::AbstractVector) = begin @inbounds trans = SVector(q[5], q[6], q[7]); trans end
+@inline translation(jt::QuaternionFloating, q::AbstractVector) = @inbounds return SVector(q[5], q[6], q[7])
 @inline translation!(jt::QuaternionFloating, q::AbstractVector, trans::AbstractVector) = @inbounds copy!(q, 5, trans, 1, 3)
 
-@inline angular_velocity(jt::QuaternionFloating, v::AbstractVector) = begin @inbounds ω = SVector(v[1], v[2], v[3]); ω end
+@inline angular_velocity(jt::QuaternionFloating, v::AbstractVector) = @inbounds return SVector(v[1], v[2], v[3])
 @inline angular_velocity!(jt::QuaternionFloating, v::AbstractVector, ω::AbstractVector) = @inbounds copy!(v, 1, ω, 1, 3)
 
-@inline linear_velocity(jt::QuaternionFloating, v::AbstractVector) = begin @inbounds ν = SVector(v[4], v[5], v[6]); ν end
+@inline linear_velocity(jt::QuaternionFloating, v::AbstractVector) = @inbounds return SVector(v[4], v[5], v[6])
 @inline linear_velocity!(jt::QuaternionFloating, v::AbstractVector, ν::AbstractVector) = @inbounds copy!(v, 4, ν, 1, 3)
 
 function _joint_transform(
@@ -221,26 +220,30 @@ end
 Prismatic
 =#
 immutable Prismatic{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
-    translation_axis::SVector{3, T}
-end
+    axis::SVector{3, T}
+    rotationFromZAligned::RotMatrix{3, T}
 
-show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.translation_axis)")
+    Prismatic(axis::SVector{3, T}) = new(axis, rotation_between(SVector(zero(T), zero(T), one(T)), axis))
+end
+Prismatic{T}(axis::SVector{3, T}) = Prismatic{T}(axis)
+
+show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.axis)")
 function rand{T}(::Type{Prismatic{T}})
-    axis = rand(SVector{3, T})
-    Prismatic(axis / norm(axis))
+    axis = normalize(randn(SVector{3, T}))
+    Prismatic(axis)
 end
 
-flip_direction(jt::Prismatic) = Prismatic(-jt.translation_axis)
+flip_direction(jt::Prismatic) = Prismatic(-jt.axis)
 
 function _joint_transform(
         jt::Prismatic, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
-    @inbounds translation = q[1] * jt.translation_axis
+    @inbounds translation = q[1] * jt.axis
     Transform3D(frameAfter, frameBefore, translation)
 end
 
 function _joint_twist(
         jt::Prismatic, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
-    @inbounds linear = jt.translation_axis * v[1]
+    @inbounds linear = jt.axis * v[1]
     Twist(frameAfter, frameBefore, frameAfter, zeros(linear), linear)
 end
 
@@ -248,20 +251,20 @@ function _motion_subspace{T<:Number, X<:Number}(
         jt::Prismatic{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
     angular = zeros(SMatrix{3, 1, X})
-    linear = SMatrix{3, 1, X}(jt.translation_axis)
+    linear = SMatrix{3, 1, X}(jt.axis)
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
 function _constraint_wrench_subspace{T<:Number, X<:Number}(jt::Prismatic{T}, jointTransform::Transform3D{X})
     S = promote_type(T, X)
-    R = convert(RotMatrix{3, S}, rotation_between(SVector(zero(S), zero(S), one(S)), jt.translation_axis))
+    R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
     angular = hcat(R, zeros(SMatrix{3, 2, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), R[:, (1, 2)])
     WrenchSubspace(jointTransform.from, angular, linear)
 end
 
 function _joint_torque!(jt::Prismatic, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
-    @inbounds τ[1] = dot(joint_wrench.linear, jt.translation_axis)
+    @inbounds τ[1] = dot(joint_wrench.linear, jt.axis)
     nothing
 end
 
@@ -270,45 +273,49 @@ end
 Revolute
 =#
 immutable Revolute{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
-    rotation_axis::SVector{3, T}
-end
+    axis::SVector{3, T}
+    rotationFromZAligned::RotMatrix{3, T}
 
-show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.rotation_axis)")
+    Revolute(axis::SVector{3, T}) = new(axis, rotation_between(SVector(zero(T), zero(T), one(T)), axis))
+end
+Revolute{T}(axis::SVector{3, T}) = Revolute{T}(axis)
+
+show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.axis)")
 function rand{T}(::Type{Revolute{T}})
-    axis = rand(SVector{3, T})
-    Revolute(axis / norm(axis))
+    axis = normalize(randn(SVector{3, T}))
+    Revolute(axis)
 end
 
-flip_direction(jt::Revolute) = Revolute(-jt.rotation_axis)
+flip_direction(jt::Revolute) = Revolute(-jt.axis)
 
 function _joint_transform(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
-    @inbounds aa = AngleAxis(q[1], jt.rotation_axis[1], jt.rotation_axis[2], jt.rotation_axis[3])
+    @inbounds aa = AngleAxis(q[1], jt.axis[1], jt.axis[2], jt.axis[3])
     Transform3D(frameAfter, frameBefore, convert(RotMatrix{3, eltype(aa)}, aa))
 end
 
 function _joint_twist(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
-    @inbounds angular_velocity = jt.rotation_axis * v[1]
+    @inbounds angular_velocity = jt.axis * v[1]
     Twist(frameAfter, frameBefore, frameAfter, angular_velocity, zeros(angular_velocity))
 end
 
 function _motion_subspace{T<:Number, X<:Number}(
         jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
     S = promote_type(T, X)
-    angular = SMatrix{3, 1, S}(jt.rotation_axis)
+    angular = SMatrix{3, 1, S}(jt.axis)
     linear = zeros(SMatrix{3, 1, S})
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
 function _constraint_wrench_subspace{T<:Number, X<:Number}(jt::Revolute{T}, jointTransform::Transform3D{X})
     S = promote_type(T, X)
-    R = convert(RotMatrix{3, S}, rotation_between(SVector(zero(S), zero(S), one(S)), jt.rotation_axis))
+    R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
     angular = hcat(R[:, (1, 2)], zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 2, S}), R)
     WrenchSubspace(jointTransform.from, angular, linear)
 end
 
 function _joint_torque!(jt::Revolute, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
-    @inbounds τ[1] = dot(joint_wrench.angular, jt.rotation_axis)
+    @inbounds τ[1] = dot(joint_wrench.angular, jt.axis)
     nothing
 end
 
