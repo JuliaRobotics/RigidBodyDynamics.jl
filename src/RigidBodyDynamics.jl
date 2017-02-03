@@ -133,7 +133,7 @@ export
     geometric_jacobian,
     relative_acceleration,
     kinetic_energy,
-    potential_energy,
+    gravitational_potential_energy,
     mass_matrix!,
     mass_matrix,
     momentum,

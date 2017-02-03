@@ -85,8 +85,8 @@ type MuntheKaasStageCache{N, T<:Number}
     vds::SVector{N, Vector{T}} # time derivatives of vs
     ϕs::SVector{N, Vector{T}} # local coordinates around q0 for each stage
     ϕds::SVector{N, Vector{T}} # time derivatives of ϕs
-    ϕstep::Vector{T}
-    vstep::Vector{T}
+    ϕstep::Vector{T} # local coordinates around q0 after complete step
+    vstep::Vector{T} # velocity after complete step
 
     function MuntheKaasStageCache()
         q0 = Vector{T}()
@@ -111,7 +111,7 @@ end
 
 # A Lie-group-aware ODE integrator.
 #
-# MuntheKaasIntegrator is used to properly integrate the kinematics of globally
+# MuntheKaasIntegrator is used to properly integrate the dynamics of globally
 # parameterized rigid joints (Duindam, Port-Based Modeling and Control for
 # Efficient Bipedal Walking Robots, 2006, Definition 2.9). Global parameterizations of e.g. SO(3)
 # are needed to avoid singularities, but this leads to the problem that the tangent
@@ -143,13 +143,15 @@ immutable MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}
         new(dynamics!, tableau, sink, stages)
     end
 end
+
 function MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S)
     MuntheKaasIntegrator{N, T, F, S, L}(dynamics!, tableau, sink)
 end
+
 num_stages{N}(::MuntheKaasIntegrator{N}) = N
 eltype{N, T}(::MuntheKaasIntegrator{N, T}) = T
 
-# state must be a type for which the following functions are defined:
+# state must be of a type for which the following functions are defined:
 # - configuration_vector(state), returns the configuration vector in global coordinates
 # - velocity_vector(state), returns the velocity vector
 # - set_velocity!(state, v), sets velocity vector to v
