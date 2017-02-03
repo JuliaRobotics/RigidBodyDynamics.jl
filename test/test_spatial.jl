@@ -9,6 +9,19 @@ end
     f3 = CartesianFrame3D("3")
     f4 = CartesianFrame3D("4")
 
+    @testset "show" begin
+        show(DevNull, rand(SpatialInertia{Float64}, f1))
+        show(DevNull, rand(Twist{Float64}, f2, f1, f3))
+        show(DevNull, rand(SpatialAcceleration{Float64}, f2, f1, f3))
+        show(DevNull, rand(Wrench{Float64}, f2))
+        show(DevNull, rand(Momentum{Float64}, f2))
+
+        n = 5
+        show(DevNull, GeometricJacobian(f2, f1, f3, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
+        show(DevNull, MomentumMatrix(f2, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
+        show(DevNull, WrenchMatrix(f2, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
+    end
+
     @testset "spatial inertia" begin
         I2 = rand(SpatialInertia{Float64}, f2)
         H21 = rand(Transform3D{Float64}, f2, f1)

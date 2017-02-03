@@ -3,6 +3,15 @@
     x = MechanismState(Float64, mechanism)
     rand!(x)
 
+    @testset "show" begin
+        for joint in joints(mechanism)
+            show(DevNull, joint)
+        end
+        for body in bodies(mechanism)
+            show(DevNull, body)
+        end
+    end
+
     @testset "basic stuff" begin
         q = vcat([configuration(x, edge_to_parent_data(vertex)) for vertex in non_root_vertices(mechanism)]...)
         v = vcat([velocity(x, edge_to_parent_data(vertex)) for vertex in non_root_vertices(mechanism)]...)
