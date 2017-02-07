@@ -1,7 +1,7 @@
 site_name:        RigidBodyDynamics.jl
-repo_url:         https://github.com/tkoolen/RigidBodyDynamics.jl
+repo_url:         https://github.com/tkoolen/RigidBodyDynamics.jl/
 site_description: RigidBodyDynamics.jl Documentation
-site_author:      tkoolen
+site_author:      Twan Koolen
 
 theme: readthedocs
 
@@ -21,4 +21,6 @@ markdown_extensions:
 docs_dir: 'build'
 
 pages:
-  - Home: index.md
+  - 'Home': 'index.md'
+  - 'Joints': 'joints.md'
+  - 'Rigid Bodies': 'rigidbody.md'

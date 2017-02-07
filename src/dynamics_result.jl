@@ -1,3 +1,9 @@
+"""
+    DynamicsResult
+
+Stores variables related to the dynamics of a `Mechanism`, e.g. the
+`Mechanism`'s mass matrix and joint acceleration vector.
+"""
 type DynamicsResult{M, T}
     massMatrix::Symmetric{T, Matrix{T}}
     dynamicsBias::Vector{T}

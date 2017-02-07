@@ -9,6 +9,14 @@
 const next_frame_id = Ref(0)
 const frame_names = Dict{Int64, String}()
 
+"""
+    CartesianFrame3D
+
+A `CartesianFrame3D` identifies a three-dimensional Cartesian coordinate system.
+
+`CartesianFrame3D`s are typically used to annotate the frame in which certain
+quantities are expressed.
+"""
 immutable CartesianFrame3D
     id::Int64
 
@@ -25,10 +33,23 @@ immutable CartesianFrame3D
         ret
     end
 end
+
+"""
+    name(frame)
+
+Return the name of `frame`.
+"""
 name(frame::CartesianFrame3D) = get(frame_names, frame.id, "anonymous")
 show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\" (id = $(frame.id))")
 
-# Check that frames match (only when bounds checks are turned on).
+"""
+    @framecheck(f1, f2)
+
+Check that `f1` and `f2` are identical (when bounds checks are enabled).
+
+Throws an `ArgumentError` if `f1` is not identical to `f2` when bounds checks
+are enabled. `\@framecheck` is a no-op when bounds checks are disabled.
+"""
 macro framecheck(f1, f2)
     symname1 = string(f1)
     symname2 = string(f2)
@@ -47,6 +68,12 @@ end
 
 
 # Transform between frames
+"""
+    Transform3D
+
+A homogeneous transformation matrix representing the transformation from one
+three-dimensional Cartesian coordinate system to another.
+"""
 immutable Transform3D{T<:Number}
     from::CartesianFrame3D
     to::CartesianFrame3D
@@ -117,12 +144,40 @@ for VectorType in (:FreeVector3D, :Point3D)
         rand{T}(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, rand(SVector{3, T}))
         show(io::IO, p::$VectorType) = print(io, "$($(VectorType).name.name) in \"$(name(p.frame))\": $(p.v)")
         isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
-        copy(p::$VectorType) = $VectorType(p.frame, copy(p.v))
+        # copy(p::$VectorType) = $VectorType(p.frame, copy(p.v))
+
+        """
+            transform(x, t)
+
+        Returns `x` transformed to `CartesianFrame3D` `t.from`.
+        """
         transform(x::$VectorType, t::Transform3D) = t * x
         eltype{V}(::Type{$VectorType{V}}) = eltype(V)
         similar_type{V, T}(x::Type{$VectorType{V}}, ::Type{T}) = $VectorType{SVector{3, T}}
     end
 end
+
+"""
+    Point3D
+
+A `Point3D` represents a position in a given coordinate system.
+
+A `Point3D` is a [bound vector](https://en.wikipedia.org/wiki/Euclidean_vector#Overview).
+Applying a `Transform3D` to a `Point3D` both rotates and translates the
+`Point3D`.
+"""
+Point3D
+
+"""
+   FreeVector3D
+
+A `FreeVector3D` represents a [free vector](https://en.wikipedia.org/wiki/Euclidean_vector#Overview).
+
+Examples of free vectors include displacements and velocities of points.
+
+Applying a `Transform3D` to a `FreeVector3D` only rotates the `FreeVector3D`.
+"""
+FreeVector3D
 
 # Point3D-specific
 (-)(p1::Point3D, p2::Point3D) = begin @framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v - p2.v) end

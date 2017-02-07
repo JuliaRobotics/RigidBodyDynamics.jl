@@ -21,9 +21,24 @@ function _global_coordinates!(jt::JointType, q::AbstractVector, q0::AbstractVect
 end
 
 
-#=
-QuaternionFloating
-=#
+"""
+    QuaternionFloating
+
+A floating joint type that uses a unit quaternion representation for orientation.
+
+Floating joints are 6-degree-of-freedom joints that are in a sense degenerate,
+as they impose no constraints on the relative motion between two bodies.
+
+The full, 7-dimensional configuration vector of a `QuaternionFloating` joint
+type consists of a unit quaternion representing the orientation that rotates
+vectors from the frame 'directly after' the joint to the frame 'directly before'
+it, and a 3D position vector representing the origin of the frame after the
+joint in the frame before the joint.
+
+The 6-dimensional velocity vector of a `QuaternionFloating` joint is the twist
+of the frame after the joint with respect to the frame before it, expressed in
+the frame after the joint.
+"""
 immutable QuaternionFloating{T} <: JointType{T}
 end
 
@@ -216,15 +231,24 @@ function _velocity_to_configuration_derivative!(::OneDegreeOfFreedomFixedAxis, q
 end
 
 
-#=
-Prismatic
-=#
+"""
+    Prismatic
+
+A `Prismatic` joint type allows translation along a fixed axis.
+"""
 immutable Prismatic{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
     rotationFromZAligned::RotMatrix{3, T}
 
     Prismatic(axis::SVector{3, T}) = new(axis, rotation_between(SVector(zero(T), zero(T), one(T)), axis))
 end
+
+"""
+    Prismatic(axis)
+
+Construct a new `Prismatic` joint type, allowing translation along `axis`
+(expressed in the frame before the joint).
+"""
 Prismatic{T}(axis::SVector{3, T}) = Prismatic{T}(axis)
 
 show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.axis)")
@@ -269,15 +293,24 @@ function _joint_torque!(jt::Prismatic, τ::AbstractVector, q::AbstractVector, jo
 end
 
 
-#=
-Revolute
-=#
+"""
+    Revolute
+
+A `Revolute` joint type allows rotation about a fixed axis.
+"""
 immutable Revolute{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
     rotationFromZAligned::RotMatrix{3, T}
 
     Revolute(axis::SVector{3, T}) = new(axis, rotation_between(SVector(zero(T), zero(T), one(T)), axis))
 end
+
+"""
+    Revolute(axis)
+
+Construct a new `Revolute` joint type, allowing rotation about `axis`
+(expressed in the frame before the joint).
+"""
 Revolute{T}(axis::SVector{3, T}) = Revolute{T}(axis)
 
 show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.axis)")
@@ -320,9 +353,12 @@ function _joint_torque!(jt::Revolute, τ::AbstractVector, q::AbstractVector, joi
 end
 
 
-#=
-Fixed
-=#
+"""
+    Fixed
+
+The `Fixed` joint type is a degenerate joint type, in the sense that it allows
+no motion between its predecessor and successor rigid bodies.
+"""
 immutable Fixed{T<:Number} <: JointType{T}
 end
 show(io::IO, jt::Fixed) = print(io, "Fixed joint")
