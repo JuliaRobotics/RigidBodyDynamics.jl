@@ -4,6 +4,13 @@ type NonTreeEdge{T}
     successor::RigidBody{T}
 end
 
+"""
+    Mechanism
+
+A `Mechanism` represents an interconnection of rigid bodies and joints.
+`Mechanism`s store the joint layout and inertia parameters, but no
+state-dependent information.
+"""
 type Mechanism{T<:Number}
     toposortedTree::Vector{TreeVertex{RigidBody{T}, Joint{T}}} # TODO: consider replacing with just the root vertex after creating iterator
     nonTreeEdges::Vector{NonTreeEdge{T}}
@@ -76,8 +83,29 @@ function canonicalize_frame_definitions!(m::Mechanism)
     end
 end
 
+"""
+    attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)
+
+Attach `successor` to `predecessor` via `joint`.
+
+See [`Joint`](@ref) for definitions of the terms successor and predecessor.
+
+The `Transform3D`s `jointToPredecessor` and `successorToJoint` define where
+`joint` is attached to each body. `jointToPredecessor` should define
+`joint.frameBefore` with respect to any frame fixed to `predecessor`, and likewise
+`successorToJoint` should define any frame fixed to `successor` with respect to
+`joint.frameAfter`.
+
+`predecessor` is required to already be among the bodies of the `Mechanism`.
+
+If `successor` is not yet a part of the `Mechanism`, it will be added.
+Otherwise, the `joint` will be treated as a non-tree edge in the `Mechanism`
+(effectively creating a loop).
+"""
 function attach!{T}(m::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint, jointToPredecessor::Transform3D{T},
         successor::RigidBody{T}, successorToJoint::Transform3D{T} = Transform3D{T}(default_frame(successor), joint.frameAfter))
+    # TODO: check that jointToPredecessor.from and successorToJoint.to match joint.
+
     # define where joint is attached on predecessor
     add_frame!(predecessor, jointToPredecessor)
 

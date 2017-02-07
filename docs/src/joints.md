@@ -1,5 +1,3 @@
-# Joints
-
 ## The `Joint` type
 
 ```@docs
@@ -14,7 +12,7 @@ Order   = [:function]
 Pages   = ["joint.jl"]
 ```
 
-## Types
+## `JointType`s
 
 ```@autodocs
 Modules = [RigidBodyDynamics]

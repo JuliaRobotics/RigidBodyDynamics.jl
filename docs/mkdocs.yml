@@ -22,5 +22,9 @@ docs_dir: 'build'
 
 pages:
   - 'Home': 'index.md'
+  - 'Quick start guide': 'quickstart.md'
+  - 'Mechanism': 'mechanism.md'
+  - 'Algorithms': 'algorithms.md'
   - 'Joints': 'joints.md'
-  - 'Rigid Bodies': 'rigidbody.md'
+  - 'Rigid bodies': 'rigidbody.md'
+  - 'Spatial vector algebra': 'spatial.md'

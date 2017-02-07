@@ -22,7 +22,7 @@ end
 
 
 """
-    QuaternionFloating
+$(TYPEDEF)
 
 A floating joint type that uses a unit quaternion representation for orientation.
 
@@ -232,7 +232,7 @@ end
 
 
 """
-    Prismatic
+$(TYPEDEF)
 
 A `Prismatic` joint type allows translation along a fixed axis.
 """
@@ -244,7 +244,7 @@ immutable Prismatic{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
 end
 
 """
-    Prismatic(axis)
+$(SIGNATURES)
 
 Construct a new `Prismatic` joint type, allowing translation along `axis`
 (expressed in the frame before the joint).
@@ -294,7 +294,7 @@ end
 
 
 """
-    Revolute
+$(TYPEDEF)
 
 A `Revolute` joint type allows rotation about a fixed axis.
 """
@@ -306,7 +306,7 @@ immutable Revolute{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
 end
 
 """
-    Revolute(axis)
+$(SIGNATURES)
 
 Construct a new `Revolute` joint type, allowing rotation about `axis`
 (expressed in the frame before the joint).
@@ -354,7 +354,7 @@ end
 
 
 """
-    Fixed
+$(TYPEDEF)
 
 The `Fixed` joint type is a degenerate joint type, in the sense that it allows
 no motion between its predecessor and successor rigid bodies.

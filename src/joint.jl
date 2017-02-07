@@ -1,4 +1,6 @@
 """
+$(TYPEDEF)
+
 A joint represents a kinematic restriction of the relative twist between two
 rigid bodies to a linear subspace of dimension ``k``.
 The state related to the joint is parameterized by two sets of variables, namely
@@ -53,28 +55,28 @@ end
 # See https://github.com/tkoolen/RigidBodyDynamics.jl/issues/93.
 
 """
-    num_positions(joint)
+$(SIGNATURES)
 
 Return the length of the configuration vector of `joint`.
 """
 num_positions{M}(joint::Joint{M})::Int64 = @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) num_positions(joint.jointType)
 
 """
-    num_velocities(joint)
+$(SIGNATURES)
 
 Return the length of the velocity vector of `joint`.
 """
 num_velocities{M}(joint::Joint{M})::Int64 = @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) num_velocities(joint.jointType)
 
 """
-    num_constraints(joint::Joint)
+$(SIGNATURES)
 
 Return the number of constraints imposed on the relative twist between the joint's predecessor and successor
 """
 num_constraints(joint::Joint) = 6 - num_velocities(joint)
 
 """
-    joint_transform(joint, q)
+$(SIGNATURES)
 
 Return a `Transform3D` representing the homogeneous transform from the frame
 after the joint to the frame before the joint for joint configuration vector ``q``.
@@ -85,7 +87,7 @@ function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform
 end
 
 """
-    motion_subspace(joint, q)
+$(SIGNATURES)
 
 Return a basis for the motion subspace of the joint in configuration ``q``.
 
@@ -100,7 +102,7 @@ function motion_subspace{M, X}(joint::Joint{M}, q::AbstractVector{X})::MotionSub
 end
 
 """
-    constraint_wrench_subspace(joint, transform)
+$(SIGNATURES)
 
 Return a basis for the constraint wrench subspace of the joint in configuration
 ``q``.
@@ -119,7 +121,7 @@ function constraint_wrench_subspace{M, X}(joint::Joint{M}, jointTransform::Trans
 end
 
 """
-    bias_acceleration(joint, q, v)
+$(SIGNATURES)
 
 Return the acceleration of the joint's successor with respect to its predecessor
 in configuration ``q`` and at velocity ``v``, when the joint acceleration
@@ -132,7 +134,7 @@ function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::Abstr
 end
 
 """
-    has_fixed_subspaces(joint)
+$(SIGNATURES)
 
 Whether the joint's motion subspace and constraint wrench subspace depend on
 ``q``.
@@ -142,7 +144,7 @@ function has_fixed_subspaces{M}(joint::Joint{M})
 end
 
 """
-    configuration_derivative_to_velocity!(joint, v, q, q̇)
+$(SIGNATURES)
 
 Compute joint velocity vector ``v`` given the joint configuration vector ``q``
 and its time derivative ``\\dot{q}`` (in place).
@@ -159,7 +161,7 @@ function configuration_derivative_to_velocity!{M}(joint::Joint{M}, v::AbstractVe
 end
 
 """
-    velocity_to_configuration_derivative!(joint, v, q, q̇)
+$(SIGNATURES)
 
 Compute the time derivative ``\\dot{q}`` of the joint configuration vector ``q``
 given ``q`` and the joint velocity vector ``v`` (in place).
@@ -176,7 +178,7 @@ function velocity_to_configuration_derivative!{M}(joint::Joint{M}, q̇::Abstract
 end
 
 """
-    zero_configuration!(joint, q)
+$(SIGNATURES)
 
 Set ``q`` to the 'zero' configuration, corresponding to an identity joint
 transform.
@@ -187,7 +189,7 @@ function zero_configuration!{M}(joint::Joint{M}, q::AbstractVector)::Void
 end
 
 """
-    rand_configuration!(joint, q)
+$(SIGNATURES)
 
 Set ``q`` to a random configuration. The distribution used depends on the
 joint type.
@@ -198,7 +200,7 @@ function rand_configuration!{M}(joint::Joint{M}, q::AbstractVector)::Void
 end
 
 """
-    joint_twist(joint, q, v)
+$(SIGNATURES)
 
 Return the twist of `joint`'s  successor with respect to its predecessor,
 expressed in the frame after the joint.
@@ -212,7 +214,7 @@ function joint_twist{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVec
 end
 
 """
-    joint_torque!(joint, τ, q, joint_wrench)
+$(SIGNATURES)
 
 Given the wrench exerted across the joint on the joint's successor, compute the
 vector of joint torques ``\\tau`` (in place), in configuration `q`.
@@ -225,7 +227,7 @@ function joint_torque!{M}(joint::Joint{M}, τ::AbstractVector, q::AbstractVector
 end
 
 """
-    local_coordinates!(joint, ϕ, ϕ̇, q0, q, v)
+$(SIGNATURES)
 
 Compute a vector of local coordinates ``\\phi`` around configuration ``q_0``
 corresponding to configuration ``q`` (in place). Also compute the time
@@ -253,7 +255,7 @@ function local_coordinates!{M}(joint::Joint{M},
 end
 
 """
-    global_coordinates!(joint, q, q0, ϕ)
+$(SIGNATURES)
 
 Compute the global parameterization of the joint's configuration, ``q``, given
 a 'base' orientation ``q_0`` and a vector of local coordinates relative to

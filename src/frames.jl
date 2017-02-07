@@ -10,7 +10,7 @@ const next_frame_id = Ref(0)
 const frame_names = Dict{Int64, String}()
 
 """
-    CartesianFrame3D
+$(TYPEDEF)
 
 A `CartesianFrame3D` identifies a three-dimensional Cartesian coordinate system.
 
@@ -35,7 +35,7 @@ immutable CartesianFrame3D
 end
 
 """
-    name(frame)
+$(SIGNATURES)
 
 Return the name of `frame`.
 """
@@ -43,7 +43,7 @@ name(frame::CartesianFrame3D) = get(frame_names, frame.id, "anonymous")
 show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\" (id = $(frame.id))")
 
 """
-    @framecheck(f1, f2)
+$(SIGNATURES)
 
 Check that `f1` and `f2` are identical (when bounds checks are enabled).
 
@@ -69,7 +69,7 @@ end
 
 # Transform between frames
 """
-    Transform3D
+$(TYPEDEF)
 
 A homogeneous transformation matrix representing the transformation from one
 three-dimensional Cartesian coordinate system to another.
@@ -147,7 +147,7 @@ for VectorType in (:FreeVector3D, :Point3D)
         # copy(p::$VectorType) = $VectorType(p.frame, copy(p.v))
 
         """
-            transform(x, t)
+        $(SIGNATURES)
 
         Returns `x` transformed to `CartesianFrame3D` `t.from`.
         """
@@ -158,7 +158,7 @@ for VectorType in (:FreeVector3D, :Point3D)
 end
 
 """
-    Point3D
+$(TYPEDEF)
 
 A `Point3D` represents a position in a given coordinate system.
 
@@ -169,7 +169,7 @@ Applying a `Transform3D` to a `Point3D` both rotates and translates the
 Point3D
 
 """
-   FreeVector3D
+$(TYPEDEF)
 
 A `FreeVector3D` represents a [free vector](https://en.wikipedia.org/wiki/Euclidean_vector#Overview).
 

@@ -11,6 +11,9 @@ import StaticArrays: similar_type
 using Rotations
 using DataStructures
 using LightXML
+using DocStringExtensions
+
+const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
 
 if isdefined(Base, :Iterators)
     import Base.Iterators: filter

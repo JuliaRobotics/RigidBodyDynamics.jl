@@ -4,6 +4,7 @@ RigidBodyDynamics provides pure Julia implementations of various rigid body dyna
 
 ## About
 TODO:
+* Murray
 * Featherstone
 * Duindam
 

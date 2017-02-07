@@ -1,5 +1,3 @@
-# Rigid Bodies
-
 ## The `RigidBody` type
 ```@docs
 RigidBody
