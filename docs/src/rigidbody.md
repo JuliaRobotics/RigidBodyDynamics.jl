@@ -1,9 +1,9 @@
-## The `RigidBody` type
+# The `RigidBody` type
 ```@docs
 RigidBody
 ```
 
-## Functionality
+# Functionality
 
 ```@autodocs
 Modules = [RigidBodyDynamics]

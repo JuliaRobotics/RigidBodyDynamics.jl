@@ -31,6 +31,7 @@ include("cache_element.jl")
 
 importall .TreeDataStructure
 include("mechanism.jl")
+include("mechanism_manipulation.jl")
 include("mechanism_state.jl")
 include("dynamics_result.jl")
 include("mechanism_algorithms.jl")

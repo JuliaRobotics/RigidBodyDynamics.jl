@@ -1,6 +1,27 @@
 """
 $(SIGNATURES)
 
+Return the mass of a subtree of a `Mechanism`, rooted at `base` (including
+the mass of `base`).
+"""
+function subtree_mass{T}(base::Tree{RigidBody{T}, Joint{T}})
+    result = isroot(base) ? zero(T) : spatial_inertia(vertex_data(base)).mass
+    for child in children(base)
+        result += subtree_mass(child)
+    end
+    result
+end
+
+"""
+$(SIGNATURES)
+
+Return the total mass of the `Mechanism`.
+"""
+mass(m::Mechanism) = subtree_mass(tree(m))
+
+"""
+$(SIGNATURES)
+
 Compute the center of mass of an iterable subset of a `Mechanism`'s bodies in
 the given state.
 """

@@ -1,14 +1,12 @@
-# RigidBodyDynamics
-
 RigidBodyDynamics provides pure Julia implementations of various rigid body dynamics and kinematics algorithms.
 
-## About
+# About
 TODO:
 * Murray
 * Featherstone
 * Duindam
 
-## Installation
+# Installation
 
 To install the latest release of RigidBodyDynamics, simply run
 
@@ -24,5 +22,5 @@ Pkg.checkout("RigidBodyDynamics")
 
 RigidBodyDynamics currently only supports version 0.5 of Julia.
 
-## Example IJulia notebooks
+# Example IJulia notebooks
 TODO
