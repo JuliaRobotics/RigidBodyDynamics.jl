@@ -1,15 +1,20 @@
-# Index
+# MechanismState
+
+```@contents
+Pages   = ["mechanismstate.md"]
+```
+
 ```@index
 Pages   = ["mechanismstate.md"]
 Order   = [:type, :function]
 ```
 
-# The `MechanismState` type
+## The `MechanismState` type
 ```@docs
 MechanismState
 ```
 
-# Functions
+## Functions
 ```@autodocs
 Modules = [RigidBodyDynamics]
 Order   = [:function]

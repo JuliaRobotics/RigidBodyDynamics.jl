@@ -1,15 +1,16 @@
-# Index
+# Algorithms
+
 ```@index
 Pages   = ["algorithms.md"]
 Order   = [:type, :function]
 ```
 
-# `DynamicsResult`
+## `DynamicsResult`
 ```@docs
 DynamicsResult
 ```
 
-# Functions
+## Functions
 ```@autodocs
 Modules = [RigidBodyDynamics]
 Order   = [:function]

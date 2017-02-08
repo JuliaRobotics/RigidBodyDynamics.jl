@@ -1,60 +1,62 @@
-# Index
+# Spatial vector algebra
+
+## Index
 ```@index
 Pages   = ["spatial.md"]
 Order   = [:type, :function, :macro]
 ```
 
-# Types
+## Types
 
-## Coordinate frames
+### Coordinate frames
 ```@docs
 CartesianFrame3D
 ```
 
-## Transforms
+### Transforms
 ```@docs
 Transform3D
 ```
 
-## Points, free vectors
+### Points, free vectors
 ```@docs
 Point3D
 FreeVector3D
 ```
 
-## Inertias
+### Inertias
 ```@docs
 SpatialInertia
 ```
 
-## Twists, spatial accelerations
+### Twists, spatial accelerations
 ```@docs
 Twist
 SpatialAcceleration
 ```
 
-## Momenta, wrenches
+### Momenta, wrenches
 ```@docs
 Momentum
 Wrench
 ```
 
-## Geometric Jacobians
+### Geometric Jacobians
 ```@docs
 GeometricJacobian
 ```
 
-## Momentum matrices
+### Momentum matrices
 ```@docs
 MomentumMatrix
 ```
 
-# The `@framecheck` macro
+## The `@framecheck` macro
 ```@docs
 @framecheck
 ```
 
-# Functions
+## Functions
 ```@autodocs
 Modules = [RigidBodyDynamics]
 Order   = [:function]

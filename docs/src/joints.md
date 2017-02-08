@@ -1,16 +1,18 @@
-# Index
+# Joints
+
+## Index
 ```@index
 Pages   = ["joints.md"]
 Order   = [:type, :function]
 ```
 
-# The `Joint` type
+## The `Joint` type
 
 ```@docs
 Joint
 ```
 
-# Functions
+## Functions
 
 ```@autodocs
 Modules = [RigidBodyDynamics]
@@ -18,7 +20,7 @@ Order   = [:function]
 Pages   = ["joint.jl"]
 ```
 
-# `JointType`s
+## `JointType`s
 
 ```@autodocs
 Modules = [RigidBodyDynamics]

@@ -1,15 +1,20 @@
-# Index
+# Rigid bodies
+
+```@contents
+Pages   = ["rigidbody.md"]
+```
+
 ```@index
 Pages   = ["rigidbody.md"]
 Order   = [:type, :function]
 ```
 
-# The `RigidBody` type
+## The `RigidBody` type
 ```@docs
 RigidBody
 ```
 
-# Functions
+## Functions
 ```@autodocs
 Modules = [RigidBodyDynamics]
 Order   = [:function]
