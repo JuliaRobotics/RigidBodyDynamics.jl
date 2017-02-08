@@ -151,9 +151,9 @@ function canonicalize_frame_definitions!(mechanism::Mechanism)
     end
 end
 
-function gravitational_spatial_acceleration{M}(mechanism::Mechanism{M})
+function gravitational_spatial_acceleration(mechanism::Mechanism)
     frame = mechanism.gravitationalAcceleration.frame
-    SpatialAcceleration(frame, frame, frame, zeros(SVector{3, mechanism}), mechanism.gravitationalAcceleration.v)
+    SpatialAcceleration(frame, frame, frame, zeros(SVector{3, eltype(mechanism)}), mechanism.gravitationalAcceleration.v)
 end
 
 function constraint_jacobian_structure(mechanism::Mechanism)
