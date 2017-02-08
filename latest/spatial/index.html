@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Twan Koolen">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Spatial vector algebra - RigidBodyDynamics.jl</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../assets/Documenter.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Spatial vector algebra";
+    var mkdocs_page_input_path = "spatial.md";
+    var mkdocs_page_url = "/spatial/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> RigidBodyDynamics.jl</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Home</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../quickstart/">Quick start guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Spatial vector algebra</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#spatial-vector-algebra">Spatial vector algebra</a></li>
+                
+                    <li><a class="toctree-l4" href="#index">Index</a></li>
+                
+                    <li><a class="toctree-l4" href="#types">Types</a></li>
+                
+                    <li><a class="toctree-l4" href="#the-framecheck-macro">The @framecheck macro</a></li>
+                
+                    <li><a class="toctree-l4" href="#functions">Functions</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../joints/">Joints</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../rigidbody/">Rigid bodies</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../mechanism/">Mechanism</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../mechanismstate/">MechanismState</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../algorithms/">Kinematics/dynamics algorithms</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../simulation/">Simulation</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../benchmarks/">Benchmarks</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">RigidBodyDynamics.jl</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Spatial vector algebra</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/tkoolen/RigidBodyDynamics.jl/edit/master/docs/spatial.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p><a id='Spatial-vector-algebra-1'></a></p>
+<h1 id="spatial-vector-algebra">Spatial vector algebra</h1>
+<p><a id='Index-1'></a></p>
+<h2 id="index">Index</h2>
+<ul>
+<li><a href="./#RigidBodyDynamics.CartesianFrame3D"><code>RigidBodyDynamics.CartesianFrame3D</code></a></li>
+<li><a href="./#RigidBodyDynamics.FreeVector3D"><code>RigidBodyDynamics.FreeVector3D</code></a></li>
+<li><a href="./#RigidBodyDynamics.GeometricJacobian"><code>RigidBodyDynamics.GeometricJacobian</code></a></li>
+<li><a href="./#RigidBodyDynamics.Momentum"><code>RigidBodyDynamics.Momentum</code></a></li>
+<li><a href="./#RigidBodyDynamics.MomentumMatrix"><code>RigidBodyDynamics.MomentumMatrix</code></a></li>
+<li><a href="./#RigidBodyDynamics.Point3D"><code>RigidBodyDynamics.Point3D</code></a></li>
+<li><a href="./#RigidBodyDynamics.SpatialAcceleration"><code>RigidBodyDynamics.SpatialAcceleration</code></a></li>
+<li><a href="./#RigidBodyDynamics.SpatialInertia"><code>RigidBodyDynamics.SpatialInertia</code></a></li>
+<li><a href="./#RigidBodyDynamics.Transform3D"><code>RigidBodyDynamics.Transform3D</code></a></li>
+<li><a href="./#RigidBodyDynamics.Twist"><code>RigidBodyDynamics.Twist</code></a></li>
+<li><a href="./#RigidBodyDynamics.Wrench"><code>RigidBodyDynamics.Wrench</code></a></li>
+<li><a href="./#Base.LinAlg.dot-Tuple{RigidBodyDynamics.Wrench,RigidBodyDynamics.Twist}"><code>Base.LinAlg.dot</code></a></li>
+<li><a href="./#Base.exp-Tuple{RigidBodyDynamics.Twist}"><code>Base.exp</code></a></li>
+<li><a href="./#Base.log-Tuple{RigidBodyDynamics.Transform3D}"><code>Base.log</code></a></li>
+<li><a href="./#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.SpatialInertia}"><code>RigidBodyDynamics.center_of_mass</code></a></li>
+<li><a href="./#RigidBodyDynamics.kinetic_energy-Tuple{RigidBodyDynamics.SpatialInertia,RigidBodyDynamics.Twist}"><code>RigidBodyDynamics.kinetic_energy</code></a></li>
+<li><a href="./#RigidBodyDynamics.log_with_time_derivative-Tuple{RigidBodyDynamics.Transform3D,RigidBodyDynamics.Twist}"><code>RigidBodyDynamics.log_with_time_derivative</code></a></li>
+<li><a href="./#RigidBodyDynamics.newton_euler-Tuple{RigidBodyDynamics.SpatialInertia,RigidBodyDynamics.SpatialAcceleration,RigidBodyDynamics.Twist}"><code>RigidBodyDynamics.newton_euler</code></a></li>
+<li><a href="./#RigidBodyDynamics.num_cols-Tuple{RigidBodyDynamics.GeometricJacobian}"><code>RigidBodyDynamics.num_cols</code></a></li>
+<li><a href="./#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.Twist,RigidBodyDynamics.Transform3D}"><code>RigidBodyDynamics.transform</code></a></li>
+<li><a href="./#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.SpatialInertia{I},RigidBodyDynamics.Transform3D{T}}"><code>RigidBodyDynamics.transform</code></a></li>
+<li><a href="./#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.SpatialAcceleration,RigidBodyDynamics.Transform3D,RigidBodyDynamics.Twist,RigidBodyDynamics.Twist}"><code>RigidBodyDynamics.transform</code></a></li>
+<li><a href="./#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.GeometricJacobian,RigidBodyDynamics.Transform3D}"><code>RigidBodyDynamics.transform</code></a></li>
+<li><a href="./#RigidBodyDynamics.@framecheck"><code>RigidBodyDynamics.@framecheck</code></a></li>
+</ul>
+<p><a id='Types-1'></a></p>
+<h2 id="types">Types</h2>
+<p><a id='Coordinate-frames-1'></a></p>
+<h3 id="coordinate-frames">Coordinate frames</h3>
+<p><a id='RigidBodyDynamics.CartesianFrame3D' href='#RigidBodyDynamics.CartesianFrame3D'>#</a>
+<strong><code>RigidBodyDynamics.CartesianFrame3D</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">bitstype 64 CartesianFrame3D
+</code></pre>
+
+<p>A <code>CartesianFrame3D</code> identifies a three-dimensional Cartesian coordinate system.</p>
+<p><code>CartesianFrame3D</code>s are typically used to annotate the frame in which certain quantities are expressed.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/frames.jl#L12' class='documenter-source'>source</a><br></p>
+<p><a id='Transforms-1'></a></p>
+<h3 id="transforms">Transforms</h3>
+<p><a id='RigidBodyDynamics.Transform3D' href='#RigidBodyDynamics.Transform3D'>#</a>
+<strong><code>RigidBodyDynamics.Transform3D</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">immutable Transform3D{T&lt;:Number}
+</code></pre>
+
+<p>A homogeneous transformation matrix representing the transformation from one three-dimensional Cartesian coordinate system to another.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/frames.jl#L66' class='documenter-source'>source</a><br></p>
+<p><a id='Points,-free-vectors-1'></a></p>
+<h3 id="points-free-vectors">Points, free vectors</h3>
+<p><a id='RigidBodyDynamics.Point3D' href='#RigidBodyDynamics.Point3D'>#</a>
+<strong><code>RigidBodyDynamics.Point3D</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">type Point3D{V&lt;:AbstractArray{T,1}}
+</code></pre>
+
+<p>A <code>Point3D</code> represents a position in a given coordinate system.</p>
+<p>A <code>Point3D</code> is a <a href="https://en.wikipedia.org/wiki/Euclidean_vector#Overview">bound vector</a>. Applying a <code>Transform3D</code> to a <code>Point3D</code> both rotates and translates the <code>Point3D</code>.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/frames.jl#L155' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.FreeVector3D' href='#RigidBodyDynamics.FreeVector3D'>#</a>
+<strong><code>RigidBodyDynamics.FreeVector3D</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">type FreeVector3D{V&lt;:AbstractArray{T,1}}
+</code></pre>
+
+<p>A <code>FreeVector3D</code> represents a <a href="https://en.wikipedia.org/wiki/Euclidean_vector#Overview">free vector</a>.</p>
+<p>Examples of free vectors include displacements and velocities of points.</p>
+<p>Applying a <code>Transform3D</code> to a <code>FreeVector3D</code> only rotates the <code>FreeVector3D</code>.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/frames.jl#L166' class='documenter-source'>source</a><br></p>
+<p><a id='Inertias-1'></a></p>
+<h3 id="inertias">Inertias</h3>
+<p><a id='RigidBodyDynamics.SpatialInertia' href='#RigidBodyDynamics.SpatialInertia'>#</a>
+<strong><code>RigidBodyDynamics.SpatialInertia</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">immutable SpatialInertia{T&lt;:Number}
+</code></pre>
+
+<p>A spatial inertia, or inertia matrix, represents the mass distribution of a rigid body.</p>
+<p>A spatial inertia expressed in frame $i$ is defined as:</p>
+<p>
+<script type="math/tex; mode=display">
+I^i =
+\int_{B}\rho\left(x\right)\left[\begin{array}{cc}
+\hat{p}^{T}\left(x\right)\hat{p}\left(x\right) & \hat{p}\left(x\right)\\
+\hat{p}^{T}\left(x\right) & I
+\end{array}\right]dx=\left[\begin{array}{cc}
+J & \hat{c}\\
+\hat{c}^{T} & mI
+\end{array}\right]
+</script>
+</p>
+<p>where $\rho(x)$ is the density of point $x$, and $p(x)$ are the coordinates of point $x$ expressed in frame $i$. $J$ is the mass moment of inertia, $m$ is the total mass, and $c$ is the 'cross part', center of mass position scaled by $m$.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L3' class='documenter-source'>source</a><br></p>
+<p><a id='Twists,-spatial-accelerations-1'></a></p>
+<h3 id="twists-spatial-accelerations">Twists, spatial accelerations</h3>
+<p><a id='RigidBodyDynamics.Twist' href='#RigidBodyDynamics.Twist'>#</a>
+<strong><code>RigidBodyDynamics.Twist</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">immutable Twist{T&lt;:Number}
+</code></pre>
+
+<p>A twist represents the relative angular and linear motion between two bodies.</p>
+<p>The twist of frame $j$ with respect to frame $i$, expressed in frame $k$ is defined as</p>
+<p>
+<script type="math/tex; mode=display">
+T_{j}^{k,i}=\left(\begin{array}{c}
+\omega_{j}^{k,i}\\
+v_{j}^{k,i}
+\end{array}\right)\in\mathbb{R}^{6}
+</script>
+</p>
+<p>such that</p>
+<p>
+<script type="math/tex; mode=display">
+\hat{T}_{j}^{k,i}=\left[\begin{array}{cc}
+\hat{\omega}_{j}^{k,i} & v_{j}^{k,i}\\
+0 & 0
+\end{array}\right]=H_{i}^{k}\dot{H}_{j}^{i}H_{k}^{j}
+</script>
+</p>
+<p>where $H^{\beta}_{\alpha}$ is the homogeneous transform from frame $\alpha$ to frame $\beta$.</p>
+<p>Here, $\omega_{j}^{k,i}$ is the angular part and $v_{j}^{k,i}$ is the linear part. Note that the linear part is not in general the same as the linear velocity of the origin of frame $j$.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L43' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.SpatialAcceleration' href='#RigidBodyDynamics.SpatialAcceleration'>#</a>
+<strong><code>RigidBodyDynamics.SpatialAcceleration</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">immutable SpatialAcceleration{T&lt;:Number}
+</code></pre>
+
+<p>A spatial acceleration is the time derivative of a twist.</p>
+<p>See <a href="./#RigidBodyDynamics.Twist"><code>Twist</code></a>.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L72' class='documenter-source'>source</a><br></p>
+<p><a id='Momenta,-wrenches-1'></a></p>
+<h3 id="momenta-wrenches">Momenta, wrenches</h3>
+<p><a id='RigidBodyDynamics.Momentum' href='#RigidBodyDynamics.Momentum'>#</a>
+<strong><code>RigidBodyDynamics.Momentum</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">immutable Momentum{T&lt;:Number}
+</code></pre>
+
+<p>A <code>Momentum</code> is the product of a <code>SpatialInertia</code> and a <code>Twist</code>, i.e.</p>
+<p>
+<script type="math/tex; mode=display">
+h^i = I^i T^{i, j}_k
+</script>
+</p>
+<p>where $I^i$ is the spatial inertia of a given body expressed in frame $i$, and $T^{i, j}_k$ is the twist of frame $k$ (attached to the body) with respect to inertial frame $j$, expressed in frame $i$.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L89' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.Wrench' href='#RigidBodyDynamics.Wrench'>#</a>
+<strong><code>RigidBodyDynamics.Wrench</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">immutable Wrench{T&lt;:Number}
+</code></pre>
+
+<p>A wrench represents a system of forces.</p>
+<p>The wrench $w^i$ expressed in frame $i$ is defined as</p>
+<p>
+<script type="math/tex; mode=display">
+w^{i}=\sum_{j}\left(\begin{array}{c}
+r_{j}^{i}\times f_{j}^{i}\\
+f_{j}^{i}
+\end{array}\right)
+</script>
+</p>
+<p>where the $f_{j}^{i}$ are forces expressed in frame $i$, exerted at positions $r_{j}^{i}$.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L102' class='documenter-source'>source</a><br></p>
+<p><a id='Geometric-Jacobians-1'></a></p>
+<h3 id="geometric-jacobians">Geometric Jacobians</h3>
+<p><a id='RigidBodyDynamics.GeometricJacobian' href='#RigidBodyDynamics.GeometricJacobian'>#</a>
+<strong><code>RigidBodyDynamics.GeometricJacobian</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">immutable GeometricJacobian{A&lt;:AbstractArray{T,2}}
+</code></pre>
+
+<p>A geometric Jacobian (also known as basic, or spatial Jacobian) maps a vector of joint velocities to a twist.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L119' class='documenter-source'>source</a><br></p>
+<p><a id='Momentum-matrices-1'></a></p>
+<h3 id="momentum-matrices">Momentum matrices</h3>
+<p><a id='RigidBodyDynamics.MomentumMatrix' href='#RigidBodyDynamics.MomentumMatrix'>#</a>
+<strong><code>RigidBodyDynamics.MomentumMatrix</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">immutable MomentumMatrix{A&lt;:AbstractArray{T,2}}
+</code></pre>
+
+<p>A momentum matrix maps a joint velocity vectory to momentum.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L155' class='documenter-source'>source</a><br></p>
+<p><a id='The-@framecheck-macro-1'></a></p>
+<h2 id="the-framecheck-macro">The <code>@framecheck</code> macro</h2>
+<p><a id='RigidBodyDynamics.@framecheck' href='#RigidBodyDynamics.@framecheck'>#</a>
+<strong><code>RigidBodyDynamics.@framecheck</code></strong> &mdash; <em>Macro</em>.</p>
+<pre><code class="julia">@framecheck(f1, f2)
+
+</code></pre>
+
+<p>Check that <code>f1</code> and <code>f2</code> are identical (when bounds checks are enabled).</p>
+<p>Throws an <code>ArgumentError</code> if <code>f1</code> is not identical to <code>f2</code> when bounds checks are enabled. <code>@framecheck</code> is a no-op when bounds checks are disabled.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/frames.jl#L40' class='documenter-source'>source</a><br></p>
+<p><a id='Functions-1'></a></p>
+<h2 id="functions">Functions</h2>
+<p><a id='RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.SpatialInertia}' href='#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.SpatialInertia}'>#</a>
+<strong><code>RigidBodyDynamics.center_of_mass</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">center_of_mass(inertia)
+
+</code></pre>
+
+<p>Return the center of mass of the <code>SpatialInertia</code> as a <a href="./#RigidBodyDynamics.Point3D"><code>Point3D</code></a>.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L180' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.kinetic_energy-Tuple{RigidBodyDynamics.SpatialInertia,RigidBodyDynamics.Twist}' href='#RigidBodyDynamics.kinetic_energy-Tuple{RigidBodyDynamics.SpatialInertia,RigidBodyDynamics.Twist}'>#</a>
+<strong><code>RigidBodyDynamics.kinetic_energy</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">kinetic_energy(I, twist)
+
+</code></pre>
+
+<p>Compute the kinetic energy of a body with spatial inertia $I$, which has twist $T$ with respect to an inertial frame.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L732' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.newton_euler-Tuple{RigidBodyDynamics.SpatialInertia,RigidBodyDynamics.SpatialAcceleration,RigidBodyDynamics.Twist}' href='#RigidBodyDynamics.newton_euler-Tuple{RigidBodyDynamics.SpatialInertia,RigidBodyDynamics.SpatialAcceleration,RigidBodyDynamics.Twist}'>#</a>
+<strong><code>RigidBodyDynamics.newton_euler</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">newton_euler(I, Ṫ, T)
+
+</code></pre>
+
+<p>Apply the Newton-Euler equations to find the external wrench required to make a body with spatial inertia $I$, which has twist $T$ with respect to an inertial frame, achieve spatial acceleration $\dot{T}$.</p>
+<p>This wrench is also equal to the rate of change of momentum of the body.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L683' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.num_cols-Tuple{RigidBodyDynamics.GeometricJacobian}' href='#RigidBodyDynamics.num_cols-Tuple{RigidBodyDynamics.GeometricJacobian}'>#</a>
+<strong><code>RigidBodyDynamics.num_cols</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">num_cols(jac)
+
+</code></pre>
+
+<p>Return the number of columns of the <code>GeometricJacobian</code>.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L553' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.GeometricJacobian,RigidBodyDynamics.Transform3D}' href='#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.GeometricJacobian,RigidBodyDynamics.Transform3D}'>#</a>
+<strong><code>RigidBodyDynamics.transform</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">transform(jac, transform)
+
+</code></pre>
+
+<p>Transform the <code>GeometricJacobian</code> to a different frame.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L580' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.SpatialAcceleration,RigidBodyDynamics.Transform3D,RigidBodyDynamics.Twist,RigidBodyDynamics.Twist}' href='#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.SpatialAcceleration,RigidBodyDynamics.Transform3D,RigidBodyDynamics.Twist,RigidBodyDynamics.Twist}'>#</a>
+<strong><code>RigidBodyDynamics.transform</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">transform(accel, oldToNew, twistOfCurrentWrtNew, twistOfBodyWrtBase)
+
+</code></pre>
+
+<p>Transform the <code>SpatialAcceleration</code> to a different frame.</p>
+<p>The transformation rule is obtained by differentiating the transformation rule for twists.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L447' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.SpatialInertia{I},RigidBodyDynamics.Transform3D{T}}' href='#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.SpatialInertia{I},RigidBodyDynamics.Transform3D{T}}'>#</a>
+<strong><code>RigidBodyDynamics.transform</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">transform(inertia, t)
+
+</code></pre>
+
+<p>Transform the <code>SpatialInertia</code> to a different frame.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L208' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.Twist,RigidBodyDynamics.Transform3D}' href='#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.Twist,RigidBodyDynamics.Transform3D}'>#</a>
+<strong><code>RigidBodyDynamics.transform</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">transform(twist, transform)
+
+</code></pre>
+
+<p>Transform the <code>Twist</code> to a different frame.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L320' class='documenter-source'>source</a><br></p>
+<p><a id='Base.LinAlg.dot-Tuple{RigidBodyDynamics.Wrench,RigidBodyDynamics.Twist}' href='#Base.LinAlg.dot-Tuple{RigidBodyDynamics.Wrench,RigidBodyDynamics.Twist}'>#</a>
+<strong><code>Base.LinAlg.dot</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">dot(w, t)
+
+</code></pre>
+
+<p>Compute the mechanical power associated with a pairing of a wrench and a twist.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L636' class='documenter-source'>source</a><br></p>
+<p><a id='Base.exp-Tuple{RigidBodyDynamics.Twist}' href='#Base.exp-Tuple{RigidBodyDynamics.Twist}'>#</a>
+<strong><code>Base.exp</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">exp(twist)
+
+</code></pre>
+
+<p>Convert exponential coordinates to a homogeneous transform.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L413' class='documenter-source'>source</a><br></p>
+<p><a id='Base.log-Tuple{RigidBodyDynamics.Transform3D}' href='#Base.log-Tuple{RigidBodyDynamics.Transform3D}'>#</a>
+<strong><code>Base.log</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">log(t)
+
+</code></pre>
+
+<p>Express a homogeneous transform in exponential coordinates centered around the identity.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L360' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.log_with_time_derivative-Tuple{RigidBodyDynamics.Transform3D,RigidBodyDynamics.Twist}' href='#RigidBodyDynamics.log_with_time_derivative-Tuple{RigidBodyDynamics.Transform3D,RigidBodyDynamics.Twist}'>#</a>
+<strong><code>RigidBodyDynamics.log_with_time_derivative</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">log_with_time_derivative(t, twist)
+
+</code></pre>
+
+<p>Compute exponential coordinates as well as their time derivatives in one shot. This mainly exists because ForwardDiff won't work at the singularity of <code>log</code>. It is also ~50% faster than ForwardDiff in this case.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/spatial.jl#L371' class='documenter-source'>source</a><br></p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../joints/" class="btn btn-neutral float-right" title="Joints">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../quickstart/" class="btn btn-neutral" title="Quick start guide"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+    
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/tkoolen/RigidBodyDynamics.jl/" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../quickstart/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../joints/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script src="../js/theme.js"></script>
+      <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="../assets/mathjaxhelper.js"></script>
+
+</body>
+</html>

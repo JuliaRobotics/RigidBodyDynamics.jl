@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Twan Koolen">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Benchmarks - RigidBodyDynamics.jl</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../assets/Documenter.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Benchmarks";
+    var mkdocs_page_input_path = "benchmarks.md";
+    var mkdocs_page_url = "/benchmarks/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> RigidBodyDynamics.jl</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Home</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../quickstart/">Quick start guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../spatial/">Spatial vector algebra</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../joints/">Joints</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../rigidbody/">Rigid bodies</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../mechanism/">Mechanism</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../mechanismstate/">MechanismState</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../algorithms/">Kinematics/dynamics algorithms</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../simulation/">Simulation</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Benchmarks</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#benchmarks">Benchmarks</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">RigidBodyDynamics.jl</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Benchmarks</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/tkoolen/RigidBodyDynamics.jl/edit/master/docs/benchmarks.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p><a id='Benchmarks-1'></a></p>
+<h1 id="benchmarks">Benchmarks</h1>
+<p>Run <code>perf/runbenchmarks.jl</code> (<code>-O3</code> and <code>--check-bounds=no</code> flags recommended) to see benchmark results for the Atlas robot (v5) in the following scenarios:</p>
+<ol>
+<li>Compute the joint-space mass matrix.</li>
+<li>Do inverse dynamics.</li>
+<li>Do forward dynamics.</li>
+</ol>
+<p>Note that results on Travis builds are <strong>not at all</strong> representative because of code coverage. Results on a recent, fast machine with version 0.0.4:</p>
+<p>Output of <code>versioninfo()</code>:</p>
+<pre><code>Julia Version 0.5.0
+Commit 3c9d753 (2016-09-19 18:14 UTC)
+Platform Info:
+  System: Linux (x86_64-pc-linux-gnu)
+  CPU: Intel(R) Core(TM) i7-6950X CPU @ 3.00GHz
+  WORD_SIZE: 64
+  BLAS: libopenblas (USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell)
+  LAPACK: libopenblas64_
+  LIBM: libopenlibm
+  LLVM: libLLVM-3.7.1 (ORCJIT, broadwell)
+</code></pre>
+
+<p>Mass matrix:</p>
+<pre><code>  memory estimate:  0.00 bytes
+  allocs estimate:  0
+  --------------
+  minimum time:     23.034 μs (0.00% GC)
+  median time:      23.364 μs (0.00% GC)
+  mean time:        23.546 μs (0.00% GC)
+  maximum time:     52.605 μs (0.00% GC)
+  --------------
+  samples:          10000
+  evals/sample:     1
+  time tolerance:   5.00%
+  memory tolerance: 1.00%
+</code></pre>
+
+<p>Inverse dynamics:</p>
+<pre><code>  memory estimate:  0.00 bytes
+  allocs estimate:  0
+  --------------
+  minimum time:     29.178 μs (0.00% GC)
+  median time:      29.704 μs (0.00% GC)
+  mean time:        30.276 μs (0.00% GC)
+  maximum time:     65.232 μs (0.00% GC)
+  --------------
+  samples:          10000
+  evals/sample:     1
+  time tolerance:   5.00%
+  memory tolerance: 1.00%
+</code></pre>
+
+<p>Forward dynamics:</p>
+<pre><code>  memory estimate:  48.00 bytes
+  allocs estimate:  2
+  --------------
+  minimum time:     53.336 μs (0.00% GC)
+  median time:      82.928 μs (0.00% GC)
+  mean time:        83.334 μs (0.00% GC)
+  maximum time:     208.453 μs (0.00% GC)
+  --------------
+  samples:          10000
+  evals/sample:     1
+  time tolerance:   5.00%
+  memory tolerance: 1.00%
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="../simulation/" class="btn btn-neutral" title="Simulation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+    
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/tkoolen/RigidBodyDynamics.jl/" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../simulation/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+    </span>
+</div>
+    <script src="../js/theme.js"></script>
+      <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="../assets/mathjaxhelper.js"></script>
+
+</body>
+</html>

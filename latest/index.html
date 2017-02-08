@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="RigidBodyDynamics.jl Documentation">
+  <meta name="author" content="Twan Koolen">
+  <link rel="shortcut icon" href="./img/favicon.ico">
+  <title>Home - RigidBodyDynamics.jl</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="./css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="./css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="./css/highlight.css">
+  <link href="./assets/Documenter.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Home";
+    var mkdocs_page_input_path = "index.md";
+    var mkdocs_page_url = "/";
+  </script>
+  
+  <script src="./js/jquery-2.1.1.min.js"></script>
+  <script src="./js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="./js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="." class="icon icon-home"> RigidBodyDynamics.jl</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href=".">Home</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#rigidbodydynamics">RigidBodyDynamics</a></li>
+                
+                    <li><a class="toctree-l4" href="#design-features">Design features</a></li>
+                
+                    <li><a class="toctree-l4" href="#functionality">Functionality</a></li>
+                
+                    <li><a class="toctree-l4" href="#installation">Installation</a></li>
+                
+                    <li><a class="toctree-l4" href="#references">References</a></li>
+                
+                    <li><a class="toctree-l4" href="#related-packages">Related packages</a></li>
+                
+                    <li><a class="toctree-l4" href="#contents">Contents</a></li>
+                
+                    <li><a class="toctree-l4" href="#citing-this-library">Citing this library</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="quickstart/">Quick start guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="spatial/">Spatial vector algebra</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="joints/">Joints</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="rigidbody/">Rigid bodies</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="mechanism/">Mechanism</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="mechanismstate/">MechanismState</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="algorithms/">Kinematics/dynamics algorithms</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="simulation/">Simulation</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="benchmarks/">Benchmarks</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href=".">RigidBodyDynamics.jl</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Home</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/tkoolen/RigidBodyDynamics.jl/edit/master/docs/index.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p><a id='RigidBodyDynamics-1'></a></p>
+<h1 id="rigidbodydynamics">RigidBodyDynamics</h1>
+<p>RigidBodyDynamics implements various rigid body dynamics and kinematics algorithms.</p>
+<p><a id='Design-features-1'></a></p>
+<h2 id="design-features">Design features</h2>
+<p>Some of the key design features of this package are:</p>
+<ul>
+<li>pure Julia implementation, enabling seamless support for e.g. automatic differentiation using e.g. <a href="https://github.com/JuliaDiff/ForwardDiff.jl">ForwardDiff.jl</a> and symbolic dynamics using <a href="https://github.com/JuliaPy/SymPy.jl">SymPy.jl</a>.</li>
+<li>easy creation and modification of general rigid body mechanisms (including basic <a href="http://wiki.ros.org/urdf">URDF</a> parsing).</li>
+<li>extensive checks that verify that coordinate systems match before computation, with the goal of making reference frame mistakes impossible</li>
+<li>flexible caching of intermediate results to prevent doing double work</li>
+<li>fairly small codebase and few dependencies</li>
+<li>singularity-free rotation parameterizations</li>
+</ul>
+<p><a id='Functionality-1'></a></p>
+<h2 id="functionality">Functionality</h2>
+<p>Current functionality of RigidBodyDynamics includes:</p>
+<ul>
+<li>kinematics/transforming points and free vectors from one coordinate system to another</li>
+<li>transforming wrenches, momenta (spatial force vectors) and twists and their derivatives (spatial motion vectors) from one coordinate system to another</li>
+<li>relative twists/spatial accelerations between bodies</li>
+<li>kinetic/potential energy</li>
+<li>center of mass</li>
+<li>geometric/basic/spatial Jacobians</li>
+<li>momentum</li>
+<li>momentum matrix</li>
+<li>momentum rate bias (= momentum matrix time derivative multiplied by joint velocity vector)</li>
+<li>mass matrix (composite rigid body algorithm)</li>
+<li>inverse dynamics (recursive Newton-Euler)</li>
+<li>dynamics</li>
+<li>simulation, either using an off-the-shelf ODE integrator or using an included custom Munthe-Kaas integrator that properly handles second-order ODEs defined on a manifold.</li>
+</ul>
+<p>There is currently partial support for closed-loop systems (parallel mechanisms); more features will be added soon in this area. Contact is not yet supported.</p>
+<p><a id='Installation-1'></a></p>
+<h2 id="installation">Installation</h2>
+<p><a id='Installing-Julia-1'></a></p>
+<h3 id="installing-julia">Installing Julia</h3>
+<p>Download links and more detailed instructions are available on the <a href="http://julialang.org/">Julia</a> website.</p>
+<p><a id='Installing-RigidBodyDynamics-1'></a></p>
+<h3 id="installing-rigidbodydynamics">Installing RigidBodyDynamics</h3>
+<p>To install the latest tagged release of RigidBodyDynamics, simply run</p>
+<pre><code class="julia">Pkg.add(&quot;RigidBodyDynamics&quot;) 
+</code></pre>
+
+<p>To check out the master branch and work on the bleeding edge, additionally run</p>
+<pre><code class="julia">Pkg.checkout(&quot;RigidBodyDynamics&quot;)
+</code></pre>
+
+<p>RigidBodyDynamics currently only supports version 0.5 of Julia.</p>
+<p><a id='References-1'></a></p>
+<h2 id="references">References</h2>
+<p>Most of the nomenclature used and algorithms implemented by this package stem from the following resources:</p>
+<ul>
+<li>Murray, Richard M., et al. A mathematical introduction to robotic manipulation. CRC press, 1994.</li>
+<li>Featherstone, Roy. Rigid body dynamics algorithms. Springer, 2008.</li>
+<li>Duindam, Vincent. Port-based modeling and control for efficient bipedal walking robots. Diss. University of Twente, 2006.</li>
+</ul>
+<p><a id='Related-packages-1'></a></p>
+<h2 id="related-packages">Related packages</h2>
+<ul>
+<li><a href="https://github.com/rdeits/RigidBodyTreeInspector.jl">RigidBodyTreeInspector.jl</a> - 3D visualization of RigidBodyDynamics.jl <code>Mechanism</code>s using <a href="https://github.com/RobotLocomotion/director">Director</a>.</li>
+</ul>
+<p><a id='Contents-1'></a></p>
+<h2 id="contents">Contents</h2>
+<ul>
+<li><a href="spatial/#Spatial-vector-algebra-1">Spatial vector algebra</a><ul>
+<li><a href="spatial/#Index-1">Index</a></li>
+<li><a href="spatial/#Types-1">Types</a></li>
+<li><a href="spatial/#The-@framecheck-macro-1">The <code>@framecheck</code> macro</a></li>
+<li><a href="spatial/#Functions-1">Functions</a></li>
+</ul>
+</li>
+<li><a href="benchmarks/#Benchmarks-1">Benchmarks</a></li>
+<li><a href="simulation/#Simulation-1">Simulation</a><ul>
+<li><a href="simulation/#Index-1">Index</a></li>
+<li><a href="simulation/#Basic-simulation-1">Basic simulation</a></li>
+<li><a href="simulation/#Lower-level-ODE-integration-interface-1">Lower level ODE integration interface</a></li>
+</ul>
+</li>
+<li><a href="rigidbody/#Rigid-bodies-1">Rigid bodies</a><ul>
+<li><a href="rigidbody/#Index-1">Index</a></li>
+<li><a href="rigidbody/#The-RigidBody-type-1">The <code>RigidBody</code> type</a></li>
+<li><a href="rigidbody/#Functions-1">Functions</a></li>
+</ul>
+</li>
+<li><a href="quickstart/#Quick-start-guide-1">Quick start guide</a></li>
+<li><a href="joints/#Joints-1">Joints</a><ul>
+<li><a href="joints/#Index-1">Index</a></li>
+<li><a href="joints/#The-Joint-type-1">The <code>Joint</code> type</a></li>
+<li><a href="joints/#Functions-1">Functions</a></li>
+<li><a href="joints/#JointTypes-1"><code>JointType</code>s</a></li>
+</ul>
+</li>
+<li><a href="mechanism/#Mechanisms-1">Mechanisms</a><ul>
+<li><a href="mechanism/#Index-1">Index</a></li>
+<li><a href="mechanism/#The-Mechanism-type-1">The <code>Mechanism</code> type</a></li>
+<li><a href="mechanism/#Basic-functionality-1">Basic functionality</a></li>
+<li><a href="mechanism/#mechanism_create-1">Creating and modifying <code>Mechanism</code>s</a></li>
+</ul>
+</li>
+<li><a href="mechanismstate/#MechanismState-1">MechanismState</a><ul>
+<li><a href="mechanismstate/#Index-1">Index</a></li>
+<li><a href="mechanismstate/#The-MechanismState-type-1">The <code>MechanismState</code> type</a></li>
+<li><a href="mechanismstate/#Functions-1">Functions</a></li>
+</ul>
+</li>
+<li><a href=".#RigidBodyDynamics-1">RigidBodyDynamics</a><ul>
+<li><a href=".#Design-features-1">Design features</a></li>
+<li><a href=".#Functionality-1">Functionality</a></li>
+<li><a href=".#Installation-1">Installation</a></li>
+<li><a href=".#References-1">References</a></li>
+<li><a href=".#Related-packages-1">Related packages</a></li>
+<li><a href=".#Contents-1">Contents</a></li>
+<li><a href=".#Citing-this-library-1">Citing this library</a></li>
+</ul>
+</li>
+<li><a href="algorithms/#Algorithms-1">Algorithms</a><ul>
+<li><a href="algorithms/#Index-1">Index</a></li>
+<li><a href="algorithms/#DynamicsResult-1"><code>DynamicsResult</code></a></li>
+<li><a href="algorithms/#Functions-1">Functions</a></li>
+</ul>
+</li>
+</ul>
+<p><a id='Citing-this-library-1'></a></p>
+<h2 id="citing-this-library">Citing this library</h2>
+<pre><code class="bibtex">@misc{rigidbodydynamicsjl,
+ author = &quot;Twan Koolen and contributors&quot;,
+ title = &quot;RigidBodyDynamics.jl&quot;,
+ year = 2016,
+ url = &quot;https://github.com/tkoolen/RigidBodyDynamics.jl&quot;
+}
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="quickstart/" class="btn btn-neutral float-right" title="Quick start guide">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+    
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/tkoolen/RigidBodyDynamics.jl/" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+      
+        <span style="margin-left: 15px"><a href="quickstart/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script src="./js/theme.js"></script>
+      <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="./assets/mathjaxhelper.js"></script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 0.16.1
+Build Date UTC : 2017-02-08 23:18:36
+-->

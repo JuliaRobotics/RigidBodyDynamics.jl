@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Twan Koolen">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Kinematics/dynamics algorithms - RigidBodyDynamics.jl</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../assets/Documenter.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Kinematics/dynamics algorithms";
+    var mkdocs_page_input_path = "algorithms.md";
+    var mkdocs_page_url = "/algorithms/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> RigidBodyDynamics.jl</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Home</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../quickstart/">Quick start guide</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../spatial/">Spatial vector algebra</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../joints/">Joints</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../rigidbody/">Rigid bodies</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../mechanism/">Mechanism</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../mechanismstate/">MechanismState</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Kinematics/dynamics algorithms</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#algorithms">Algorithms</a></li>
+                
+                    <li><a class="toctree-l4" href="#index">Index</a></li>
+                
+                    <li><a class="toctree-l4" href="#dynamicsresult">DynamicsResult</a></li>
+                
+                    <li><a class="toctree-l4" href="#functions">Functions</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../simulation/">Simulation</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../benchmarks/">Benchmarks</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">RigidBodyDynamics.jl</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Kinematics/dynamics algorithms</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/tkoolen/RigidBodyDynamics.jl/edit/master/docs/algorithms.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p><a id='Algorithms-1'></a></p>
+<h1 id="algorithms">Algorithms</h1>
+<p><a id='Index-1'></a></p>
+<h2 id="index">Index</h2>
+<ul>
+<li><a href="./#RigidBodyDynamics.DynamicsResult"><code>RigidBodyDynamics.DynamicsResult</code></a></li>
+<li><a href="./#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState{X,M,C},Any}"><code>RigidBodyDynamics.center_of_mass</code></a></li>
+<li><a href="./#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.center_of_mass</code></a></li>
+<li><a href="./#RigidBodyDynamics.dynamics!"><code>RigidBodyDynamics.dynamics!</code></a></li>
+<li><a href="./#RigidBodyDynamics.dynamics!"><code>RigidBodyDynamics.dynamics!</code></a></li>
+<li><a href="./#RigidBodyDynamics.dynamics_bias!"><code>RigidBodyDynamics.dynamics_bias!</code></a></li>
+<li><a href="./#RigidBodyDynamics.geometric_jacobian-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}"><code>RigidBodyDynamics.geometric_jacobian</code></a></li>
+<li><a href="./#RigidBodyDynamics.gravitational_potential_energy-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}"><code>RigidBodyDynamics.gravitational_potential_energy</code></a></li>
+<li><a href="./#RigidBodyDynamics.inverse_dynamics"><code>RigidBodyDynamics.inverse_dynamics</code></a></li>
+<li><a href="./#RigidBodyDynamics.inverse_dynamics!"><code>RigidBodyDynamics.inverse_dynamics!</code></a></li>
+<li><a href="./#RigidBodyDynamics.mass-Tuple{RigidBodyDynamics.Mechanism}"><code>RigidBodyDynamics.mass</code></a></li>
+<li><a href="./#RigidBodyDynamics.mass_matrix-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}"><code>RigidBodyDynamics.mass_matrix</code></a></li>
+<li><a href="./#RigidBodyDynamics.mass_matrix!-Tuple{Symmetric{C,Array{C,2}},RigidBodyDynamics.MechanismState{X,M,C}}"><code>RigidBodyDynamics.mass_matrix!</code></a></li>
+<li><a href="./#RigidBodyDynamics.momentum_matrix-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.momentum_matrix</code></a></li>
+<li><a href="./#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.momentum_matrix!</code></a></li>
+<li><a href="./#RigidBodyDynamics.relative_acceleration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody,AbstractArray{T,1}}"><code>RigidBodyDynamics.relative_acceleration</code></a></li>
+<li><a href="./#RigidBodyDynamics.subtree_mass-Tuple{RigidBodyDynamics.TreeDataStructure.TreeVertex{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}"><code>RigidBodyDynamics.subtree_mass</code></a></li>
+</ul>
+<p><a id='DynamicsResult-1'></a></p>
+<h2 id="dynamicsresult"><code>DynamicsResult</code></h2>
+<p><a id='RigidBodyDynamics.DynamicsResult' href='#RigidBodyDynamics.DynamicsResult'>#</a>
+<strong><code>RigidBodyDynamics.DynamicsResult</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code class="julia">type DynamicsResult{M, T}
+</code></pre>
+
+<p>Stores variables related to the dynamics of a <code>Mechanism</code>, e.g. the <code>Mechanism</code>'s mass matrix and joint acceleration vector.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/dynamics_result.jl#L1' class='documenter-source'>source</a><br></p>
+<p><a id='Functions-1'></a></p>
+<h2 id="functions">Functions</h2>
+<p><a id='RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState{X,M,C},Any}' href='#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState{X,M,C},Any}'>#</a>
+<strong><code>RigidBodyDynamics.center_of_mass</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">center_of_mass(state, itr)
+
+</code></pre>
+
+<p>Compute the center of mass of an iterable subset of a <code>Mechanism</code>'s bodies in the given state.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L22' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
+<strong><code>RigidBodyDynamics.center_of_mass</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">center_of_mass(state)
+
+</code></pre>
+
+<p>Compute the center of mass of the whole <code>Mechanism</code> in the given state.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L44' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.dynamics!' href='#RigidBodyDynamics.dynamics!'>#</a>
+<strong><code>RigidBodyDynamics.dynamics!</code></strong> &mdash; <em>Function</em>.</p>
+<pre><code class="julia">dynamics!(result, state, torques, externalWrenches)
+dynamics!(result, state, torques)
+dynamics!(result, state)
+
+</code></pre>
+
+<p>Compute the joint acceleration vector $\dot{v}$ and Lagrange multipliers $\lambda$ that satisfy the joint-space equations of motion</p>
+<p>
+<script type="math/tex; mode=display">
+M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau - K(q)^{T} \lambda
+</script>
+</p>
+<p>and the constraint equations</p>
+<p>
+<script type="math/tex; mode=display">
+K(q) \dot{v} = -k
+</script>
+</p>
+<p>given joint configuration vectory $q$, joint velocity vector $v$, and (optionally) joint torques $\tau$ and external wrenches $w_\text{ext}$.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L537' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.dynamics!' href='#RigidBodyDynamics.dynamics!'>#</a>
+<strong><code>RigidBodyDynamics.dynamics!</code></strong> &mdash; <em>Function</em>.</p>
+<pre><code class="julia">dynamics!(ẋ, result, state, stateVec)
+dynamics!(ẋ, result, state, stateVec, torques)
+dynamics!(ẋ, result, state, stateVec, torques, externalWrenches)
+
+</code></pre>
+
+<p>Convenience function for use with standard ODE integrators that takes a <code>Vector</code> argument</p>
+<p>
+<script type="math/tex; mode=display">
+x = \left(\begin{array}{c}
+q\\
+v
+\end{array}\right)
+</script>
+</p>
+<p>and returns a <code>Vector</code> $\dot{x}$.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L563' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.geometric_jacobian-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}' href='#RigidBodyDynamics.geometric_jacobian-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}'>#</a>
+<strong><code>RigidBodyDynamics.geometric_jacobian</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">geometric_jacobian(state, path)
+
+</code></pre>
+
+<p>Compute a geometric Jacobian (also known as a basic, or spatial Jacobian) for a path in the graph of joints and bodies of a <code>Mechanism</code>, in the given state.</p>
+<p>See also <a href="../mechanism/#RigidBodyDynamics.TreeDataStructure.path-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}"><code>path</code></a>, <a href="../spatial/#RigidBodyDynamics.GeometricJacobian"><code>GeometricJacobian</code></a>.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L51' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.gravitational_potential_energy-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}' href='#RigidBodyDynamics.gravitational_potential_energy-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}'>#</a>
+<strong><code>RigidBodyDynamics.gravitational_potential_energy</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">gravitational_potential_energy(state)
+
+</code></pre>
+
+<p>Compute the gravitational potential energy in the given state, computed as the negation of the dot product of the gravitational force and the center of mass expressed in the <code>Mechanism</code>'s root frame.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L100' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.inverse_dynamics' href='#RigidBodyDynamics.inverse_dynamics'>#</a>
+<strong><code>RigidBodyDynamics.inverse_dynamics</code></strong> &mdash; <em>Function</em>.</p>
+<pre><code class="julia">inverse_dynamics(state, v̇)
+inverse_dynamics(state, v̇, externalWrenches)
+
+</code></pre>
+
+<p>Do inverse dynamics, i.e. compute $\tau$ in the unconstrained joint-space equations of motion</p>
+<p>
+<script type="math/tex; mode=display">
+M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
+</script>
+</p>
+<p>given joint configuration vectory $q$, joint velocity vector $v$, joint acceleration vector $\dot{v}$ and (optionally) external wrenches $w_\text{ext}$.</p>
+<p>This method implements the recursive Newton-Euler algorithm.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L382-L393' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.inverse_dynamics!' href='#RigidBodyDynamics.inverse_dynamics!'>#</a>
+<strong><code>RigidBodyDynamics.inverse_dynamics!</code></strong> &mdash; <em>Function</em>.</p>
+<pre><code class="julia">inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇, externalWrenches)
+inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇)
+
+</code></pre>
+
+<p>Do inverse dynamics, i.e. compute $\tau$ in the unconstrained joint-space equations of motion</p>
+<p>
+<script type="math/tex; mode=display">
+M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
+</script>
+</p>
+<p>given joint configuration vectory $q$, joint velocity vector $v$, joint acceleration vector $\dot{v}$ and (optionally) external wrenches $w_\text{ext}$.</p>
+<p>This method implements the recursive Newton-Euler algorithm.</p>
+<p>This method does its computation in place, performing no dynamic memory allocation.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L363-L374' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.mass-Tuple{RigidBodyDynamics.Mechanism}' href='#RigidBodyDynamics.mass-Tuple{RigidBodyDynamics.Mechanism}'>#</a>
+<strong><code>RigidBodyDynamics.mass</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">mass(m)
+
+</code></pre>
+
+<p>Return the total mass of the <code>Mechanism</code>.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L15' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.mass_matrix!-Tuple{Symmetric{C,Array{C,2}},RigidBodyDynamics.MechanismState{X,M,C}}' href='#RigidBodyDynamics.mass_matrix!-Tuple{Symmetric{C,Array{C,2}},RigidBodyDynamics.MechanismState{X,M,C}}'>#</a>
+<strong><code>RigidBodyDynamics.mass_matrix!</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">mass_matrix!(out, state)
+
+</code></pre>
+
+<p>Compute the joint-space mass matrix (also known as the inertia matrix) of the <code>Mechanism</code> in the given state, i.e., the matrix $M(q)$ in the unconstrained joint-space equations of motion</p>
+<p>
+<script type="math/tex; mode=display">
+M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
+</script>
+</p>
+<p>This method implements the composite rigid body algorithm.</p>
+<p>This method does its computation in place, performing no dynamic memory allocation.</p>
+<p>The <code>out</code> argument must be an $n_v \times n_v$ lower triangular <code>Symmetric</code> matrix, where $n_v$ is the dimension of the <code>Mechanism</code>'s joint velocity vector $v$.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L150-L159' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.mass_matrix-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}' href='#RigidBodyDynamics.mass_matrix-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}'>#</a>
+<strong><code>RigidBodyDynamics.mass_matrix</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">mass_matrix(state)
+
+</code></pre>
+
+<p>Compute the joint-space mass matrix (also known as the inertia matrix) of the <code>Mechanism</code> in the given state, i.e., the matrix $M(q)$ in the unconstrained joint-space equations of motion</p>
+<p>
+<script type="math/tex; mode=display">
+M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
+</script>
+</p>
+<p>This method implements the composite rigid body algorithm.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L194-L203' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState}'>#</a>
+<strong><code>RigidBodyDynamics.momentum_matrix!</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">momentum_matrix!(out, state)
+
+</code></pre>
+
+<p>Compute the momentum matrix $A(q)$ of the <code>Mechanism</code> in the given state.</p>
+<p>The momentum matrix maps the <code>Mechanism</code>'s joint velocity vectory $v$ to its total momentum.</p>
+<p>This is a slight generalization of the centroidal momentum matrix (Orin, Goswami, "Centroidal momentum matrix of a humanoid robot: Structure and properties.") in that the matrix (and hence the corresponding total momentum) need not be expressed in a centroidal frame.</p>
+<p>This method does its computation in place, performing no dynamic memory allocation.</p>
+<p>The <code>out</code> argument must be a mutable <code>MomentumMatrix</code> with as many columns as the dimension of the <code>Mechanism</code>'s joint velocity vector $v$.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L218-L229' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.momentum_matrix-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.momentum_matrix-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
+<strong><code>RigidBodyDynamics.momentum_matrix</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">momentum_matrix(state)
+
+</code></pre>
+
+<p>Compute the momentum matrix $A(q)$ of the <code>Mechanism</code> in the given state.</p>
+<p>The momentum matrix maps the <code>Mechanism</code>'s joint velocity vectory $v$ to its total momentum.</p>
+<p>This is a slight generalization of the centroidal momentum matrix (Orin, Goswami, "Centroidal momentum matrix of a humanoid robot: Structure and properties.") in that the matrix (and hence the corresponding total momentum) need not be expressed in a centroidal frame.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L241-L252' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.relative_acceleration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody,AbstractArray{T,1}}' href='#RigidBodyDynamics.relative_acceleration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody,AbstractArray{T,1}}'>#</a>
+<strong><code>RigidBodyDynamics.relative_acceleration</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">relative_acceleration(state, body, base, v̇)
+
+</code></pre>
+
+<p>Compute the spatial acceleration of <code>body</code> with respect to <code>base</code> for the given state and joint acceleration vector $\dot{v}$.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L87' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.dynamics_bias!' href='#RigidBodyDynamics.dynamics_bias!'>#</a>
+<strong><code>RigidBodyDynamics.dynamics_bias!</code></strong> &mdash; <em>Function</em>.</p>
+<pre><code class="julia">dynamics_bias!(torques, biasAccelerations, wrenches, state)
+dynamics_bias!(torques, biasAccelerations, wrenches, state, externalWrenches)
+
+</code></pre>
+
+<p>Compute the 'dynamics bias term', i.e. the term</p>
+<p>
+<script type="math/tex; mode=display">
+c(q, v, w_\text{ext})
+</script>
+</p>
+<p>in the unconstrained joint-space equations of motion</p>
+<p>
+<script type="math/tex; mode=display">
+M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
+</script>
+</p>
+<p>This method does its computation in place, performing no dynamic memory allocation.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L325' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.subtree_mass-Tuple{RigidBodyDynamics.TreeDataStructure.TreeVertex{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}' href='#RigidBodyDynamics.subtree_mass-Tuple{RigidBodyDynamics.TreeDataStructure.TreeVertex{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}'>#</a>
+<strong><code>RigidBodyDynamics.subtree_mass</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">subtree_mass(base)
+
+</code></pre>
+
+<p>Return the mass of a subtree of a <code>Mechanism</code>, rooted at <code>base</code> (including the mass of <code>base</code>).</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/5aaaee8b8dc30e0a9ce5cf52f0ae1c7580f897ae/src/mechanism_algorithms.jl#L1' class='documenter-source'>source</a><br></p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../simulation/" class="btn btn-neutral float-right" title="Simulation">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../mechanismstate/" class="btn btn-neutral" title="MechanismState"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+    
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/tkoolen/RigidBodyDynamics.jl/" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../mechanismstate/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../simulation/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script src="../js/theme.js"></script>
+      <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="../assets/mathjaxhelper.js"></script>
+
+</body>
+</html>
