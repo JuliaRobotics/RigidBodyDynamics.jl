@@ -11,6 +11,9 @@ import StaticArrays: similar_type
 using Rotations
 using DataStructures
 using LightXML
+using DocStringExtensions
+
+const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
 
 if isdefined(Base, :Iterators)
     import Base.Iterators: filter
@@ -28,6 +31,7 @@ include("cache_element.jl")
 
 importall .TreeDataStructure
 include("mechanism.jl")
+include("mechanism_manipulation.jl")
 include("mechanism_state.jl")
 include("dynamics_result.jl")
 include("mechanism_algorithms.jl")

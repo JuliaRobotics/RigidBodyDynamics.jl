@@ -1,3 +1,30 @@
+"""
+$(SIGNATURES)
+
+Return the mass of a subtree of a `Mechanism`, rooted at `base` (including
+the mass of `base`).
+"""
+function subtree_mass{T}(base::Tree{RigidBody{T}, Joint{T}})
+    result = isroot(base) ? zero(T) : spatial_inertia(vertex_data(base)).mass
+    for child in children(base)
+        result += subtree_mass(child)
+    end
+    result
+end
+
+"""
+$(SIGNATURES)
+
+Return the total mass of the `Mechanism`.
+"""
+mass(m::Mechanism) = subtree_mass(tree(m))
+
+"""
+$(SIGNATURES)
+
+Compute the center of mass of an iterable subset of a `Mechanism`'s bodies in
+the given state.
+"""
 function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
     frame = root_frame(state.mechanism)
     com = Point3D(frame, zeros(SVector{3, C}))
@@ -14,8 +41,22 @@ function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
     com
 end
 
+"""
+$(SIGNATURES)
+
+Compute the center of mass of the whole `Mechanism` in the given state.
+"""
 center_of_mass(state::MechanismState) = center_of_mass(state, non_root_bodies(state.mechanism))
 
+"""
+$(SIGNATURES)
+
+Compute a geometric Jacobian (also known as a basic, or spatial Jacobian)
+for a path in the graph of joints and bodies of a `Mechanism`,
+in the given state.
+
+See also [`path`](@ref), [`GeometricJacobian`](@ref).
+"""
 function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{RigidBody{M}, Joint{M}})
     copysign = (motionSubspace::GeometricJacobian, sign::Int64) -> sign < 0 ? -motionSubspace : motionSubspace
     motionSubspaces = [copysign(motion_subspace(state, joint), sign)::GeometricJacobian for (joint, sign) in zip(path.edgeData, path.directions)]
@@ -43,6 +84,12 @@ function acceleration_wrt_ancestor{X, M, C, V}(state::MechanismState{X, M, C},
     -bias_acceleration(state, vertex_data(ancestor)) + bias_acceleration(state, vertex_data(descendant)) + accel
 end
 
+"""
+$(SIGNATURES)
+
+Compute the spatial acceleration of `body` with respect to `base` for
+the given state and joint acceleration vector ``\\dot{v}``.
+"""
 function relative_acceleration(state::MechanismState, body::RigidBody, base::RigidBody, v̇::AbstractVector)
     bodyVertex = findfirst(tree(state.mechanism), body)
     baseVertex = findfirst(tree(state.mechanism), base)
@@ -50,6 +97,13 @@ function relative_acceleration(state::MechanismState, body::RigidBody, base::Rig
     -acceleration_wrt_ancestor(state, baseVertex, lca, v̇) + acceleration_wrt_ancestor(state, bodyVertex, lca, v̇)
 end
 
+"""
+$(SIGNATURES)
+
+Compute the gravitational potential energy in the given state, computed as the
+negation of the dot product of the gravitational force and the center
+of mass expressed in the `Mechanism`'s root frame.
+"""
 function gravitational_potential_energy{X, M, C}(state::MechanismState{X, M, C})
     m = mass(state.mechanism)
     gravitationalForce = m * state.mechanism.gravitationalAcceleration
@@ -83,6 +137,27 @@ function gravitational_potential_energy{X, M, C}(state::MechanismState{X, M, C})
      end
  end
 
+const mass_matrix_doc = """Compute the joint-space mass matrix
+(also known as the inertia matrix) of the `Mechanism` in the given state, i.e.,
+the matrix ``M(q)`` in the unconstrained joint-space equations of motion
+```math
+M(q) \\dot{v} + c(q, v, w_\\text{ext}) = \\tau
+```
+
+This method implements the composite rigid body algorithm.
+"""
+
+"""
+$(SIGNATURES)
+
+$mass_matrix_doc
+
+$noalloc_doc
+
+The `out` argument must be an ``n_v \\times n_v`` lower triangular
+`Symmetric` matrix, where ``n_v`` is the dimension of the `Mechanism`'s joint
+velocity vector ``v``.
+"""
 function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
     @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
     @boundscheck out.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
@@ -116,6 +191,11 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
     end
 end
 
+"""
+$(SIGNATURES)
+
+$mass_matrix_doc
+"""
 function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
     nv = num_velocities(state)
     ret = Symmetric(Matrix{C}(nv, nv), :L)
@@ -123,6 +203,28 @@ function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
     ret
 end
 
+const momentum_matrix_doc = """Compute the momentum matrix ``A(q)`` of the
+`Mechanism` in the given state.
+
+The momentum matrix maps the `Mechanism`'s joint velocity vectory ``v`` to
+its total momentum.
+
+This is a slight generalization of the centroidal momentum matrix
+(Orin, Goswami, "Centroidal momentum matrix of a humanoid robot: Structure and properties.")
+in that the matrix (and hence the corresponding total momentum) need not be
+expressed in a centroidal frame.
+"""
+
+"""
+$(SIGNATURES)
+
+$momentum_matrix_doc
+
+$noalloc_doc
+
+The `out` argument must be a mutable `MomentumMatrix` with as many columns as
+the dimension of the `Mechanism`'s joint velocity vector ``v``.
+"""
 function momentum_matrix!(out::MomentumMatrix, state::MechanismState)
     @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
     pos = 1
@@ -136,6 +238,11 @@ function momentum_matrix!(out::MomentumMatrix, state::MechanismState)
     end
 end
 
+"""
+$(SIGNATURES)
+
+$momentum_matrix_doc
+"""
 function momentum_matrix(state::MechanismState)
     ncols = num_velocities(state)
     T = cache_eltype(state)
@@ -192,13 +299,12 @@ function newton_euler!{T, X, M, W}(
     end
 end
 
-"""
-Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
-"""
+
 function joint_wrenches_and_torques!{T, X, M}(
         torquesOut::StridedVector{T},
         netWrenchesInJointWrenchesOut::Associative{RigidBody{M}, Wrench{T}},
         state::MechanismState{X, M})
+    # Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
     @boundscheck length(torquesOut) == num_velocities(state) || error("torquesOut size is wrong")
     vertices = state.toposortedStateVertices
     for i = length(vertices) : -1 : 2
@@ -216,6 +322,20 @@ function joint_wrenches_and_torques!{T, X, M}(
     end
 end
 
+"""
+$(SIGNATURES)
+
+Compute the 'dynamics bias term', i.e. the term
+```math
+c(q, v, w_\\text{ext})
+```
+in the unconstrained joint-space equations of motion
+```math
+M(q) \\dot{v} + c(q, v, w_\\text{ext}) = \\tau
+```
+
+$noalloc_doc
+"""
 function dynamics_bias!{T, X, M, W}(
         torques::AbstractVector{T},
         biasAccelerations::Associative{RigidBody{M}, SpatialAcceleration{T}},
@@ -228,6 +348,25 @@ function dynamics_bias!{T, X, M, W}(
     joint_wrenches_and_torques!(torques, wrenches, state)
 end
 
+const inverse_dynamics_doc = """Do inverse dynamics, i.e. compute ``\\tau``
+in the unconstrained joint-space equations of motion
+```math
+M(q) \\dot{v} + c(q, v, w_\\text{ext}) = \\tau
+```
+given joint configuration vectory ``q``, joint velocity vector ``v``,
+joint acceleration vector ``\\dot{v}`` and (optionally) external
+wrenches ``w_\\text{ext}``.
+
+This method implements the recursive Newton-Euler algorithm.
+"""
+
+"""
+$(SIGNATURES)
+
+$inverse_dynamics_doc
+
+$noalloc_doc
+"""
 function inverse_dynamics!{T, X, M, V, W}(
         torquesOut::AbstractVector{T},
         jointWrenchesOut::Associative{RigidBody{M}, Wrench{T}},
@@ -240,7 +379,11 @@ function inverse_dynamics!{T, X, M, V, W}(
     joint_wrenches_and_torques!(torquesOut, jointWrenchesOut, state)
 end
 
-# note: lots of allocations, preallocate stuff and use inverse_dynamics! for performance
+"""
+$(SIGNATURES)
+
+$inverse_dynamics_doc
+"""
 function inverse_dynamics{X, M, V, W}(
         state::MechanismState{X, M},
         v̇::AbstractVector{V},
@@ -391,18 +534,45 @@ function dynamics_solve!{S, T<:LinAlg.BlasReal}(result::DynamicsResult{S, T}, τ
     nothing
 end
 
-function dynamics!{T, X, M, Tau, W}(out::DynamicsResult{T}, state::MechanismState{X, M},
+"""
+$(SIGNATURES)
+
+Compute the joint acceleration vector ``\\dot{v}`` and Lagrange multipliers
+``\\lambda`` that satisfy the joint-space equations of motion
+```math
+M(q) \\dot{v} + c(q, v, w_\\text{ext}) = \\tau - K(q)^{T} \\lambda
+```
+and the constraint equations
+```math
+K(q) \\dot{v} = -k
+```
+given joint configuration vectory ``q``, joint velocity vector ``v``, and
+(optionally) joint torques ``\\tau`` and external wrenches ``w_\\text{ext}``.
+"""
+function dynamics!{T, X, M, Tau, W}(result::DynamicsResult{T}, state::MechanismState{X, M},
         torques::AbstractVector{Tau} = NullVector{T}(num_velocities(state)),
         externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
-    dynamics_bias!(out.dynamicsBias, out.accelerations, out.jointWrenches, state, externalWrenches)
-    mass_matrix!(out.massMatrix, state)
-    constraint_jacobian_and_bias!(state, out.constraintJacobian, out.constraintBias)
-    dynamics_solve!(out, torques)
+    dynamics_bias!(result.dynamicsBias, result.accelerations, result.jointWrenches, state, externalWrenches)
+    mass_matrix!(result.massMatrix, state)
+    constraint_jacobian_and_bias!(state, result.constraintJacobian, result.constraintBias)
+    dynamics_solve!(result, torques)
     nothing
 end
 
-# Convenience function that takes a Vector argument for the state stacked as [q; v]
-# and returns a Vector, for use with standard ODE integrators.
+
+"""
+$(SIGNATURES)
+
+Convenience function for use with standard ODE integrators that takes a
+`Vector` argument
+```math
+x = \\left(\\begin{array}{c}
+q\\\\
+v
+\\end{array}\\right)
+```
+and returns a `Vector` ``\\dot{x}``.
+"""
 function dynamics!{T, X, M, Tau, W}(ẋ::StridedVector{X},
         result::DynamicsResult{T}, state::MechanismState{X, M}, stateVec::AbstractVector{X},
         torques::AbstractVector{Tau} = NullVector{T}(num_velocities(state)),

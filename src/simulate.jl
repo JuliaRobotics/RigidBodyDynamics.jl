@@ -1,5 +1,13 @@
 using RigidBodyDynamics.OdeIntegrators
 
+"""
+$(SIGNATURES)
+
+Simple `Mechanism` simulation.
+
+Uses `MuntheKaasIntegrator`. See [`MuntheKaasIntegrator`](@ref) for a lower
+level interface with more options.
+"""
 function simulate(state0::MechanismState, finalTime)
     T = cache_eltype(state0)
     result = DynamicsResult(T, state0.mechanism)

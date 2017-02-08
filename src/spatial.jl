@@ -1,4 +1,27 @@
 # Types
+
+"""
+$(TYPEDEF)
+
+A spatial inertia, or inertia matrix, represents the mass distribution of a
+rigid body.
+
+A spatial inertia expressed in frame ``i`` is defined as:
+```math
+I^i =
+\\int_{B}\\rho\\left(x\\right)\\left[\\begin{array}{cc}
+\\hat{p}^{T}\\left(x\\right)\\hat{p}\\left(x\\right) & \\hat{p}\\left(x\\right)\\\\
+\\hat{p}^{T}\\left(x\\right) & I
+\\end{array}\\right]dx=\\left[\\begin{array}{cc}
+J & \\hat{c}\\\\
+\\hat{c}^{T} & mI
+\\end{array}\\right]
+```
+where ``\\rho(x)`` is the density of point ``x``, and ``p(x)`` are the coordinates
+of point ``x`` expressed in frame ``i``.
+``J`` is the mass moment of inertia, ``m`` is the total mass, and ``c`` is the
+'cross part', center of mass position scaled by ``m``.
+"""
 immutable SpatialInertia{T<:Number}
     frame::CartesianFrame3D
     moment::SMatrix{3, 3, T, 9}
@@ -17,6 +40,44 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     end
 end
 
+"""
+$(TYPEDEF)
+
+A twist represents the relative angular and linear motion between two bodies.
+
+The twist of frame ``j`` with respect to frame ``i``, expressed in frame ``k``
+is defined as
+```math
+T_{j}^{k,i}=\\left(\\begin{array}{c}
+\\omega_{j}^{k,i}\\\\
+v_{j}^{k,i}
+\\end{array}\\right)\\in\\mathbb{R}^{6}
+```
+such that
+```math
+\\hat{T}_{j}^{k,i}=\\left[\\begin{array}{cc}
+\\hat{\\omega}_{j}^{k,i} & v_{j}^{k,i}\\\\
+0 & 0
+\\end{array}\\right]=H_{i}^{k}\\dot{H}_{j}^{i}H_{k}^{j}
+```
+where ``H^{\\beta}_{\\alpha}`` is the homogeneous transform from frame
+``\\alpha`` to frame ``\\beta``.
+
+Here, ``\\omega_{j}^{k,i}`` is the angular part and ``v_{j}^{k,i}`` is the
+linear part. Note that the linear part is not in general the same as the
+linear velocity of the origin of frame ``j``.
+"""
+Twist
+
+"""
+$(TYPEDEF)
+
+A spatial acceleration is the time derivative of a twist.
+
+See [`Twist`](@ref).
+"""
+SpatialAcceleration
+
 for ForceSpaceElement in (:Momentum, :Wrench)
     @eval immutable $ForceSpaceElement{T<:Number}
         frame::CartesianFrame3D
@@ -25,6 +86,42 @@ for ForceSpaceElement in (:Momentum, :Wrench)
     end
 end
 
+"""
+$(TYPEDEF)
+
+A `Momentum` is the product of a `SpatialInertia` and a `Twist`, i.e.
+```math
+h^i = I^i T^{i, j}_k
+```
+where ``I^i`` is the spatial inertia of a given body expressed in frame ``i``,
+and ``T^{i, j}_k`` is the twist of frame ``k`` (attached to the body) with
+respect to inertial frame ``j``, expressed in frame ``i``.
+"""
+Momentum
+
+"""
+$(TYPEDEF)
+
+A wrench represents a system of forces.
+
+The wrench ``w^i`` expressed in frame ``i`` is defined as
+```math
+w^{i}=\\sum_{j}\\left(\\begin{array}{c}
+r_{j}^{i}\\times f_{j}^{i}\\\\
+f_{j}^{i}
+\\end{array}\\right)
+```
+where the ``f_{j}^{i}`` are forces expressed in frame ``i``, exerted at
+positions ``r_{j}^{i}``.
+"""
+Wrench
+
+"""
+$(TYPEDEF)
+
+A geometric Jacobian (also known as basic, or spatial Jacobian) maps a vector
+of joint velocities to a twist.
+"""
 immutable GeometricJacobian{A<:AbstractMatrix}
     body::CartesianFrame3D
     base::CartesianFrame3D
@@ -55,6 +152,12 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
     end
 end
 
+"""
+$(TYPEDEF)
+
+A momentum matrix maps a joint velocity vectory to momentum.
+"""
+MomentumMatrix
 
 # SpatialInertia-specific functions
 convert{T}(::Type{SpatialInertia{T}}, inertia::SpatialInertia{T}) = inertia
@@ -74,6 +177,11 @@ convert{T<:Matrix}(::Type{T}, inertia::SpatialInertia) = convert(T, convert(SMat
 
 Array{T}(inertia::SpatialInertia{T}) = convert(Matrix{T}, inertia)
 
+"""
+$(SIGNATURES)
+
+Return the center of mass of the `SpatialInertia` as a [`Point3D`](@ref).
+"""
 center_of_mass(inertia::SpatialInertia) = Point3D(inertia.frame, inertia.crossPart / inertia.mass)
 
 function show(io::IO, inertia::SpatialInertia)
@@ -97,6 +205,11 @@ function (+){T}(inertia1::SpatialInertia{T}, inertia2::SpatialInertia{T})
     SpatialInertia(inertia1.frame, moment, crossPart, mass)
 end
 
+"""
+$(SIGNATURES)
+
+Transform the `SpatialInertia` to a different frame.
+"""
 function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})::SpatialInertia{promote_type(I, T)}
     @framecheck(t.from, inertia.frame)
     S = promote_type(I, T)
@@ -203,6 +316,12 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
 end
 
 # Twist-specific functions
+
+"""
+$(SIGNATURES)
+
+Transform the `Twist` to a different frame.
+"""
 function transform(twist::Twist, transform::Transform3D)
     @framecheck(twist.frame, transform.from)
     angular, linear = transform_spatial_motion(twist.angular, twist.linear, transform.rot, transform.trans)
@@ -238,13 +357,24 @@ function _log(t::Transform3D)
     ξ, θ, θ_squared, θ_over_2, sθ_over_2, cθ_over_2, α
 end
 
+"""
+$(SIGNATURES)
+
+Express a homogeneous transform in exponential coordinates centered around the
+identity.
+"""
 function log(t::Transform3D)
     first(_log(t))
 end
 
-# Compute exponential coordinates as well as their time derivatives in one shot.
-# This mainly exists because ForwardDiff won't work at the singularity of log.
-# It is also ~50% faster than ForwardDiff in this case.
+
+"""
+$(SIGNATURES)
+
+Compute exponential coordinates as well as their time derivatives in one shot.
+This mainly exists because ForwardDiff won't work at the singularity of `log`.
+It is also ~50% faster than ForwardDiff in this case.
+"""
 function log_with_time_derivative(t::Transform3D, twist::Twist)
     # See Bullo and Murray, "Proportional derivative (PD) control on the Euclidean group.", Lemma 4.
     # This is truely magic.
@@ -280,6 +410,11 @@ function log_with_time_derivative(t::Transform3D, twist::Twist)
     X, Ẋ
 end
 
+"""
+$(SIGNATURES)
+
+Convert exponential coordinates to a homogeneous transform.
+"""
 function exp(twist::Twist)
     # See Murray et al, "A mathematical introduction to robotic manipulation."
     @framecheck(twist.frame, twist.base) # twist in base frame; see section 4.3
@@ -302,7 +437,6 @@ function exp(twist::Twist)
     Transform3D(twist.body, twist.base, rot, trans)
 end
 
-
 function Base.cross(twist1::Twist, twist2::Twist)
     @framecheck(twist1.frame, twist2.frame)
     angular, linear = se3_commutator(twist1.angular, twist1.linear, twist2.angular, twist2.linear)
@@ -310,6 +444,14 @@ function Base.cross(twist1::Twist, twist2::Twist)
 end
 
 # SpatialAcceleration-specific functions
+"""
+$(SIGNATURES)
+
+Transform the `SpatialAcceleration` to a different frame.
+
+The transformation rule is obtained by differentiating the transformation rule
+for twists.
+"""
 function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCurrentWrtNew::Twist, twistOfBodyWrtBase::Twist)
     # trivial case
     accel.frame == oldToNew.to && return accel
@@ -355,6 +497,11 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         zero{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
         rand{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, rand(SVector{3, T}), rand(SVector{3, T}))
 
+        """
+        $(SIGNATURES)
+
+        Transform the $($(ForceSpaceElement).name.name) to a different frame.
+        """
         function transform(f::$ForceSpaceElement, transform::Transform3D)
             @framecheck(f.frame, transform.from)
             linear = transform.rot * f.linear
@@ -402,6 +549,12 @@ convert{A}(::Type{GeometricJacobian{A}}, jac::GeometricJacobian) = GeometricJaco
 Array(jac::GeometricJacobian) = [Array(jac.angular); Array(jac.linear)]
 
 eltype{A}(::Type{GeometricJacobian{A}}) = eltype(A)
+
+"""
+$(SIGNATURES)
+
+Return the number of columns of the `GeometricJacobian`.
+"""
 num_cols(jac::GeometricJacobian) = size(jac.angular, 2)
 angular_part(jac::GeometricJacobian) = jac.angular
 linear_part(jac::GeometricJacobian) = jac.linear
@@ -424,6 +577,11 @@ function hcat(jacobians::GeometricJacobian...)
     GeometricJacobian(jacobians[end].body, jacobians[1].base, frame, angular, linear)
 end
 
+"""
+$(SIGNATURES)
+
+Transform the `GeometricJacobian` to a different frame.
+"""
 function transform(jac::GeometricJacobian, transform::Transform3D)
     @framecheck(jac.frame, transform.from)
     R = transform.rot
@@ -475,7 +633,11 @@ end
 
 # Interactions between spatial types
 
-# Mechanical power
+"""
+$(SIGNATURES)
+
+Compute the mechanical power associated with a pairing of a wrench and a twist.
+"""
 dot(w::Wrench, t::Twist) = begin @framecheck(w.frame, t.frame); dot(w.angular, t.angular) + dot(w.linear, t.linear) end
 dot(t::Twist, w::Wrench) = dot(w, t)
 
@@ -518,6 +680,15 @@ function (*)(inertia::SpatialInertia, jac::GeometricJacobian)
     MomentumMatrix(inertia.frame, angular, linear)
 end
 
+"""
+$(SIGNATURES)
+
+Apply the Newton-Euler equations to find the external wrench required to
+make a body with spatial inertia ``I``, which has twist ``T`` with respect
+to an inertial frame, achieve spatial acceleration ``\\dot{T}``.
+
+This wrench is also equal to the rate of change of momentum of the body.
+"""
 function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
     body = Ṫ.body
     base = Ṫ.base # TODO: should assert that this is an inertial frame somehow
@@ -558,6 +729,12 @@ for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAccelera
     end
 end
 
+"""
+$(SIGNATURES)
+
+Compute the kinetic energy of a body with spatial inertia ``I``, which has
+twist ``T`` with respect to an inertial frame.
+"""
 function kinetic_energy(I::SpatialInertia, twist::Twist)
     @framecheck(I.frame, twist.frame)
     # TODO: should assert that twist.base is an inertial frame somehow

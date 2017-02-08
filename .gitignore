@@ -3,4 +3,6 @@
 *.jl.mem
 deps/deps.jl
 *.ipynb_checkpoints
+docs/build/
+docs/site/
 
