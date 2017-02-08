@@ -55,7 +55,7 @@ Compute a geometric Jacobian (also known as a basic, or spatial Jacobian)
 for a path in the graph of joints and bodies of a `Mechanism`,
 in the given state.
 
-See also [path](@ref), [GeometricJacobian](@ref).
+See also [`path`](@ref), [`GeometricJacobian`](@ref).
 """
 function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{RigidBody{M}, Joint{M}})
     copysign = (motionSubspace::GeometricJacobian, sign::Int64) -> sign < 0 ? -motionSubspace : motionSubspace

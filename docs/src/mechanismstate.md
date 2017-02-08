@@ -1,3 +1,9 @@
+# Index
+```@index
+Pages   = ["mechanismstate.md"]
+Order   = [:type, :function]
+```
+
 # The `MechanismState` type
 ```@docs
 MechanismState

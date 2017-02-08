@@ -1,3 +1,9 @@
+# Index
+```@index
+Pages   = ["algorithms.md"]
+Order   = [:type, :function]
+```
+
 # `DynamicsResult`
 ```@docs
 DynamicsResult

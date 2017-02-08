@@ -29,3 +29,4 @@ pages:
   - 'Mechanism': 'mechanism.md'
   - 'MechanismState': mechanismstate.md
   - 'Kinematics/dynamics algorithms': 'algorithms.md'
+  - 'Simulation': 'simulation.md'

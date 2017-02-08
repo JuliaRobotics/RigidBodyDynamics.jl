@@ -1,3 +1,9 @@
+# Index
+```@index
+Pages   = ["rigidbody.md"]
+Order   = [:type, :function]
+```
+
 # The `RigidBody` type
 ```@docs
 RigidBody

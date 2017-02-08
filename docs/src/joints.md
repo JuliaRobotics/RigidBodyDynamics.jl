@@ -1,3 +1,9 @@
+# Index
+```@index
+Pages   = ["joints.md"]
+Order   = [:type, :function]
+```
+
 # The `Joint` type
 
 ```@docs

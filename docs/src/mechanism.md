@@ -1,5 +1,10 @@
-# The `Mechanism` type
+# Index
+```@index
+Pages   = ["mechanism.md"]
+Order   = [:type, :function]
+```
 
+# The `Mechanism` type
 ```@docs
 Mechanism
 ```

@@ -1,4 +1,5 @@
-RigidBodyDynamics provides pure Julia implementations of various rigid body dynamics and kinematics algorithms.
+RigidBodyDynamics provides pure Julia implementations of various rigid body
+dynamics and kinematics algorithms.
 
 # About
 TODO:

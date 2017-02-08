@@ -1,3 +1,9 @@
+# Index
+```@index
+Pages   = ["spatial.md"]
+Order   = [:type, :function, :macro]
+```
+
 # Types
 
 ## Coordinate frames
