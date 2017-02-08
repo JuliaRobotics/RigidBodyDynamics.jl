@@ -1,11 +1,11 @@
-# The `RigidBody` type
+# The `MechanismState` type
 ```@docs
-RigidBody
+MechanismState
 ```
 
 # Functions
 ```@autodocs
 Modules = [RigidBodyDynamics]
 Order   = [:function]
-Pages   = ["rigid_body.jl"]
+Pages   = ["mechanism_state.jl"]
 ```

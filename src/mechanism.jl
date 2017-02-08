@@ -24,6 +24,12 @@ type Mechanism{T<:Number}
     end
 end
 
+"""
+$(SIGNATURES)
+
+Create a new `Mechanism` containing only a root body, to which other bodies can
+be attached with joints.
+"""
 Mechanism{T}(rootBody::RigidBody{T}; kwargs...) = Mechanism{T}(rootBody; kwargs...)
 eltype{T}(::Mechanism{T}) = T
 root_vertex(m::Mechanism) = m.toposortedTree[1]

@@ -34,11 +34,6 @@ immutable CartesianFrame3D
     end
 end
 
-"""
-$(SIGNATURES)
-
-Return the name of `frame`.
-"""
 name(frame::CartesianFrame3D) = get(frame_names, frame.id, "anonymous")
 show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\" (id = $(frame.id))")
 

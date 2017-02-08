@@ -23,8 +23,9 @@ docs_dir: 'build'
 pages:
   - 'Home': 'index.md'
   - 'Quick start guide': 'quickstart.md'
-  - 'Mechanism': 'mechanism.md'
-  - 'Algorithms': 'algorithms.md'
+  - 'Spatial vector algebra': 'spatial.md'
   - 'Joints': 'joints.md'
   - 'Rigid bodies': 'rigidbody.md'
-  - 'Spatial vector algebra': 'spatial.md'
+  - 'Mechanism': 'mechanism.md'
+  - 'MechanismState': mechanismstate.md
+  - 'Kinematics/dynamics algorithms': 'algorithms.md'

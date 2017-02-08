@@ -205,7 +205,7 @@ $(SIGNATURES)
 Return the twist of `joint`'s  successor with respect to its predecessor,
 expressed in the frame after the joint.
 
-Note that this is the same as `Twist([`motion_subspace`](@ref)(joint, q), v)`.
+Note that this is the same as `Twist(motion_subspace(joint, q), v)`.
 """
 function joint_twist{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::Twist{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)

@@ -43,9 +43,14 @@ GeometricJacobian
 MomentumMatrix
 ```
 
+# The `@framecheck` macro
+```@docs
+@framecheck
+```
+
 # Functions
 ```@autodocs
 Modules = [RigidBodyDynamics]
-Order   = [:function, :macro]
-Pages   = ["spatial.jl"]
+Order   = [:function]
+Pages   = ["spatial.jl", "frames.jl"]
 ```

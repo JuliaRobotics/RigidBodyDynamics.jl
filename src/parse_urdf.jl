@@ -88,7 +88,12 @@ function parse_vertex{T}(mechanism::Mechanism{T}, vertex::TreeVertex{XMLElement,
     attach!(mechanism, parent, joint, jointToParent, body)
 end
 
-function parse_urdf{T}(::Type{T}, filename)
+"""
+$(SIGNATURES)
+
+Create a `Mechanism` by parsing a [URDF](http://wiki.ros.org/urdf) file.
+"""
+function parse_urdf{T}(scalar::Type{T}, filename)
     xdoc = parse_file(filename)
     xroot = root(xdoc)
     @assert LightXML.name(xroot) == "robot"

@@ -4,7 +4,7 @@
 Joint
 ```
 
-# Functionality
+# Functions
 
 ```@autodocs
 Modules = [RigidBodyDynamics]

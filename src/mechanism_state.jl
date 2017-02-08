@@ -76,9 +76,14 @@ function setdirty!(state::RigidBodyState)
     setdirty!(state.crbInertia)
 end
 
-# State of an entire Mechanism
-# The state information pertaining to rigid bodies in toposortedStateVertices is
-# currently stored in the Mechanism's root frame.
+"""
+$(TYPEDEF)
+
+A `MechanismState` stores state information for an entire `Mechanism`. It
+contains the joint configuration and velocity vectors ``q`` and ``v``, as well
+as cache variables that depend on ``q`` and ``v`` and are aimed at preventing
+double work.
+"""
 immutable MechanismState{X<:Number, M<:Number, C<:Number}
     mechanism::Mechanism{M}
     q::Vector{X}
@@ -121,17 +126,46 @@ end
 MechanismState{X, M}(t::Type{X}, mechanism::Mechanism{M}) = MechanismState{X, M, promote_type(X, M)}(t, mechanism)
 
 show{X, M, C}(io::IO, ::MechanismState{X, M, C}) = print(io, "MechanismState{$X, $M, $C}(…)")
+
+"""
+$(SIGNATURES)
+
+Return the length of the joint configuration vector ``q``.
+"""
 num_positions(state::MechanismState) = length(state.q)
+
+"""
+$(SIGNATURES)
+
+Return the length of the joint velocity vector ``v``.
+"""
 num_velocities(state::MechanismState) = length(state.v)
 state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
 mechanism_eltype{X, M, C}(state::MechanismState{X, M, C}) = M
 cache_eltype{X, M, C}(state::MechanismState{X, M, C}) = C
 state_vertex(state::MechanismState, body::RigidBody) = state.toposortedStateVertices[findfirst(v -> vertex_data(v).body == body, state.toposortedStateVertices)] # FIXME: linear time
 state_vertex(state::MechanismState, joint::Joint) = state.toposortedStateVertices[findfirst(v -> !isroot(v) && edge_to_parent_data(v).joint == joint, state.toposortedStateVertices)] # FIXME: linear time
+
+"""
+$(SIGNATURES)
+
+Return the part of the configuration vector ``q`` associated with `joint`.
+"""
 configuration(state::MechanismState, joint::Joint) = edge_to_parent_data(state_vertex(state, joint)).q
+
+"""
+$(SIGNATURES)
+
+Return the part of the velocity vector ``v`` associated with `joint`.
+"""
 velocity(state::MechanismState, joint::Joint) = edge_to_parent_data(state_vertex(state, joint)).v
 non_root_vertices(state::MechanismState) = state.nonRootTopoSortedStateVertices
 
+"""
+$(SIGNATURES)
+
+Invalidate all cache variables.
+"""
 function setdirty!(state::MechanismState)
     for vertex in non_root_vertices(state)
         setdirty!(vertex_data(vertex))
@@ -139,6 +173,16 @@ function setdirty!(state::MechanismState)
     end
 end
 
+"""
+$(SIGNATURES)
+
+'Zero' the configuration vector ``q``. Invalidates cache variables.
+
+Note that when the `Mechanism` contains e.g. quaternion-parameterized joints,
+``q`` may not actually be set to all zeros; the quaternion part of the
+configuration vector would be set to identity. The contract is that each of the
+joint transforms should be an identity transform.
+"""
 function zero_configuration!(state::MechanismState)
     for vertex in non_root_vertices(state)
         zero_configuration!(edge_to_parent_data(vertex))
@@ -146,14 +190,34 @@ function zero_configuration!(state::MechanismState)
     setdirty!(state)
 end
 
+"""
+$(SIGNATURES)
+
+Zero the velocity vector ``v``. Invalidates cache variables.
+"""
 function zero_velocity!(state::MechanismState)
     X = eltype(state.v)
     fill!(state.v,  zero(X))
     setdirty!(state)
 end
 
+"""
+$(SIGNATURES)
+
+Zero both the configuration and velocity. Invalidates cache variables.
+
+See [`zero_configuration!`](@ref), [`zero_velocity!`](@ref).
+"""
 zero!(state::MechanismState) = begin zero_configuration!(state); zero_velocity!(state) end
 
+"""
+$(SIGNATURES)
+
+Randomize the configuration vector ``q``. The distribution depends on
+the particular joint types present in the associated `Mechanism`. The resulting
+``q`` is guaranteed to be on the `Mechanism`'s configuration manifold.
+Invalidates cache variables.
+"""
 function rand_configuration!(state::MechanismState)
     for vertex in non_root_vertices(state)
         rand_configuration!(edge_to_parent_data(vertex))
@@ -161,35 +225,101 @@ function rand_configuration!(state::MechanismState)
     setdirty!(state)
 end
 
+"""
+$(SIGNATURES)
+
+Randomize the velocity vector ``v``.
+Invalidates cache variables.
+"""
 function rand_velocity!(state::MechanismState)
     rand!(state.v)
     setdirty!(state)
 end
 
+"""
+$(SIGNATURES)
+
+Randomize both the configuration and velocity.
+Invalidates cache variables.
+"""
 rand!(state::MechanismState) = begin rand_configuration!(state); rand_velocity!(state) end
 
+"""
+$(SIGNATURES)
+
+Return the configuration vector ``q``.
+
+Note that this returns a reference to the underlying data in `state`. The user
+is responsible for calling [`setdirty!`](@ref) after modifying this vector to
+ensure that dependent cache variables are invalidated.
+"""
 configuration_vector(state::MechanismState) = state.q
+
+"""
+$(SIGNATURES)
+
+Return the velocity vector ``v``.
+
+Note that this function returns a read-write reference to a field in `state`.
+The user is responsible for calling [`setdirty!`](@ref) after modifying this
+vector to ensure that dependent cache variables are invalidated.
+"""
 velocity_vector(state::MechanismState) = state.v
 state_vector(state::MechanismState) = [configuration_vector(state); velocity_vector(state)]
 
+"""
+$(SIGNATURES)
+
+Return the part of the `Mechanism`'s configuration vector ``q`` associated with
+the joints on `path`.
+"""
 configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([configuration(state, joint) for joint in path.edgeData]...)
+
+"""
+$(SIGNATURES)
+
+Return the part of the `Mechanism`'s velocity vector ``v`` associated with
+the joints on `path`.
+"""
 velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([velocity(state, joint) for joint in path.edgeData]...)
 
+"""
+$(SIGNATURES)
+
+Set the part of the configuration vector associated with `joint`.
+Invalidates cache variables.
+"""
 function set_configuration!(state::MechanismState, joint::Joint, q::AbstractVector)
     configuration(state, joint)[:] = q
     setdirty!(state)
 end
 
+"""
+$(SIGNATURES)
+
+Set the part of the velocity vector associated with `joint`.
+Invalidates cache variables.
+"""
 function set_velocity!(state::MechanismState, joint::Joint, v::AbstractVector)
     velocity(state, joint)[:] = v
     setdirty!(state)
 end
 
+"""
+$(SIGNATURES)
+
+Set the configuration vector ``q``. Invalidates cache variables.
+"""
 function set_configuration!(state::MechanismState, q::AbstractVector)
     copy!(state.q, q)
     setdirty!(state)
 end
 
+"""
+$(SIGNATURES)
+
+Set the velocity vector ``v``. Invalidates cache variables.
+"""
 function set_velocity!(state::MechanismState, v::AbstractVector)
     copy!(state.v, v)
     setdirty!(state)
@@ -204,7 +334,6 @@ function set!(state::MechanismState, x::AbstractVector)
     setdirty!(state)
 end
 
-# the following functions return quantities expressed in world frame and w.r.t. world frame (where applicable)
 function transform_to_root{X, M, C}(vertex::TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}})
     @cache_element_get!(vertex_data(vertex).transformToWorld, begin
         parentVertex = parent(vertex)
@@ -315,6 +444,11 @@ for fun in (:momentum, :momentum_rate_bias, :kinetic_energy)
     @eval $fun{X, M, C}(state::MechanismState{X, M, C}, body_itr) = sum($fun(state, body) for body in body_itr)
 end
 
+"""
+$(SIGNATURES)
+
+Return the homogeneous transform from `from` to `to`.
+"""
 function relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D)
     rootFrame = root_frame(state.mechanism)
     if to == rootFrame
@@ -326,6 +460,12 @@ function relative_transform(state::MechanismState, from::CartesianFrame3D, to::C
     end
 end
 
+"""
+$(SIGNATURES)
+
+Return the twist of `body` with respect to `base`, expressed in the
+`Mechanism`'s root frame.
+"""
 function relative_twist(state::MechanismState, body::RigidBody, base::RigidBody)
     rootBody = root_body(state.mechanism)
     if base == rootBody
@@ -337,6 +477,12 @@ function relative_twist(state::MechanismState, body::RigidBody, base::RigidBody)
     end
  end
 
+ """
+ $(SIGNATURES)
+
+ Return the twist of `bodyFrame` with respect to `baseFrame`, expressed in the
+ `Mechanism`'s root frame.
+ """
 function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D)
     twist = relative_twist(state, body_fixed_frame_to_body(state.mechanism, bodyFrame), body_fixed_frame_to_body(state.mechanism, baseFrame))
     Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)

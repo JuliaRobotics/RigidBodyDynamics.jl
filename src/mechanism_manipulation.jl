@@ -1,7 +1,7 @@
 """
     attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)
 
-Attach `successor` to `predecessor` via `joint`.
+Attach `successor` to `predecessor` using `joint`.
 
 See [`Joint`](@ref) for definitions of the terms successor and predecessor.
 
@@ -40,7 +40,16 @@ end
 
 check_no_cycles(m::Mechanism) = (length(m.nonTreeEdges) == 0 || error("Mechanisms with cycles not yet supported."))
 
-# Essentially replaces the root body of childMechanism with parentBody (which belongs to m)
+"""
+$(SIGNATURES)
+
+Attach `childMechanism` to `m`.
+
+Essentially replaces the root body of `childMechanism` with `parentBody` (which
+belongs to `m`).
+
+Currently doesn't support `Mechanism`s with cycles.
+"""
 function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::Mechanism{T})
     check_no_cycles(m)
     check_no_cycles(childMechanism)
@@ -69,6 +78,13 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     m
 end
 
+"""
+$(SIGNATURES)
+
+Create a `Mechanism` from the subtree of `m` rooted at `submechanismRootBody`.
+
+Currently doesn't support `Mechanism`s with cycles.
+"""
 function submechanism{T}(m::Mechanism{T}, submechanismRootBody::RigidBody{T})
     check_no_cycles(m)
 
@@ -82,10 +98,15 @@ function submechanism{T}(m::Mechanism{T}, submechanismRootBody::RigidBody{T})
     ret
 end
 
-#=
-Detaches the subtree rooted at oldSubtreeRootBody, reroots it so that newSubtreeRootBody is the new root, and then attaches
-newSubtreeRootBody to parentBody using the specified joint.
-=#
+"""
+$(SIGNATURES)
+
+Detach the subtree rooted at `oldSubtreeRootBody`, reroots it so that
+`newSubtreeRootBody` is the new root, and then attaches `newSubtreeRootBody`
+to `parentBody` using `joint`.
+
+Currently doesn't support `Mechanism`s with cycles.
+"""
 function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
         parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
         newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D{T} = Transform3D{T}(default_frame(newSubtreeRootBody), joint.frameAfter))
@@ -128,6 +149,14 @@ function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     flippedJoints
 end
 
+"""
+$(SIGNATURES)
+
+Remove any fixed joints present in `m` by merging the rigid bodies that these
+fixed joints join together into bodies with equivalent inertial properties.
+
+Currently doesn't support `Mechanism`s with cycles.
+"""
 function remove_fixed_joints!(m::Mechanism)
     check_no_cycles(m)
     T = eltype(m)
@@ -170,6 +199,14 @@ function remove_fixed_joints!(m::Mechanism)
     m
 end
 
+"""
+$(SIGNATURES)
+
+Return a dynamically equivalent `Mechanism`, but with a flat tree structure
+with all bodies attached to the root body with a quaternion floating joint, and
+with the 'tree edge' joints of the input `Mechanism` transformed into non-tree
+edge joints.
+"""
 function maximal_coordinates(mechanism::Mechanism)
     T = eltype(mechanism)
     bodymap = Dict{RigidBody{T}, RigidBody{T}}()
@@ -207,6 +244,12 @@ function maximal_coordinates(mechanism::Mechanism)
     ret, newfloatingjoints, bodymap, jointmap
 end
 
+"""
+$(SIGNATURES)
+
+Create a random `Mechanism` with the given joint types. Each new body is
+attached to a parent selected using the `parentSelector` function.
+"""
 function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
     parentBody = RigidBody{T}("world")
     m = Mechanism(parentBody)
@@ -222,8 +265,26 @@ function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
     return m
 end
 
+"""
+$(SIGNATURES)
+
+Create a random chain `Mechanism` with the given joint types.
+"""
 rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> vertex_data(m.toposortedTree[end]), jointTypes...)
+
+"""
+$(SIGNATURES)
+
+Create a random tree `Mechanism` (without loops).
+"""
 rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> rand(collect(bodies(m))), jointTypes...)
+
+"""
+$(SIGNATURES)
+
+Create a random tree `Mechanism` (without loops), with a quaternion floating
+joint as the first joint (between the root body and the first non-root body).
+"""
 function rand_floating_tree_mechanism{T}(t::Type{T}, nonFloatingJointTypes...)
     parentSelector = (m::Mechanism) -> begin
         only_root = length(bodies(m)) == 1

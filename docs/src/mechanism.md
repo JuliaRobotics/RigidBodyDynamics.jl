@@ -11,7 +11,11 @@ Order   = [:function]
 Pages   = ["mechanism.jl"]
 ```
 
-# Creating and Manipulating `Mechanism`s
+# Creating and modifying `Mechanism`s
+```@docs
+parse_urdf
+```
+
 ```@autodocs
 Modules = [RigidBodyDynamics]
 Order   = [:function]
