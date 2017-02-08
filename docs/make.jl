@@ -11,3 +11,7 @@ deploydocs(
     julia  = "release",
     osname = "linux"
 )
+
+deploydocs(
+    repo = "github.com/tkoolen/RigidBodyDynamics.jl.git"
+)
