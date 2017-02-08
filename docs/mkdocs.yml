@@ -30,3 +30,4 @@ pages:
   - 'MechanismState': mechanismstate.md
   - 'Kinematics/dynamics algorithms': 'algorithms.md'
   - 'Simulation': 'simulation.md'
+  - 'Benchmarks': 'benchmarks.md'

@@ -1,5 +1,6 @@
 # Algorithms
 
+## Index
 ```@index
 Pages   = ["algorithms.md"]
 Order   = [:type, :function]

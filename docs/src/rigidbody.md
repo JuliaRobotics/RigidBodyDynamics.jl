@@ -1,9 +1,6 @@
 # Rigid bodies
 
-```@contents
-Pages   = ["rigidbody.md"]
-```
-
+## Index
 ```@index
 Pages   = ["rigidbody.md"]
 Order   = [:type, :function]

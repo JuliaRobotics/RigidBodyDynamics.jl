@@ -1,9 +1,6 @@
 # Mechanisms
 
-```@contents
-Pages   = ["mechanism.md"]
-```
-
+## Index
 ```@index
 Pages   = ["mechanism.md"]
 Order   = [:type, :function]

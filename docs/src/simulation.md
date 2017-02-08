@@ -1,9 +1,6 @@
 # Simulation
 
-```@contents
-Pages   = ["simulation.md"]
-```
-
+## Index
 ```@index
 Pages   = ["simulation.md"]
 Order   = [:type, :function]
