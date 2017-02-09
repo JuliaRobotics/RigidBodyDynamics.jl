@@ -6,7 +6,7 @@ Pages   = ["algorithms.md"]
 Order   = [:type, :function]
 ```
 
-## `DynamicsResult`
+## The `DynamicsResult` type
 ```@docs
 DynamicsResult
 ```

@@ -206,13 +206,8 @@ end
 const momentum_matrix_doc = """Compute the momentum matrix ``A(q)`` of the
 `Mechanism` in the given state.
 
-The momentum matrix maps the `Mechanism`'s joint velocity vectory ``v`` to
+The momentum matrix maps the `Mechanism`'s joint velocity vector ``v`` to
 its total momentum.
-
-This is a slight generalization of the centroidal momentum matrix
-(Orin, Goswami, "Centroidal momentum matrix of a humanoid robot: Structure and properties.")
-in that the matrix (and hence the corresponding total momentum) need not be
-expressed in a centroidal frame.
 """
 
 """
@@ -353,7 +348,7 @@ in the unconstrained joint-space equations of motion
 ```math
 M(q) \\dot{v} + c(q, v, w_\\text{ext}) = \\tau
 ```
-given joint configuration vectory ``q``, joint velocity vector ``v``,
+given joint configuration vector ``q``, joint velocity vector ``v``,
 joint acceleration vector ``\\dot{v}`` and (optionally) external
 wrenches ``w_\\text{ext}``.
 
@@ -546,7 +541,7 @@ and the constraint equations
 ```math
 K(q) \\dot{v} = -k
 ```
-given joint configuration vectory ``q``, joint velocity vector ``v``, and
+given joint configuration vector ``q``, joint velocity vector ``v``, and
 (optionally) joint torques ``\\tau`` and external wrenches ``w_\\text{ext}``.
 """
 function dynamics!{T, X, M, Tau, W}(result::DynamicsResult{T}, state::MechanismState{X, M},
