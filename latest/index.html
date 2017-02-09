@@ -61,7 +61,7 @@
                 
                     <li><a class="toctree-l4" href="#installation">Installation</a></li>
                 
-                    <li><a class="toctree-l4" href="#references">References</a></li>
+                    <li><a class="toctree-l4" href="#about">About</a></li>
                 
                     <li><a class="toctree-l4" href="#related-packages">Related packages</a></li>
                 
@@ -180,7 +180,7 @@
 <h2 id="design-features">Design features</h2>
 <p>Some of the key design features of this package are:</p>
 <ul>
-<li>pure Julia implementation, enabling seamless support for e.g. automatic differentiation using e.g. <a href="https://github.com/JuliaDiff/ForwardDiff.jl">ForwardDiff.jl</a> and symbolic dynamics using <a href="https://github.com/JuliaPy/SymPy.jl">SymPy.jl</a>.</li>
+<li>pure Julia implementation, enabling seamless support for e.g. automatic differentiation using <a href="https://github.com/JuliaDiff/ForwardDiff.jl">ForwardDiff.jl</a> and symbolic dynamics using <a href="https://github.com/JuliaPy/SymPy.jl">SymPy.jl</a>.</li>
 <li>easy creation and modification of general rigid body mechanisms (including basic <a href="http://wiki.ros.org/urdf">URDF</a> parsing).</li>
 <li>extensive checks that verify that coordinate systems match before computation, with the goal of making reference frame mistakes impossible</li>
 <li>flexible caching of intermediate results to prevent doing double work</li>
@@ -222,13 +222,14 @@
 </code></pre>
 
 <p>RigidBodyDynamics currently only supports version 0.5 of Julia.</p>
-<p><a id='References-1'></a></p>
-<h2 id="references">References</h2>
+<p><a id='About-1'></a></p>
+<h2 id="about">About</h2>
+<p>This library was inspired by <a href="https://bitbucket.org/ihmcrobotics/ihmc-open-robotics-software">IHMCRoboticsToolkit</a> and by <a href="http://drake.mit.edu">Drake</a>.</p>
 <p>Most of the nomenclature used and algorithms implemented by this package stem from the following resources:</p>
 <ul>
-<li>Murray, Richard M., et al. A mathematical introduction to robotic manipulation. CRC press, 1994.</li>
-<li>Featherstone, Roy. Rigid body dynamics algorithms. Springer, 2008.</li>
-<li>Duindam, Vincent. Port-based modeling and control for efficient bipedal walking robots. Diss. University of Twente, 2006.</li>
+<li>Murray, Richard M., et al. <em>A mathematical introduction to robotic manipulation</em>. CRC press, 1994.</li>
+<li>Featherstone, Roy. <em>Rigid body dynamics algorithms</em>. Springer, 2008.</li>
+<li>Duindam, Vincent. <em>Port-based modeling and control for efficient bipedal walking robots</em>. Diss. University of Twente, 2006.</li>
 </ul>
 <p><a id='Related-packages-1'></a></p>
 <h2 id="related-packages">Related packages</h2>
@@ -238,6 +239,7 @@
 <p><a id='Contents-1'></a></p>
 <h2 id="contents">Contents</h2>
 <ul>
+<li><a href="quickstart/#Quick-start-guide-1">Quick start guide</a></li>
 <li><a href="spatial/#Spatial-vector-algebra-1">Spatial vector algebra</a><ul>
 <li><a href="spatial/#Index-1">Index</a></li>
 <li><a href="spatial/#Types-1">Types</a></li>
@@ -245,25 +247,17 @@
 <li><a href="spatial/#Functions-1">Functions</a></li>
 </ul>
 </li>
-<li><a href="benchmarks/#Benchmarks-1">Benchmarks</a></li>
-<li><a href="simulation/#Simulation-1">Simulation</a><ul>
-<li><a href="simulation/#Index-1">Index</a></li>
-<li><a href="simulation/#Basic-simulation-1">Basic simulation</a></li>
-<li><a href="simulation/#Lower-level-ODE-integration-interface-1">Lower level ODE integration interface</a></li>
+<li><a href="joints/#Joints-1">Joints</a><ul>
+<li><a href="joints/#Index-1">Index</a></li>
+<li><a href="joints/#The-Joint-type-1">The <code>Joint</code> type</a></li>
+<li><a href="joints/#Functions-1">Functions</a></li>
+<li><a href="joints/#JointTypes-1"><code>JointType</code>s</a></li>
 </ul>
 </li>
 <li><a href="rigidbody/#Rigid-bodies-1">Rigid bodies</a><ul>
 <li><a href="rigidbody/#Index-1">Index</a></li>
 <li><a href="rigidbody/#The-RigidBody-type-1">The <code>RigidBody</code> type</a></li>
 <li><a href="rigidbody/#Functions-1">Functions</a></li>
-</ul>
-</li>
-<li><a href="quickstart/#Quick-start-guide-1">Quick start guide</a></li>
-<li><a href="joints/#Joints-1">Joints</a><ul>
-<li><a href="joints/#Index-1">Index</a></li>
-<li><a href="joints/#The-Joint-type-1">The <code>Joint</code> type</a></li>
-<li><a href="joints/#Functions-1">Functions</a></li>
-<li><a href="joints/#JointTypes-1"><code>JointType</code>s</a></li>
 </ul>
 </li>
 <li><a href="mechanism/#Mechanisms-1">Mechanisms</a><ul>
@@ -279,22 +273,19 @@
 <li><a href="mechanismstate/#Functions-1">Functions</a></li>
 </ul>
 </li>
-<li><a href=".#RigidBodyDynamics-1">RigidBodyDynamics</a><ul>
-<li><a href=".#Design-features-1">Design features</a></li>
-<li><a href=".#Functionality-1">Functionality</a></li>
-<li><a href=".#Installation-1">Installation</a></li>
-<li><a href=".#References-1">References</a></li>
-<li><a href=".#Related-packages-1">Related packages</a></li>
-<li><a href=".#Contents-1">Contents</a></li>
-<li><a href=".#Citing-this-library-1">Citing this library</a></li>
-</ul>
-</li>
 <li><a href="algorithms/#Algorithms-1">Algorithms</a><ul>
 <li><a href="algorithms/#Index-1">Index</a></li>
-<li><a href="algorithms/#DynamicsResult-1"><code>DynamicsResult</code></a></li>
+<li><a href="algorithms/#The-DynamicsResult-type-1">The <code>DynamicsResult</code> type</a></li>
 <li><a href="algorithms/#Functions-1">Functions</a></li>
 </ul>
 </li>
+<li><a href="simulation/#Simulation-1">Simulation</a><ul>
+<li><a href="simulation/#Index-1">Index</a></li>
+<li><a href="simulation/#Basic-simulation-1">Basic simulation</a></li>
+<li><a href="simulation/#Lower-level-ODE-integration-interface-1">Lower level ODE integration interface</a></li>
+</ul>
+</li>
+<li><a href="benchmarks/#Benchmarks-1">Benchmarks</a></li>
 </ul>
 <p><a id='Citing-this-library-1'></a></p>
 <h2 id="citing-this-library">Citing this library</h2>
@@ -355,5 +346,5 @@
 
 <!--
 MkDocs version : 0.16.1
-Build Date UTC : 2017-02-09 00:01:51
+Build Date UTC : 2017-02-09 01:40:02
 -->
