@@ -171,8 +171,8 @@
 <h2 id="index">Index</h2>
 <ul>
 <li><a href="./#RigidBodyDynamics.DynamicsResult"><code>RigidBodyDynamics.DynamicsResult</code></a></li>
-<li><a href="./#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.center_of_mass</code></a></li>
 <li><a href="./#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState{X,M,C},Any}"><code>RigidBodyDynamics.center_of_mass</code></a></li>
+<li><a href="./#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.center_of_mass</code></a></li>
 <li><a href="./#RigidBodyDynamics.dynamics!"><code>RigidBodyDynamics.dynamics!</code></a></li>
 <li><a href="./#RigidBodyDynamics.dynamics!"><code>RigidBodyDynamics.dynamics!</code></a></li>
 <li><a href="./#RigidBodyDynamics.dynamics_bias!"><code>RigidBodyDynamics.dynamics_bias!</code></a></li>
@@ -196,7 +196,7 @@
 </code></pre>
 
 <p>Stores variables related to the dynamics of a <code>Mechanism</code>, e.g. the <code>Mechanism</code>'s mass matrix and joint acceleration vector.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/dynamics_result.jl#L1' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/dynamics_result.jl#L1' class='documenter-source'>source</a><br></p>
 <p><a id='Functions-1'></a></p>
 <h2 id="functions">Functions</h2>
 <p><a id='RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState{X,M,C},Any}' href='#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState{X,M,C},Any}'>#</a>
@@ -206,7 +206,7 @@
 </code></pre>
 
 <p>Compute the center of mass of an iterable subset of a <code>Mechanism</code>'s bodies in the given state.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L22' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L22' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.center_of_mass</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">center_of_mass(state)
@@ -214,12 +214,12 @@
 </code></pre>
 
 <p>Compute the center of mass of the whole <code>Mechanism</code> in the given state.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L44' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L44' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.dynamics!' href='#RigidBodyDynamics.dynamics!'>#</a>
 <strong><code>RigidBodyDynamics.dynamics!</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">dynamics!(ẋ, result, state, stateVec, torques, externalWrenches)
+<pre><code class="julia">dynamics!(ẋ, result, state, stateVec)
 dynamics!(ẋ, result, state, stateVec, torques)
-dynamics!(ẋ, result, state, stateVec)
+dynamics!(ẋ, result, state, stateVec, torques, externalWrenches)
 
 </code></pre>
 
@@ -233,12 +233,12 @@ v
 </script>
 </p>
 <p>and returns a <code>Vector</code> $\dot{x}$.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L558' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L558' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.dynamics!' href='#RigidBodyDynamics.dynamics!'>#</a>
 <strong><code>RigidBodyDynamics.dynamics!</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code class="julia">dynamics!(result, state, torques)
-dynamics!(result, state)
 dynamics!(result, state, torques, externalWrenches)
+dynamics!(result, state)
 
 </code></pre>
 
@@ -255,7 +255,7 @@ K(q) \dot{v} = -k
 </script>
 </p>
 <p>given joint configuration vector $q$, joint velocity vector $v$, and (optionally) joint torques $\tau$ and external wrenches $w_\text{ext}$.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L532' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L532' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.geometric_jacobian-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}' href='#RigidBodyDynamics.geometric_jacobian-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}'>#</a>
 <strong><code>RigidBodyDynamics.geometric_jacobian</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">geometric_jacobian(state, path)
@@ -264,7 +264,7 @@ K(q) \dot{v} = -k
 
 <p>Compute a geometric Jacobian (also known as a basic, or spatial Jacobian) for a path in the graph of joints and bodies of a <code>Mechanism</code>, in the given state.</p>
 <p>See also <a href="../mechanism/#RigidBodyDynamics.TreeDataStructure.path-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}"><code>path</code></a>, <a href="../spatial/#RigidBodyDynamics.GeometricJacobian"><code>GeometricJacobian</code></a>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L51' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L51' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.gravitational_potential_energy-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}' href='#RigidBodyDynamics.gravitational_potential_energy-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}'>#</a>
 <strong><code>RigidBodyDynamics.gravitational_potential_energy</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">gravitational_potential_energy(state)
@@ -272,11 +272,11 @@ K(q) \dot{v} = -k
 </code></pre>
 
 <p>Compute the gravitational potential energy in the given state, computed as the negation of the dot product of the gravitational force and the center of mass expressed in the <code>Mechanism</code>'s root frame.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L100' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L100' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.inverse_dynamics' href='#RigidBodyDynamics.inverse_dynamics'>#</a>
 <strong><code>RigidBodyDynamics.inverse_dynamics</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">inverse_dynamics(state, v̇)
-inverse_dynamics(state, v̇, externalWrenches)
+<pre><code class="julia">inverse_dynamics(state, v̇, externalWrenches)
+inverse_dynamics(state, v̇)
 
 </code></pre>
 
@@ -288,7 +288,7 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 </p>
 <p>given joint configuration vector $q$, joint velocity vector $v$, joint acceleration vector $\dot{v}$ and (optionally) external wrenches $w_\text{ext}$.</p>
 <p>This method implements the recursive Newton-Euler algorithm.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L377-L388' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L377-L388' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.inverse_dynamics!' href='#RigidBodyDynamics.inverse_dynamics!'>#</a>
 <strong><code>RigidBodyDynamics.inverse_dynamics!</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code class="julia">inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇, externalWrenches)
@@ -305,7 +305,7 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 <p>given joint configuration vector $q$, joint velocity vector $v$, joint acceleration vector $\dot{v}$ and (optionally) external wrenches $w_\text{ext}$.</p>
 <p>This method implements the recursive Newton-Euler algorithm.</p>
 <p>This method does its computation in place, performing no dynamic memory allocation.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L358-L369' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L358-L369' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.mass-Tuple{RigidBodyDynamics.Mechanism}' href='#RigidBodyDynamics.mass-Tuple{RigidBodyDynamics.Mechanism}'>#</a>
 <strong><code>RigidBodyDynamics.mass</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">mass(m)
@@ -313,7 +313,7 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 </code></pre>
 
 <p>Return the total mass of the <code>Mechanism</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L15' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L15' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.mass_matrix!-Tuple{Symmetric{C,Array{C,2}},RigidBodyDynamics.MechanismState{X,M,C}}' href='#RigidBodyDynamics.mass_matrix!-Tuple{Symmetric{C,Array{C,2}},RigidBodyDynamics.MechanismState{X,M,C}}'>#</a>
 <strong><code>RigidBodyDynamics.mass_matrix!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">mass_matrix!(out, state)
@@ -329,7 +329,7 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 <p>This method implements the composite rigid body algorithm.</p>
 <p>This method does its computation in place, performing no dynamic memory allocation.</p>
 <p>The <code>out</code> argument must be an $n_v \times n_v$ lower triangular <code>Symmetric</code> matrix, where $n_v$ is the dimension of the <code>Mechanism</code>'s joint velocity vector $v$.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L150-L159' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L150-L159' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.mass_matrix-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}' href='#RigidBodyDynamics.mass_matrix-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}'>#</a>
 <strong><code>RigidBodyDynamics.mass_matrix</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">mass_matrix(state)
@@ -343,7 +343,7 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 </script>
 </p>
 <p>This method implements the composite rigid body algorithm.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L194-L203' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L194-L203' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.momentum_matrix!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">momentum_matrix!(out, state)
@@ -354,7 +354,7 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 <p>The momentum matrix maps the <code>Mechanism</code>'s joint velocity vector $v$ to its total momentum.</p>
 <p>This method does its computation in place, performing no dynamic memory allocation.</p>
 <p>The <code>out</code> argument must be a mutable <code>MomentumMatrix</code> with as many columns as the dimension of the <code>Mechanism</code>'s joint velocity vector $v$.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L213-L219' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L213-L219' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.momentum_matrix-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.momentum_matrix-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.momentum_matrix</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">momentum_matrix(state)
@@ -363,7 +363,7 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 
 <p>Compute the momentum matrix $A(q)$ of the <code>Mechanism</code> in the given state.</p>
 <p>The momentum matrix maps the <code>Mechanism</code>'s joint velocity vector $v$ to its total momentum.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L236-L242' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L236-L242' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.relative_acceleration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody,AbstractArray{T,1}}' href='#RigidBodyDynamics.relative_acceleration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody,AbstractArray{T,1}}'>#</a>
 <strong><code>RigidBodyDynamics.relative_acceleration</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">relative_acceleration(state, body, base, v̇)
@@ -371,11 +371,11 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 </code></pre>
 
 <p>Compute the spatial acceleration of <code>body</code> with respect to <code>base</code> for the given state and joint acceleration vector $\dot{v}$.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L87' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L87' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.dynamics_bias!' href='#RigidBodyDynamics.dynamics_bias!'>#</a>
 <strong><code>RigidBodyDynamics.dynamics_bias!</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">dynamics_bias!(torques, biasAccelerations, wrenches, state, externalWrenches)
-dynamics_bias!(torques, biasAccelerations, wrenches, state)
+<pre><code class="julia">dynamics_bias!(torques, biasAccelerations, wrenches, state)
+dynamics_bias!(torques, biasAccelerations, wrenches, state, externalWrenches)
 
 </code></pre>
 
@@ -392,7 +392,7 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 </script>
 </p>
 <p>This method does its computation in place, performing no dynamic memory allocation.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L320' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L320' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.subtree_mass-Tuple{RigidBodyDynamics.TreeDataStructure.TreeVertex{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}' href='#RigidBodyDynamics.subtree_mass-Tuple{RigidBodyDynamics.TreeDataStructure.TreeVertex{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}'>#</a>
 <strong><code>RigidBodyDynamics.subtree_mass</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">subtree_mass(base)
@@ -400,7 +400,7 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 </code></pre>
 
 <p>Return the mass of a subtree of a <code>Mechanism</code>, rooted at <code>base</code> (including the mass of <code>base</code>).</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b2c715905bc773ee2229c7b8bfd2b1397ecd1440/src/mechanism_algorithms.jl#L1' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/4d9a2178148605474e76c25a05003c1104abb60c/src/mechanism_algorithms.jl#L1' class='documenter-source'>source</a><br></p>
               
             </div>
           </div>
