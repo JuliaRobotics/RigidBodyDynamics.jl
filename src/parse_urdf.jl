@@ -93,7 +93,7 @@ $(SIGNATURES)
 
 Create a `Mechanism` by parsing a [URDF](http://wiki.ros.org/urdf) file.
 """
-function parse_urdf{T}(scalar::Type{T}, filename)
+function parse_urdf{T}(scalartype::Type{T}, filename)
     xdoc = parse_file(filename)
     xroot = root(xdoc)
     @assert LightXML.name(xroot) == "robot"

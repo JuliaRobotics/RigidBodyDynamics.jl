@@ -61,7 +61,9 @@ such that
 \\end{array}\\right]=H_{i}^{k}\\dot{H}_{j}^{i}H_{k}^{j}
 ```
 where ``H^{\\beta}_{\\alpha}`` is the homogeneous transform from frame
-``\\alpha`` to frame ``\\beta``.
+``\\alpha`` to frame ``\\beta``, and ``\\hat{x}`` is the ``3 \\times 3`` skew
+symmetric matrix that satisfies ``\\hat{x} y = x \\times y`` for all
+``y \\in \\mathbb{R}^3``.
 
 Here, ``\\omega_{j}^{k,i}`` is the angular part and ``v_{j}^{k,i}`` is the
 linear part. Note that the linear part is not in general the same as the
@@ -91,11 +93,17 @@ $(TYPEDEF)
 
 A `Momentum` is the product of a `SpatialInertia` and a `Twist`, i.e.
 ```math
-h^i = I^i T^{i, j}_k
+h^i =
+\\left(\\begin{array}{c}
+k^{i}\\\\
+l^{i}
+\\end{array}\\right) =
+I^i T^{i, j}_k
 ```
 where ``I^i`` is the spatial inertia of a given body expressed in frame ``i``,
 and ``T^{i, j}_k`` is the twist of frame ``k`` (attached to the body) with
-respect to inertial frame ``j``, expressed in frame ``i``.
+respect to inertial frame ``j``, expressed in frame ``i``. ``k^i`` is the
+angular momentum and ``l^i`` is the linear momentum.
 """
 Momentum
 
@@ -106,13 +114,19 @@ A wrench represents a system of forces.
 
 The wrench ``w^i`` expressed in frame ``i`` is defined as
 ```math
-w^{i}=\\sum_{j}\\left(\\begin{array}{c}
+w^{i} =
+\\left(\\begin{array}{c}
+\\tau^{i}\\\\
+f^{i}
+\\end{array}\\right) =
+\\sum_{j}\\left(\\begin{array}{c}
 r_{j}^{i}\\times f_{j}^{i}\\\\
 f_{j}^{i}
 \\end{array}\\right)
 ```
 where the ``f_{j}^{i}`` are forces expressed in frame ``i``, exerted at
-positions ``r_{j}^{i}``.
+positions ``r_{j}^{i}``. ``\\tau^i`` is the total torque and ``f^i`` is the
+total force.
 """
 Wrench
 
@@ -155,7 +169,12 @@ end
 """
 $(TYPEDEF)
 
-A momentum matrix maps a joint velocity vectory to momentum.
+A momentum matrix maps a joint velocity vector to momentum.
+
+This is a slight generalization of the centroidal momentum matrix
+(Orin, Goswami, "Centroidal momentum matrix of a humanoid robot: Structure and properties.")
+in that the matrix (and hence the corresponding total momentum) need not be
+expressed in a centroidal frame.
 """
 MomentumMatrix
 

@@ -1,5 +1,5 @@
 """
-    RigidBody
+$(TYPEDEF)
 
 A non-deformable body.
 

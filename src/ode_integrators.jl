@@ -44,7 +44,7 @@ $(SIGNATURES)
 
 Return the Butcher tableau for the standard fourth order Runge-Kutta integrator.
 """
-function runge_kutta_4{T}(::Type{T})
+function runge_kutta_4{T}(scalartype::Type{T})
     a = zeros(T, 4, 4)
     a[2, 1] = 1/2
     a[3, 2] = 1/2
@@ -139,7 +139,7 @@ A Lie-group-aware ODE integrator.
 
 `MuntheKaasIntegrator` is used to properly integrate the dynamics of globally
 parameterized rigid joints (Duindam, Port-Based Modeling and Control for
-Efficient Bipedal Walking Robots, 2006, Definition 2.9). Global parameterizations of e.g. `SO(3)`
+Efficient Bipedal Walking Robots, 2006, Definition 2.9). Global parameterizations of e.g. ``SO(3)``
 are needed to avoid singularities, but this leads to the problem that the tangent
 space no longer has the same dimension as the ambient space of the global parameterization.
 A Munthe-Kaas integrator solves this problem by converting back and forth
@@ -151,12 +151,9 @@ the configuration at the end of the previous time step (e.g. exponential coordin
 combine the stages into a new set of local coordinates as usual for Runge-Kutta methods,
 and then convert the local coordinates back to global coordinates.
 
-From Iserles et al., 'Lie-group methods' (2000).
-https://hal.archives-ouvertes.fr/hal-01328729
+From [Iserles et al., 'Lie-group methods' (2000)](https://hal.archives-ouvertes.fr/hal-01328729).
 
-Another useful reference is Park and Chung,
-'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005).
-http://www.ent.mrt.ac.lk/iml/paperbase/TRO%20Collection/TRO/2005/october/7.pdf
+Another useful reference is [Park and Chung, 'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005)](http://www.ent.mrt.ac.lk/iml/paperbase/TRO%20Collection/TRO/2005/october/7.pdf).
 """
 immutable MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}
     dynamics!::F # dynamics!(vd, t, state), sets vd (time derivative of v) given time t and state
@@ -179,6 +176,8 @@ num_stages{N}(::MuntheKaasIntegrator{N}) = N
 eltype{N, T}(::MuntheKaasIntegrator{N, T}) = T
 
 """
+$(SIGNATURES)
+
 Take a single integration step.
 
 `state` must be of a type for which the following functions are defined:
@@ -247,7 +246,7 @@ end
 """
 $(SIGNATURES)
 
-Integrate dynamics from the initial state `state0` at time 0 to `finalTime`
+Integrate dynamics from the initial state `state0` at time ``0`` to `finalTime`
 using step size `Δt`.
 """
 function integrate(integrator::MuntheKaasIntegrator, state0, finalTime, Δt)

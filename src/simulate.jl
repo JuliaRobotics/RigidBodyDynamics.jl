@@ -3,7 +3,9 @@ using RigidBodyDynamics.OdeIntegrators
 """
 $(SIGNATURES)
 
-Simple `Mechanism` simulation.
+Simple `Mechanism` simulation: integrate the state from time ``0`` to `finalTime`
+starting from the initial state `state0`. Return a `Vector` of times, as well as
+`Vector`s of configuration vectors and velocity vectors at these times.
 
 Uses `MuntheKaasIntegrator`. See [`MuntheKaasIntegrator`](@ref) for a lower
 level interface with more options.

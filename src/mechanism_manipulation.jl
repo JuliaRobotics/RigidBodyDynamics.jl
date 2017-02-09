@@ -18,7 +18,7 @@ If `successor` is not yet a part of the `Mechanism`, it will be added to the
 `Mechanism`, effectively creating a loop constraint that will be enforced
 using Lagrange multipliers (as opposed to using recursive algorithms).
 """
-function attach!{T}(m::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint, jointToPredecessor::Transform3D{T},
+function attach!{T}(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint, jointToPredecessor::Transform3D{T},
         successor::RigidBody{T}, successorToJoint::Transform3D{T} = Transform3D{T}(default_frame(successor), joint.frameAfter))
     # TODO: check that jointToPredecessor.from and successorToJoint.to match joint.
 
@@ -28,34 +28,34 @@ function attach!{T}(m::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint, jo
     # define where child is attached to joint
     add_frame!(successor, inv(successorToJoint))
 
-    if successor ∈ bodies(m)
-        push!(m.nonTreeEdges, NonTreeEdge(joint, predecessor, successor))
+    if successor ∈ bodies(mechanism)
+        push!(mechanism.nonTreeEdges, NonTreeEdge(joint, predecessor, successor))
     else
-        vertex = insert!(tree(m), successor, joint, predecessor)
-        m.toposortedTree = toposort(tree(m))
-        canonicalize_frame_definitions!(m, vertex)
+        vertex = insert!(tree(mechanism), successor, joint, predecessor)
+        mechanism.toposortedTree = toposort(tree(mechanism))
+        canonicalize_frame_definitions!(mechanism, vertex)
     end
-    m
+    mechanism
 end
 
-check_no_cycles(m::Mechanism) = (length(m.nonTreeEdges) == 0 || error("Mechanisms with cycles not yet supported."))
+check_no_cycles(mechanism::Mechanism) = (length(mechanism.nonTreeEdges) == 0 || error("Mechanisms with cycles not yet supported."))
 
 """
 $(SIGNATURES)
 
-Attach `childMechanism` to `m`.
+Attach `childMechanism` to `mechanism`.
 
 Essentially replaces the root body of `childMechanism` with `parentBody` (which
-belongs to `m`).
+belongs to `mechanism`).
 
 Currently doesn't support `Mechanism`s with cycles.
 """
-function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::Mechanism{T})
-    check_no_cycles(m)
+function attach!{T}(mechanism::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::Mechanism{T})
+    check_no_cycles(mechanism)
     check_no_cycles(childMechanism)
 
     # note: gravitational acceleration for childMechanism is ignored.
-    parentVertex = findfirst(tree(m), parentBody)
+    parentVertex = findfirst(tree(mechanism), parentBody)
     childRootVertex = root_vertex(childMechanism)
     childRootBody = vertex_data(childRootVertex)
 
@@ -65,32 +65,32 @@ function attach!{T}(m::Mechanism{T}, parentBody::RigidBody{T}, childMechanism::M
     for transform in frame_definitions(childRootBody)
         add_frame!(parentBody, transform)
     end
-    canonicalize_frame_definitions!(m, parentVertex)
+    canonicalize_frame_definitions!(mechanism, parentVertex)
 
     # merge trees
     for child in children(childRootVertex)
         vertex = insert_subtree!(parentVertex, child)
-        canonicalize_frame_definitions!(m, vertex)
+        canonicalize_frame_definitions!(mechanism, vertex)
     end
 
-    m.toposortedTree = toposort(tree(m))
+    mechanism.toposortedTree = toposort(tree(mechanism))
 
-    m
+    mechanism
 end
 
 """
 $(SIGNATURES)
 
-Create a `Mechanism` from the subtree of `m` rooted at `submechanismRootBody`.
+Create a `Mechanism` from the subtree of `mechanism` rooted at `submechanismRootBody`.
 
 Currently doesn't support `Mechanism`s with cycles.
 """
-function submechanism{T}(m::Mechanism{T}, submechanismRootBody::RigidBody{T})
-    check_no_cycles(m)
+function submechanism{T}(mechanism::Mechanism{T}, submechanismRootBody::RigidBody{T})
+    check_no_cycles(mechanism)
 
     # Create mechanism and set up tree
-    ret = Mechanism{T}(submechanismRootBody; gravity = m.gravitationalAcceleration.v)
-    for child in children(findfirst(tree(m), submechanismRootBody))
+    ret = Mechanism{T}(submechanismRootBody; gravity = mechanism.gravitationalAcceleration.v)
+    for child in children(findfirst(tree(mechanism), submechanismRootBody))
         insert_subtree!(root_vertex(ret), child)
     end
     ret.toposortedTree = toposort(tree(ret))
@@ -101,8 +101,8 @@ end
 """
 $(SIGNATURES)
 
-Detach the subtree rooted at `oldSubtreeRootBody`, reroots it so that
-`newSubtreeRootBody` is the new root, and then attaches `newSubtreeRootBody`
+Detach the subtree rooted at `oldSubtreeRootBody`, reroot it so that
+`newSubtreeRootBody` is the new root, and then attach `newSubtreeRootBody`
 to `parentBody` using `joint`.
 
 Currently doesn't support `Mechanism`s with cycles.
@@ -152,15 +152,16 @@ end
 """
 $(SIGNATURES)
 
-Remove any fixed joints present in `m` by merging the rigid bodies that these
-fixed joints join together into bodies with equivalent inertial properties.
+Remove any fixed joints present as tree edges in `mechanism` by merging the
+rigid bodies that these fixed joints join together into bodies with equivalent
+inertial properties.
 
 Currently doesn't support `Mechanism`s with cycles.
 """
-function remove_fixed_joints!(m::Mechanism)
-    check_no_cycles(m)
-    T = eltype(m)
-    for vertex in copy(m.toposortedTree)
+function remove_fixed_joints!(mechanism::Mechanism)
+    check_no_cycles(mechanism)
+    T = eltype(mechanism)
+    for vertex in copy(mechanism.toposortedTree)
         if !isroot(vertex)
             body = vertex_data(vertex)
             joint = edge_to_parent_data(vertex)
@@ -190,13 +191,13 @@ function remove_fixed_joints!(m::Mechanism)
 
                 # recanonicalize children since their new parent's default frame may be different
                 for child in formerChildren
-                    canonicalize_frame_definitions!(m, child)
+                    canonicalize_frame_definitions!(mechanism, child)
                 end
             end
         end
     end
-    m.toposortedTree = toposort(tree(m))
-    m
+    mechanism.toposortedTree = toposort(tree(mechanism))
+    mechanism
 end
 
 """
@@ -205,7 +206,7 @@ $(SIGNATURES)
 Return a dynamically equivalent `Mechanism`, but with a flat tree structure
 with all bodies attached to the root body with a quaternion floating joint, and
 with the 'tree edge' joints of the input `Mechanism` transformed into non-tree
-edge joints.
+edge joints (a constraint enforced using Lagrange multipliers in `dynamics!`).
 """
 function maximal_coordinates(mechanism::Mechanism)
     T = eltype(mechanism)
@@ -252,17 +253,17 @@ attached to a parent selected using the `parentSelector` function.
 """
 function rand_mechanism{T}(::Type{T}, parentSelector::Function, jointTypes...)
     parentBody = RigidBody{T}("world")
-    m = Mechanism(parentBody)
+    mechanism = Mechanism(parentBody)
     for i = 1 : length(jointTypes)
         @assert jointTypes[i] <: JointType{T}
         joint = Joint("joint$i", rand(jointTypes[i]))
         jointToParentBody = rand(Transform3D{T}, joint.frameBefore, default_frame(parentBody))
         body = RigidBody(rand(SpatialInertia{T}, CartesianFrame3D("body$i")))
         bodyToJoint = Transform3D{T}(default_frame(body), joint.frameAfter)
-        attach!(m, parentBody, joint, jointToParentBody, body, bodyToJoint)
-        parentBody = parentSelector(m)
+        attach!(mechanism, parentBody, joint, jointToParentBody, body, bodyToJoint)
+        parentBody = parentSelector(mechanism)
     end
-    return m
+    return mechanism
 end
 
 """
@@ -270,14 +271,14 @@ $(SIGNATURES)
 
 Create a random chain `Mechanism` with the given joint types.
 """
-rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> vertex_data(m.toposortedTree[end]), jointTypes...)
+rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, mechanism::Mechanism -> vertex_data(mechanism.toposortedTree[end]), jointTypes...)
 
 """
 $(SIGNATURES)
 
 Create a random tree `Mechanism` (without loops).
 """
-rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, m::Mechanism -> rand(collect(bodies(m))), jointTypes...)
+rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_mechanism(t, mechanism::Mechanism -> rand(collect(bodies(mechanism))), jointTypes...)
 
 """
 $(SIGNATURES)
@@ -286,9 +287,9 @@ Create a random tree `Mechanism` (without loops), with a quaternion floating
 joint as the first joint (between the root body and the first non-root body).
 """
 function rand_floating_tree_mechanism{T}(t::Type{T}, nonFloatingJointTypes...)
-    parentSelector = (m::Mechanism) -> begin
-        only_root = length(bodies(m)) == 1
-        only_root ? root_body(m) : rand(collect(non_root_bodies(m)))
+    parentSelector = (mechanism::Mechanism) -> begin
+        only_root = length(bodies(mechanism)) == 1
+        only_root ? root_body(mechanism) : rand(collect(non_root_bodies(mechanism)))
     end
     rand_mechanism(t, parentSelector, [QuaternionFloating{T}; nonFloatingJointTypes...]...)
 end
