@@ -353,6 +353,8 @@ joint acceleration vector ``\\dot{v}`` and (optionally) external
 wrenches ``w_\\text{ext}``.
 
 This method implements the recursive Newton-Euler algorithm.
+
+Currently doesn't support `Mechanism`s with cycles.
 """
 
 """
@@ -369,6 +371,7 @@ function inverse_dynamics!{T, X, M, V, W}(
         state::MechanismState{X, M},
         v̇::AbstractVector{V},
         externalWrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+    check_no_cycles(state.mechanism)
     spatial_accelerations!(accelerations, state, v̇)
     newton_euler!(jointWrenchesOut, state, accelerations, externalWrenches)
     joint_wrenches_and_torques!(torquesOut, jointWrenchesOut, state)
