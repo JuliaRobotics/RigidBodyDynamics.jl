@@ -102,6 +102,7 @@ export
     has_fixed_subspaces,
     bias_acceleration,
     spatial_inertia,
+    spatial_inertia!,
     crb_inertia,
     setdirty!,
     add_body_fixed_frame!,
