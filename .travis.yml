@@ -8,6 +8,8 @@ julia:
 matrix:
   allow_failures:
     - julia: nightly # introduced due to StaticArrays incompatiblity with https://github.com/JuliaLang/julia/pull/17623
+branches:
+  only: master
 notifications:
   email: false
 before_install:
