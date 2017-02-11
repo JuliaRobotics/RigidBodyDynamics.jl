@@ -7,7 +7,8 @@ using DocStringExtensions
 export runge_kutta_4,
     MuntheKaasIntegrator,
     OdeResultsSink,
-    OdeRingBufferStorage,
+    RingBufferStorage,
+    ExpandingStorage,
     integrate,
     step
 
@@ -71,36 +72,66 @@ $(TYPEDEF)
 An `OdeResultsSink` that stores the state at each integration time step in a
 ring buffer.
 """
-type OdeRingBufferStorage{T} <: OdeResultsSink
+type RingBufferStorage{T} <: OdeResultsSink
     ts::Vector{T}
     qs::Vector{Vector{T}}
     vs::Vector{Vector{T}}
     nextIndex::Int64
 
-    function OdeRingBufferStorage(n::Int64)
+    function RingBufferStorage(n::Int64)
         ts = Vector{T}(n)
         qs = [Vector{T}() for i in 1 : n]
         vs = [Vector{T}() for i in 1 : n]
         new(ts, qs, vs, 1)
     end
 end
-Base.eltype{T}(storage::OdeRingBufferStorage{T}) = T
-Base.length(storage::OdeRingBufferStorage) = length(storage.ts)
-set_num_positions!(storage::OdeRingBufferStorage, n::Int64) = for q in storage.qs resize!(q, n) end
-set_num_velocities!(storage::OdeRingBufferStorage, n::Int64) = for v in storage.vs resize!(v, n) end
+Base.eltype{T}(storage::RingBufferStorage{T}) = T
+Base.length(storage::RingBufferStorage) = length(storage.ts)
+set_num_positions!(storage::RingBufferStorage, n::Int64) = for q in storage.qs resize!(q, n) end
+set_num_velocities!(storage::RingBufferStorage, n::Int64) = for v in storage.vs resize!(v, n) end
 
-function initialize{T}(storage::OdeRingBufferStorage{T}, t::T, state)
+function initialize{T}(storage::RingBufferStorage{T}, t::T, state)
     set_num_positions!(storage, length(configuration_vector(state)))
     set_num_velocities!(storage, length(velocity_vector(state)))
     process(storage, t, state)
 end
 
-function process{T}(storage::OdeRingBufferStorage{T}, t::T, state)
+function process{T}(storage::RingBufferStorage{T}, t::T, state)
     index = storage.nextIndex
     storage.ts[index] = t
     copy!(storage.qs[index], configuration_vector(state))
     copy!(storage.vs[index], velocity_vector(state))
     storage.nextIndex = index % length(storage) + 1
+    nothing
+end
+
+"""
+$(TYPEDEF)
+
+An `OdeResultsSink` that stores the state at each integration time step in
+`Vectors` that may expand.
+"""
+type ExpandingStorage{T} <: OdeResultsSink
+    ts::Vector{T}
+    qs::Vector{Vector{T}}
+    vs::Vector{Vector{T}}
+
+    function ExpandingStorage(n::Int64)
+        ts = Vector{T}(); sizehint!(ts, n)
+        qs = Vector{T}[]; sizehint!(qs, n)
+        vs = Vector{T}[]; sizehint!(vs, n)
+        new(ts, qs, vs)
+    end
+end
+Base.eltype{T}(storage::ExpandingStorage{T}) = T
+Base.length(storage::ExpandingStorage) = length(storage.ts)
+
+initialize{T}(storage::ExpandingStorage{T}, t::T, state) = process(storage, t, state)
+
+function process{T}(storage::ExpandingStorage{T}, t::T, state)
+    push!(storage.ts, t)
+    push!(storage.qs, copy(configuration_vector(state)))
+    push!(storage.vs, copy(velocity_vector(state)))
     nothing
 end
 
