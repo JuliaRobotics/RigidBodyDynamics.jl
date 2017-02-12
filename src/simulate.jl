@@ -19,7 +19,7 @@ function simulate(state0::MechanismState, finalTime; Δt = 1e-4)
         nothing
     end
     tableau = runge_kutta_4(Float64)
-    storage = ExpandingStorage{Float64}(ceil(Int64, finalTime / Δt) + 5) # rough estimate of number of time steps
+    storage = ExpandingStorage{Float64}(ceil(Int64, finalTime / Δt * 1.001)) # very rough overestimate of number of time steps
     integrator = MuntheKaasIntegrator(passive_dynamics!, tableau, storage)
     integrate(integrator, state0, finalTime, Δt)
     storage.ts, storage.qs, storage.vs

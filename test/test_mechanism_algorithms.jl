@@ -188,6 +188,13 @@
         @test isapprox(M2, M; atol = 1e-12)
     end
 
+    @testset "spatial_inertia!" begin
+        body = rand(collect(non_root_bodies(mechanism)))
+        newinertia = rand(SpatialInertia{eltype(mechanism)}, spatial_inertia(body).frame)
+        spatial_inertia!(body, newinertia)
+        @assert spatial_inertia(body) == newinertia
+    end
+
     @testset "inverse dynamics / acceleration term" begin
         M = mass_matrix(x)
 
