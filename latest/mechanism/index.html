@@ -174,8 +174,8 @@
 <ul>
 <li><a href="./#RigidBodyDynamics.Mechanism"><code>RigidBodyDynamics.Mechanism</code></a></li>
 <li><a href="./#RigidBodyDynamics.TreeDataStructure.path-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}"><code>RigidBodyDynamics.TreeDataStructure.path</code></a></li>
-<li><a href="./#RigidBodyDynamics.attach!-Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}"><code>RigidBodyDynamics.attach!</code></a></li>
 <li><a href="./#RigidBodyDynamics.attach!"><code>RigidBodyDynamics.attach!</code></a></li>
+<li><a href="./#RigidBodyDynamics.attach!-Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}"><code>RigidBodyDynamics.attach!</code></a></li>
 <li><a href="./#RigidBodyDynamics.bodies-Tuple{RigidBodyDynamics.Mechanism{T}}"><code>RigidBodyDynamics.bodies</code></a></li>
 <li><a href="./#RigidBodyDynamics.body_fixed_frame_definition-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}"><code>RigidBodyDynamics.body_fixed_frame_definition</code></a></li>
 <li><a href="./#RigidBodyDynamics.body_fixed_frame_to_body-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}"><code>RigidBodyDynamics.body_fixed_frame_to_body</code></a></li>
@@ -203,7 +203,7 @@
 </code></pre>
 
 <p>A <code>Mechanism</code> represents an interconnection of rigid bodies and joints. <code>Mechanism</code>s store the joint layout and inertia parameters, but no state-dependent information.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L7' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L7' class='documenter-source'>source</a><br></p>
 <p><a id='Basic-functionality-1'></a></p>
 <h2 id="basic-functionality">Basic functionality</h2>
 <p><a id='RigidBodyDynamics.TreeDataStructure.path-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}' href='#RigidBodyDynamics.TreeDataStructure.path-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}'>#</a>
@@ -213,7 +213,7 @@
 </code></pre>
 
 <p>Return the path from rigid body <code>from</code> to <code>to</code> along edges of the <code>Mechanism</code>'s kinematic tree.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L53' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L53' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.bodies-Tuple{RigidBodyDynamics.Mechanism{T}}' href='#RigidBodyDynamics.bodies-Tuple{RigidBodyDynamics.Mechanism{T}}'>#</a>
 <strong><code>RigidBodyDynamics.bodies</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">bodies(mechanism)
@@ -221,7 +221,7 @@
 </code></pre>
 
 <p>Return the <code>RigidBody</code>s that are part of the <code>Mechanism</code> as an iterable collection.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L73' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L73' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.fixed_transform-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}' href='#RigidBodyDynamics.fixed_transform-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}'>#</a>
 <strong><code>RigidBodyDynamics.fixed_transform</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">fixed_transform(mechanism, from, to)
@@ -229,7 +229,7 @@
 </code></pre>
 
 <p>Return the transform from <code>CartesianFrame3D</code> <code>from</code> to <code>to</code>, both of which are rigidly attached to the same <code>RigidBody</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L123' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L123' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.joints-Tuple{RigidBodyDynamics.Mechanism}' href='#RigidBodyDynamics.joints-Tuple{RigidBodyDynamics.Mechanism}'>#</a>
 <strong><code>RigidBodyDynamics.joints</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">joints(mechanism)
@@ -237,7 +237,7 @@
 </code></pre>
 
 <p>Return the <code>Joint</code>s that are part of the <code>Mechanism</code> as an iterable collection.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L66' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L66' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.num_positions-Tuple{RigidBodyDynamics.Mechanism}' href='#RigidBodyDynamics.num_positions-Tuple{RigidBodyDynamics.Mechanism}'>#</a>
 <strong><code>RigidBodyDynamics.num_positions</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">num_positions(mechanism)
@@ -245,7 +245,7 @@
 </code></pre>
 
 <p>Return the dimension of the joint configuration vector $q$.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L81' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L81' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.num_velocities-Tuple{RigidBodyDynamics.Mechanism}' href='#RigidBodyDynamics.num_velocities-Tuple{RigidBodyDynamics.Mechanism}'>#</a>
 <strong><code>RigidBodyDynamics.num_velocities</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">num_velocities(mechanism)
@@ -253,7 +253,7 @@
 </code></pre>
 
 <p>Return the dimension of the joint velocity vector $v$.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L88' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L88' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.root_body-Tuple{RigidBodyDynamics.Mechanism}' href='#RigidBodyDynamics.root_body-Tuple{RigidBodyDynamics.Mechanism}'>#</a>
 <strong><code>RigidBodyDynamics.root_body</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">root_body(mechanism)
@@ -261,7 +261,7 @@
 </code></pre>
 
 <p>Return the root (stationary 'world') body of the <code>Mechanism</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L39' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L39' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.root_frame-Tuple{RigidBodyDynamics.Mechanism}' href='#RigidBodyDynamics.root_frame-Tuple{RigidBodyDynamics.Mechanism}'>#</a>
 <strong><code>RigidBodyDynamics.root_frame</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">root_frame(mechanism)
@@ -269,7 +269,7 @@
 </code></pre>
 
 <p>Return the default frame of the root body.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L46' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L46' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.body_fixed_frame_definition-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}' href='#RigidBodyDynamics.body_fixed_frame_definition-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}'>#</a>
 <strong><code>RigidBodyDynamics.body_fixed_frame_definition</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">body_fixed_frame_definition(mechanism, frame)
@@ -278,7 +278,7 @@
 
 <p>Return the definition of body-fixed frame <code>frame</code>, i.e., the <code>Transform3D</code> from <code>frame</code> to the default frame of the body to which it is attached.</p>
 <p>See also <a href="../rigidbody/#RigidBodyDynamics.default_frame-Tuple{RigidBodyDynamics.RigidBody}"><code>default_frame</code></a>, <a href="../rigidbody/#RigidBodyDynamics.frame_definition-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}"><code>frame_definition</code></a>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L111' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L111' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.body_fixed_frame_to_body-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}' href='#RigidBodyDynamics.body_fixed_frame_to_body-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}'>#</a>
 <strong><code>RigidBodyDynamics.body_fixed_frame_to_body</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">body_fixed_frame_to_body(mechanism, frame)
@@ -286,7 +286,7 @@
 </code></pre>
 
 <p>Return the <code>RigidBody</code> to which <code>frame</code> is attached.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism.jl#L95' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism.jl#L95' class='documenter-source'>source</a><br></p>
 <p><a id='mechanism_create-1'></a></p>
 <h2 id="creating-and-modifying-mechanisms">Creating and modifying <code>Mechanism</code>s</h2>
 <p><a id='RigidBodyDynamics.parse_urdf' href='#RigidBodyDynamics.parse_urdf'>#</a>
@@ -296,7 +296,7 @@
 </code></pre>
 
 <p>Create a <code>Mechanism</code> by parsing a <a href="http://wiki.ros.org/urdf">URDF</a> file.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/parse_urdf.jl#L91' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/parse_urdf.jl#L91' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.attach!' href='#RigidBodyDynamics.attach!'>#</a>
 <strong><code>RigidBodyDynamics.attach!</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code>attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)
@@ -307,7 +307,7 @@
 <p>The <code>Transform3D</code>s <code>jointToPredecessor</code> and <code>successorToJoint</code> define where <code>joint</code> is attached to each body. <code>jointToPredecessor</code> should define <code>joint.frameBefore</code> with respect to any frame fixed to <code>predecessor</code>, and likewise <code>successorToJoint</code> should define any frame fixed to <code>successor</code> with respect to <code>joint.frameAfter</code>.</p>
 <p><code>predecessor</code> is required to already be among the bodies of the <code>Mechanism</code>.</p>
 <p>If <code>successor</code> is not yet a part of the <code>Mechanism</code>, it will be added to the <code>Mechanism</code>. Otherwise, the <code>joint</code> will be treated as a non-tree edge in the <code>Mechanism</code>, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism_manipulation.jl#L1-L20' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism_manipulation.jl#L1-L20' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.attach!-Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}' href='#RigidBodyDynamics.attach!-Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}'>#</a>
 <strong><code>RigidBodyDynamics.attach!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">attach!(mechanism, parentBody, childMechanism)
@@ -317,7 +317,7 @@
 <p>Attach <code>childMechanism</code> to <code>mechanism</code>.</p>
 <p>Essentially replaces the root body of <code>childMechanism</code> with <code>parentBody</code> (which belongs to <code>mechanism</code>).</p>
 <p>Currently doesn't support <code>Mechanism</code>s with cycles.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism_manipulation.jl#L43' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism_manipulation.jl#L43' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.maximal_coordinates-Tuple{RigidBodyDynamics.Mechanism}' href='#RigidBodyDynamics.maximal_coordinates-Tuple{RigidBodyDynamics.Mechanism}'>#</a>
 <strong><code>RigidBodyDynamics.maximal_coordinates</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">maximal_coordinates(mechanism)
@@ -325,7 +325,7 @@
 </code></pre>
 
 <p>Return a dynamically equivalent <code>Mechanism</code>, but with a flat tree structure with all bodies attached to the root body with a quaternion floating joint, and with the 'tree edge' joints of the input <code>Mechanism</code> transformed into non-tree edge joints (a constraint enforced using Lagrange multipliers in <code>dynamics!</code>).</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism_manipulation.jl#L203' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism_manipulation.jl#L203' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.rand_chain_mechanism-Tuple{Type{T},Vararg{Any,N}}' href='#RigidBodyDynamics.rand_chain_mechanism-Tuple{Type{T},Vararg{Any,N}}'>#</a>
 <strong><code>RigidBodyDynamics.rand_chain_mechanism</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">rand_chain_mechanism(t, jointTypes)
@@ -333,7 +333,7 @@
 </code></pre>
 
 <p>Create a random chain <code>Mechanism</code> with the given joint types.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism_manipulation.jl#L269' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism_manipulation.jl#L269' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.rand_floating_tree_mechanism-Tuple{Type{T},Vararg{Any,N}}' href='#RigidBodyDynamics.rand_floating_tree_mechanism-Tuple{Type{T},Vararg{Any,N}}'>#</a>
 <strong><code>RigidBodyDynamics.rand_floating_tree_mechanism</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">rand_floating_tree_mechanism(t, nonFloatingJointTypes)
@@ -341,7 +341,7 @@
 </code></pre>
 
 <p>Create a random tree <code>Mechanism</code> (without loops), with a quaternion floating joint as the first joint (between the root body and the first non-root body).</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism_manipulation.jl#L283' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism_manipulation.jl#L283' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.rand_mechanism-Tuple{Type{T},Function,Vararg{Any,N}}' href='#RigidBodyDynamics.rand_mechanism-Tuple{Type{T},Function,Vararg{Any,N}}'>#</a>
 <strong><code>RigidBodyDynamics.rand_mechanism</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">rand_mechanism(?, parentSelector, jointTypes)
@@ -349,7 +349,7 @@
 </code></pre>
 
 <p>Create a random <code>Mechanism</code> with the given joint types. Each new body is attached to a parent selected using the <code>parentSelector</code> function.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism_manipulation.jl#L248' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism_manipulation.jl#L248' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.rand_tree_mechanism-Tuple{Type{T},Vararg{Any,N}}' href='#RigidBodyDynamics.rand_tree_mechanism-Tuple{Type{T},Vararg{Any,N}}'>#</a>
 <strong><code>RigidBodyDynamics.rand_tree_mechanism</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">rand_tree_mechanism(t, jointTypes)
@@ -357,7 +357,7 @@
 </code></pre>
 
 <p>Create a random tree <code>Mechanism</code> (without loops).</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism_manipulation.jl#L276' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism_manipulation.jl#L276' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.reattach!' href='#RigidBodyDynamics.reattach!'>#</a>
 <strong><code>RigidBodyDynamics.reattach!</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code class="julia">reattach!(mechanism, oldSubtreeRootBody, parentBody, joint, jointToParent, newSubtreeRootBody, newSubTreeRootBodyToJoint)
@@ -367,7 +367,7 @@ reattach!(mechanism, oldSubtreeRootBody, parentBody, joint, jointToParent, newSu
 
 <p>Detach the subtree rooted at <code>oldSubtreeRootBody</code>, reroot it so that <code>newSubtreeRootBody</code> is the new root, and then attach <code>newSubtreeRootBody</code> to <code>parentBody</code> using <code>joint</code>.</p>
 <p>Currently doesn't support <code>Mechanism</code>s with cycles.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism_manipulation.jl#L101' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism_manipulation.jl#L101' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.remove_fixed_joints!-Tuple{RigidBodyDynamics.Mechanism}' href='#RigidBodyDynamics.remove_fixed_joints!-Tuple{RigidBodyDynamics.Mechanism}'>#</a>
 <strong><code>RigidBodyDynamics.remove_fixed_joints!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">remove_fixed_joints!(mechanism)
@@ -376,7 +376,7 @@ reattach!(mechanism, oldSubtreeRootBody, parentBody, joint, jointToParent, newSu
 
 <p>Remove any fixed joints present as tree edges in <code>mechanism</code> by merging the rigid bodies that these fixed joints join together into bodies with equivalent inertial properties.</p>
 <p>Currently doesn't support <code>Mechanism</code>s with cycles.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism_manipulation.jl#L152' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism_manipulation.jl#L152' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.submechanism-Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T}}' href='#RigidBodyDynamics.submechanism-Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T}}'>#</a>
 <strong><code>RigidBodyDynamics.submechanism</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">submechanism(mechanism, submechanismRootBody)
@@ -385,7 +385,7 @@ reattach!(mechanism, oldSubtreeRootBody, parentBody, joint, jointToParent, newSu
 
 <p>Create a <code>Mechanism</code> from the subtree of <code>mechanism</code> rooted at <code>submechanismRootBody</code>.</p>
 <p>Currently doesn't support <code>Mechanism</code>s with cycles.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/dac6f9e4a8cc795de2259830b3c12415536b2b6b/src/mechanism_manipulation.jl#L81' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/mechanism_manipulation.jl#L81' class='documenter-source'>source</a><br></p>
               
             </div>
           </div>
