@@ -76,13 +76,13 @@ type RingBufferStorage{T} <: OdeResultsSink
     ts::Vector{T}
     qs::Vector{Vector{T}}
     vs::Vector{Vector{T}}
-    nextIndex::Int64
+    lastIndex::Int64
 
     function RingBufferStorage(n::Int64)
         ts = Vector{T}(n)
         qs = [Vector{T}() for i in 1 : n]
         vs = [Vector{T}() for i in 1 : n]
-        new(ts, qs, vs, 1)
+        new(ts, qs, vs, 0)
     end
 end
 Base.eltype{T}(storage::RingBufferStorage{T}) = T
@@ -97,11 +97,11 @@ function initialize{T}(storage::RingBufferStorage{T}, t::T, state)
 end
 
 function process{T}(storage::RingBufferStorage{T}, t::T, state)
-    index = storage.nextIndex
+    index = storage.lastIndex % length(storage) + 1
     storage.ts[index] = t
     copy!(storage.qs[index], configuration_vector(state))
     copy!(storage.vs[index], velocity_vector(state))
-    storage.nextIndex = index % length(storage) + 1
+    storage.lastIndex = index
     nothing
 end
 

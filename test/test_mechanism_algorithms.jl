@@ -402,7 +402,19 @@
         odefun(t, y) = dynamics!(ẋ, result, x, y)
         times, states = ODE.ode45(odefun, x0, linspace(0., 1., 1e4))
         set!(x, states[end])
-        total_energy_after = gravitational_potential_energy(x) + kinetic_energy(x)
-        @test isapprox(total_energy_after, total_energy_before, atol = 1e-1)
+        @test isapprox(gravitational_potential_energy(x) + kinetic_energy(x), total_energy_before, atol = 1e-1)
+
+        # use RingBufferStorage
+        using RigidBodyDynamics.OdeIntegrators
+        passive_dynamics! = (vd::AbstractArray, t, state) -> begin
+            dynamics!(result, state)
+            copy!(vd, result.v̇)
+            nothing
+        end
+        storage = RingBufferStorage{Float64}(3)
+        integrator = MuntheKaasIntegrator(passive_dynamics!, runge_kutta_4(Float64), storage)
+        integrate(integrator, x, 1., 1e-4)
+        set!(x, states[storage.lastIndex])
+        @test isapprox(gravitational_potential_energy(x) + kinetic_energy(x), total_energy_before, atol = 1e-1)
     end
 end
