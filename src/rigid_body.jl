@@ -33,19 +33,28 @@ show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(name(b))\"")
 showcompact(io::IO, b::RigidBody) = print(io, "$(name(b))")
 
 """
-    has_defined_inertia(body)
+$(SIGNATURES)
 
 Whether the body has a defined inertia.
 """
 has_defined_inertia(b::RigidBody) = !isnull(b.inertia)
 
 """
-    spatial_inertia(body)
+$(SIGNATURES)
 
 Return the spatial inertia of the body. If the inertia is undefined, calling
 this method will result in an error.
 """
 spatial_inertia(b::RigidBody) = get(b.inertia)
+
+"""
+$(SIGNATURES)
+
+Set the spatial inertia of the body.
+"""
+function spatial_inertia!(body::RigidBody, inertia::SpatialInertia)
+    body.inertia = Nullable(transform(inertia, frame_definition(body, inertia.frame)))
+end
 
 """
     frame_definitions(body)
@@ -57,7 +66,7 @@ coordinate systems attached to `body` with respect to a single common frame
 frame_definitions(body::RigidBody) = body.frameDefinitions
 
 """
-    is_fixed_to_body(body, frame)
+$(SIGNATURES)
 
 Whether `frame` is attached to `body` (i.e. whether it is among
 [`frame_definitions(body)`](@ref)).
@@ -65,7 +74,7 @@ Whether `frame` is attached to `body` (i.e. whether it is among
 is_fixed_to_body(body::RigidBody, frame::CartesianFrame3D) = any((t) -> t.from == frame, frame_definitions(body))
 
 """
-    default_frame(body)
+$(SIGNATURES)
 
 The [`CartesianFrame3D`](@ref) with respect to which all other frames attached
 to `body` are defined.
@@ -75,7 +84,7 @@ See [`frame_definitions(body)`](@ref), [`frame_definition(body, frame)`](@ref).
 default_frame(body::RigidBody) = first(frame_definitions(body)).to # allows standardization on a frame to reduce number of transformations required
 
 """
-    frame_definition(body, frame)
+$(SIGNATURES)
 
 Return the [`Transform3D`](@ref) defining `frame` (attached to `body`) with
 respect to [`default_frame(body)`](@ref).
@@ -90,7 +99,7 @@ function frame_definition(body::RigidBody, frame::CartesianFrame3D)
 end
 
 """
-    fixed_transform(body, from, to)
+$(SIGNATURES)
 
 Return the transform from `CartesianFrame3D` `from` to `to`, both of which are
 rigidly attached to `body`.
@@ -104,7 +113,7 @@ function fixed_transform(body::RigidBody, from::CartesianFrame3D, to::CartesianF
 end
 
 """
-    add_frame!(body, transform)
+$(SIGNATURES)
 
 Add a new frame definition to `body`, represented by a homogeneous transform
 from the `CartesianFrame3D` to be added to any other frame that is already
@@ -123,7 +132,7 @@ function add_frame!{T}(body::RigidBody{T}, transform::Transform3D{T})
 end
 
 """
-    change_default_frame!(body, frame)
+$(SIGNATURES)
 
 Change the default frame of `body` to `frame` (which should already be among
 `body`'s frame definitions).
