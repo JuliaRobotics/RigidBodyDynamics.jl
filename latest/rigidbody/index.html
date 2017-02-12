@@ -180,6 +180,7 @@
 <li><a href="./#RigidBodyDynamics.has_defined_inertia-Tuple{RigidBodyDynamics.RigidBody}"><code>RigidBodyDynamics.has_defined_inertia</code></a></li>
 <li><a href="./#RigidBodyDynamics.is_fixed_to_body-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}"><code>RigidBodyDynamics.is_fixed_to_body</code></a></li>
 <li><a href="./#RigidBodyDynamics.spatial_inertia-Tuple{RigidBodyDynamics.RigidBody}"><code>RigidBodyDynamics.spatial_inertia</code></a></li>
+<li><a href="./#RigidBodyDynamics.spatial_inertia!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.SpatialInertia}"><code>RigidBodyDynamics.spatial_inertia!</code></a></li>
 </ul>
 <p><a id='The-RigidBody-type-1'></a></p>
 <h2 id="the-rigidbody-type">The <code>RigidBody</code> type</h2>
@@ -190,74 +191,90 @@
 
 <p>A non-deformable body.</p>
 <p>A <code>RigidBody</code> has inertia (represented as a <a href="../spatial/#RigidBodyDynamics.SpatialInertia"><code>SpatialInertia</code></a>), unless it represents a root (world) body. A <code>RigidBody</code> additionally stores a list of definitions of coordinate systems that are rigidly attached to it.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/rigid_body.jl#L1' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L1' class='documenter-source'>source</a><br></p>
 <p><a id='Functions-1'></a></p>
 <h2 id="functions">Functions</h2>
 <p><a id='RigidBodyDynamics.add_frame!-Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Transform3D{T}}' href='#RigidBodyDynamics.add_frame!-Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Transform3D{T}}'>#</a>
 <strong><code>RigidBodyDynamics.add_frame!</code></strong> &mdash; <em>Method</em>.</p>
-<pre><code>add_frame!(body, transform)
+<pre><code class="julia">add_frame!(body, transform)
+
 </code></pre>
 
 <p>Add a new frame definition to <code>body</code>, represented by a homogeneous transform from the <code>CartesianFrame3D</code> to be added to any other frame that is already attached to <code>body</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/rigid_body.jl#L106-L112' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L115' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.default_frame-Tuple{RigidBodyDynamics.RigidBody}' href='#RigidBodyDynamics.default_frame-Tuple{RigidBodyDynamics.RigidBody}'>#</a>
 <strong><code>RigidBodyDynamics.default_frame</code></strong> &mdash; <em>Method</em>.</p>
-<pre><code>default_frame(body)
+<pre><code class="julia">default_frame(body)
+
 </code></pre>
 
 <p>The <a href="../spatial/#RigidBodyDynamics.CartesianFrame3D"><code>CartesianFrame3D</code></a> with respect to which all other frames attached to <code>body</code> are defined.</p>
 <p>See <a href="./#RigidBodyDynamics.frame_definitions-Tuple{RigidBodyDynamics.RigidBody}"><code>frame_definitions(body)</code></a>, <a href="./#RigidBodyDynamics.frame_definition-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}"><code>frame_definition(body, frame)</code></a>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/rigid_body.jl#L67-L74' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L76' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.fixed_transform-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}' href='#RigidBodyDynamics.fixed_transform-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}'>#</a>
 <strong><code>RigidBodyDynamics.fixed_transform</code></strong> &mdash; <em>Method</em>.</p>
-<pre><code>fixed_transform(body, from, to)
+<pre><code class="julia">fixed_transform(body, from, to)
+
 </code></pre>
 
 <p>Return the transform from <code>CartesianFrame3D</code> <code>from</code> to <code>to</code>, both of which are rigidly attached to <code>body</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/rigid_body.jl#L92-L97' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L101' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.has_defined_inertia-Tuple{RigidBodyDynamics.RigidBody}' href='#RigidBodyDynamics.has_defined_inertia-Tuple{RigidBodyDynamics.RigidBody}'>#</a>
 <strong><code>RigidBodyDynamics.has_defined_inertia</code></strong> &mdash; <em>Method</em>.</p>
-<pre><code>has_defined_inertia(body)
+<pre><code class="julia">has_defined_inertia(b)
+
 </code></pre>
 
 <p>Whether the body has a defined inertia.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/rigid_body.jl#L35-L39' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L35' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.spatial_inertia!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.SpatialInertia}' href='#RigidBodyDynamics.spatial_inertia!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.SpatialInertia}'>#</a>
+<strong><code>RigidBodyDynamics.spatial_inertia!</code></strong> &mdash; <em>Method</em>.</p>
+<pre><code class="julia">spatial_inertia!(body, inertia)
+
+</code></pre>
+
+<p>Set the spatial inertia of the body.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L50' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.spatial_inertia-Tuple{RigidBodyDynamics.RigidBody}' href='#RigidBodyDynamics.spatial_inertia-Tuple{RigidBodyDynamics.RigidBody}'>#</a>
 <strong><code>RigidBodyDynamics.spatial_inertia</code></strong> &mdash; <em>Method</em>.</p>
-<pre><code>spatial_inertia(body)
+<pre><code class="julia">spatial_inertia(b)
+
 </code></pre>
 
 <p>Return the spatial inertia of the body. If the inertia is undefined, calling this method will result in an error.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/rigid_body.jl#L42-L47' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L42' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.change_default_frame!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}' href='#RigidBodyDynamics.change_default_frame!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}'>#</a>
 <strong><code>RigidBodyDynamics.change_default_frame!</code></strong> &mdash; <em>Method</em>.</p>
-<pre><code>change_default_frame!(body, frame)
+<pre><code class="julia">change_default_frame!(body, newDefaultFrame)
+
 </code></pre>
 
 <p>Change the default frame of <code>body</code> to <code>frame</code> (which should already be among <code>body</code>'s frame definitions).</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/rigid_body.jl#L125-L130' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L134' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.frame_definition-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}' href='#RigidBodyDynamics.frame_definition-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}'>#</a>
 <strong><code>RigidBodyDynamics.frame_definition</code></strong> &mdash; <em>Method</em>.</p>
-<pre><code>frame_definition(body, frame)
+<pre><code class="julia">frame_definition(body, frame)
+
 </code></pre>
 
 <p>Return the <a href="../spatial/#RigidBodyDynamics.Transform3D"><code>Transform3D</code></a> defining <code>frame</code> (attached to <code>body</code>) with respect to <a href="./#RigidBodyDynamics.default_frame-Tuple{RigidBodyDynamics.RigidBody}"><code>default_frame(body)</code></a>.</p>
 <p>Throws an error if <code>frame</code> is not attached to <code>body</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/rigid_body.jl#L77-L84' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L86' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.frame_definitions-Tuple{RigidBodyDynamics.RigidBody}' href='#RigidBodyDynamics.frame_definitions-Tuple{RigidBodyDynamics.RigidBody}'>#</a>
 <strong><code>RigidBodyDynamics.frame_definitions</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code>frame_definitions(body)
 </code></pre>
 
 <p>Return the list of homogeneous transforms (<a href="../spatial/#RigidBodyDynamics.Transform3D"><code>Transform3D</code></a>s) that define the coordinate systems attached to <code>body</code> with respect to a single common frame (<a href="./#RigidBodyDynamics.default_frame-Tuple{RigidBodyDynamics.RigidBody}"><code>default_frame(body)</code></a>).</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/rigid_body.jl#L50-L56' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L59-L65' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.is_fixed_to_body-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}' href='#RigidBodyDynamics.is_fixed_to_body-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}'>#</a>
 <strong><code>RigidBodyDynamics.is_fixed_to_body</code></strong> &mdash; <em>Method</em>.</p>
-<pre><code>is_fixed_to_body(body, frame)
+<pre><code class="julia">is_fixed_to_body(body, frame)
+
 </code></pre>
 
 <p>Whether <code>frame</code> is attached to <code>body</code> (i.e. whether it is among <a href="./#RigidBodyDynamics.frame_definitions-Tuple{RigidBodyDynamics.RigidBody}"><code>frame_definitions(body)</code></a>).</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/072f0a0b0b139534e0e806ad47e3e5c18dda2dc7/src/rigid_body.jl#L59-L64' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/0341027bc0fc15706bbec78a0dffa4d1d247edac/src/rigid_body.jl#L68' class='documenter-source'>source</a><br></p>
               
             </div>
           </div>
