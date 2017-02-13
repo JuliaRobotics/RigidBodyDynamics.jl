@@ -26,14 +26,6 @@ include("test_double_pendulum.jl")
 include("test_mechanism_algorithms.jl")
 include("test_mechanism_manipulation.jl")
 
-macro test_skip_nightly(ex)
-    if VERSION < v"0.6-dev"
-        return :(@test $(esc(ex)))
-    else
-        return :(@test_skip $(esc(ex)))
-    end
-end
-
 # notebooks
 @testset "example notebooks" begin
     using IJulia
@@ -42,17 +34,20 @@ end
     if !isdir(outputdir)
         mkpath(outputdir)
     end
-    jupyter = IJulia.jupyter
-    for f in filter(x -> endswith(x, "ipynb"), readdir("../notebooks"))
-        notebook = joinpath("..", "notebooks", f)
-        output = joinpath(outputdir, f)
-        # skip on nightly because notebooks specify version 0.5
-        @test_skip_nightly begin run(`$jupyter nbconvert --to notebook --execute $notebook --output $output --ExecutePreprocessor.timeout=90`); true end
+
+    notebookdir = joinpath("..", "notebooks")
+    for file in readdir(notebookdir)
+        name, ext = splitext(file)
+        if lowercase(ext) == ".ipynb"
+            notebook = joinpath(notebookdir, file)
+            output = joinpath(outputdir, name)
+            run(`$(IJulia.jupyter) nbconvert $notebook --to script --output $output`)
+            @testset "$name" begin include("$output.jl") end
+        end
     end
 end
 
 # benchmarks
 @testset "benchmarks" begin
-    # skip on nightly due to SSL failure with nightly while downloading Atlas URDF on Travis
-    @test_skip_nightly begin include("../perf/runbenchmarks.jl"); true end
+    @test begin include("../perf/runbenchmarks.jl"); true end
 end
