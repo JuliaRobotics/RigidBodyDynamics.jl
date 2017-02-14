@@ -217,9 +217,9 @@
 <p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/mechanism_algorithms.jl#L44' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.dynamics!' href='#RigidBodyDynamics.dynamics!'>#</a>
 <strong><code>RigidBodyDynamics.dynamics!</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">dynamics!(result, state, torques)
+<pre><code class="julia">dynamics!(result, state)
+dynamics!(result, state, torques)
 dynamics!(result, state, torques, externalWrenches)
-dynamics!(result, state)
 
 </code></pre>
 
@@ -239,8 +239,8 @@ K(q) \dot{v} = -k
 <p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/mechanism_algorithms.jl#L535' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.dynamics!' href='#RigidBodyDynamics.dynamics!'>#</a>
 <strong><code>RigidBodyDynamics.dynamics!</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">dynamics!(ẋ, result, state, stateVec, torques, externalWrenches)
-dynamics!(ẋ, result, state, stateVec)
+<pre><code class="julia">dynamics!(ẋ, result, state, stateVec)
+dynamics!(ẋ, result, state, stateVec, torques, externalWrenches)
 dynamics!(ẋ, result, state, stateVec, torques)
 
 </code></pre>
@@ -275,8 +275,8 @@ v
 <p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/mechanism_algorithms.jl#L100' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.inverse_dynamics' href='#RigidBodyDynamics.inverse_dynamics'>#</a>
 <strong><code>RigidBodyDynamics.inverse_dynamics</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">inverse_dynamics(state, v̇, externalWrenches)
-inverse_dynamics(state, v̇)
+<pre><code class="julia">inverse_dynamics(state, v̇)
+inverse_dynamics(state, v̇, externalWrenches)
 
 </code></pre>
 
@@ -292,8 +292,8 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 <p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/mechanism_algorithms.jl#L380-L393' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.inverse_dynamics!' href='#RigidBodyDynamics.inverse_dynamics!'>#</a>
 <strong><code>RigidBodyDynamics.inverse_dynamics!</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇, externalWrenches)
-inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇)
+<pre><code class="julia">inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇)
+inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇, externalWrenches)
 
 </code></pre>
 
@@ -376,8 +376,8 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 <p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/mechanism_algorithms.jl#L87' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.dynamics_bias!' href='#RigidBodyDynamics.dynamics_bias!'>#</a>
 <strong><code>RigidBodyDynamics.dynamics_bias!</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">dynamics_bias!(torques, biasAccelerations, wrenches, state, externalWrenches)
-dynamics_bias!(torques, biasAccelerations, wrenches, state)
+<pre><code class="julia">dynamics_bias!(torques, biasAccelerations, wrenches, state)
+dynamics_bias!(torques, biasAccelerations, wrenches, state, externalWrenches)
 
 </code></pre>
 
