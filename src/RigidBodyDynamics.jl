@@ -1,15 +1,13 @@
-__precompile__(true)
+__precompile__()
 
 module RigidBodyDynamics
 
 include("tree.jl")
 
-import Base: convert, zero, one, *, +, /, -, call, inv, get, findfirst, Random.rand, Random.rand!
-import Base: hcat, show, showcompact, isapprox, dot, cross, unsafe_copy!, Array, eltype, copy, exp, log, get!
+import Base: *, +, /, -
+using Base.Random
 using StaticArrays
-import StaticArrays: similar_type
 using Rotations
-using DataStructures
 using LightXML
 using DocStringExtensions
 
@@ -64,7 +62,7 @@ export
     MechanismState,
     DynamicsResult,
     # functions
-    name,
+    name, # TODO: remove?
     has_defined_inertia,
     default_frame,
     add_frame!,
@@ -81,10 +79,10 @@ export
     root_body,
     non_root_bodies,
     isroot,
-    isleaf,
+    isleaf, # TODO: remove?
     bodies,
-    toposort,
-    path,
+    toposort, # TODO: remove?
+    path, # TODO: remove?
     joints,
     configuration_derivative,
     velocity_to_configuration_derivative!,
@@ -111,15 +109,14 @@ export
     reattach!,
     maximal_coordinates,
     submechanism,
-    change_joint_type!,
     remove_fixed_joints!,
     rand_mechanism,
     rand_chain_mechanism,
     rand_tree_mechanism,
     rand_floating_tree_mechanism,
-    configuration_vector,
-    velocity_vector,
-    state_vector,
+    configuration_vector, # TODO: just make this configuration
+    velocity_vector, # TODO: just make this velocity
+    state_vector, # TODO: Base.convert method to Vector?
     rand_configuration!,
     zero_configuration!,
     rand_velocity!,

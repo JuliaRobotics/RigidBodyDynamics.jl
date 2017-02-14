@@ -85,8 +85,8 @@ Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, trans::SVector{3, T
 Transform3D{T}(::Type{T}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D{T}(from, to, eye(RotMatrix3{T}), zeros(SVector{3, T}))
 Transform3D{T}(::Type{T}, frame::CartesianFrame3D) = Transform3D{T}(frame, frame, eye(RotMatrix3{T}), zeros(SVector{3, T}))
 
-convert{T}(::Type{Transform3D{T}}, t::Transform3D{T}) = t
-convert{T}(::Type{Transform3D{T}}, t::Transform3D) = Transform3D(t.from, t.to, convert(RotMatrix3{T}, t.rot), convert(SVector{3, T}, t.trans))
+Base.convert{T}(::Type{Transform3D{T}}, t::Transform3D{T}) = t
+Base.convert{T}(::Type{Transform3D{T}}, t::Transform3D) = Transform3D(t.from, t.to, convert(RotMatrix3{T}, t.rot), convert(SVector{3, T}, t.trans))
 
 function show(io::IO, t::Transform3D)
     println(io, "Transform3D from \"$(name(t.from))\" to \"$(name(t.to))\":")
@@ -103,14 +103,16 @@ end
     Transform3D(t2.from, t1.to, rot, trans)
 end
 
-@inline function inv(t::Transform3D)
+@inline function Base.inv(t::Transform3D)
     rotinv = inv(t.rot)
     Transform3D(t.to, t.from, rotinv, -(rotinv * t.trans))
 end
 
-rand{T}(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D(from, to, rand(RotMatrix3{T}), rand(SVector{3, T}))
+function Random.rand{T}(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D)
+    Transform3D(from, to, rand(RotMatrix3{T}), rand(SVector{3, T}))
+end
 
-function isapprox{T}(x::Transform3D{T}, y::Transform3D{T}; atol::Real = 1e-12)
+function Base.isapprox{T}(x::Transform3D{T}, y::Transform3D{T}; atol::Real = 1e-12)
     x.from == y.from && x.to == y.to && isapprox(x.rot, y.rot, atol = atol) && isapprox(x.trans, y.trans, atol = atol)
 end
 
@@ -129,17 +131,16 @@ for VectorType in (:FreeVector3D, :Point3D)
         $VectorType{V}(frame::CartesianFrame3D, v::V) = $VectorType{V}(frame, v)
         $VectorType{T<:Number}(::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, zeros(SVector{3, T}))
 
-        convert{V}(::Type{$VectorType{V}}, p::$VectorType{V}) = p
-        convert{V}(::Type{$VectorType{V}}, p::$VectorType) = $VectorType(p.frame, convert(V, p.v))
+        Base.convert{V}(::Type{$VectorType{V}}, p::$VectorType{V}) = p
+        Base.convert{V}(::Type{$VectorType{V}}, p::$VectorType) = $VectorType(p.frame, convert(V, p.v))
 
         (/){S<:Number}(p::$VectorType, s::S) = $VectorType(p.frame, p.v / s)
         (*){S<:Number}(p::$VectorType, s::S) = $VectorType(p.frame, p.v * s)
         (*){S<:Number}(s::S, p::$VectorType) = $VectorType(p.frame, s * p.v)
 
-        rand{T}(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, rand(SVector{3, T}))
-        show(io::IO, p::$VectorType) = print(io, "$($(VectorType).name.name) in \"$(name(p.frame))\": $(p.v)")
-        isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
-        # copy(p::$VectorType) = $VectorType(p.frame, copy(p.v))
+        Random.rand{T}(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, rand(SVector{3, T}))
+        Base.show(io::IO, p::$VectorType) = print(io, "$($(VectorType).name.name) in \"$(name(p.frame))\": $(p.v)")
+        Base.isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
 
         """
         $(SIGNATURES)
@@ -147,8 +148,8 @@ for VectorType in (:FreeVector3D, :Point3D)
         Returns `x` transformed to `CartesianFrame3D` `t.from`.
         """
         transform(x::$VectorType, t::Transform3D) = t * x
-        eltype{V}(::Type{$VectorType{V}}) = eltype(V)
-        similar_type{V, T}(x::Type{$VectorType{V}}, ::Type{T}) = $VectorType{SVector{3, T}}
+        Base.eltype{V}(::Type{$VectorType{V}}) = eltype(V)
+        StaticArrays.similar_type{V, T}(x::Type{$VectorType{V}}, ::Type{T}) = $VectorType{SVector{3, T}}
     end
 end
 
@@ -180,8 +181,8 @@ FreeVector3D
 
 # FreeVector3D-specific
 FreeVector3D(p::Point3D) = FreeVector3D(p.frame, p.v)
-cross(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
-dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
+Base.cross(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
+Base.dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
 (*)(t::Transform3D, vector::FreeVector3D) = begin @framecheck(t.from, vector.frame); FreeVector3D(t.to, t.rot * vector.v) end
 
 # Mixed Point3D and FreeVector3D
@@ -189,4 +190,4 @@ dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame);
 (+)(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); Point3D(p.frame, p.v + v.v) end
 (+)(v::FreeVector3D, p::Point3D) = p + v
 (-)(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); Point3D(p.frame, p.v - v.v) end
-cross(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); FreeVector3D(p.frame, cross(p.v, v.v)) end
+Base.cross(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); FreeVector3D(p.frame, cross(p.v, v.v)) end

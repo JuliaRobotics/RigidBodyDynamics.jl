@@ -31,7 +31,7 @@ Create a new `Mechanism` containing only a root body, to which other bodies can
 be attached with joints.
 """
 Mechanism{T}(rootBody::RigidBody{T}; kwargs...) = Mechanism{T}(rootBody; kwargs...)
-eltype{T}(::Mechanism{T}) = T
+Base.eltype{T}(::Mechanism{T}) = T
 root_vertex(mechanism::Mechanism) = mechanism.toposortedTree[1]
 non_root_vertices(mechanism::Mechanism) = view(mechanism.toposortedTree, 2 : length(mechanism.toposortedTree)) # TODO: allocates
 tree(mechanism::Mechanism) = mechanism.toposortedTree[1]
@@ -57,7 +57,7 @@ Return the path from rigid body `from` to `to` along edges of the `Mechanism`'s
 kinematic tree.
 """
 path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(tree(mechanism), from), findfirst(tree(mechanism), to))
-show(io::IO, mechanism::Mechanism) = print(io, mechanism.toposortedTree[1])
+Base.show(io::IO, mechanism::Mechanism) = print(io, mechanism.toposortedTree[1])
 isinertial(mechanism::Mechanism, frame::CartesianFrame3D) = is_fixed_to_body(frame, root_body(mechanism))
 isroot{T}(mechanism::Mechanism{T}, b::RigidBody{T}) = b == root_body(mechanism)
 non_root_bodies{T}(mechanism::Mechanism{T}) = (vertex_data(vertex) for vertex in non_root_vertices(mechanism))
