@@ -125,7 +125,7 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
 end
 MechanismState{X, M}(t::Type{X}, mechanism::Mechanism{M}) = MechanismState{X, M, promote_type(X, M)}(t, mechanism)
 
-show{X, M, C}(io::IO, ::MechanismState{X, M, C}) = print(io, "MechanismState{$X, $M, $C}(…)")
+Base.show{X, M, C}(io::IO, ::MechanismState{X, M, C}) = print(io, "MechanismState{$X, $M, $C}(…)")
 
 """
 $(SIGNATURES)
@@ -242,7 +242,7 @@ $(SIGNATURES)
 Randomize both the configuration and velocity.
 Invalidates cache variables.
 """
-rand!(state::MechanismState) = begin rand_configuration!(state); rand_velocity!(state) end
+Random.rand!(state::MechanismState) = begin rand_configuration!(state); rand_velocity!(state) end
 
 """
 $(SIGNATURES)

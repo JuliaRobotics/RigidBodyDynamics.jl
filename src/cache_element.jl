@@ -9,7 +9,7 @@ end
     element.dirty = false
 end
 
-@inline function get(element::CacheElement)
+@inline function Base.get(element::CacheElement)
     element.dirty && error("Cache dirty.")
     element.data
 end

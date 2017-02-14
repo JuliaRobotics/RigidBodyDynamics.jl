@@ -33,8 +33,8 @@ end
 
 Joint(name::String, jointType::JointType) = Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
 
-show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
-showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
+Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
+Base.showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
 
 # TODO: deprecate in favor of sum(num_positions, ...)
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)

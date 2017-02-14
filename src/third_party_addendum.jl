@@ -1,6 +1,5 @@
 # Some operators involving a view of an SMatrix.
 # TODO: make more efficient and less specific, or remove once StaticArrays does this.
-import Base: *, +, -
 
 function *{S1, S2, T, L}(A::StaticMatrix, B::ContiguousSMatrixColumnView{S1, S2, T, L})
     data = A * parent(B)

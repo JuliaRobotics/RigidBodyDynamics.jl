@@ -1,7 +1,7 @@
 # TODO: put in separate module
 
 abstract JointType{T<:Number}
-eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
+Base.eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
 
 # Default implementations
 flip_direction{T}(jt::JointType{T}) = deepcopy(jt)
@@ -42,8 +42,8 @@ the frame after the joint.
 immutable QuaternionFloating{T} <: JointType{T}
 end
 
-show(io::IO, jt::QuaternionFloating) = print(io, "Quaternion floating joint")
-rand{T}(::Type{QuaternionFloating{T}}) = QuaternionFloating{T}()
+Base.show(io::IO, jt::QuaternionFloating) = print(io, "Quaternion floating joint")
+Random.rand{T}(::Type{QuaternionFloating{T}}) = QuaternionFloating{T}()
 
 num_positions(::QuaternionFloating) = 7
 num_velocities(::QuaternionFloating) = 6
@@ -251,8 +251,8 @@ Construct a new `Prismatic` joint type, allowing translation along `axis`
 """
 Prismatic{T}(axis::SVector{3, T}) = Prismatic{T}(axis)
 
-show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.axis)")
-function rand{T}(::Type{Prismatic{T}})
+Base.show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.axis)")
+function Random.rand{T}(::Type{Prismatic{T}})
     axis = normalize(randn(SVector{3, T}))
     Prismatic(axis)
 end
@@ -313,8 +313,8 @@ Construct a new `Revolute` joint type, allowing rotation about `axis`
 """
 Revolute{T}(axis::SVector{3, T}) = Revolute{T}(axis)
 
-show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.axis)")
-function rand{T}(::Type{Revolute{T}})
+Base.show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.axis)")
+function Random.rand{T}(::Type{Revolute{T}})
     axis = normalize(randn(SVector{3, T}))
     Revolute(axis)
 end
@@ -361,8 +361,8 @@ no motion between its predecessor and successor rigid bodies.
 """
 immutable Fixed{T<:Number} <: JointType{T}
 end
-show(io::IO, jt::Fixed) = print(io, "Fixed joint")
-rand{T}(::Type{Fixed{T}}) = Fixed{T}()
+Base.show(io::IO, jt::Fixed) = print(io, "Fixed joint")
+Random.rand{T}(::Type{Fixed{T}}) = Fixed{T}()
 
 num_positions(::Fixed) = 0
 num_velocities(::Fixed) = 0

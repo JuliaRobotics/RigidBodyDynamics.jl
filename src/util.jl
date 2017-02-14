@@ -152,7 +152,7 @@ end
 
 const hat_squared = vector_to_skew_symmetric_squared
 
-function cross(a::SVector{3}, B::AbstractMatrix)
+function Base.cross(a::SVector{3}, B::AbstractMatrix)
     hat(a) * B
 end
 

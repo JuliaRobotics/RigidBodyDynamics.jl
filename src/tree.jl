@@ -1,6 +1,6 @@
 module TreeDataStructure
 
-import Base: showcompact, show, parent, findfirst, map!, insert!, copy
+import Base: parent, findfirst, map!, insert!, copy
 
 if isdefined(Base, :Iterators)
     import Base.Iterators: filter
@@ -50,7 +50,7 @@ edge_to_parent_data(v::TreeVertex) = get(v.parentAndEdgeData)[2]
 isroot{V, E}(v::TreeVertex{V, E}) = isnull(v.parentAndEdgeData)
 isleaf{V, E}(v::TreeVertex{V, E}) = isempty(children(v))
 
-function showcompact(io::IO, vertex::TreeVertex)
+function Base.showcompact(io::IO, vertex::TreeVertex)
     print(io, "Vertex: ")
     showcompact(io, vertex_data(vertex))
     if isroot(vertex)
@@ -62,12 +62,14 @@ function showcompact(io::IO, vertex::TreeVertex)
     end
 end
 
-function show(io::IO, vertex::TreeVertex, level = 0)
+Base.show(io::IO, vertex::TreeVertex) = showcompact(io, vertex)
+
+function Base.show(io::IO, t::MIME"text/plain", vertex::TreeVertex, level = 0)
     for i = 1 : level print(io, "  ") end
     showcompact(io, vertex)
     for child in children(vertex)
         print(io, "\n")
-        show(io, child, level + 1)
+        show(io, t, child, level + 1)
     end
 end
 
@@ -248,7 +250,7 @@ immutable Path{V, E}
     directions::Vector{Int64}
 end
 
-function show(io::IO, p::Path)
+function Base.show(io::IO, p::Path)
     println(io, "Path:")
     println(io, "Vertices: $(p.vertexData)")
     println(io, "Edges: $(p.edgeData)")

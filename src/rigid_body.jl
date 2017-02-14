@@ -24,13 +24,13 @@ type RigidBody{T<:Number}
     end
 end
 
-eltype{T}(::Type{RigidBody{T}}) = T
-eltype{T}(body::RigidBody{T}) = eltype(typeof(body))
+Base.eltype{T}(::Type{RigidBody{T}}) = T
+Base.eltype{T}(body::RigidBody{T}) = eltype(typeof(body))
 RigidBody{T}(name::String, inertia::SpatialInertia{T}) = RigidBody{T}(name, inertia)
 RigidBody{T}(inertia::SpatialInertia{T}) = RigidBody{T}(name(inertia.frame), inertia)
 name(b::RigidBody) = b.name
-show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(name(b))\"")
-showcompact(io::IO, b::RigidBody) = print(io, "$(name(b))")
+Base.show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(name(b))\"")
+Base.showcompact(io::IO, b::RigidBody) = print(io, "$(name(b))")
 
 """
 $(SIGNATURES)
