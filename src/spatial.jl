@@ -603,7 +603,7 @@ function transform(jac::GeometricJacobian, transform::Transform3D)
     @framecheck(jac.frame, transform.from)
     R = transform.rot
     angular = R * jac.angular
-    linear = R * jac.linear + cross(transform.trans, angular)
+    linear = R * jac.linear + colwise(cross, transform.trans, angular)
     GeometricJacobian(jac.body, jac.base, transform.to, angular, linear)
 end
 
@@ -641,7 +641,7 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
             R = transform.rot
             linear = R * linear_part(mat)
             T = eltype(linear)
-            angular = R * angular_part(mat) + cross(transform.trans, linear)
+            angular = R * angular_part(mat) + colwise(cross, transform.trans, linear)
             $ForceSpaceMatrix(transform.to, angular, linear)
         end
     end
@@ -692,8 +692,8 @@ function (*)(inertia::SpatialInertia, jac::GeometricJacobian)
     J = inertia.moment
     m = inertia.mass
     c = inertia.crossPart
-    angular = J * Jω + cross(c, Jv)
-    linear = m * Jv - cross(c, Jω)
+    angular = J * Jω + colwise(cross, c, Jv)
+    linear = m * Jv - colwise(cross, c, Jω)
     MomentumMatrix(inertia.frame, angular, linear)
 end
 
