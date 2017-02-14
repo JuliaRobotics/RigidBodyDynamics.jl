@@ -28,21 +28,14 @@ include("test_mechanism_manipulation.jl")
 
 # notebooks
 @testset "example notebooks" begin
-    using IJulia
-
-    outputdir = RigidBodyDynamics.module_tempdir
-    if !isdir(outputdir)
-        mkpath(outputdir)
-    end
-
+    using NBInclude
     notebookdir = joinpath("..", "notebooks")
     for file in readdir(notebookdir)
         name, ext = splitext(file)
         if lowercase(ext) == ".ipynb"
-            notebook = joinpath(notebookdir, file)
-            output = joinpath(outputdir, name)
-            run(`$(IJulia.jupyter) nbconvert $notebook --to script --output $output`)
-            @testset "$name" begin include("$output.jl") end
+            @testset "$name" begin
+                nbinclude(joinpath(notebookdir, file))
+            end
         end
     end
 end
