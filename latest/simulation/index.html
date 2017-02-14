@@ -190,7 +190,7 @@
 
 <p>Simple <code>Mechanism</code> simulation: integrate the state from time $0$ to <code>finalTime</code> starting from the initial state <code>state0</code>. Return a <code>Vector</code> of times, as well as <code>Vector</code>s of configuration vectors and velocity vectors at these times.</p>
 <p>Uses <code>MuntheKaasIntegrator</code>. See <a href="./#RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator"><code>MuntheKaasIntegrator</code></a> for a lower level interface with more options.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/simulate.jl#L3' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/057a7c12e51f75b5172c24593d3cd5d4681705ab/src/simulate.jl#L3' class='documenter-source'>source</a><br></p>
 <p><a id='Lower-level-ODE-integration-interface-1'></a></p>
 <h2 id="lower-level-ode-integration-interface">Lower level ODE integration interface</h2>
 <p><a id='RigidBodyDynamics.OdeIntegrators.ExpandingStorage' href='#RigidBodyDynamics.OdeIntegrators.ExpandingStorage'>#</a>
@@ -199,7 +199,7 @@
 </code></pre>
 
 <p>An <code>OdeResultsSink</code> that stores the state at each integration time step in <code>Vectors</code> that may expand.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/ode_integrators.jl#L108' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/057a7c12e51f75b5172c24593d3cd5d4681705ab/src/ode_integrators.jl#L108' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator' href='#RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator'>#</a>
 <strong><code>RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator</code></strong> &mdash; <em>Type</em>.</p>
 <p>A Lie-group-aware ODE integrator.</p>
@@ -207,7 +207,7 @@
 <p>The idea is to do the dynamics and compute the stages of the integration scheme in terms of local coordinates centered around the global parameterization of the configuration at the end of the previous time step (e.g. exponential coordinates), combine the stages into a new set of local coordinates as usual for Runge-Kutta methods, and then convert the local coordinates back to global coordinates.</p>
 <p>From <a href="https://hal.archives-ouvertes.fr/hal-01328729">Iserles et al., 'Lie-group methods' (2000)</a>.</p>
 <p>Another useful reference is <a href="http://www.ent.mrt.ac.lk/iml/paperbase/TRO%20Collection/TRO/2005/october/7.pdf">Park and Chung, 'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005)</a>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/ode_integrators.jl#L168-L188' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/057a7c12e51f75b5172c24593d3cd5d4681705ab/src/ode_integrators.jl#L168-L188' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.OdeIntegrators.OdeResultsSink' href='#RigidBodyDynamics.OdeIntegrators.OdeResultsSink'>#</a>
 <strong><code>RigidBodyDynamics.OdeIntegrators.OdeResultsSink</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code class="julia">abstract OdeResultsSink
@@ -218,14 +218,14 @@
 <li><code>initialize(sink, state)</code>: called with the initial state when integration begins.</li>
 <li><code>process(sink, t, state)</code>: called at every integration time step with the current state and time.</li>
 </ul>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/ode_integrators.jl#L57' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/057a7c12e51f75b5172c24593d3cd5d4681705ab/src/ode_integrators.jl#L57' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.OdeIntegrators.RingBufferStorage' href='#RigidBodyDynamics.OdeIntegrators.RingBufferStorage'>#</a>
 <strong><code>RigidBodyDynamics.OdeIntegrators.RingBufferStorage</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code class="julia">type RingBufferStorage{T} &lt;: RigidBodyDynamics.OdeIntegrators.OdeResultsSink
 </code></pre>
 
 <p>An <code>OdeResultsSink</code> that stores the state at each integration time step in a ring buffer.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/ode_integrators.jl#L69' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/057a7c12e51f75b5172c24593d3cd5d4681705ab/src/ode_integrators.jl#L69' class='documenter-source'>source</a><br></p>
 <p><a id='Base.step-Tuple{RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator,Real,Any,Real}' href='#Base.step-Tuple{RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator,Real,Any,Real}'>#</a>
 <strong><code>Base.step</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">step(integrator, t, state, Δt)
@@ -241,7 +241,7 @@
 <li><code>global_coordinates!(state, q0, ϕ)</code>, sets global coordinates in state based on local coordinates <code>ϕ</code> centered around global coordinates <code>q0</code>.</li>
 <li><code>local_coordinates!(state, ϕ, ϕd, q0)</code>, converts state's global configuration <code>q</code> and velocity <code>v</code> to local coordinates centered around global coordinates <code>q0</code>.</li>
 </ul>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/ode_integrators.jl#L209' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/057a7c12e51f75b5172c24593d3cd5d4681705ab/src/ode_integrators.jl#L209' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.OdeIntegrators.integrate-Tuple{RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator,Any,Any,Any}' href='#RigidBodyDynamics.OdeIntegrators.integrate-Tuple{RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator,Any,Any,Any}'>#</a>
 <strong><code>RigidBodyDynamics.OdeIntegrators.integrate</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">integrate(integrator, state0, finalTime, Δt)
@@ -249,7 +249,7 @@
 </code></pre>
 
 <p>Integrate dynamics from the initial state <code>state0</code> at time $0$ to <code>finalTime</code> using step size <code>Δt</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/ode_integrators.jl#L277' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/057a7c12e51f75b5172c24593d3cd5d4681705ab/src/ode_integrators.jl#L277' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.OdeIntegrators.runge_kutta_4-Tuple{Type{T}}' href='#RigidBodyDynamics.OdeIntegrators.runge_kutta_4-Tuple{Type{T}}'>#</a>
 <strong><code>RigidBodyDynamics.OdeIntegrators.runge_kutta_4</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">runge_kutta_4(scalartype)
@@ -257,14 +257,14 @@
 </code></pre>
 
 <p>Return the Butcher tableau for the standard fourth order Runge-Kutta integrator.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/ode_integrators.jl#L43' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/057a7c12e51f75b5172c24593d3cd5d4681705ab/src/ode_integrators.jl#L43' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.OdeIntegrators.ButcherTableau' href='#RigidBodyDynamics.OdeIntegrators.ButcherTableau'>#</a>
 <strong><code>RigidBodyDynamics.OdeIntegrators.ButcherTableau</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code class="julia">immutable ButcherTableau{N, T&lt;:Number, L}
 </code></pre>
 
 <p>A <a href="https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Explicit_Runge.E2.80.93Kutta_methods">Butcher tableau</a>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/ce1d7960406e6a506415823a86cecda9d6915a45/src/ode_integrators.jl#L18' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/057a7c12e51f75b5172c24593d3cd5d4681705ab/src/ode_integrators.jl#L18' class='documenter-source'>source</a><br></p>
               
             </div>
           </div>
