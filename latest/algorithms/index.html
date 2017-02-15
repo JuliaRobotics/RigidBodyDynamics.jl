@@ -217,28 +217,9 @@
 <p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_algorithms.jl#L44' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.dynamics!' href='#RigidBodyDynamics.dynamics!'>#</a>
 <strong><code>RigidBodyDynamics.dynamics!</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">dynamics!(ẋ, result, state, stateVec)
-dynamics!(ẋ, result, state, stateVec, torques, externalWrenches)
-dynamics!(ẋ, result, state, stateVec, torques)
-
-</code></pre>
-
-<p>Convenience function for use with standard ODE integrators that takes a <code>Vector</code> argument</p>
-<p>
-<script type="math/tex; mode=display">
-x = \left(\begin{array}{c}
-q\\
-v
-\end{array}\right)
-</script>
-</p>
-<p>and returns a <code>Vector</code> $\dot{x}$.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_algorithms.jl#L561' class='documenter-source'>source</a><br></p>
-<p><a id='RigidBodyDynamics.dynamics!' href='#RigidBodyDynamics.dynamics!'>#</a>
-<strong><code>RigidBodyDynamics.dynamics!</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">dynamics!(result, state, torques)
-dynamics!(result, state)
+<pre><code class="julia">dynamics!(result, state)
 dynamics!(result, state, torques, externalWrenches)
+dynamics!(result, state, torques)
 
 </code></pre>
 
@@ -256,6 +237,25 @@ K(q) \dot{v} = -k
 </p>
 <p>given joint configuration vector $q$, joint velocity vector $v$, and (optionally) joint torques $\tau$ and external wrenches $w_\text{ext}$.</p>
 <p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_algorithms.jl#L535' class='documenter-source'>source</a><br></p>
+<p><a id='RigidBodyDynamics.dynamics!' href='#RigidBodyDynamics.dynamics!'>#</a>
+<strong><code>RigidBodyDynamics.dynamics!</code></strong> &mdash; <em>Function</em>.</p>
+<pre><code class="julia">dynamics!(ẋ, result, state, stateVec, torques, externalWrenches)
+dynamics!(ẋ, result, state, stateVec, torques)
+dynamics!(ẋ, result, state, stateVec)
+
+</code></pre>
+
+<p>Convenience function for use with standard ODE integrators that takes a <code>Vector</code> argument</p>
+<p>
+<script type="math/tex; mode=display">
+x = \left(\begin{array}{c}
+q\\
+v
+\end{array}\right)
+</script>
+</p>
+<p>and returns a <code>Vector</code> $\dot{x}$.</p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_algorithms.jl#L561' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.geometric_jacobian-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}' href='#RigidBodyDynamics.geometric_jacobian-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}'>#</a>
 <strong><code>RigidBodyDynamics.geometric_jacobian</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">geometric_jacobian(state, path)
