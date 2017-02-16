@@ -62,14 +62,16 @@ function Base.showcompact(io::IO, vertex::TreeVertex)
     end
 end
 
-Base.show(io::IO, vertex::TreeVertex) = showcompact(io, vertex)
-
-function Base.show(io::IO, t::MIME"text/plain", vertex::TreeVertex, level = 0)
-    for i = 1 : level print(io, "  ") end
-    showcompact(io, vertex)
-    for child in children(vertex)
-        print(io, "\n")
-        show(io, t, child, level + 1)
+function Base.show(io::IO, vertex::TreeVertex, level = 0)
+    if get(io, :compact, false)
+        showcompact(io, vertex)
+    else
+        for i = 1 : level print(io, "  ") end
+        showcompact(io, vertex)
+        for child in children(vertex)
+            print(io, "\n")
+            show(io, child, level + 1)
+        end
     end
 end
 
