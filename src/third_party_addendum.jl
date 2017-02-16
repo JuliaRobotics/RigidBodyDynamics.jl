@@ -45,10 +45,10 @@ function _mul{S1, S2, TA, L, Tb}(
     ret
 end
 
-function colwise{S1, S2, T, L}(f, A::ContiguousSMatrixColumnView{S1, S2, T, L}, x::StaticVector)
+@inline function colwise{S1, S2, T, L}(f, A::ContiguousSMatrixColumnView{S1, S2, T, L}, x::StaticVector)
     typeof(A)(colwise(f, parent(A), x), A.indexes, A.offset1, A.stride1)
 end
 
-function colwise{S1, S2, T, L}(f, x::StaticVector, A::ContiguousSMatrixColumnView{S1, S2, T, L})
+@inline function colwise{S1, S2, T, L}(f, x::StaticVector, A::ContiguousSMatrixColumnView{S1, S2, T, L})
     typeof(A)(colwise(f, x, parent(A)), A.indexes, A.offset1, A.stride1)
 end
