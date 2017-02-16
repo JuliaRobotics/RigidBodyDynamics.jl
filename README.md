@@ -7,7 +7,7 @@
 RigidBodyDynamics.jl is a rigid body dynamics library in pure Julia.
 
 ## News
-* February 14, 2016: [tagged version 0.0.5](https://github.com/JuliaLang/METADATA.jl/pull/7953).
+* February 14, 2017: [tagged version 0.0.5](https://github.com/JuliaLang/METADATA.jl/pull/7953).
 * December 12, 2016: [tagged version 0.0.4](https://github.com/JuliaLang/METADATA.jl/pull/7256).
 * December 6, 2016: [tagged version 0.0.3](https://github.com/JuliaLang/METADATA.jl/pull/7183).
 * October 28, 2016: [tagged version 0.0.2](https://github.com/JuliaLang/METADATA.jl/pull/6896).
