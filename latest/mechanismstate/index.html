@@ -173,23 +173,23 @@
 <li><a href="./#RigidBodyDynamics.MechanismState"><code>RigidBodyDynamics.MechanismState</code></a></li>
 <li><a href="./#Base.Random.rand!-Tuple{RigidBodyDynamics.MechanismState}"><code>Base.Random.rand!</code></a></li>
 <li><a href="./#RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}"><code>RigidBodyDynamics.configuration</code></a></li>
-<li><a href="./#RigidBodyDynamics.configuration_vector-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.configuration_vector</code></a></li>
 <li><a href="./#RigidBodyDynamics.configuration_vector-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}"><code>RigidBodyDynamics.configuration_vector</code></a></li>
+<li><a href="./#RigidBodyDynamics.configuration_vector-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.configuration_vector</code></a></li>
 <li><a href="./#RigidBodyDynamics.num_positions-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.num_positions</code></a></li>
 <li><a href="./#RigidBodyDynamics.num_velocities-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.num_velocities</code></a></li>
 <li><a href="./#RigidBodyDynamics.rand_configuration!-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.rand_configuration!</code></a></li>
 <li><a href="./#RigidBodyDynamics.rand_velocity!-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.rand_velocity!</code></a></li>
 <li><a href="./#RigidBodyDynamics.relative_transform-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}"><code>RigidBodyDynamics.relative_transform</code></a></li>
-<li><a href="./#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}"><code>RigidBodyDynamics.relative_twist</code></a></li>
 <li><a href="./#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}"><code>RigidBodyDynamics.relative_twist</code></a></li>
+<li><a href="./#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}"><code>RigidBodyDynamics.relative_twist</code></a></li>
 <li><a href="./#RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1}}"><code>RigidBodyDynamics.set_configuration!</code></a></li>
 <li><a href="./#RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1}}"><code>RigidBodyDynamics.set_configuration!</code></a></li>
-<li><a href="./#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1}}"><code>RigidBodyDynamics.set_velocity!</code></a></li>
 <li><a href="./#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1}}"><code>RigidBodyDynamics.set_velocity!</code></a></li>
+<li><a href="./#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1}}"><code>RigidBodyDynamics.set_velocity!</code></a></li>
 <li><a href="./#RigidBodyDynamics.setdirty!-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.setdirty!</code></a></li>
 <li><a href="./#RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}"><code>RigidBodyDynamics.velocity</code></a></li>
-<li><a href="./#RigidBodyDynamics.velocity_vector-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}"><code>RigidBodyDynamics.velocity_vector</code></a></li>
 <li><a href="./#RigidBodyDynamics.velocity_vector-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.velocity_vector</code></a></li>
+<li><a href="./#RigidBodyDynamics.velocity_vector-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}"><code>RigidBodyDynamics.velocity_vector</code></a></li>
 <li><a href="./#RigidBodyDynamics.zero!-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.zero!</code></a></li>
 <li><a href="./#RigidBodyDynamics.zero_configuration!-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.zero_configuration!</code></a></li>
 <li><a href="./#RigidBodyDynamics.zero_velocity!-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.zero_velocity!</code></a></li>
@@ -202,7 +202,7 @@
 </code></pre>
 
 <p>A <code>MechanismState</code> stores state information for an entire <code>Mechanism</code>. It contains the joint configuration and velocity vectors $q$ and $v$, as well as cache variables that depend on $q$ and $v$ and are aimed at preventing double work.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L79' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L79' class='documenter-source'>source</a><br></p>
 <p><a id='Functions-1'></a></p>
 <h2 id="functions">Functions</h2>
 <p><a id='RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}' href='#RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}'>#</a>
@@ -212,7 +212,7 @@
 </code></pre>
 
 <p>Return the part of the configuration vector $q$ associated with <code>joint</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L149' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L149' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.configuration_vector-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}' href='#RigidBodyDynamics.configuration_vector-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}'>#</a>
 <strong><code>RigidBodyDynamics.configuration_vector</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">configuration_vector(state, path)
@@ -220,7 +220,7 @@
 </code></pre>
 
 <p>Return the part of the <code>Mechanism</code>'s configuration vector $q$ associated with the joints on <code>path</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L270' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L270' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.configuration_vector-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.configuration_vector-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.configuration_vector</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">configuration_vector(state)
@@ -229,7 +229,7 @@
 
 <p>Return the configuration vector $q$.</p>
 <p>Note that this returns a reference to the underlying data in <code>state</code>. The user is responsible for calling <a href="./#RigidBodyDynamics.setdirty!-Tuple{RigidBodyDynamics.MechanismState}"><code>setdirty!</code></a> after modifying this vector to ensure that dependent cache variables are invalidated.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L247' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L247' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.num_positions-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.num_positions-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.num_positions</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">num_positions(state)
@@ -237,7 +237,7 @@
 </code></pre>
 
 <p>Return the length of the joint configuration vector $q$.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L130' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L130' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.num_velocities-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.num_velocities-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.num_velocities</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">num_velocities(state)
@@ -245,7 +245,7 @@
 </code></pre>
 
 <p>Return the length of the joint velocity vector $v$.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L137' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L137' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.rand_configuration!-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.rand_configuration!-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.rand_configuration!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">rand_configuration!(state)
@@ -253,7 +253,7 @@
 </code></pre>
 
 <p>Randomize the configuration vector $q$. The distribution depends on the particular joint types present in the associated <code>Mechanism</code>. The resulting $q$ is guaranteed to be on the <code>Mechanism</code>'s configuration manifold. Invalidates cache variables.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L213' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L213' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.rand_velocity!-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.rand_velocity!-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.rand_velocity!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">rand_velocity!(state)
@@ -261,7 +261,7 @@
 </code></pre>
 
 <p>Randomize the velocity vector $v$. Invalidates cache variables.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L228' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L228' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.relative_transform-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}' href='#RigidBodyDynamics.relative_transform-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}'>#</a>
 <strong><code>RigidBodyDynamics.relative_transform</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">relative_transform(state, from, to)
@@ -269,7 +269,7 @@
 </code></pre>
 
 <p>Return the homogeneous transform from <code>from</code> to <code>to</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L447' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L447' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}' href='#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}'>#</a>
 <strong><code>RigidBodyDynamics.relative_twist</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">relative_twist(state, bodyFrame, baseFrame)
@@ -277,7 +277,7 @@
 </code></pre>
 
 <p>Return the twist of <code>bodyFrame</code> with respect to <code>baseFrame</code>, expressed in the <code>Mechanism</code>'s root frame.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L480' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L480' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}' href='#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}'>#</a>
 <strong><code>RigidBodyDynamics.relative_twist</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">relative_twist(state, body, base)
@@ -285,7 +285,7 @@
 </code></pre>
 
 <p>Return the twist of <code>body</code> with respect to <code>base</code>, expressed in the <code>Mechanism</code>'s root frame.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L463' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L463' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1}}' href='#RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1}}'>#</a>
 <strong><code>RigidBodyDynamics.set_configuration!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">set_configuration!(state, q)
@@ -293,7 +293,7 @@
 </code></pre>
 
 <p>Set the configuration vector $q$. Invalidates cache variables.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L308' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L308' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1}}' href='#RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1}}'>#</a>
 <strong><code>RigidBodyDynamics.set_configuration!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">set_configuration!(state, joint, q)
@@ -301,7 +301,7 @@
 </code></pre>
 
 <p>Set the part of the configuration vector associated with <code>joint</code>. Invalidates cache variables.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L286' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L286' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1}}' href='#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1}}'>#</a>
 <strong><code>RigidBodyDynamics.set_velocity!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">set_velocity!(state, v)
@@ -309,7 +309,7 @@
 </code></pre>
 
 <p>Set the velocity vector $v$. Invalidates cache variables.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L318' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L318' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1}}' href='#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1}}'>#</a>
 <strong><code>RigidBodyDynamics.set_velocity!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">set_velocity!(state, joint, v)
@@ -317,7 +317,7 @@
 </code></pre>
 
 <p>Set the part of the velocity vector associated with <code>joint</code>. Invalidates cache variables.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L297' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L297' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.setdirty!-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.setdirty!-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.setdirty!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">setdirty!(state)
@@ -325,7 +325,7 @@
 </code></pre>
 
 <p>Invalidate all cache variables.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L164' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L164' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}' href='#RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}'>#</a>
 <strong><code>RigidBodyDynamics.velocity</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">velocity(state, joint)
@@ -333,7 +333,7 @@
 </code></pre>
 
 <p>Return the part of the velocity vector $v$ associated with <code>joint</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L156' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L156' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.velocity_vector-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}' href='#RigidBodyDynamics.velocity_vector-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}'>#</a>
 <strong><code>RigidBodyDynamics.velocity_vector</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">velocity_vector(state, path)
@@ -341,7 +341,7 @@
 </code></pre>
 
 <p>Return the part of the <code>Mechanism</code>'s velocity vector $v$ associated with the joints on <code>path</code>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L278' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L278' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.velocity_vector-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.velocity_vector-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.velocity_vector</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">velocity_vector(state)
@@ -350,7 +350,7 @@
 
 <p>Return the velocity vector $v$.</p>
 <p>Note that this function returns a read-write reference to a field in <code>state</code>. The user is responsible for calling <a href="./#RigidBodyDynamics.setdirty!-Tuple{RigidBodyDynamics.MechanismState}"><code>setdirty!</code></a> after modifying this vector to ensure that dependent cache variables are invalidated.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L258' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L258' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.zero!-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.zero!-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.zero!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">zero!(state)
@@ -359,7 +359,7 @@
 
 <p>Zero both the configuration and velocity. Invalidates cache variables.</p>
 <p>See <a href="../joints/#RigidBodyDynamics.zero_configuration!-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{T,1}}"><code>zero_configuration!</code></a>, <a href="./#RigidBodyDynamics.zero_velocity!-Tuple{RigidBodyDynamics.MechanismState}"><code>zero_velocity!</code></a>.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L204' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L204' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.zero_configuration!-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.zero_configuration!-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.zero_configuration!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">zero_configuration!(state)
@@ -368,7 +368,7 @@
 
 <p>'Zero' the configuration vector $q$. Invalidates cache variables.</p>
 <p>Note that when the <code>Mechanism</code> contains e.g. quaternion-parameterized joints, $q$ may not actually be set to all zeros; the quaternion part of the configuration vector would be set to identity. The contract is that each of the joint transforms should be an identity transform.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L176' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L176' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.zero_velocity!-Tuple{RigidBodyDynamics.MechanismState}' href='#RigidBodyDynamics.zero_velocity!-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>RigidBodyDynamics.zero_velocity!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">zero_velocity!(state)
@@ -376,7 +376,7 @@
 </code></pre>
 
 <p>Zero the velocity vector $v$. Invalidates cache variables.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L193' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L193' class='documenter-source'>source</a><br></p>
 <p><a id='Base.Random.rand!-Tuple{RigidBodyDynamics.MechanismState}' href='#Base.Random.rand!-Tuple{RigidBodyDynamics.MechanismState}'>#</a>
 <strong><code>Base.Random.rand!</code></strong> &mdash; <em>Method</em>.</p>
 <pre><code class="julia">rand!(state)
@@ -384,7 +384,7 @@
 </code></pre>
 
 <p>Randomize both the configuration and velocity. Invalidates cache variables.</p>
-<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/30ba38f785256c50af279f49dc22c715bc6b60fa/src/mechanism_state.jl#L239' class='documenter-source'>source</a><br></p>
+<p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/2beb30adc38b45ef093c32d7af0405968bb2bbaf/src/mechanism_state.jl#L239' class='documenter-source'>source</a><br></p>
               
             </div>
           </div>
