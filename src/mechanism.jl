@@ -57,7 +57,7 @@ Return the path from rigid body `from` to `to` along edges of the `Mechanism`'s
 kinematic tree.
 """
 path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(tree(mechanism), from), findfirst(tree(mechanism), to))
-Base.show(io::IO, mechanism::Mechanism) = print(io, mechanism.toposortedTree[1])
+Base.show(io::IO, mechanism::Mechanism) = print(io, tree(mechanism))
 isinertial(mechanism::Mechanism, frame::CartesianFrame3D) = is_fixed_to_body(frame, root_body(mechanism))
 isroot{T}(mechanism::Mechanism{T}, b::RigidBody{T}) = b == root_body(mechanism)
 non_root_bodies{T}(mechanism::Mechanism{T}) = (vertex_data(vertex) for vertex in non_root_vertices(mechanism))
