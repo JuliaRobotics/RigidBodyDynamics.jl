@@ -7,7 +7,7 @@ using StaticArrays
 using ODE
 using ForwardDiff
 
-if VERSION > v"0.5"
+if isdefined(Base, :Iterators)
     import Base.Iterators: filter
 end
 
