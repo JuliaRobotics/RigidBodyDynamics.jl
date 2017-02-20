@@ -57,7 +57,7 @@ end
         acrobot2 = parse_urdf(Float64, "urdf/Acrobot.urdf")
         xSingle = MechanismState(Float64, acrobot2)
         rand!(xSingle)
-        qSingle = configuration_vector(xSingle)
+        qSingle = configuration(xSingle)
         nqSingle = length(qSingle)
         parentBody = root_body(doubleAcrobot)
         attach!(doubleAcrobot, parentBody, acrobot2)
@@ -79,7 +79,7 @@ end
         mechanism = rand_tree_mechanism(Float64, jointTypes...)
         state = MechanismState(Float64, mechanism)
         rand!(state)
-        q = configuration_vector(state)
+        q = configuration(state)
         M = mass_matrix(state)
         nonFixedJointVertices = collect(filter(v -> !isa(edge_to_parent_data(v).jointType, Fixed), non_root_vertices(mechanism)))
 
@@ -242,8 +242,8 @@ end
         stateFloat64 = MechanismState(Float64, mechanism)
         rand!(stateFloat64)
         stateDual = MechanismState(ForwardDiff.Dual{0, Float64}, mechanism)
-        configuration_vector(stateDual)[:] = configuration_vector(stateFloat64)
-        velocity_vector(stateDual)[:] = velocity_vector(stateFloat64)
+        configuration(stateDual)[:] = configuration(stateFloat64)
+        velocity(stateDual)[:] = velocity(stateFloat64)
 
         dynamicsResultFloat64 = DynamicsResult(Float64, mechanism)
         dynamics!(dynamicsResultFloat64, stateFloat64)

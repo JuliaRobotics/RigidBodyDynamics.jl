@@ -91,16 +91,16 @@ set_num_positions!(storage::RingBufferStorage, n::Int64) = for q in storage.qs r
 set_num_velocities!(storage::RingBufferStorage, n::Int64) = for v in storage.vs resize!(v, n) end
 
 function initialize{T}(storage::RingBufferStorage{T}, t::T, state)
-    set_num_positions!(storage, length(configuration_vector(state)))
-    set_num_velocities!(storage, length(velocity_vector(state)))
+    set_num_positions!(storage, length(configuration(state)))
+    set_num_velocities!(storage, length(velocity(state)))
     process(storage, t, state)
 end
 
 function process{T}(storage::RingBufferStorage{T}, t::T, state)
     index = storage.lastIndex % length(storage) + 1
     storage.ts[index] = t
-    copy!(storage.qs[index], configuration_vector(state))
-    copy!(storage.vs[index], velocity_vector(state))
+    copy!(storage.qs[index], configuration(state))
+    copy!(storage.vs[index], velocity(state))
     storage.lastIndex = index
     nothing
 end
@@ -130,8 +130,8 @@ initialize{T}(storage::ExpandingStorage{T}, t::T, state) = process(storage, t, s
 
 function process{T}(storage::ExpandingStorage{T}, t::T, state)
     push!(storage.ts, t)
-    push!(storage.qs, copy(configuration_vector(state)))
-    push!(storage.vs, copy(velocity_vector(state)))
+    push!(storage.qs, copy(configuration(state)))
+    push!(storage.vs, copy(velocity(state)))
     nothing
 end
 
@@ -199,6 +199,13 @@ immutable MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}
     end
 end
 
+"""
+Create a `MuntheKaasIntegrator` given:
+* a callable `dynamics!(vd, t, state)` that updates the joint acceleration vector
+`vd` at time `t` and in state `state`;
+* a [`ButcherTableau`](@ref) `tableau`, specifying the integrator coefficients;
+* an [`OdeResultsSink`](@ref) `sink` which processes the results of the integration procedure at each time step.
+"""
 function MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S)
     MuntheKaasIntegrator{N, T, F, S, L}(dynamics!, tableau, sink)
 end
@@ -212,8 +219,8 @@ $(SIGNATURES)
 Take a single integration step.
 
 `state` must be of a type for which the following functions are defined:
-* `configuration_vector(state)`, returns the configuration vector in global coordinates.
-* `velocity_vector(state)`, returns the velocity vector.
+* `configuration(state)`, returns the configuration vector in global coordinates.
+* `velocity(state)`, returns the velocity vector.
 * `set_velocity!(state, v)`, sets velocity vector to v.
 * `global_coordinates!(state, q0, ϕ)`, sets global coordinates in state based on local coordinates `ϕ` centered around global coordinates `q0`.
 * `local_coordinates!(state, ϕ, ϕd, q0)`, converts state's global configuration `q` and velocity `v` to local coordinates centered around global coordinates `q0`.
@@ -225,8 +232,8 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
 
     # Use current configuration as the configuration around which the local coordinates for this step will be centered.
     q0, v0 = stages.q0, stages.vstep
-    copy!(q0, configuration_vector(state))
-    copy!(v0, velocity_vector(state))
+    copy!(q0, configuration(state))
+    copy!(v0, velocity(state))
 
     # Compute integrator stages.
     for i = 1 : n
@@ -284,8 +291,8 @@ function integrate(integrator::MuntheKaasIntegrator, state0, finalTime, Δt)
     T = eltype(integrator)
     t = zero(T)
     state = state0
-    set_num_positions!(integrator.stages, length(configuration_vector(state)))
-    set_num_velocities!(integrator.stages, length(velocity_vector(state)))
+    set_num_positions!(integrator.stages, length(configuration(state)))
+    set_num_velocities!(integrator.stages, length(velocity(state)))
     initialize(integrator.sink, t, state)
     while t < finalTime
         step(integrator, t, state, Δt)

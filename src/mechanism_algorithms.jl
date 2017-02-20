@@ -455,7 +455,7 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
     nothing
 end
 
-function dynamics_solve!{S, T<:LinAlg.BlasReal}(result::DynamicsResult{S, T}, τ::AbstractVector{T})
+function dynamics_solve!{M<:Number, T<:LinAlg.BlasReal}(result::DynamicsResult{M, T}, τ::AbstractVector{T})
     # optimized version for BLAS floats
     M = result.massMatrix
     c = result.dynamicsBias

@@ -57,7 +57,7 @@
 
     v̇ = rand(num_velocities(x))
     τ = inverse_dynamics(x, v̇)
-    v = velocity_vector(x)
+    v = velocity(x)
 
     @test isapprox(T1, kinetic_energy(x, body1), atol = 1e-12)
     @test isapprox(T2, kinetic_energy(x, body2), atol = 1e-12)
