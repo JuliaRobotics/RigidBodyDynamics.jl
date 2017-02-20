@@ -171,8 +171,8 @@
 <h2 id="index">Index</h2>
 <ul>
 <li><a href="./#RigidBodyDynamics.DynamicsResult"><code>RigidBodyDynamics.DynamicsResult</code></a></li>
-<li><a href="./#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState{X,M,C},Any}"><code>RigidBodyDynamics.center_of_mass</code></a></li>
 <li><a href="./#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState}"><code>RigidBodyDynamics.center_of_mass</code></a></li>
+<li><a href="./#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState{X,M,C},Any}"><code>RigidBodyDynamics.center_of_mass</code></a></li>
 <li><a href="./#RigidBodyDynamics.dynamics!"><code>RigidBodyDynamics.dynamics!</code></a></li>
 <li><a href="./#RigidBodyDynamics.dynamics!"><code>RigidBodyDynamics.dynamics!</code></a></li>
 <li><a href="./#RigidBodyDynamics.dynamics_bias!"><code>RigidBodyDynamics.dynamics_bias!</code></a></li>
@@ -218,8 +218,8 @@
 <p><a id='RigidBodyDynamics.dynamics!' href='#RigidBodyDynamics.dynamics!'>#</a>
 <strong><code>RigidBodyDynamics.dynamics!</code></strong> &mdash; <em>Function</em>.</p>
 <pre><code class="julia">dynamics!(ẋ, result, state, stateVec)
-dynamics!(ẋ, result, state, stateVec, torques)
 dynamics!(ẋ, result, state, stateVec, torques, externalWrenches)
+dynamics!(ẋ, result, state, stateVec, torques)
 
 </code></pre>
 
@@ -292,8 +292,8 @@ M(q) \dot{v} + c(q, v, w_\text{ext}) = \tau
 <p><a target='_blank' href='https://github.com/tkoolen/RigidBodyDynamics.jl/tree/b782a82dffa4c0d89ca1f8697dbcc409dd478b2f/src/mechanism_algorithms.jl#L380-L393' class='documenter-source'>source</a><br></p>
 <p><a id='RigidBodyDynamics.inverse_dynamics!' href='#RigidBodyDynamics.inverse_dynamics!'>#</a>
 <strong><code>RigidBodyDynamics.inverse_dynamics!</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="julia">inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇)
-inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇, externalWrenches)
+<pre><code class="julia">inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇, externalWrenches)
+inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇)
 
 </code></pre>
 
