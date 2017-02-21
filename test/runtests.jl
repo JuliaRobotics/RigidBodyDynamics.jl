@@ -4,7 +4,6 @@ using RigidBodyDynamics
 using RigidBodyDynamics.TreeDataStructure
 using Rotations
 using StaticArrays
-using ODE
 using ForwardDiff
 
 import Compat.Iterators: filter

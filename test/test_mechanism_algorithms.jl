@@ -324,6 +324,23 @@
         @test isapprox(τ, zeros(num_velocities(mechanism)); atol = 1e-10)
     end
 
+    @testset "dynamics ode method" begin
+        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
+        x = MechanismState(Float64, mechanism)
+        rand!(x)
+        torques = rand(num_velocities(mechanism))
+        externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
+
+        result1 = DynamicsResult(Float64, mechanism)
+        ẋ = Vector{Float64}(length(state_vector(x)))
+        dynamics!(ẋ, result1, x, state_vector(x), torques, externalWrenches)
+
+        result2 = DynamicsResult(Float64, mechanism)
+        dynamics!(result2, x, torques, externalWrenches)
+
+        @test isapprox([configuration_derivative(x); result2.v̇], ẋ)
+    end
+
     @testset "power flow" begin
         mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
         x = MechanismState(Float64, mechanism)
@@ -401,15 +418,8 @@
         total_energy_after = gravitational_potential_energy(x) + kinetic_energy(x)
         @test isapprox(total_energy_after, total_energy_before, atol = 1e-3)
 
-        # use standard integrator (fine when q̇ == v)
         total_energy_before = gravitational_potential_energy(x) + kinetic_energy(x)
-        x0 = state_vector(x)
         result = DynamicsResult(Float64, acrobot)
-        ẋ = Vector{Float64}(length(x0))
-        odefun(t, y) = dynamics!(ẋ, result, x, y)
-        times, states = ODE.ode45(odefun, x0, linspace(0., 1., 1e4))
-        set!(x, states[end])
-        @test isapprox(gravitational_potential_energy(x) + kinetic_energy(x), total_energy_before, atol = 1e-1)
 
         # use RingBufferStorage
         using RigidBodyDynamics.OdeIntegrators
@@ -421,7 +431,8 @@
         storage = RingBufferStorage{Float64}(3)
         integrator = MuntheKaasIntegrator(passive_dynamics!, runge_kutta_4(Float64), storage)
         integrate(integrator, x, 1., 1e-4)
-        set!(x, states[storage.lastIndex])
+        set_configuration!(x, storage.qs[storage.lastIndex])
+        set_velocity!(x, storage.vs[storage.lastIndex])
         @test isapprox(gravitational_potential_energy(x) + kinetic_energy(x), total_energy_before, atol = 1e-1)
     end
 end
