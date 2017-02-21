@@ -1,5 +1,7 @@
 module TreeDataStructure
 
+using Compat
+
 import Base: parent, findfirst, map!, insert!, copy
 
 if isdefined(Base, :Iterators)
@@ -40,7 +42,7 @@ type TreeVertex{V, E}
 end
 TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = TreeVertex{V, E}(vertexData, parent, edgeData)
 
-typealias Tree{V, E} TreeVertex{V, E}
+@compat const Tree{V, E} = TreeVertex{V, E}
 
 vertex_data(v::TreeVertex) = v.vertexData
 children(v::TreeVertex) = v.children

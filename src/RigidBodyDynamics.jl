@@ -10,6 +10,7 @@ using StaticArrays
 using Rotations
 using LightXML
 using DocStringExtensions
+using Compat
 
 const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
 

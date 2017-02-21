@@ -545,7 +545,7 @@ for ForceSpaceElement in (:Momentum, :Wrench)
 end
 
 # WrenchSubspace is the return type of e.g. constraint_wrench_subspace(::Joint, ...)
-typealias WrenchSubspace{T} WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
+@compat const WrenchSubspace{T} = WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
 function WrenchSubspace(frame::CartesianFrame3D, angular, linear)
     WrenchMatrix(frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end
@@ -557,7 +557,7 @@ function GeometricJacobian{A<:AbstractMatrix}(body::CartesianFrame3D, base::Cart
 end
 
 # MotionSubspace is the return type of motion_subspace(::Joint, ...)
-typealias MotionSubspace{T} GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
+@compat const MotionSubspace{T} = GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
 function MotionSubspace(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular, linear)
     GeometricJacobian(body, base, frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end

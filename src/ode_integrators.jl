@@ -3,6 +3,7 @@ module OdeIntegrators
 using RigidBodyDynamics
 using StaticArrays
 using DocStringExtensions
+using Compat
 
 export runge_kutta_4,
     MuntheKaasIntegrator,

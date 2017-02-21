@@ -19,7 +19,7 @@ Base.linearindexing{T}(::Type{NullVector{T}}) = Base.LinearFast()
 
 # type of a view of a vector
 # TODO: a bit too specific
-typealias VectorSegment{T} SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true}
+@compat const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true}
 
 # non-allocating, unsafe vector view
 # from https://github.com/mlubin/ReverseDiffSparse.jl/commit/8e3ade867581aad6ade7c898ada2ed58e0ad42bb
@@ -87,8 +87,8 @@ macro rtti_dispatch(typeTuple, signature)
     :($(esc(ret)))
 end
 
-typealias ContiguousSMatrixColumnView{S1, S2, T, L} SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
-typealias RotMatrix3{T} RotMatrix{3, T, 9}
+@compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
+@compat const RotMatrix3{T} = RotMatrix{3, T, 9}
 
 # TODO: use fusing broadcast instead of these functions in 0.6, where they don't allocate.
 function sub!(out, a, b)
