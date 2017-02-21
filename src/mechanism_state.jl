@@ -281,7 +281,7 @@ $(SIGNATURES)
 Return the part of the `Mechanism`'s configuration vector ``q`` associated with
 the joints on `path`.
 """
-configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([configuration(state, joint) for joint in path.edgeData]...)
+configuration{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([configuration(state, joint) for joint in path.edgeData]...)
 Base.@deprecate configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) configuration(state, path)
 
 """

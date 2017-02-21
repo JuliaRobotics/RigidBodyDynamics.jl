@@ -55,7 +55,7 @@ v_{j}^{k,i}
 ```
 such that
 ```math
-\\hat{T}_{j}^{k,i}=\\left[\\begin{array}{cc}
+\\left[\\begin{array}{cc}
 \\hat{\\omega}_{j}^{k,i} & v_{j}^{k,i}\\\\
 0 & 0
 \\end{array}\\right]=H_{i}^{k}\\dot{H}_{j}^{i}H_{k}^{j}

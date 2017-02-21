@@ -21,8 +21,10 @@ makedocs(
 )
 
 deploydocs(
-    repo   = "github.com/tkoolen/RigidBodyDynamics.jl.git",
+    deps = nothing,
+    repo = "github.com/tkoolen/RigidBodyDynamics.jl.git",
     target = "build",
-    deps   = nothing,
-    make   = nothing
+    make = nothing,
+    julia = "0.5",
+    osname = "linux"
 )

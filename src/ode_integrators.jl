@@ -201,8 +201,7 @@ end
 
 """
 Create a `MuntheKaasIntegrator` given:
-* a callable `dynamics!(vd, t, state)` that updates the joint acceleration vector
-`vd` at time `t` and in state `state`;
+* a callable `dynamics!(vd, t, state)` that updates the joint acceleration vector `vd` at time `t` and in state `state`;
 * a [`ButcherTableau`](@ref) `tableau`, specifying the integrator coefficients;
 * an [`OdeResultsSink`](@ref) `sink` which processes the results of the integration procedure at each time step.
 """
@@ -219,10 +218,10 @@ $(SIGNATURES)
 Take a single integration step.
 
 `state` must be of a type for which the following functions are defined:
-* `configuration(state)`, returns the configuration vector in global coordinates.
-* `velocity(state)`, returns the velocity vector.
-* `set_velocity!(state, v)`, sets velocity vector to v.
-* `global_coordinates!(state, q0, ϕ)`, sets global coordinates in state based on local coordinates `ϕ` centered around global coordinates `q0`.
+* `configuration(state)`, returns the configuration vector in global coordinates;
+* `velocity(state)`, returns the velocity vector;
+* `set_velocity!(state, v)`, sets velocity vector to `v`;
+* `global_coordinates!(state, q0, ϕ)`, sets global coordinates in state based on local coordinates `ϕ` centered around global coordinates `q0`;
 * `local_coordinates!(state, ϕ, ϕd, q0)`, converts state's global configuration `q` and velocity `v` to local coordinates centered around global coordinates `q0`.
 """
 function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
