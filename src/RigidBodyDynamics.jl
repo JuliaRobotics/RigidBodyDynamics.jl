@@ -14,9 +14,7 @@ using Compat
 
 const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
 
-if isdefined(Base, :Iterators)
-    import Base.Iterators: filter
-end
+import Compat.Iterators: filter
 
 include("util.jl")
 include("third_party_addendum.jl")

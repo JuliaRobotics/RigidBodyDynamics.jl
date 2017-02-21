@@ -4,9 +4,7 @@ using Compat
 
 import Base: parent, findfirst, map!, insert!, copy
 
-if isdefined(Base, :Iterators)
-    import Base.Iterators: filter
-end
+import Compat.Iterators: filter
 
 export
     # types
