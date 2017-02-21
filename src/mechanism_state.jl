@@ -8,12 +8,12 @@ immutable JointState{X<:Number, M<:Number, C<:Number}
     biasAcceleration::CacheElement{SpatialAcceleration{C}}
     motionSubspace::CacheElement{MotionSubspace{C}}
 
-    function JointState(joint::Joint{M}, q::VectorSegment{X}, v::VectorSegment{X})
+    function (::Type{JointState{X, M, C}}){X<:Number, M<:Number, C<:Number}(joint::Joint{M}, q::VectorSegment{X}, v::VectorSegment{X})
         jointTransform = CacheElement{Transform3D{C}}()
         twist = CacheElement{Twist{C}}()
         biasAcceleration = CacheElement{SpatialAcceleration{C}}()
         motionSubspace = CacheElement{MotionSubspace{C}}()
-        new(joint, q, v, jointTransform, twist, biasAcceleration, motionSubspace)
+        new{X, M, C}(joint, q, v, jointTransform, twist, biasAcceleration, motionSubspace)
     end
 end
 JointState{X, M}(joint::Joint{M}, q::VectorSegment{X}, v::VectorSegment{X}) = JointState{X, M, promote_type(M, X)}(joint, q, v)
@@ -46,7 +46,7 @@ immutable RigidBodyState{M<:Number, C<:Number}
     inertia::CacheElement{SpatialInertia{C}}
     crbInertia::CacheElement{SpatialInertia{C}}
 
-    function RigidBodyState(body::RigidBody{M}, isroot::Bool)
+    function (::Type{RigidBodyState{M, C}}){M<:Number, C<:Number}(body::RigidBody{M}, isroot::Bool)
         transformToWorld = CacheElement{Transform3D{C}}()
         twist = CacheElement{Twist{C}}()
         biasAcceleration = CacheElement{SpatialAcceleration{C}}()
@@ -61,7 +61,7 @@ immutable RigidBodyState{M<:Number, C<:Number}
             update!(biasAcceleration, zero(SpatialAcceleration{C}, frame, frame, frame))
         end
 
-        new(body, transformToWorld, twist, biasAcceleration, motionSubspace, inertia, crbInertia)
+        new{M, C}(body, transformToWorld, twist, biasAcceleration, motionSubspace, inertia, crbInertia)
     end
 end
 
@@ -97,7 +97,7 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
     nonRootTopoSortedStateVertices::VectorSegment{TreeVertex{RigidBodyState{M, C}, JointState{X, M, C}}} # because of https://github.com/JuliaLang/julia/issues/14955
     constraintJacobianStructure::SparseMatrixCSC{Int64,Int64} # TODO: consider just using a Vector{Vector{Pair{Int64, Int64}}}
 
-    function MechanismState(::Type{X}, mechanism::Mechanism{M})
+    function (::Type{MechanismState{X, M, C}}){X<:Number, M<:Number, C<:Number}(mechanism::Mechanism{M})
         q = Vector{X}(num_positions(mechanism))
         v = zeros(X, num_velocities(mechanism))
         rootBodyState = RigidBodyState(root_body(mechanism), X, true)
@@ -125,10 +125,10 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         end
         vertices = toposort(tree)
         constraintJacobianStructure = constraint_jacobian_structure(mechanism)
-        new(mechanism, q, v, vertices, view(vertices, 2 : length(vertices)), constraintJacobianStructure)
+        new{X, M, C}(mechanism, q, v, vertices, view(vertices, 2 : length(vertices)), constraintJacobianStructure)
     end
 end
-MechanismState{X, M}(t::Type{X}, mechanism::Mechanism{M}) = MechanismState{X, M, promote_type(X, M)}(t, mechanism)
+MechanismState{X, M}(::Type{X}, mechanism::Mechanism{M}) = MechanismState{X, M, promote_type(X, M)}(mechanism)
 
 Base.show{X, M, C}(io::IO, ::MechanismState{X, M, C}) = print(io, "MechanismState{$X, $M, $C}(…)")
 

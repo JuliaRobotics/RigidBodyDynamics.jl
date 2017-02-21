@@ -27,14 +27,14 @@ immutable ButcherTableau{N, T<:Number, L}
     c::SVector{N, T}
     explicit::Bool
 
-    function ButcherTableau(a::AbstractMatrix{T}, b::AbstractVector{T})
+    function (::Type{ButcherTableau{N, T, L}}){N, T<:Number, L}(a::AbstractMatrix{T}, b::AbstractVector{T})
         @assert N > 0
         @assert size(a, 1) == N
         @assert size(a, 2) == N
         @assert length(b) == N
         c = vec(sum(a, 2))
         explicit = all(triu(a) .== 0)
-        new(SMatrix{N, N}(a), SVector{N}(b), SVector{N}(c), explicit)
+        new{N, T, L}(SMatrix{N, N}(a), SVector{N}(b), SVector{N}(c), explicit)
     end
 end
 ButcherTableau{T}(a::Matrix{T}, b::Vector{T}) = ButcherTableau{length(b), T, length(b)^2}(a, b)
@@ -79,11 +79,11 @@ type RingBufferStorage{T} <: OdeResultsSink
     vs::Vector{Vector{T}}
     lastIndex::Int64
 
-    function RingBufferStorage(n::Int64)
+    function (::Type{RingBufferStorage{T}}){T}(n::Int64)
         ts = Vector{T}(n)
         qs = [Vector{T}() for i in 1 : n]
         vs = [Vector{T}() for i in 1 : n]
-        new(ts, qs, vs, 0)
+        new{T}(ts, qs, vs, 0)
     end
 end
 Base.eltype{T}(storage::RingBufferStorage{T}) = T
@@ -117,11 +117,11 @@ type ExpandingStorage{T} <: OdeResultsSink
     qs::Vector{Vector{T}}
     vs::Vector{Vector{T}}
 
-    function ExpandingStorage(n::Int64)
+    function (::Type{ExpandingStorage{T}}){T}(n::Int64)
         ts = Vector{T}(); sizehint!(ts, n)
         qs = Vector{T}[]; sizehint!(qs, n)
         vs = Vector{T}[]; sizehint!(vs, n)
-        new(ts, qs, vs)
+        new{T}(ts, qs, vs)
     end
 end
 Base.eltype{T}(storage::ExpandingStorage{T}) = T
@@ -145,7 +145,7 @@ type MuntheKaasStageCache{N, T<:Number}
     ϕstep::Vector{T} # local coordinates around q0 after complete step
     vstep::Vector{T} # velocity after complete step
 
-    function MuntheKaasStageCache()
+    function (::Type{MuntheKaasStageCache{N, T}}){N, T<:Number}()
         q0 = Vector{T}()
         vs = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
         vds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
@@ -153,7 +153,7 @@ type MuntheKaasStageCache{N, T<:Number}
         ϕds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
         ϕstep = Vector{T}()
         vstep = Vector{T}()
-        new(q0, vs, vds, ϕs, ϕds, ϕstep, vstep)
+        new{N, T}(q0, vs, vds, ϕs, ϕds, ϕstep, vstep)
     end
 end
 set_num_positions!(cache::MuntheKaasStageCache, n::Int64) = resize!(cache.q0, n)
@@ -193,10 +193,10 @@ immutable MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}
     sink::S
     stages::MuntheKaasStageCache{N, T}
 
-    function MuntheKaasIntegrator(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S)
+    function (::Type{MuntheKaasIntegrator{N, T, F, S, L}}){N, T<:Number, F, S<:OdeResultsSink, L}(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S)
         @assert isexplicit(tableau)
         stages = MuntheKaasStageCache{N, T}()
-        new(dynamics!, tableau, sink, stages)
+        new{N, T, F, S, L}(dynamics!, tableau, sink, stages)
     end
 end
 

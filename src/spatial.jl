@@ -143,11 +143,11 @@ immutable GeometricJacobian{A<:AbstractMatrix}
     angular::A
     linear::A
 
-    function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A)
+    function (::Type{GeometricJacobian{A}}){A<:AbstractMatrix}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A)
         @boundscheck size(angular, 1) == 3 || error("size mismatch")
         @boundscheck size(linear, 1) == 3 || error("size mismatch")
         @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
-        new(body, base, frame, angular, linear)
+        new{A}(body, base, frame, angular, linear)
     end
 end
 
@@ -157,11 +157,11 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
         angular::A
         linear::A
 
-        function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A)
+        function (::Type{$ForceSpaceMatrix{A}}){A<:AbstractMatrix}(frame::CartesianFrame3D, angular::A, linear::A)
             @assert size(angular, 1) == 3
             @assert size(linear, 1) == 3
             @assert size(angular, 2) == size(linear, 2)
-            new(frame, angular, linear)
+            new{A}(frame, angular, linear)
         end
     end
 end

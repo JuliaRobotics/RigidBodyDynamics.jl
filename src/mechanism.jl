@@ -16,11 +16,11 @@ type Mechanism{T<:Number}
     nonTreeEdges::Vector{NonTreeEdge{T}}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
-    function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
+    function (::Type{Mechanism{T}}){T<:Number}(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
         tree = Tree{RigidBody{T}, Joint{T}}(rootBody)
         nonTreeEdges = Vector{NonTreeEdge{T}}()
         gravitationalAcceleration = FreeVector3D(default_frame(rootBody), gravity)
-        new(toposort(tree), nonTreeEdges, gravitationalAcceleration)
+        new{T}(toposort(tree), nonTreeEdges, gravitationalAcceleration)
     end
 end
 

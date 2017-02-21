@@ -75,9 +75,17 @@ immutable Transform3D{T<:Number}
     rot::RotMatrix3{T}
     trans::SVector{3, T}
 
-    Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3, T}, trans::SVector{3, T}) = new(from, to, rot, trans)
-    Transform3D(from::CartesianFrame3D, to::CartesianFrame3D) = new(from, to, eye(RotMatrix3{T}), zeros(SVector{3, T}))
-    Transform3D(frame::CartesianFrame3D) = new(frame, frame, eye(RotMatrix3{T}), zeros(SVector{3, T}))
+    function (::Type{Transform3D{T}}){T<:Number}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3, T}, trans::SVector{3, T})
+        new{T}(from, to, rot, trans)
+    end
+
+    function (::Type{Transform3D{T}}){T<:Number}(from::CartesianFrame3D, to::CartesianFrame3D)
+        new{T}(from, to, eye(RotMatrix3{T}), zeros(SVector{3, T}))
+    end
+
+    function (::Type{Transform3D{T}}){T<:Number}(frame::CartesianFrame3D)
+        new{T}(frame, frame, eye(RotMatrix3{T}), zeros(SVector{3, T}))
+    end
 end
 Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3, T}, trans::SVector{3, T}) = Transform3D{T}(from, to, rot, trans)
 Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3, T}) = Transform3D{T}(from, to, rot, zeros(SVector{3, T}))
@@ -121,11 +129,14 @@ end
 # whereas a Point3D is also translated
 for VectorType in (:FreeVector3D, :Point3D)
     @eval begin
-        type $VectorType{V <:AbstractVector}
+        type $VectorType{V<:AbstractVector}
             frame::CartesianFrame3D
             v::V
 
-            $VectorType(frame::CartesianFrame3D, v::V) = begin @boundscheck length(v) == 3; new(frame, v) end
+            function (::Type{$VectorType{V}}){V<:AbstractVector}(frame::CartesianFrame3D, v::V)
+                @boundscheck length(v) == 3
+                new{V}(frame, v)
+            end
         end
 
         $VectorType{V}(frame::CartesianFrame3D, v::V) = $VectorType{V}(frame, v)
