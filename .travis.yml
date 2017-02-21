@@ -13,6 +13,7 @@ branches:
 notifications:
   email: false
 before_install:
+  - printenv
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
   - julia -e 'ENV["PYTHON"]=""; Pkg.clone(pwd()); Pkg.build("RigidBodyDynamics"); Pkg.test("RigidBodyDynamics"; coverage=true)'
