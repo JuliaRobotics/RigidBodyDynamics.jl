@@ -3,8 +3,12 @@ $(TYPEDEF)
 
 Stores variables related to the dynamics of a `Mechanism`, e.g. the
 `Mechanism`'s mass matrix and joint acceleration vector.
+
+Type parameters:
+* `M`: the scalar type of the `Mechanism`.
+* `T`: the scalar type of the dynamics-related variables.
 """
-type DynamicsResult{M, T}
+type DynamicsResult{M<:Number, T<:Number}
     massMatrix::Symmetric{T, Matrix{T}}
     dynamicsBias::Vector{T}
     constraintJacobian::Matrix{T}

@@ -114,8 +114,8 @@ export
     rand_chain_mechanism,
     rand_tree_mechanism,
     rand_floating_tree_mechanism,
-    configuration_vector, # TODO: just make this configuration
-    velocity_vector, # TODO: just make this velocity
+    configuration_vector, # deprecated
+    velocity_vector, # deprecated
     state_vector, # TODO: Base.convert method to Vector?
     rand_configuration!,
     zero_configuration!,

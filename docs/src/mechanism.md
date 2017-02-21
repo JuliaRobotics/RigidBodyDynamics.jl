@@ -10,14 +10,6 @@ Order   = [:type, :function]
 ```@docs
 Mechanism
 ```
-
-## Basic functionality
-```@autodocs
-Modules = [RigidBodyDynamics]
-Order   = [:function]
-Pages   = ["mechanism.jl"]
-```
-
 ## [Creating and modifying `Mechanism`s](@id mechanism_create)
 ```@docs
 parse_urdf
@@ -27,4 +19,11 @@ parse_urdf
 Modules = [RigidBodyDynamics]
 Order   = [:function]
 Pages   = ["mechanism_manipulation.jl"]
+```
+
+## Basic functionality
+```@autodocs
+Modules = [RigidBodyDynamics]
+Order   = [:function]
+Pages   = ["mechanism.jl"]
 ```

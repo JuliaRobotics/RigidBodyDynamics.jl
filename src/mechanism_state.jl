@@ -83,6 +83,11 @@ A `MechanismState` stores state information for an entire `Mechanism`. It
 contains the joint configuration and velocity vectors ``q`` and ``v``, as well
 as cache variables that depend on ``q`` and ``v`` and are aimed at preventing
 double work.
+
+Type parameters:
+* `X`: the scalar type of the ``q`` and ``v`` vectors.
+* `M`: the scalar type of the `Mechanism`
+* `C`: the scalar type of the cache variables (`== promote_type(X, M)`)
 """
 immutable MechanismState{X<:Number, M<:Number, C<:Number}
     mechanism::Mechanism{M}
@@ -253,7 +258,8 @@ Note that this returns a reference to the underlying data in `state`. The user
 is responsible for calling [`setdirty!`](@ref) after modifying this vector to
 ensure that dependent cache variables are invalidated.
 """
-configuration_vector(state::MechanismState) = state.q
+configuration(state::MechanismState) = state.q
+Base.@deprecate configuration_vector(state::MechanismState) configuration(state)
 
 """
 $(SIGNATURES)
@@ -264,8 +270,10 @@ Note that this function returns a read-write reference to a field in `state`.
 The user is responsible for calling [`setdirty!`](@ref) after modifying this
 vector to ensure that dependent cache variables are invalidated.
 """
-velocity_vector(state::MechanismState) = state.v
-state_vector(state::MechanismState) = [configuration_vector(state); velocity_vector(state)]
+velocity(state::MechanismState) = state.v
+Base.@deprecate velocity_vector(state::MechanismState) velocity(state)
+
+state_vector(state::MechanismState) = [configuration(state); velocity(state)]
 
 """
 $(SIGNATURES)
@@ -273,7 +281,8 @@ $(SIGNATURES)
 Return the part of the `Mechanism`'s configuration vector ``q`` associated with
 the joints on `path`.
 """
-configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([configuration(state, joint) for joint in path.edgeData]...)
+configuration{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([configuration(state, joint) for joint in path.edgeData]...)
+Base.@deprecate configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) configuration(state, path)
 
 """
 $(SIGNATURES)
@@ -281,7 +290,8 @@ $(SIGNATURES)
 Return the part of the `Mechanism`'s velocity vector ``v`` associated with
 the joints on `path`.
 """
-velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([velocity(state, joint) for joint in path.edgeData]...)
+velocity{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([velocity(state, joint) for joint in path.edgeData]...)
+Base.@deprecate velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) velocity(state, path)
 
 """
 $(SIGNATURES)
@@ -507,6 +517,12 @@ function transform(state::MechanismState, accel::SpatialAcceleration, to::Cartes
     transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
 end
 
+"""
+$(SIGNATURES)
+
+Compute local coordinates ``\phi`` centered around (global) configuration vector
+``q_0``, as well as their time derivatives ``\\dot{\\phi}``.
+""" # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function local_coordinates!(state::MechanismState, ϕ::StridedVector, ϕd::StridedVector, q0::StridedVector)
     mechanism = state.mechanism
     for vertex in non_root_vertices(state)
@@ -522,6 +538,12 @@ function local_coordinates!(state::MechanismState, ϕ::StridedVector, ϕd::Strid
     end
 end
 
+"""
+$(SIGNATURES)
+
+Convert local coordinates ``\phi`` centered around ``q_0`` to (global)
+configuration vector ``q``.
+""" # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function global_coordinates!(state::MechanismState, q0::StridedVector, ϕ::StridedVector)
     mechanism = state.mechanism
     for vertex in non_root_vertices(state)

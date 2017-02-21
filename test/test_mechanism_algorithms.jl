@@ -16,42 +16,42 @@
         q = vcat([configuration(x, edge_to_parent_data(vertex)) for vertex in non_root_vertices(mechanism)]...)
         v = vcat([velocity(x, edge_to_parent_data(vertex)) for vertex in non_root_vertices(mechanism)]...)
 
-        @test q == configuration_vector(x)
-        @test v == velocity_vector(x)
+        @test q == configuration(x)
+        @test v == velocity(x)
 
         zero_configuration!(x)
         set_configuration!(x, q)
-        @test q == configuration_vector(x)
+        @test q == configuration(x)
 
         zero_velocity!(x)
         set_velocity!(x, v)
-        @test v == velocity_vector(x)
+        @test v == velocity(x)
 
-        qcopy = copy(configuration_vector(x))
+        qcopy = copy(configuration(x))
         zero_configuration!(x)
         for joint in joints(mechanism)
             set_configuration!(x, joint, qcopy[configuration_range(x, joint)])
         end
-        @test q == configuration_vector(x)
+        @test q == configuration(x)
 
-        vcopy = copy(velocity_vector(x))
+        vcopy = copy(velocity(x))
         zero_velocity!(x)
         for joint in joints(mechanism)
             set_velocity!(x, joint, vcopy[velocity_range(x, joint)])
         end
-        @test v == velocity_vector(x)
+        @test v == velocity(x)
 
         zero!(x)
         set!(x, [q; v])
 
-        @test q == configuration_vector(x)
-        @test v == velocity_vector(x)
+        @test q == configuration(x)
+        @test v == velocity(x)
     end
 
     @testset "q̇ <-> v" begin
-        q = configuration_vector(x)
+        q = configuration(x)
         q̇ = configuration_derivative(x)
-        v = velocity_vector(x)
+        v = velocity(x)
         for joint in joints(mechanism)
             qJoint = configuration(x, joint)
             q̇Joint = q̇[configuration_range(x, joint)]
@@ -80,7 +80,7 @@
         base = rand([bs...])
         p = path(mechanism, base, body)
         J = geometric_jacobian(x, p)
-        vpath = velocity_vector(x, p)
+        vpath = velocity(x, p)
         T = relative_twist(x, body, base)
         @test isapprox(Twist(J, vpath), T; atol = 1e-12)
     end
@@ -119,8 +119,8 @@
             for base in bodies(mechanism)
                 v̇ = rand(num_velocities(mechanism))
                 Ṫ = relative_acceleration(x, body, base, v̇)
-                q = configuration_vector(x)
-                v = velocity_vector(x)
+                q = configuration(x)
+                v = velocity(x)
                 q̇ = configuration_derivative(x)
                 q_autodiff = create_autodiff(q, q̇)
                 v_autodiff = create_autodiff(v, v̇)
@@ -162,7 +162,7 @@
             @test isapprox(Array(crb_inertia(x, body) * motion_subspace(x, joint)), Ajoint; atol = 1e-12)
         end
 
-        v = velocity_vector(x)
+        v = velocity(x)
         h = Momentum(A, v)
         hSum = sum(b -> spatial_inertia(x, b) * twist_wrt_world(x, b), non_root_bodies(mechanism))
         @test isapprox(h, hSum; atol = 1e-12)
@@ -171,10 +171,10 @@
     @testset "mass matrix / kinetic energy" begin
         Ek = kinetic_energy(x)
         M = mass_matrix(x)
-        v = velocity_vector(x)
+        v = velocity(x)
         @test isapprox(1/2 * dot(v, M * v), Ek; atol = 1e-12)
 
-        q = configuration_vector(x)
+        q = configuration(x)
         kinetic_energy_fun = v -> begin
             local x = MechanismState(eltype(v), mechanism)
             set_configuration!(x, q)
@@ -220,11 +220,11 @@
         nv = num_velocities(mechanism)
         nq = num_positions(mechanism)
         dMdq = zeros(nv * nv, nq)
-        ForwardDiff.jacobian!(dMdq, q_to_M, configuration_vector(x))
-        q̇ = velocity_vector(x)
+        ForwardDiff.jacobian!(dMdq, q_to_M, configuration(x))
+        q̇ = velocity(x)
         Ṁ = reshape(dMdq * q̇, num_velocities(mechanism), num_velocities(mechanism))
 
-        q = configuration_vector(x)
+        q = configuration(x)
         v̇ = zeros(num_velocities(mechanism))
         function v_to_c(v)
             local x = MechanismState(eltype(v), mechanism)
@@ -256,7 +256,7 @@
         end
 
         g2 = similar(g')
-        ForwardDiff.jacobian!(g2, q_to_potential, configuration_vector(x))
+        ForwardDiff.jacobian!(g2, q_to_potential, configuration(x))
         @test isapprox(g2, g'; atol = 1e-12)
     end
 
@@ -265,9 +265,9 @@
         x = MechanismState(Float64, mechanism)
         rand_configuration!(x)
         rand_velocity!(x)
-        q = configuration_vector(x)
+        q = configuration(x)
         q̇ = configuration_derivative(x)
-        v = velocity_vector(x)
+        v = velocity(x)
         v̇ = rand(num_velocities(mechanism))
 
         # momentum computed two ways
@@ -334,9 +334,9 @@
         result = DynamicsResult(Float64, mechanism)
         dynamics!(result, x, τ, externalWrenches)
 
-        q = configuration_vector(x)
+        q = configuration(x)
         q̇ = configuration_derivative(x)
-        v = velocity_vector(x)
+        v = velocity(x)
         v̇ = result.v̇
         power = τ ⋅ v + sum(body -> externalWrenches[body] ⋅ twist_wrt_world(x, body), non_root_bodies(mechanism))
 

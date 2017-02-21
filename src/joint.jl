@@ -104,8 +104,9 @@ end
 """
 $(SIGNATURES)
 
-Return a basis for the constraint wrench subspace of the joint in configuration
-``q``.
+Return a basis for the constraint wrench subspace of the joint, where
+`jointTransform` is the transform from the frame after the joint to the frame
+before the joint.
 
 The constraint wrench subspace is a ``6 \\times (6 - k)`` matrix, where ``k``
 is the dimension of the velocity vector ``v``, that maps a vector of Lagrange
@@ -258,8 +259,8 @@ end
 $(SIGNATURES)
 
 Compute the global parameterization of the joint's configuration, ``q``, given
-a 'base' orientation ``q_0`` and a vector of local coordinates relative to
-``q_0``, ``ϕ``.
+a 'base' orientation ``q_0`` and a vector of local coordinates ``ϕ`` centered
+around ``q_0``.
 
 See also [`local_coordinates!`](@ref).
 """
