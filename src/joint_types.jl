@@ -1,6 +1,6 @@
 # TODO: put in separate module
 
-abstract JointType{T<:Number}
+@compat abstract type JointType{T<:Number} end
 Base.eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
 
 # Default implementations
@@ -198,7 +198,7 @@ end
 #=
 OneDegreeOfFreedomFixedAxis
 =#
-abstract OneDegreeOfFreedomFixedAxis{T<:Number} <: JointType{T}
+@compat abstract type OneDegreeOfFreedomFixedAxis{T<:Number} <: JointType{T} end
 
 num_positions(::OneDegreeOfFreedomFixedAxis) = 1
 num_velocities(::OneDegreeOfFreedomFixedAxis) = 1
