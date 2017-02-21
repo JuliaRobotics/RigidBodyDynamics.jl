@@ -297,7 +297,7 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
         StaticArrays.similar_type{T1, T2}(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) = $MotionSpaceElement{T2}
 
         function Base.show(io::IO, m::$MotionSpaceElement)
-            print(io, "$($(MotionSpaceElement).name.name) of \"$(name(m.body))\" w.r.t \"$(name(m.base))\" in \"$(name(m.frame))\":\nangular: $(m.angular), linear: $(m.linear)")
+            print(io, "$($(string(MotionSpaceElement))) of \"$(name(m.body))\" w.r.t \"$(name(m.base))\" in \"$(name(m.frame))\":\nangular: $(m.angular), linear: $(m.linear)")
         end
 
         function Base.isapprox(x::$MotionSpaceElement, y::$MotionSpaceElement; atol = 1e-12)
@@ -511,14 +511,17 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         Base.eltype{T}(::Type{$ForceSpaceElement{T}}) = T
         StaticArrays.similar_type{T1, T2}(::Type{$ForceSpaceElement{T1}}, ::Type{T2}) = $ForceSpaceElement{T2}
 
-        Base.show(io::IO, f::$ForceSpaceElement) = print(io, "$($(ForceSpaceElement).name.name) expressed in \"$(name(f.frame))\":\nangular: $(f.angular), linear: $(f.linear)")
+        function Base.show(io::IO, f::$ForceSpaceElement)
+            print(io, "$($(string(ForceSpaceElement))) expressed in \"$(name(f.frame))\":\nangular: $(f.angular), linear: $(f.linear)")
+        end
+
         Base.zero{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
         Random.rand{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, rand(SVector{3, T}), rand(SVector{3, T}))
 
         """
         $(SIGNATURES)
 
-        Transform the $($(ForceSpaceElement).name.name) to a different frame.
+        Transform the $($(string(ForceSpaceElement))) to a different frame.
         """
         function transform(f::$ForceSpaceElement, transform::Transform3D)
             @framecheck(f.frame, transform.from)
@@ -624,7 +627,9 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
         angular_part(mat::$ForceSpaceMatrix) = mat.angular
         linear_part(mat::$ForceSpaceMatrix) = mat.linear
 
-        Base.show(io::IO, m::$ForceSpaceMatrix) = print(io, "$($(ForceSpaceMatrix).name.name) expressed in \"$(name(m.frame))\":\n$(Array(m))")
+        function Base.show(io::IO, m::$ForceSpaceMatrix)
+            print(io, "$($(string(ForceSpaceMatrix))) expressed in \"$(name(m.frame))\":\n$(Array(m))")
+        end
 
         function Base.hcat(mats::$ForceSpaceMatrix...)
             frame = mats[1].frame

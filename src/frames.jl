@@ -35,7 +35,7 @@ immutable CartesianFrame3D
 end
 
 name(frame::CartesianFrame3D) = get(frame_names, frame.id, "anonymous")
-show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\" (id = $(frame.id))")
+Base.show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\" (id = $(frame.id))")
 
 """
 $(SIGNATURES)
@@ -88,7 +88,7 @@ Transform3D{T}(::Type{T}, frame::CartesianFrame3D) = Transform3D{T}(frame, frame
 Base.convert{T}(::Type{Transform3D{T}}, t::Transform3D{T}) = t
 Base.convert{T}(::Type{Transform3D{T}}, t::Transform3D) = Transform3D(t.from, t.to, convert(RotMatrix3{T}, t.rot), convert(SVector{3, T}, t.trans))
 
-function show(io::IO, t::Transform3D)
+function Base.show(io::IO, t::Transform3D)
     println(io, "Transform3D from \"$(name(t.from))\" to \"$(name(t.to))\":")
     angleAxis = AngleAxis(t.rot)
     angle = rotation_angle(angleAxis)
@@ -139,7 +139,7 @@ for VectorType in (:FreeVector3D, :Point3D)
         (*){S<:Number}(s::S, p::$VectorType) = $VectorType(p.frame, s * p.v)
 
         Random.rand{T}(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, rand(SVector{3, T}))
-        Base.show(io::IO, p::$VectorType) = print(io, "$($(VectorType).name.name) in \"$(name(p.frame))\": $(p.v)")
+        Base.show(io::IO, p::$VectorType) = print(io, "$($(string(VectorType))) in \"$(name(p.frame))\": $(p.v)")
         Base.isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
 
         """
