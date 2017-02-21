@@ -143,11 +143,11 @@ immutable GeometricJacobian{A<:AbstractMatrix}
     angular::A
     linear::A
 
-    function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A)
+    function (::Type{GeometricJacobian{A}}){A<:AbstractMatrix}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A)
         @boundscheck size(angular, 1) == 3 || error("size mismatch")
         @boundscheck size(linear, 1) == 3 || error("size mismatch")
         @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
-        new(body, base, frame, angular, linear)
+        new{A}(body, base, frame, angular, linear)
     end
 end
 
@@ -157,11 +157,11 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
         angular::A
         linear::A
 
-        function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A)
+        function (::Type{$ForceSpaceMatrix{A}}){A<:AbstractMatrix}(frame::CartesianFrame3D, angular::A, linear::A)
             @assert size(angular, 1) == 3
             @assert size(linear, 1) == 3
             @assert size(angular, 2) == size(linear, 2)
-            new(frame, angular, linear)
+            new{A}(frame, angular, linear)
         end
     end
 end
@@ -297,7 +297,7 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
         StaticArrays.similar_type{T1, T2}(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) = $MotionSpaceElement{T2}
 
         function Base.show(io::IO, m::$MotionSpaceElement)
-            print(io, "$($(MotionSpaceElement).name.name) of \"$(name(m.body))\" w.r.t \"$(name(m.base))\" in \"$(name(m.frame))\":\nangular: $(m.angular), linear: $(m.linear)")
+            print(io, "$($(string(MotionSpaceElement))) of \"$(name(m.body))\" w.r.t \"$(name(m.base))\" in \"$(name(m.frame))\":\nangular: $(m.angular), linear: $(m.linear)")
         end
 
         function Base.isapprox(x::$MotionSpaceElement, y::$MotionSpaceElement; atol = 1e-12)
@@ -511,14 +511,17 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         Base.eltype{T}(::Type{$ForceSpaceElement{T}}) = T
         StaticArrays.similar_type{T1, T2}(::Type{$ForceSpaceElement{T1}}, ::Type{T2}) = $ForceSpaceElement{T2}
 
-        Base.show(io::IO, f::$ForceSpaceElement) = print(io, "$($(ForceSpaceElement).name.name) expressed in \"$(name(f.frame))\":\nangular: $(f.angular), linear: $(f.linear)")
+        function Base.show(io::IO, f::$ForceSpaceElement)
+            print(io, "$($(string(ForceSpaceElement))) expressed in \"$(name(f.frame))\":\nangular: $(f.angular), linear: $(f.linear)")
+        end
+
         Base.zero{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
         Random.rand{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, rand(SVector{3, T}), rand(SVector{3, T}))
 
         """
         $(SIGNATURES)
 
-        Transform the $($(ForceSpaceElement).name.name) to a different frame.
+        Transform the $($(string(ForceSpaceElement))) to a different frame.
         """
         function transform(f::$ForceSpaceElement, transform::Transform3D)
             @framecheck(f.frame, transform.from)
@@ -545,7 +548,7 @@ for ForceSpaceElement in (:Momentum, :Wrench)
 end
 
 # WrenchSubspace is the return type of e.g. constraint_wrench_subspace(::Joint, ...)
-typealias WrenchSubspace{T} WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
+@compat const WrenchSubspace{T} = WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
 function WrenchSubspace(frame::CartesianFrame3D, angular, linear)
     WrenchMatrix(frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end
@@ -557,7 +560,7 @@ function GeometricJacobian{A<:AbstractMatrix}(body::CartesianFrame3D, base::Cart
 end
 
 # MotionSubspace is the return type of motion_subspace(::Joint, ...)
-typealias MotionSubspace{T} GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
+@compat const MotionSubspace{T} = GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
 function MotionSubspace(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular, linear)
     GeometricJacobian(body, base, frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end
@@ -624,7 +627,9 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
         angular_part(mat::$ForceSpaceMatrix) = mat.angular
         linear_part(mat::$ForceSpaceMatrix) = mat.linear
 
-        Base.show(io::IO, m::$ForceSpaceMatrix) = print(io, "$($(ForceSpaceMatrix).name.name) expressed in \"$(name(m.frame))\":\n$(Array(m))")
+        function Base.show(io::IO, m::$ForceSpaceMatrix)
+            print(io, "$($(string(ForceSpaceMatrix))) expressed in \"$(name(m.frame))\":\n$(Array(m))")
+        end
 
         function Base.hcat(mats::$ForceSpaceMatrix...)
             frame = mats[1].frame

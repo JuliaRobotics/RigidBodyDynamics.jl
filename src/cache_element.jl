@@ -1,7 +1,7 @@
 type CacheElement{T}
     dirty::Bool
     data::T
-    CacheElement() = new(true)
+    (::Type{CacheElement{T}}){T}() = new{T}(true)
 end
 
 @inline function update!{T}(element::CacheElement{T}, data::T)

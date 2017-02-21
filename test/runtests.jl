@@ -4,12 +4,9 @@ using RigidBodyDynamics
 using RigidBodyDynamics.TreeDataStructure
 using Rotations
 using StaticArrays
-using ODE
 using ForwardDiff
 
-if isdefined(Base, :Iterators)
-    import Base.Iterators: filter
-end
+import Compat.Iterators: filter
 
 # useful utility function for computing time derivatives.
 create_autodiff(x, dx) = [ForwardDiff.Dual(x[i], dx[i]) for i in 1 : length(x)]

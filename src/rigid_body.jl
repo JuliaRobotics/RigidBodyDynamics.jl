@@ -13,14 +13,14 @@ type RigidBody{T<:Number}
     frameDefinitions::Set{Transform3D{T}}
 
     # inertia undefined; can be used for the root of a kinematic tree
-    function RigidBody(name::String)
+    function (::Type{RigidBody{T}}){T<:Number}(name::String)
         frame = CartesianFrame3D(name)
-        new(name, Nullable{SpatialInertia{T}}(), Set([Transform3D{T}(frame)]))
+        new{T}(name, Nullable{SpatialInertia{T}}(), Set([Transform3D{T}(frame)]))
     end
 
     # other bodies
-    function RigidBody(name::String, inertia::SpatialInertia{T})
-        new(name, Nullable(inertia), Set([Transform3D{T}(inertia.frame)]))
+    function (::Type{RigidBody{T}}){T<:Number}(name::String, inertia::SpatialInertia{T})
+        new{T}(name, Nullable(inertia), Set([Transform3D{T}(inertia.frame)]))
     end
 end
 

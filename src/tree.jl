@@ -1,10 +1,10 @@
 module TreeDataStructure
 
+using Compat
+
 import Base: parent, findfirst, map!, insert!, copy
 
-if isdefined(Base, :Iterators)
-    import Base.Iterators: filter
-end
+import Compat.Iterators: filter
 
 export
     # types
@@ -35,12 +35,15 @@ type TreeVertex{V, E}
     children::Vector{TreeVertex{V, E}}
     parentAndEdgeData::Nullable{Pair{TreeVertex{V, E}, E}}
 
-    TreeVertex(vertexData::V) = new(vertexData, [], Nullable{Pair{TreeVertex{V, E}, E}}())
-    TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = new(vertexData, [], parent => edgeData)
+    (::Type{TreeVertex{V, E}}){V, E}(vertexData::V) = new{V, E}(vertexData, [], Nullable{Pair{TreeVertex{V, E}, E}}())
+
+    function (::Type{TreeVertex{V, E}}){V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E)
+        new{V, E}(vertexData, [], parent => edgeData)
+    end
 end
 TreeVertex{V, E}(vertexData::V, parent::TreeVertex{V, E}, edgeData::E) = TreeVertex{V, E}(vertexData, parent, edgeData)
 
-typealias Tree{V, E} TreeVertex{V, E}
+@compat const Tree{V, E} = TreeVertex{V, E}
 
 vertex_data(v::TreeVertex) = v.vertexData
 children(v::TreeVertex) = v.children

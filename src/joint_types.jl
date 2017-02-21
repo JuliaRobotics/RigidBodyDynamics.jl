@@ -1,6 +1,6 @@
 # TODO: put in separate module
 
-abstract JointType{T<:Number}
+@compat abstract type JointType{T<:Number} end
 Base.eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
 
 # Default implementations
@@ -198,7 +198,7 @@ end
 #=
 OneDegreeOfFreedomFixedAxis
 =#
-abstract OneDegreeOfFreedomFixedAxis{T<:Number} <: JointType{T}
+@compat abstract type OneDegreeOfFreedomFixedAxis{T<:Number} <: JointType{T} end
 
 num_positions(::OneDegreeOfFreedomFixedAxis) = 1
 num_velocities(::OneDegreeOfFreedomFixedAxis) = 1
@@ -240,7 +240,7 @@ immutable Prismatic{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
     rotationFromZAligned::RotMatrix{3, T}
 
-    Prismatic(axis::SVector{3, T}) = new(axis, rotation_between(SVector(zero(T), zero(T), one(T)), axis))
+    (::Type{Prismatic{T}}){T<:Number}(axis::SVector{3, T}) = new{T}(axis, rotation_between(SVector(zero(T), zero(T), one(T)), axis))
 end
 
 """
@@ -302,7 +302,7 @@ immutable Revolute{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
     rotationFromZAligned::RotMatrix{3, T}
 
-    Revolute(axis::SVector{3, T}) = new(axis, rotation_between(SVector(zero(T), zero(T), one(T)), axis))
+    (::Type{Revolute{T}}){T<:Number}(axis::SVector{3, T}) = new{T}(axis, rotation_between(SVector(zero(T), zero(T), one(T)), axis))
 end
 
 """
