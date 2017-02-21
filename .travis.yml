@@ -9,7 +9,9 @@ matrix:
   allow_failures:
     - julia: nightly # introduced due to StaticArrays incompatiblity with https://github.com/JuliaLang/julia/pull/17623
 branches:
-  only: master
+  only:
+    - master
+    - /^v[0-9]+\.[0-9]+\.[0-9]+$/ # version tags
 notifications:
   email: false
 before_install:
