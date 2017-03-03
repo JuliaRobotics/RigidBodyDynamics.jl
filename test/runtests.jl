@@ -31,6 +31,7 @@ include("test_mechanism_manipulation.jl")
         name, ext = splitext(file)
         if lowercase(ext) == ".ipynb"
             @testset "$name" begin
+                println("Testing $name.")
                 nbinclude(joinpath(notebookdir, file))
             end
         end
