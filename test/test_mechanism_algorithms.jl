@@ -430,7 +430,7 @@
         end
         storage = RingBufferStorage{Float64}(3)
         integrator = MuntheKaasIntegrator(passive_dynamics!, runge_kutta_4(Float64), storage)
-        integrate(integrator, x, 1., 1e-4)
+        integrate(integrator, x, 1., 1e-4, maxRealtimeRate = 2.0)
         set_configuration!(x, storage.qs[storage.lastIndex])
         set_velocity!(x, storage.vs[storage.lastIndex])
         @test isapprox(gravitational_potential_energy(x) + kinetic_energy(x), total_energy_before, atol = 1e-1)
