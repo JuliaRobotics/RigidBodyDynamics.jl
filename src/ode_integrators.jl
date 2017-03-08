@@ -281,20 +281,49 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
     nothing
 end
 
+# Throttle a loop by sleeping periodically (with minimum duration `minsleeptime`), so that `t` doesn't increase faster than `maxrate`.
+# Note: sleep function rounds to 1e-3. Decreasing minsleeptime makes throttling smoother (more frequent, shorter pauses), but reduces accuracy due to rounding error.
+macro throttle(t, maxrate, minsleeptime, loopexpr)
+    loopcondition = :($(esc(loopexpr.args[1])))
+    loopbody = quote
+        $(esc(loopexpr.args[2]))
+
+        if !isinf($(esc(maxrate)))
+            Δwalltime = time() - prev_walltime
+            Δt = $(esc(t)) - prev_t
+            sleeptime = Δt / $(esc(maxrate)) - Δwalltime
+            if sleeptime > $(esc(minsleeptime))
+                sleep(sleeptime)
+                prev_walltime = time()
+                prev_t = $(esc(t))
+            end
+        end
+    end
+    loop = Expr(loopexpr.head, loopcondition, loopbody)
+
+    quote
+        prev_walltime = time()
+        prev_t = $(esc(t))
+        $loop
+    end
+end
+
 """
 $(SIGNATURES)
 
 Integrate dynamics from the initial state `state0` at time ``0`` to `finalTime`
 using step size `Δt`.
 """
-function integrate(integrator::MuntheKaasIntegrator, state0, finalTime, Δt)
+function integrate(integrator::MuntheKaasIntegrator, state0, finalTime, Δt; maxRealtimeRate::Float64 = Inf)
     T = eltype(integrator)
     t = zero(T)
     state = state0
     set_num_positions!(integrator.stages, length(configuration(state)))
     set_num_velocities!(integrator.stages, length(velocity(state)))
     initialize(integrator.sink, t, state)
-    while t < finalTime
+    minSleepTime = 1. / 60. # based on visualizer fps
+
+    @throttle t maxRealtimeRate minSleepTime while t < finalTime
         step(integrator, t, state, Δt)
         t += Δt
         process(integrator.sink, t, state)
