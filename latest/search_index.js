@@ -877,7 +877,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.reattach!",
     "category": "Function",
-    "text": "reattach!(mechanism, oldSubtreeRootBody, parentBody, joint, jointToParent, newSubtreeRootBody)\nreattach!(mechanism, oldSubtreeRootBody, parentBody, joint, jointToParent, newSubtreeRootBody, newSubTreeRootBodyToJoint)\n\n\nDetach the subtree rooted at oldSubtreeRootBody, reroot it so that newSubtreeRootBody is the new root, and then attach newSubtreeRootBody to parentBody using joint.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
+    "text": "reattach!(mechanism, oldSubtreeRootBody, parentBody, joint, jointToParent, newSubtreeRootBody, newSubTreeRootBodyToJoint)\nreattach!(mechanism, oldSubtreeRootBody, parentBody, joint, jointToParent, newSubtreeRootBody)\n\n\nDetach the subtree rooted at oldSubtreeRootBody, reroot it so that newSubtreeRootBody is the new root, and then attach newSubtreeRootBody to parentBody using joint.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
 },
 
 {
@@ -1293,7 +1293,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(result, state, torques)\ndynamics!(result, state, torques, externalWrenches)\ndynamics!(result, state)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
+    "text": "dynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques, externalWrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
 },
 
 {
@@ -1301,7 +1301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques, externalWrenches)\ndynamics!(ẋ, result, state, stateVec, torques)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "text": "dynamics!(result, state)\ndynamics!(result, state, torques)\ndynamics!(result, state, torques, externalWrenches)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
 },
 
 {
@@ -1333,7 +1333,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "Function",
-    "text": "inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇, externalWrenches)\ninverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+    "text": "inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇)\ninverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇, externalWrenches)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
