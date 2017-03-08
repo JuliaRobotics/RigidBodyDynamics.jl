@@ -1293,7 +1293,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(result, state, torques)\ndynamics!(result, state)\ndynamics!(result, state, torques, externalWrenches)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
+    "text": "dynamics!(result, state, torques)\ndynamics!(result, state, torques, externalWrenches)\ndynamics!(result, state)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
 },
 
 {
@@ -1301,7 +1301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(ẋ, result, state, stateVec, torques, externalWrenches)\ndynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "text": "dynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques, externalWrenches)\ndynamics!(ẋ, result, state, stateVec, torques)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
 },
 
 {
@@ -1501,7 +1501,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Simulation",
     "title": "RigidBodyDynamics.OdeIntegrators.integrate",
     "category": "Method",
-    "text": "integrate(integrator, state0, finalTime, Δt)\n\n\nIntegrate dynamics from the initial state state0 at time 0 to finalTime using step size Δt.\n\n\n\n"
+    "text": "integrate(integrator, state0, finalTime, Δt; maxRealtimeRate)\n\n\nIntegrate dynamics from the initial state state0 at time 0 to finalTime using step size Δt.\n\n\n\n"
 },
 
 {
