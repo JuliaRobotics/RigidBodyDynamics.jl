@@ -11,16 +11,17 @@ type RigidBody{T<:Number}
     name::String
     inertia::Nullable{SpatialInertia{T}}
     frameDefinitions::Set{Transform3D{T}}
+    id::Int64
 
     # inertia undefined; can be used for the root of a kinematic tree
     function (::Type{RigidBody{T}}){T<:Number}(name::String)
         frame = CartesianFrame3D(name)
-        new{T}(name, Nullable{SpatialInertia{T}}(), Set([Transform3D{T}(frame)]))
+        new{T}(name, Nullable{SpatialInertia{T}}(), Set([Transform3D{T}(frame)]), -1)
     end
 
     # other bodies
     function (::Type{RigidBody{T}}){T<:Number}(name::String, inertia::SpatialInertia{T})
-        new{T}(name, Nullable(inertia), Set([Transform3D{T}(inertia.frame)]))
+        new{T}(name, Nullable(inertia), Set([Transform3D{T}(inertia.frame)]), -1)
     end
 end
 
@@ -31,6 +32,8 @@ RigidBody{T}(inertia::SpatialInertia{T}) = RigidBody{T}(name(inertia.frame), ine
 name(b::RigidBody) = b.name
 Base.show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(name(b))\"")
 Base.showcompact(io::IO, b::RigidBody) = print(io, "$(name(b))")
+RigidBodyDynamics.Graphs.vertex_index(b::RigidBody) = b.id
+RigidBodyDynamics.Graphs.vertex_index!(b::RigidBody, id::Int64) = (b.id = id)
 
 """
 $(SIGNATURES)

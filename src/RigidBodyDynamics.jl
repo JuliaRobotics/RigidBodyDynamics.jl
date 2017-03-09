@@ -2,6 +2,7 @@ __precompile__()
 
 module RigidBodyDynamics
 
+include("graphs.jl")
 include("tree.jl")
 
 import Base: *, +, /, -
@@ -11,6 +12,7 @@ using Rotations
 using LightXML
 using DocStringExtensions
 using Compat
+using .Graphs
 
 const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
 
