@@ -28,10 +28,10 @@ type DirectedGraph{V, E}
     edges::Vector{E}
     sources::Vector{V}
     targets::Vector{V}
-    outedges::Vector{Vector{E}}
-    inedges::Vector{Vector{E}}
+    outedges::Vector{Set{E}}
+    inedges::Vector{Set{E}}
 
-    DirectedGraph() = new(V[], E[], V[], V[], Vector{E}[], Vector{E}[])
+    DirectedGraph() = new(V[], E[], V[], V[], Set{E}[], Set{E}[])
 end
 
 vertex_type{V, E}(::Type{DirectedGraph{V, E}}) = V
@@ -54,8 +54,8 @@ function add_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
 
     vertex_index!(vertex, num_vertices(g) + 1)
     push!(g.vertices, vertex)
-    push!(g.outedges, E[])
-    push!(g.inedges, E[])
+    push!(g.outedges, Set{E}())
+    push!(g.inedges, Set{E}())
     g
 end
 
@@ -74,6 +74,7 @@ function add_edge!{V, E}(g::DirectedGraph{V, E}, source::V, target::V, edge::E)
 end
 
 function depth_first_search{V, E}(g::DirectedGraph{V, E}, root::V)
+    # treats graph as being undirected
     stack = [root]
     discovered = V[]
     while !isempty(stack)
@@ -86,5 +87,23 @@ function depth_first_search{V, E}(g::DirectedGraph{V, E}, root::V)
     end
     discovered
 end
+
+function rewire!{V, E}(edge::E, newsource::V, newtarget::V, g::DirectedGraph{V, E})
+    oldsource = source(edge, g)
+    oldtarget = target(edge, g)
+
+    g.sources[edge_index(edge)] = newsource
+    g.targets[edge_index(edge)] = newtarget
+
+    delete!(out_edges(oldsource, g), edge)
+    delete!(in_edges(oldtarget, g), edge)
+
+    push!(out_edges(newsource, g), edge)
+    push!(in_edges(newtarget, g), edge)
+
+    nothing
+end
+
+flip_direction!{V, E}(edge::E, g::DirectedGraph{V, E}) = rewire!(edge, target(edge, g), source(edge, g), g)
 
 end # module
