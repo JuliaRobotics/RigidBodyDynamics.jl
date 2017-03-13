@@ -17,6 +17,8 @@ export
     num_edges,
     add_vertex!,
     add_edge!,
+    remove_vertex!,
+    remove_edge!,
     rewire!,
     root,
     edge_to_parent,
@@ -40,7 +42,7 @@ num_edges(g::AbstractGraph) = length(edges(g))
 out_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (target(e) for e in out_edges(v, g))
 in_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (source(e) for e in in_edges(v, g))
 
-type DirectedGraph{V, E}
+type DirectedGraph{V, E} <: AbstractGraph{V, E}
     vertices::Vector{V}
     edges::Vector{E}
     sources::Vector{V}
@@ -103,6 +105,38 @@ end
 #     discovered
 # end
 
+function remove_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
+    disconnected = isempty(in_edges(vertex, g)) && isempty(out_edges(vertex, g))
+    if !disconnected
+        @show in_edges(vertex, g)
+        @show out_edges(vertex, g)
+    end
+    disconnected || error("Vertex must be disconnected from the rest of the graph before it can be removed.")
+    index = vertex_index(vertex)
+    deleteat!(g.vertices, index)
+    deleteat!(g.inedges, index)
+    deleteat!(g.outedges, index)
+    for i = index : num_vertices(g)
+        vertex_index!(g.vertices[i], i)
+    end
+    vertex_index!(vertex, -1)
+    g
+end
+
+function remove_edge!{V, E}(g::DirectedGraph{V, E}, edge::E)
+    delete!(in_edges(target(edge, g), g), edge)
+    delete!(out_edges(source(edge, g), g), edge)
+    index = edge_index(edge)
+    deleteat!(g.edges, index)
+    deleteat!(g.sources, index)
+    deleteat!(g.targets, index)
+    for i = index : num_edges(g)
+        edge_index!(g.edges[i], i)
+    end
+    edge_index!(edge, -1)
+    g
+end
+
 function rewire!{V, E}(g::DirectedGraph{V, E}, edge::E, newsource::V, newtarget::V)
     oldsource = source(edge, g)
     oldtarget = target(edge, g)
@@ -119,21 +153,6 @@ function rewire!{V, E}(g::DirectedGraph{V, E}, edge::E, newsource::V, newtarget:
     g
 end
 
-function remove_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
-    disconnected = isempty(in_edges(g, vertex)) && isempty(out_edges(g, vertex))
-    disconnected || error("Vertex must be disconnected from the rest of the graph before it can be removed.")
-    index = vertex_index(vertex)
-    deleteat!(g.vertices, index)
-    deleteat!(g.inedges, index)
-    deleteat!(g.outedges, index)
-    for i = index : num_vertices(g)
-        vertex_index!(g.vertices[i], i)
-    end
-    vertex_index!(vertex, -1)
-
-    g
-end
-
 function flip_direction!{V, E}(edge::E, g::DirectedGraph{V, E})
     flip_direction!(edge)
     rewire!(g, edge, target(edge, g), source(edge, g))
@@ -146,7 +165,7 @@ end
 #     error("Edge not found")
 # end
 
-type SpanningTree{V, E}
+type SpanningTree{V, E} <: AbstractGraph{V, E}
     graph::DirectedGraph{V, E}
     edges::Vector{E}
     inedges::Vector{E}
@@ -172,16 +191,17 @@ function SpanningTree{V, E}(g::DirectedGraph{V, E}, edges::AbstractVector{E})
     length(edges) == n - 1 || error("Expected n - 1 edges.")
     inedges = Vector{E}(n)
     outedges = [Set{E}() for i = 1 : n]
-    treevertices = [source(first(edges), g)]
+    treevertices = V[]
     for edge in edges
         parent = source(edge, g)
         child = target(edge, g)
+        isempty(treevertices) && push!(treevertices, parent)
         @assert parent ∈ treevertices
         inedges[vertex_index(child)] = edge
         push!(outedges[vertex_index(parent)], edge)
         push!(treevertices, child)
     end
-    SpanningTree(graph, edges, inedges, outedges)
+    SpanningTree(g, edges, inedges, outedges)
 end
 
 function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = (graph, frontier) -> first(frontier))
@@ -212,6 +232,7 @@ function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E
     add_edge!(tree.graph, source, target, edge)
     push!(tree.edges, edge)
     push!(tree.inedges, edge)
+    push!(tree.outedges, Set{E}())
     push!(out_edges(source, tree), edge)
     tree
 end

@@ -17,6 +17,7 @@ using .Graphs
 const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
 
 import Compat.Iterators: filter
+import Compat.Iterators: flatten
 
 include("util.jl")
 include("third_party_addendum.jl")
@@ -85,6 +86,7 @@ export
     toposort, # TODO: remove?
     path, # TODO: remove?
     joints,
+    tree_joints,
     configuration_derivative,
     velocity_to_configuration_derivative!,
     configuration_derivative_to_velocity!,
@@ -110,7 +112,8 @@ export
     reattach!,
     maximal_coordinates,
     submechanism,
-    remove_fixed_joints!,
+    remove_fixed_joints!, # deprecated
+    remove_fixed_tree_joints!,
     rand_mechanism,
     rand_chain_mechanism,
     rand_tree_mechanism,

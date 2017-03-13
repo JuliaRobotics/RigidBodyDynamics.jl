@@ -74,7 +74,7 @@ root_frame(mechanism::Mechanism) = default_frame(root_body(mechanism))
 #TODO: # Base.show(io::IO, mechanism::Mechanism) = print(io, tree(mechanism))
 Base.@deprecate isroot{T}(mechanism::Mechanism{T}, b::RigidBody{T}) isroot(b, mechanism)
 isroot{T}(b::RigidBody{T}, mechanism::Mechanism{T}) = b == root_body(mechanism)
-non_root_bodies{T}(mechanism::Mechanism{T}) = (body for body in bodies(mechanism) if !isroot(mechanism, body))
+non_root_bodies{T}(mechanism::Mechanism{T}) = (body for body in bodies(mechanism) if !isroot(body, mechanism))
 num_bodies(mechanism::Mechanism) = num_vertices(mechanism.graph)
 
 """
@@ -150,7 +150,7 @@ end
 
 function canonicalize_frame_definitions!(mechanism::Mechanism)
     for body in bodies(mechanism)
-        canonicalize_frame_definitions!(mechanism, vertex)
+        canonicalize_frame_definitions!(mechanism, body)
     end
 end
 
