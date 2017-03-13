@@ -3,7 +3,7 @@ __precompile__()
 module RigidBodyDynamics
 
 include("graphs.jl")
-include("tree.jl")
+# include("tree.jl")
 
 import Base: *, +, /, -
 using Base.Random
@@ -28,9 +28,9 @@ include("joint_types.jl")
 include("joint.jl")
 include("cache_element.jl")
 
-importall .TreeDataStructure
+# importall .TreeDataStructure
 include("mechanism.jl")
-# include("mechanism_manipulation.jl")
+include("mechanism_manipulation.jl")
 # include("mechanism_state.jl")
 # include("dynamics_result.jl")
 # include("mechanism_algorithms.jl")

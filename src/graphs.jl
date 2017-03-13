@@ -17,6 +17,7 @@ export
     num_edges,
     add_vertex!,
     add_edge!,
+    rewire!,
     root,
     edge_to_parent,
     edges_to_children
@@ -102,7 +103,7 @@ end
 #     discovered
 # end
 
-function rewire!{V, E}(edge::E, newsource::V, newtarget::V, g::DirectedGraph{V, E})
+function rewire!{V, E}(g::DirectedGraph{V, E}, edge::E, newsource::V, newtarget::V)
     oldsource = source(edge, g)
     oldtarget = target(edge, g)
 
@@ -115,12 +116,27 @@ function rewire!{V, E}(edge::E, newsource::V, newtarget::V, g::DirectedGraph{V, 
     push!(out_edges(newsource, g), edge)
     push!(in_edges(newtarget, g), edge)
 
-    nothing
+    g
+end
+
+function remove_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
+    disconnected = isempty(in_edges(g, vertex)) && isempty(out_edges(g, vertex))
+    disconnected || error("Vertex must be disconnected from the rest of the graph before it can be removed.")
+    index = vertex_index(vertex)
+    deleteat!(g.vertices, index)
+    deleteat!(g.inedges, index)
+    deleteat!(g.outedges, index)
+    for i = index : num_vertices(g)
+        vertex_index!(g.vertices[i], i)
+    end
+    vertex_index!(vertex, -1)
+
+    g
 end
 
 function flip_direction!{V, E}(edge::E, g::DirectedGraph{V, E})
     flip_direction!(edge)
-    rewire!(edge, target(edge, g), source(edge, g), g)
+    rewire!(g, edge, target(edge, g), source(edge, g))
 end
 
 # function edge_between{V, E}(from::V, to::V, g::DirectedGraph{V, E})
@@ -151,10 +167,26 @@ root(tree::SpanningTree) = source(first(edges(tree)))
 edge_to_parent{V, E}(vertex::V, tree::SpanningTree{V, E}) = tree.inedges[vertex_index(vertex)]
 edges_to_children{V, E}(vertex::V, tree::SpanningTree{V, E}) = out_edges(vertex, tree)
 
-function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = (graph, frontier) -> first(frontier))
+function SpanningTree{V, E}(g::DirectedGraph{V, E}, edges::AbstractVector{E})
     n = num_vertices(g)
-    ret = SpanningTree(g, E[], Vector{E}(n), [Set{E}() for i = 1 : n])
+    length(edges) == n - 1 || error("Expected n - 1 edges.")
+    inedges = Vector{E}(n)
+    outedges = [Set{E}() for i = 1 : n]
+    treevertices = [source(first(edges), g)]
+    for edge in edges
+        parent = source(edge, g)
+        child = target(edge, g)
+        @assert parent ∈ treevertices
+        inedges[vertex_index(child)] = edge
+        push!(outedges[vertex_index(parent)], edge)
+        push!(treevertices, child)
+    end
+    SpanningTree(graph, edges, inedges, outedges)
+end
+
+function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = (graph, frontier) -> first(frontier))
     treevertices = [root]
+    edges = E[]
     frontier = E[]
     append!(frontier, out_edges(root, g))
     while !isempty(frontier)
@@ -164,17 +196,14 @@ function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = (graph,
         child = target(e, g)
 
         # add edge to tree
-        push!(tree.edges, e)
-        tree.inedges[vertex_index(child)] = e
-        push!(edges_to_children(parent), e)
+        push!(edges, e)
 
         # update the frontier
         push!(treevertices, child)
-        filter!(x -> x ∈ in_edges(child, g), frontier)
+        filter!(x -> x ∉ in_edges(child, g), frontier)
         append!(frontier, x for x in out_edges(child, g) if target(x, g) ∉ treevertices)
     end
-    length(treevertices) == num_vertices(g) || error("Could not construct a spanning tree.")
-    ret
+    SpanningTree(g, edges)
 end
 
 # adds an edge and vertex to both the tree and the underlying graph
@@ -186,6 +215,5 @@ function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E
     push!(out_edges(source, tree), edge)
     tree
 end
-
 
 end # module
