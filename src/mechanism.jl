@@ -213,8 +213,8 @@ end
 
 non_tree_joints(mechanism::Mechanism) = setdiff(edges(mechanism.graph), edges(mechanism.tree))
 
-tree_index(joint::Joint, mechanism::Mechanism) = vertex_index(successor(joint, mechanism))
-tree_index(body::RigidBody, mechanism::Mechanism) = vertex_index(body)
+tree_index(joint::Joint, mechanism::Mechanism) = Graphs.tree_index(joint, mechanism.tree)
+tree_index(body::RigidBody, mechanism::Mechanism) = Graphs.tree_index(body, mechanism.tree)
 
 function constraint_jacobian_structure(mechanism::Mechanism)
     # TODO: move to MechanismState

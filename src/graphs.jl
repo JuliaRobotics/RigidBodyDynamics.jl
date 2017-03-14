@@ -262,6 +262,17 @@ function Base.show(io::IO, tree::SpanningTree, vertex = root(tree), level::Int64
     end
 end
 
+function lowest_common_ancestor{V, E}(v1::V, v2::V, tree::SpanningTree{V, E})
+    while v1 != v2
+        if tree_index(v1, tree) > tree_index(v2, tree)
+            v1 = source(edge_to_parent(v1, tree), tree)
+        else
+            v2 = source(edge_to_parent(v1, tree), tree)
+        end
+    end
+    v1
+end
+
 
 # Path
 immutable TreePath{E}

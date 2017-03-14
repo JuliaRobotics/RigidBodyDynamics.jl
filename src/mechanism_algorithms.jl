@@ -63,40 +63,47 @@ center_of_mass(state::MechanismState) = center_of_mass(state, non_root_bodies(st
 #     motionSubspaces = [copysign(motion_subspace(state, joint), sign)::GeometricJacobian for (joint, sign) in zip(path.edgeData, path.directions)]
 #     hcat(motionSubspaces...)
 # end
-#
-# function acceleration_wrt_ancestor{X, M, C, V}(state::MechanismState{X, M, C},
-#         descendant::TreeVertex{RigidBody{M}, Joint{M}},
-#         ancestor::TreeVertex{RigidBody{M}, Joint{M}},
-#         v̇::StridedVector{V})
-#     mechanism = state.mechanism
-#     T = promote_type(C, V)
-#     descendantFrame = default_frame(vertex_data(descendant))
-#     accel = zero(SpatialAcceleration{T}, descendantFrame, descendantFrame, root_frame(mechanism))
-#     descendant == ancestor && return accel
-#
-#     current = descendant
-#     while current != ancestor
-#         joint = edge_to_parent_data(current)
-#         v̇joint = UnsafeVectorView(v̇, velocity_range(state, joint)) # TODO: inefficient lookup of velocity range
-#         jointAccel = SpatialAcceleration(motion_subspace(state, joint), v̇joint)
-#         accel = jointAccel + accel
-#         current = parent(current)
-#     end
-#     -bias_acceleration(state, vertex_data(ancestor)) + bias_acceleration(state, vertex_data(descendant)) + accel
-# end
-#
-# """
-# $(SIGNATURES)
-#
-# Compute the spatial acceleration of `body` with respect to `base` for
-# the given state and joint acceleration vector ``\\dot{v}``.
-# """
-# function relative_acceleration(state::MechanismState, body::RigidBody, base::RigidBody, v̇::AbstractVector)
-#     bodyVertex = findfirst(tree(state.mechanism), body)
-#     baseVertex = findfirst(tree(state.mechanism), base)
-#     lca = lowest_common_ancestor(baseVertex, bodyVertex)
-#     -acceleration_wrt_ancestor(state, baseVertex, lca, v̇) + acceleration_wrt_ancestor(state, bodyVertex, lca, v̇)
-# end
+
+"""
+$(SIGNATURES)
+
+Compute the spatial acceleration of `body` with respect to `base` for
+the given state and joint acceleration vector ``\\dot{v}``.
+"""
+function relative_acceleration(state::MechanismState, body::RigidBody, base::RigidBody, v̇::AbstractVector)
+    # This is kind of a strange algorithm due to the availability of bias accelerations w.r.t. world
+    # in MechanismState, while computation of the v̇-dependent follows the shortest path in the tree.
+    # TODO: consider doing everything in body frame
+
+    C = cache_eltype(state)
+    mechanism = state.mechanism
+
+    bodyframe = default_frame(body)
+    baseframe = default_frame(base)
+    rootframe = root_frame(mechanism)
+
+    bodyaccel = zero(SpatialAcceleration{C}, bodyframe, bodyframe, rootframe)
+    baseaccel = zero(SpatialAcceleration{C}, baseframe, baseframe, rootframe)
+
+    bias = -bias_acceleration(state, base) + bias_acceleration(state, body)
+    while body != base
+        do_body = tree_index(body, mechanism) > tree_index(base, mechanism)
+
+        joint = do_body ? edge_to_parent(body, mechanism.tree) : edge_to_parent(base, mechanism.tree)
+        S = motion_subspace_in_world(state, joint)
+        v̇joint = UnsafeVectorView(v̇, velocity_range(state, joint))
+        jointaccel = SpatialAcceleration(S, v̇joint)
+
+        if do_body
+            bodyaccel = jointaccel + bodyaccel
+            body = predecessor(joint, mechanism)
+        else
+            baseaccel = jointaccel + baseaccel
+            base = predecessor(joint, mechanism)
+        end
+    end
+    (-baseaccel + bodyaccel) + bias
+end
 
 """
 $(SIGNATURES)
