@@ -83,7 +83,7 @@ end
         M = mass_matrix(state)
         nonFixedJointVertices = collect(filter(v -> !isa(edge_to_parent_data(v).jointType, Fixed), non_root_vertices(mechanism)))
 
-        remove_fixed_joints!(mechanism)
+        remove_fixed_tree_joints!(mechanism)
         @test non_root_vertices(mechanism) == nonFixedJointVertices
         state_no_fixed_joints = MechanismState(Float64, mechanism)
         set_configuration!(state_no_fixed_joints, q)

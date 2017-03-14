@@ -108,7 +108,7 @@ export
     reattach!,
     maximal_coordinates,
     submechanism,
-    remove_fixed_joints!, # deprecated
+    remove_fixed_tree_joints!, # deprecated
     remove_fixed_tree_joints!,
     rand_mechanism,
     rand_chain_mechanism,

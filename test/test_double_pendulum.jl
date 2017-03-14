@@ -66,7 +66,7 @@
 
     # compare against URDF
     doublePendulumUrdf = parse_urdf(Float64, "urdf/Acrobot.urdf")
-    remove_fixed_joints!(doublePendulumUrdf)
+    remove_fixed_tree_joints!(doublePendulumUrdf)
     x_urdf = MechanismState(Float64, doublePendulumUrdf)
     for (i, j) in enumerate(joints(doublePendulum))
         urdf_joints = collect(joints(doublePendulumUrdf))

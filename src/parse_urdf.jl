@@ -52,19 +52,19 @@ function parse_joint{T}(::Type{T}, xml_joint::XMLElement)
     end
 end
 
-function parse_inertia{T}(::Type{T}, xmlInertial::XMLElement, frame::CartesianFrame3D)
-    urdfFrame = CartesianFrame3D("inertia urdf helper")
-    moment = parse_inertia(T, find_element(xmlInertial, "inertia"))
+function parse_inertia{T}(::Type{T}, xml_inertial::XMLElement, frame::CartesianFrame3D)
+    urdf_frame = CartesianFrame3D("inertia urdf helper")
+    moment = parse_inertia(T, find_element(xml_inertial, "inertia"))
     com = zeros(SVector{3, T})
-    mass = parse_scalar(T, find_element(xmlInertial, "mass"), "value", "0")
-    inertia = SpatialInertia(urdfFrame, moment, com, mass)
-    pose = parse_pose(T, find_element(xmlInertial, "origin"))
-    transform(inertia, Transform3D(urdfFrame, frame, pose...))
+    mass = parse_scalar(T, find_element(xml_inertial, "mass"), "value", "0")
+    inertia = SpatialInertia(urdf_frame, moment, com, mass)
+    pose = parse_pose(T, find_element(xml_inertial, "origin"))
+    transform(inertia, Transform3D(urdf_frame, frame, pose...))
 end
 
 function parse_body{T}(::Type{T}, xml_link::XMLElement, frame::CartesianFrame3D = CartesianFrame3D(attribute(xml_link, "name")))
-    xmlInertial = find_element(xml_link, "inertial")
-    inertia = xmlInertial == nothing ? zero(SpatialInertia{T}, frame) : parse_inertia(T, xmlInertial, frame)
+    xml_inertial = find_element(xml_link, "inertial")
+    inertia = xml_inertial == nothing ? zero(SpatialInertia{T}, frame) : parse_inertia(T, xml_inertial, frame)
     linkname = attribute(xml_link, "name") # TODO: make sure link name is unique
     RigidBody(linkname, inertia)
 end
@@ -121,8 +121,8 @@ function parse_urdf{T}(scalartype::Type{T}, filename)
     tree = SpanningTree(graph, first(roots))
 
     # create mechanism from spanning tree
-    rootBody = RigidBody{T}("world")
-    mechanism = Mechanism(rootBody)
+    rootbody = RigidBody{T}("world")
+    mechanism = Mechanism(rootbody)
     parse_root_link(mechanism, data(Graphs.root(tree)))
     for edge in edges(tree)
         parse_joint_and_link(mechanism, data(source(edge, tree)), data(target(edge, tree)), data(edge))
