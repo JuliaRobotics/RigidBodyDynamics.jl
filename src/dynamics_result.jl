@@ -26,7 +26,8 @@ type DynamicsResult{M<:Number, T<:Number}
     function (::Type{DynamicsResult{M, T}}){M<:Number, T<:Number}(mechanism::Mechanism{M})
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
-        nconstraints = isempty(mechanism.nonTreeEdges)? 0 : sum(num_constraints, edge.joint for edge in mechanism.nonTreeEdges)
+
+        nconstraints = reduce(num_constraints, +, 0, non_tree_joints(mechanism))
 
         massMatrix = Symmetric(Matrix{T}(nv, nv), :L)
         dynamicsBias = Vector{T}(nv)
