@@ -333,7 +333,7 @@ function twist(state::MechanismState, joint::Joint)
     index = tree_index(joint, state.mechanism)
     @cache_element_get!(state.joint_twists[index], begin
         q = state.qs[index]
-        v = state.qs[index]
+        v = state.vs[index]
         joint_twist(joint, q, v)
     end)
 end
@@ -342,7 +342,7 @@ function bias_acceleration(state::MechanismState, joint::Joint)
     index = tree_index(joint, state.mechanism)
     @cache_element_get!(state.joint_bias_accelerations[index], begin
         q = state.qs[index]
-        v = state.qs[index]
+        v = state.vs[index]
         bias_acceleration(joint, q, v)
     end)
 end
@@ -361,7 +361,7 @@ function motion_subspace_in_world(state::MechanismState, joint::Joint)
         body = successor(joint, state.mechanism)
         parentbody = predecessor(joint, state.mechanism)
         parentframe = default_frame(parentbody)
-        motionsubspace = change_base(motion_subspace(state, joint), parentFrame)
+        motionsubspace = change_base(motion_subspace(state, joint), parentframe)
         transform(motionsubspace, transform_to_root(state, body))
     end)
 end
@@ -400,7 +400,7 @@ function bias_acceleration(state::MechanismState, body::RigidBody)
 
          # TODO: awkward way of doing this:
         toroot = transform_to_root(state, body)
-        twist_wrt_world = transform(twist_wrt_world(state, body), inv(toroot))
+        twistwrtworld = transform(twist_wrt_world(state, body), inv(toroot))
         jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
 
         jointbias = transform(jointbias, toroot, twistwrtworld, jointtwist)
@@ -410,7 +410,7 @@ end
 
 function spatial_inertia(state::MechanismState, body::RigidBody)
     index = tree_index(body, state.mechanism)
-    @cache_element_get!(state.spatial_inertias[index], begin
+    @cache_element_get!(state.inertias[index], begin
         transform(spatial_inertia(body), transform_to_root(state, body))
     end)
 end

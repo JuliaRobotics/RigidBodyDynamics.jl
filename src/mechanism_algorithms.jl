@@ -170,7 +170,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
         irange = velocity_range(state, jointi)
         if length(irange) > 0
             bodyi = successor(jointi, mechanism)
-            Si = motion_subspace(state, jointi)
+            Si = motion_subspace_in_world(state, jointi)
             Ii = crb_inertia(state, bodyi)
             F = Ii * Si
             istart = first(irange)
@@ -182,7 +182,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
                 jointj = edge_to_parent(body, mechanism.tree) # TODO: Mechanism function
                 jrange = velocity_range(state, jointj)
                 if length(jrange) > 0
-                    Sj = motion_subspace(state, jointj)
+                    Sj = motion_subspace_in_world(state, jointj)
                     jstart = first(jrange)
                     force_space_matrix_transpose_mul_jacobian!(out.data, istart, jstart, F, Sj, 1)
                 end

@@ -152,7 +152,7 @@ Return the body 'after' the joint.
 
 See [`Joint`](@ref).
 """
-successor(joint::Joint, mechanism::Mechanism) = successor(joint, mechanism)
+successor(joint::Joint, mechanism::Mechanism) = target(joint, mechanism.graph)
 
 Base.@deprecate add_body_fixed_frame!{T}(mechanism::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T}) add_frame!(body, transform)
 function add_body_fixed_frame!{T}(mechanism::Mechanism{T}, transform::Transform3D{T})
