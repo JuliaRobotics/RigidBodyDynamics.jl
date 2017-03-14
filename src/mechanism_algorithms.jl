@@ -225,7 +225,7 @@ function momentum_matrix!(out::MomentumMatrix, state::MechanismState)
     @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
     pos = 1
     mechanism = state.mechanism
-    for joint in non_root_joints(mechanism)
+    for joint in tree_joints(mechanism)
         body = successor(joint, mechanism)
         part = crb_inertia(state, body) * motion_subspace(state, joint)
         @framecheck out.frame part.frame # TODO: transform part to out.frame instead?

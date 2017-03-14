@@ -27,7 +27,7 @@ type DynamicsResult{M<:Number, T<:Number}
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
 
-        nconstraints = reduce(num_constraints, +, 0, non_tree_joints(mechanism))
+        nconstraints = mapreduce(num_constraints, +, 0, non_tree_joints(mechanism))
 
         massmatrix = Symmetric(Matrix{T}(nv, nv), :L)
         dynamicsbias = Vector{T}(nv)

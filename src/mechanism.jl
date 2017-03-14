@@ -27,8 +27,6 @@ be attached with joints.
 """
 Mechanism{T}(rootBody::RigidBody{T}; kwargs...) = Mechanism{T}(rootBody; kwargs...)
 Base.eltype{T}(::Mechanism{T}) = T
-tree(mechanism::Mechanism) = mechanism.tree
-graph(mechanism::Mechanism) = mechanism.graph
 
 """
 $(SIGNATURES)
@@ -74,7 +72,7 @@ root_frame(mechanism::Mechanism) = default_frame(root_body(mechanism))
 #TODO: # path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(tree(mechanism), from), findfirst(tree(mechanism), to))
 function Base.show(io::IO, mechanism::Mechanism)
     println(io, "Spanning tree:")
-    print(io, tree(mechanism))
+    print(io, mechanism.tree)
     nontreejoints = non_tree_joints(mechanism)
     println(io)
     if isempty(nontreejoints)
@@ -158,7 +156,8 @@ end
 """
 $(SIGNATURES)
 
-Return the body 'before' the joint.
+Return the body 'before' the joint, i.e. the 'tail' of the joint interpreted as an
+arrow in the `Mechanism`'s kinematic graph.
 
 See [`Joint`](@ref).
 """
@@ -167,11 +166,27 @@ predecessor(joint::Joint, mechanism::Mechanism) = source(joint, mechanism.graph)
 """
 $(SIGNATURES)
 
-Return the body 'after' the joint.
+Return the body 'after' the joint, i.e. the 'head' of the joint interpreted as an
+arrow in the `Mechanism`'s kinematic graph.
 
 See [`Joint`](@ref).
 """
 successor(joint::Joint, mechanism::Mechanism) = target(joint, mechanism.graph)
+
+"""
+$(SIGNATURES)
+
+Return the joints that have `body` as their [`predecessor`](@ref).
+"""
+out_joints(body::RigidBody, mechanism::Mechanism) = out_edges(body, mechanism.graph)
+
+"""
+$(SIGNATURES)
+
+Return the joints that have `body` as their [`successor`](@ref).
+"""
+in_joints(body::RigidBody, mechanism::Mechanism) = in_edges(body, mechanism.graph)
+
 
 Base.@deprecate add_body_fixed_frame!{T}(mechanism::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T}) add_frame!(body, transform)
 function add_body_fixed_frame!{T}(mechanism::Mechanism{T}, transform::Transform3D{T})

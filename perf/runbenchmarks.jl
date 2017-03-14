@@ -1,16 +1,14 @@
 using RigidBodyDynamics
 using BenchmarkTools
-import RigidBodyDynamics.TreeDataStructure: children, edge_to_parent_data
 
 const ScalarType = Float64
 # const ScalarType = Float32
 
 function create_floating_atlas()
-    atlasUrdfUrl = "https://raw.githubusercontent.com/RobotLocomotion/drake/6e3ca768cbaabf15d0f2bed0fb5bd703fa022aa5/drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"
-    atlasUrdf = RigidBodyDynamics.cached_download(atlasUrdfUrl, "atlas.urdf")
-    atlas = parse_urdf(ScalarType, atlasUrdf)
-    for child in children(root_vertex(atlas))
-        joint = edge_to_parent_data(child)
+    url = "https://raw.githubusercontent.com/RobotLocomotion/drake/6e3ca768cbaabf15d0f2bed0fb5bd703fa022aa5/drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"
+    urdf = RigidBodyDynamics.cached_download(url, "atlas.urdf")
+    atlas = parse_urdf(ScalarType, urdf)
+    for joint in out_joints(root_body(atlas), atlas)
         joint.jointType = QuaternionFloating{ScalarType}()
     end
     atlas

@@ -79,10 +79,13 @@ export
     isroot,
     isleaf, # TODO: remove?
     bodies,
-    toposort, # TODO: remove?
     path, # TODO: remove?
     joints,
     tree_joints,
+    successor,
+    predecessor,
+    in_joints,
+    out_joints,
     configuration_derivative,
     velocity_to_configuration_derivative!,
     configuration_derivative_to_velocity!,
