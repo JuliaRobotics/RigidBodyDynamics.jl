@@ -5,6 +5,8 @@ using Compat
 export
     DirectedGraph,
     SpanningTree,
+    vertex_index,
+    edge_index,
     vertex_type,
     edge_type,
     vertices,

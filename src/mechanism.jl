@@ -82,14 +82,14 @@ $(SIGNATURES)
 
 Return the dimension of the joint configuration vector ``q``.
 """
-num_positions(mechanism::Mechanism) = mapreduce(+, num_positions, 0, tree_joints(mechanism))
+num_positions(mechanism::Mechanism) = mapreduce(num_positions, +, 0, tree_joints(mechanism))
 
 """
 $(SIGNATURES)
 
 Return the dimension of the joint velocity vector ``v``.
 """
-num_velocities(mechanism::Mechanism) = mapreduce(+, num_velocities, 0, tree_joints(mechanism))
+num_velocities(mechanism::Mechanism) = mapreduce(num_velocities, +, 0, tree_joints(mechanism))
 
 """
 $(SIGNATURES)
