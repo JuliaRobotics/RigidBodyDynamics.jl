@@ -27,26 +27,46 @@ export
     root,
     edge_to_parent,
     edges_to_children,
-    vertex_data,
-    data
+    tree_index,
+    data,
+    path
 
-# vertex interface
+# Vertex interface
 vertex_index(::Any) = error("Vertex types must implement this method")
 vertex_index!(::Any, index::Int64) = error("Vertex types must implement this method")
 
-# edge interface
+# Edge interface
 edge_index(::Any) = error("Edge types must implement this method")
 edge_index!(::Any, index::Int64) = error("Edge types must implement this method")
 flip_direction!(::Any) = nothing # optional
 
-@compat abstract type AbstractGraph{V, E} end
+# Vertex and Edge types; useful for wrapping an existing type with the edge interface.
+# Note that DirectedGraph does not require using these types; just implement the edge interface.
+for typename in (:Edge, :Vertex)
+    getid = Symbol(lowercase(string(typename)) * "_index")
+    setid = Symbol(lowercase(string(typename)) * "_index!")
+    @eval begin
+        type $typename{T}
+            data::T
+            id::Int64
 
+            $typename(data::T) = new(data, -1)
+        end
+        $typename{T}(data::T) = $typename{T}(data)
+        data(x::$typename) = x.data
+        $getid(x::$typename) = x.id
+        $setid(x::$typename, index::Int64) = (x.id = index)
+    end
+end
+
+@compat abstract type AbstractGraph{V, E} end
 vertex_type{V, E}(::Type{AbstractGraph{V, E}}) = V
 edge_type{V, E}(::Type{AbstractGraph{V, E}}) = E
 num_vertices(g::AbstractGraph) = length(vertices(g))
 num_edges(g::AbstractGraph) = length(edges(g))
-out_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (target(e, g) for e in out_edges(v, g))
-in_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (source(e, g) for e in in_edges(v, g))
+out_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (target(e, g) for e in out_edges(vertex, g))
+in_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (source(e, g) for e in in_edges(vertex, g))
+
 
 type DirectedGraph{V, E} <: AbstractGraph{V, E}
     vertices::Vector{V}
@@ -58,8 +78,6 @@ type DirectedGraph{V, E} <: AbstractGraph{V, E}
 
     DirectedGraph() = new(V[], E[], V[], V[], Set{E}[], Set{E}[])
 end
-
-# renumber function?
 
 # AbstractGraph interface
 vertices(g::DirectedGraph) = g.vertices
@@ -94,22 +112,6 @@ function add_edge!{V, E}(g::DirectedGraph{V, E}, source::V, target::V, edge::E)
     push!(in_edges(target, g), edge)
     g
 end
-
-# function depth_first_search{V, E}(g::DirectedGraph{V, E}, root::V, ignoredirection = false)
-#     stack = [root]
-#     discovered = V[]
-#     while !isempty(stack)
-#         v = pop!(stack)
-#         if v ∉ discovered
-#             push!(discovered, v)
-#             append!(stack, out_neighbors(v, g))
-#             if ignoredirection
-#                 append!(stack, in_neighbors(v, g))
-#             end
-#         end
-#     end
-#     discovered
-# end
 
 function remove_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
     disconnected = isempty(in_edges(vertex, g)) && isempty(out_edges(vertex, g))
@@ -164,18 +166,12 @@ function flip_direction!{V, E}(edge::E, g::DirectedGraph{V, E})
     rewire!(g, edge, target(edge, g), source(edge, g))
 end
 
-# function edge_between{V, E}(from::V, to::V, g::DirectedGraph{V, E})
-#     for edge in in_edges(target, g)
-#         source(edge, g) == from && return edge
-#     end
-#     error("Edge not found")
-# end
-
 type SpanningTree{V, E} <: AbstractGraph{V, E}
     graph::DirectedGraph{V, E}
     edges::Vector{E}
     inedges::Vector{E}
     outedges::Vector{Set{E}}
+    edge_tree_indices::Vector{Int64} # mapping from edge_index(edge) to index into edges(tree)
 end
 
 # AbstractGraph interface
@@ -186,19 +182,20 @@ target{V, E}(edge::E, tree::SpanningTree{V, E}) = target(edge, tree.graph) # not
 in_edges{V, E}(vertex::V, tree::SpanningTree{V, E}) = (tree.inedges[vertex_index(vertex)],)
 out_edges{V, E}(vertex::V, tree::SpanningTree{V, E}) = tree.outedges[vertex_index(vertex)]
 
-# TODO: Base.show
-
 root(tree::SpanningTree) = source(first(edges(tree)), tree)
 edge_to_parent{V, E}(vertex::V, tree::SpanningTree{V, E}) = tree.inedges[vertex_index(vertex)]
 edges_to_children{V, E}(vertex::V, tree::SpanningTree{V, E}) = out_edges(vertex, tree)
+tree_index{V, E}(edge::E, tree::SpanningTree{V, E}) = tree.edge_tree_indices[edge_index(edge)]
+tree_index{V, E}(vertex::V, tree::SpanningTree{V, E}) = vertex == root(tree) ? 1 : tree_index(edge_to_parent(vertex, tree), tree) + 1
 
 function SpanningTree{V, E}(g::DirectedGraph{V, E}, edges::AbstractVector{E})
     n = num_vertices(g)
     length(edges) == n - 1 || error("Expected n - 1 edges.")
     inedges = Vector{E}(n)
     outedges = [Set{E}() for i = 1 : n]
+    edge_tree_indices = Int64[]
     treevertices = V[]
-    for edge in edges
+    for (i, edge) in enumerate(edges)
         parent = source(edge, g)
         child = target(edge, g)
         isempty(treevertices) && push!(treevertices, parent)
@@ -206,8 +203,10 @@ function SpanningTree{V, E}(g::DirectedGraph{V, E}, edges::AbstractVector{E})
         inedges[vertex_index(child)] = edge
         push!(outedges[vertex_index(parent)], edge)
         push!(treevertices, child)
+        resize!(edge_tree_indices, max(edge_index(edge), length(edge_tree_indices)))
+        edge_tree_indices[edge_index(edge)] = i
     end
-    SpanningTree(g, edges, inedges, outedges)
+    SpanningTree(g, edges, inedges, outedges, edge_tree_indices)
 end
 
 function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = (graph, frontier) -> first(frontier))
@@ -240,6 +239,8 @@ function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E
     push!(tree.inedges, edge)
     push!(tree.outedges, Set{E}())
     push!(out_edges(source, tree), edge)
+    resize!(tree.edge_tree_indices, max(edge_index(edge), length(tree.edge_tree_indices)))
+    tree.edge_tree_indices[edge_index(edge)] = num_edges(tree)
     tree
 end
 
@@ -261,28 +262,42 @@ function Base.show(io::IO, tree::SpanningTree, vertex = root(tree), level::Int64
     end
 end
 
-# Useful for wrapping an existing type with the edge interface.
-type Edge{T}
-    data::T
-    id::Int64
 
-    Edge(data::T) = new(data, -1)
+# Path
+immutable TreePath{E}
+    source_to_lca::Vector{E}
+    target_to_lca::Vector{E}
 end
-Edge{T}(data::T) = Edge{T}(data)
-data(edge::Edge) = edge.data
-edge_index(edge::Edge) = edge.id
-edge_index!(edge::Edge, index::Int64) = (edge.id = index)
 
-# Useful for wrapping an existing type with the vertex interface.
-type Vertex{T}
-    data::T
-    id::Int64
-
-    Vertex(data::T) = new(data, -1)
+function Base.show(io::IO, path::TreePath)
+    for edge in path.source_to_lca
+        print(io, "↑ ")
+        showcompact(io, edge)
+        println(io)
+    end
+    for i = length(path.target_to_lca) : -1 : 1
+        edge = path.target_to_lca[i]
+        print(io, "↓ ")
+        showcompact(io, edge)
+        println(io)
+    end
 end
-Vertex{T}(data::T) = Vertex{T}(data)
-data(vertex::Vertex) = vertex.data
-vertex_index(vertex::Vertex) = vertex.id
-vertex_index!(vertex::Vertex, index::Int64) = (vertex.id = index)
+
+function path{V, E}(src::V, target::V, tree::SpanningTree{V, E})
+    source_to_lca = E[]
+    target_to_lca = E[]
+    while src != target
+        if tree_index(src, tree) > tree_index(target, tree)
+            edge = edge_to_parent(src, tree)
+            push!(source_to_lca, edge)
+            src = source(edge, tree)
+        else
+            edge = edge_to_parent(target, tree)
+            push!(target_to_lca, edge)
+            target = source(edge, tree)
+        end
+    end
+    TreePath(source_to_lca, target_to_lca)
+end
 
 end # module
