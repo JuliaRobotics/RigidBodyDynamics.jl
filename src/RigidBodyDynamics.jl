@@ -2,23 +2,19 @@ __precompile__()
 
 module RigidBodyDynamics
 
-include("graphs.jl")
-# include("tree.jl")
-
-import Base: *, +, /, -
 using Base.Random
 using StaticArrays
 using Rotations
 using LightXML
 using DocStringExtensions
 using Compat
-using .Graphs
-
-const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
-
+import Base: *, +, /, -
 import Compat.Iterators: filter
 import Compat.Iterators: flatten
 
+const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
+
+include("graphs.jl")
 include("util.jl")
 include("third_party_addendum.jl")
 
@@ -29,15 +25,15 @@ include("joint_types.jl")
 include("joint.jl")
 include("cache_element.jl")
 
-# importall .TreeDataStructure
+using .Graphs
 include("mechanism.jl")
 include("mechanism_manipulation.jl")
 include("mechanism_state.jl")
 include("dynamics_result.jl")
 include("mechanism_algorithms.jl")
-# include("parse_urdf.jl")
-# include("ode_integrators.jl")
-# include("simulate.jl")
+include("parse_urdf.jl")
+include("ode_integrators.jl")
+include("simulate.jl")
 
 export
     # types

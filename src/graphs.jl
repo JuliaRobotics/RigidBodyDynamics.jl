@@ -26,7 +26,9 @@ export
     rewire!,
     root,
     edge_to_parent,
-    edges_to_children
+    edges_to_children,
+    vertex_data,
+    data
 
 # vertex interface
 vertex_index(::Any) = error("Vertex types must implement this method")
@@ -266,6 +268,8 @@ type Edge{T}
 
     Edge(data::T) = new(data, -1)
 end
+Edge{T}(data::T) = Edge{T}(data)
+data(edge::Edge) = edge.data
 edge_index(edge::Edge) = edge.id
 edge_index!(edge::Edge, index::Int64) = (edge.id = index)
 
@@ -276,7 +280,9 @@ type Vertex{T}
 
     Vertex(data::T) = new(data, -1)
 end
+Vertex{T}(data::T) = Vertex{T}(data)
+data(vertex::Vertex) = vertex.data
 vertex_index(vertex::Vertex) = vertex.id
-vertex_index!(vertex::Vertex, index::Int64) = (vertex.id = vertex)
+vertex_index!(vertex::Vertex, index::Int64) = (vertex.id = index)
 
 end # module
