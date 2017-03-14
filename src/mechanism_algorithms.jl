@@ -61,10 +61,7 @@ end
 
 function geometric_jacobian!{A, X, M, C}(out::GeometricJacobian{A}, state::MechanismState{X, M, C},
         path::TreePath{RigidBody{M}, Joint{M}})
-    @boundscheck begin
-        nv = mapreduce(num_velocities, +, 0, path.source_to_lca) + mapreduce(num_velocities, +, 0, path.target_to_lca)
-        nv == num_cols(out) || error("size mismatch")
-    end
+    @boundscheck num_velocities(path) == num_cols(out) || error("size mismatch")
 
     mechanism = state.mechanism
     nextbaseframe = out.base
@@ -94,7 +91,7 @@ in the given state.
 See also [`path`](@ref), [`GeometricJacobian`](@ref).
 """
 function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
-    nv = mapreduce(num_velocities, +, 0, path.source_to_lca) + mapreduce(num_velocities, +, 0, path.target_to_lca)
+    nv = num_velocities(path)
     angular = Matrix{C}(3, nv)
     linear = Matrix{C}(3, nv)
     bodyframe = default_frame(path.target)

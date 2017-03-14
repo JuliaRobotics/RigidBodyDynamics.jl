@@ -248,23 +248,40 @@ Base.@deprecate velocity_vector(state::MechanismState) velocity(state)
 
 state_vector(state::MechanismState) = [configuration(state); velocity(state)]
 
-# """
-# $(SIGNATURES)
-#
-# Return the part of the `Mechanism`'s configuration vector ``q`` associated with
-# the joints on `path`.
-# """
-# configuration{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([configuration(state, joint) for joint in path.edgeData]...) # FIXME
-# Base.@deprecate configuration_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) configuration(state, path)
+for fun in (:num_velocities, :num_positions)
+    @eval function $fun{T}(path::TreePath{RigidBody{T}, Joint{T}})
+        mapreduce($fun, +, 0, path.source_to_lca) + mapreduce($fun, +, 0, path.target_to_lca)
+    end
+end
 
-# """
-# $(SIGNATURES)
-#
-# Return the part of the `Mechanism`'s velocity vector ``v`` associated with
-# the joints on `path`.
-# """
-# velocity{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) = vcat([velocity(state, joint) for joint in path.edgeData]...) # FIXME
-# Base.@deprecate velocity_vector{T}(state::MechanismState, path::Path{RigidBody{T}, Joint{T}}) velocity(state, path)
+for (fun, veclength) in [(:configuration, :num_positions), (:velocity, :num_velocities)]
+    @eval begin
+        funstring = string($fun)
+        """
+        $(SIGNATURES)
+
+        Return the part of the `Mechanism`'s $funstring vector associated with
+        the joints along `path`.
+        """
+        function $fun{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
+            ret = Vector{X}($veclength(path))
+            setvectorpart! = (out, part, startind) -> begin
+                n = length(part)
+                copy!(out, startind, part, n)
+                startind + n
+            end
+            startind = 1
+            for joint in path.source_to_lca
+                startind = setvectorpart!(ret, $fun(state, joint), startind)
+            end
+            for i = length(path.target_to_lca) : -1 : 1
+                joint = path.target_to_lca[i]
+                startind = setvectorpart!(ret, $fun(state, joint), startind)
+            end
+            ret
+        end
+    end
+end
 
 """
 $(SIGNATURES)
