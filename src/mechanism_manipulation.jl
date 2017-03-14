@@ -111,14 +111,14 @@ function submechanism{T}(mechanism::Mechanism{T}, submechanismroot::RigidBody{T}
 
     # Add tree joints, preserving order in input mechanism.
     for joint in tree_joints(mechanism) # assumes toposort
-        if haskey(bodymap, source(joint, mechanism.graph))
+        if haskey(bodymap, predecessor(joint, mechanism))
             _copyjoint!(ret, mechanism, joint, bodymap, jointmap)
         end
     end
 
     # Add non-tree joints.
     for joint in non_tree_joints(mechanism)
-        if haskey(bodymap, source(joint, mechanism.graph)) && haskey(bodymap, target(joint, mechanism.graph))
+        if haskey(bodymap, predecessor(joint, mechanism)) && haskey(bodymap, successor(joint, mechanism))
             _copyjoint!(ret, mechanism, joint, bodymap, jointmap)
         end
     end

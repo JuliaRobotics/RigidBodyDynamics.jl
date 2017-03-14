@@ -24,7 +24,7 @@ function create_benchmark_suite()
     let
         state = MechanismState(ScalarType, mechanism)
         result = DynamicsResult(ScalarType, mechanism)
-        suite["mass_matrix"] = @benchmarkable mass_matrix!($(result.massMatrix), $state) setup = rand!($state)
+        suite["mass_matrix"] = @benchmarkable mass_matrix!($(result.massmatrix), $state) setup = rand!($state)
     end
 
     let
@@ -32,7 +32,7 @@ function create_benchmark_suite()
         result = DynamicsResult(ScalarType, mechanism)
         torques = Vector{ScalarType}(num_velocities(mechanism))
         suite["inverse_dynamics"] = @benchmarkable(
-            inverse_dynamics!($torques, $(result.jointWrenches), $(result.accelerations), $state, v̇, externalWrenches),
+            inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalWrenches),
             setup = (
                 v̇ = rand(num_velocities($mechanism));
                 externalWrenches = Dict(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in non_root_bodies($mechanism));

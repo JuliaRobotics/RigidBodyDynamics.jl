@@ -1,7 +1,3 @@
-# TODO: move
-tree_index(joint::Joint, mechanism::Mechanism) = vertex_index(target(joint, mechanism.graph))
-tree_index(body::RigidBody, mechanism::Mechanism) = vertex_index(body)
-
 """
 $(TYPEDEF)
 
@@ -17,6 +13,8 @@ Type parameters:
 """
 immutable MechanismState{X<:Number, M<:Number, C<:Number}
     mechanism::Mechanism{M}
+    nontreejoints::Vector{Joint{M}}
+    constraint_jacobian_structure::SparseMatrixCSC{Int64,Int64} # TODO: consider just using a Vector{Vector{Pair{Int64, Int64}}}
 
     # state vector
     q::Vector{X}
@@ -80,7 +78,8 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         update!(twists_wrt_world[rootindex], zero(Twist{C}, rootframe, rootframe, rootframe))
         update!(bias_accelerations_wrt_world[rootindex], zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe))
 
-        new{X, M, C}(mechanism, q, v, qs, vs,
+        new{X, M, C}(mechanism, non_tree_joints(mechanism), constraint_jacobian_structure(mechanism),
+            q, v, qs, vs,
             joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world,
             transforms_to_world, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias)
     end
@@ -102,6 +101,8 @@ $(SIGNATURES)
 Return the length of the joint velocity vector ``v``.
 """
 num_velocities(state::MechanismState) = length(state.v)
+
+non_tree_joints(state::MechanismState) = state.nontreejoints
 
 state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
 mechanism_eltype{X, M, C}(state::MechanismState{X, M, C}) = M
@@ -357,8 +358,8 @@ end
 function motion_subspace_in_world(state::MechanismState, joint::Joint)
     index = tree_index(joint, state.mechanism)
     @cache_element_get!(state.motion_subspaces_in_world[index], begin
-        body = target(joint, state.mechanism.graph)
-        parentbody = source(joint, state.mechanism.graph)
+        body = successor(joint, state.mechanism)
+        parentbody = predecessor(joint, state.mechanism)
         parentframe = default_frame(parentbody)
         motionsubspace = change_base(motion_subspace(state, joint), parentFrame)
         transform(motionsubspace, transform_to_root(state, body))
@@ -369,7 +370,7 @@ function transform_to_root(state::MechanismState, body::RigidBody)
     index = tree_index(body, state.mechanism)
     @cache_element_get!(state.transforms_to_world[index], begin
         joint = edge_to_parent(body, state.mechanism.tree)
-        parentbody = source(joint, state.mechanism.graph)
+        parentbody = predecessor(joint, state.mechanism)
         parent_to_root = transform_to_root(state, parentbody)
         before_joint_to_parent = frame_definition(parentbody, joint.frameBefore) # FIXME: slow!
         parent_to_root * before_joint_to_parent * transform(state, joint)
@@ -380,7 +381,7 @@ function twist_wrt_world(state::MechanismState, body::RigidBody)
     index = tree_index(body, state.mechanism)
     @cache_element_get!(state.twists_wrt_world[index], begin
         joint = edge_to_parent(body, state.mechanism.tree)
-        parentbody = source(joint, state.mechanism.graph)
+        parentbody = predecessor(joint, state.mechanism)
         parenttwist = twist_wrt_world(state, parentbody)
         parentframe = default_frame(parentbody)
         jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
@@ -392,7 +393,7 @@ function bias_acceleration(state::MechanismState, body::RigidBody)
     index = tree_index(body, state.mechanism)
     @cache_element_get!(state.bias_accelerations_wrt_world[index], begin
         joint = edge_to_parent(body, state.mechanism.tree)
-        parentbody = source(joint, state.mechanism.graph)
+        parentbody = predecessor(joint, state.mechanism)
         parentbias = bias_acceleration(state, parentbody)
         parentframe = default_frame(parentbody)
         jointbias = change_base(bias_acceleration(state, joint), parentframe) # to make frames line up
@@ -419,7 +420,7 @@ function crb_inertia(state::MechanismState, body::RigidBody)
     @cache_element_get!(state.crb_inertias[index], begin
         ret = spatial_inertia(state, body)
         for joint in edges_to_children(body, state.mechanism.tree)
-            child = target(joint, state.mechanism.graph)
+            child = successor(joint, state.mechanism)
             ret += crb_inertia(state, child)
         end
         ret

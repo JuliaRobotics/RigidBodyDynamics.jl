@@ -136,6 +136,24 @@ function fixed_transform(mechanism::Mechanism, from::CartesianFrame3D, to::Carte
     fixed_transform(body_fixed_frame_to_body(mechanism, from), from, to)
 end
 
+"""
+$(SIGNATURES)
+
+Return the body 'before' the joint.
+
+See [`Joint`](@ref).
+"""
+predecessor(joint::Joint, mechanism::Mechanism) = source(joint, mechanism.graph)
+
+"""
+$(SIGNATURES)
+
+Return the body 'after' the joint.
+
+See [`Joint`](@ref).
+"""
+successor(joint::Joint, mechanism::Mechanism) = successor(joint, mechanism)
+
 Base.@deprecate add_body_fixed_frame!{T}(mechanism::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T}) add_frame!(body, transform)
 function add_body_fixed_frame!{T}(mechanism::Mechanism{T}, transform::Transform3D{T})
     add_frame!(body_fixed_frame_to_body(mechanism, transform.to), transform)
@@ -161,6 +179,9 @@ end
 
 non_tree_joints(mechanism::Mechanism) = setdiff(edges(mechanism.graph), edges(mechanism.tree))
 
+tree_index(joint::Joint, mechanism::Mechanism) = vertex_index(successor(joint, mechanism))
+tree_index(body::RigidBody, mechanism::Mechanism) = vertex_index(body)
+
 function constraint_jacobian_structure(mechanism::Mechanism)
     # TODO: move to MechanismState
     # columns correspond to non-tree joints, rows correspond to tree joints
@@ -172,7 +193,7 @@ function constraint_jacobian_structure(mechanism::Mechanism)
         for (body, sign) in Dict(successor => 1, predecessor => -1)
             while !isroot(body, mechanism)
                 joint = edge_to_parent(body, mechanism.tree)
-                ret[edge_index(joint), col] += sign
+                ret[tree_index(joint, mechanism), col] += sign
                 body = source(joint)
             end
         end
