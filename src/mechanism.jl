@@ -27,7 +27,8 @@ be attached with joints.
 """
 Mechanism{T}(rootBody::RigidBody{T}; kwargs...) = Mechanism{T}(rootBody; kwargs...)
 Base.eltype{T}(::Mechanism{T}) = T
-# tree(mechanism::Mechanism) = mechanism.tree
+tree(mechanism::Mechanism) = mechanism.tree
+graph(mechanism::Mechanism) = mechanism.graph
 
 """
 $(SIGNATURES)
@@ -71,7 +72,25 @@ root_frame(mechanism::Mechanism) = default_frame(root_body(mechanism))
 # kinematic tree.
 # """
 #TODO: # path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(tree(mechanism), from), findfirst(tree(mechanism), to))
-#TODO: # Base.show(io::IO, mechanism::Mechanism) = print(io, tree(mechanism))
+function Base.show(io::IO, mechanism::Mechanism)
+    println(io, "Spanning tree:")
+    print(io, tree(mechanism))
+    nontreejoints = non_tree_joints(mechanism)
+    println(io)
+    if isempty(nontreejoints)
+        print(io, "No non-tree joints.")
+    else
+        print(io, "Non-tree joints:")
+        for joint in nontreejoints
+            println(io)
+            showcompact(io, joint)
+            print(io, ", predecessor: ")
+            showcompact(io, predecessor(joint, mechanism))
+            print(io, ", successor: ")
+            showcompact(io, successor(joint, mechanism))
+        end
+    end
+end
 Base.@deprecate isroot{T}(mechanism::Mechanism{T}, b::RigidBody{T}) isroot(b, mechanism)
 isroot{T}(b::RigidBody{T}, mechanism::Mechanism{T}) = b == root_body(mechanism)
 non_root_bodies{T}(mechanism::Mechanism{T}) = (body for body in bodies(mechanism) if !isroot(body, mechanism))

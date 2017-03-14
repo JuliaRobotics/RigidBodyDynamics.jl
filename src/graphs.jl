@@ -41,8 +41,8 @@ vertex_type{V, E}(::Type{AbstractGraph{V, E}}) = V
 edge_type{V, E}(::Type{AbstractGraph{V, E}}) = E
 num_vertices(g::AbstractGraph) = length(vertices(g))
 num_edges(g::AbstractGraph) = length(edges(g))
-out_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (target(e) for e in out_edges(v, g))
-in_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (source(e) for e in in_edges(v, g))
+out_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (target(e, g) for e in out_edges(v, g))
+in_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (source(e, g) for e in in_edges(v, g))
 
 type DirectedGraph{V, E} <: AbstractGraph{V, E}
     vertices::Vector{V}
@@ -184,7 +184,7 @@ out_edges{V, E}(vertex::V, tree::SpanningTree{V, E}) = tree.outedges[vertex_inde
 
 # TODO: Base.show
 
-root(tree::SpanningTree) = source(first(edges(tree)))
+root(tree::SpanningTree) = source(first(edges(tree)), tree)
 edge_to_parent{V, E}(vertex::V, tree::SpanningTree{V, E}) = tree.inedges[vertex_index(vertex)]
 edges_to_children{V, E}(vertex::V, tree::SpanningTree{V, E}) = out_edges(vertex, tree)
 
@@ -237,6 +237,24 @@ function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E
     push!(tree.outedges, Set{E}())
     push!(out_edges(source, tree), edge)
     tree
+end
+
+function Base.show(io::IO, tree::SpanningTree, vertex = root(tree), level::Int64 = 0)
+    for i = 1 : level print(io, "  ") end
+    print(io, "Vertex: ")
+    showcompact(io, vertex)
+    if vertex == root(tree)
+        print(io, " (root)")
+    else
+        print(io, ", ")
+        print(io, "Edge: ")
+        showcompact(io, edge_to_parent(vertex, tree))
+    end
+    for edge in edges_to_children(vertex, tree)
+        print(io, "\n")
+        child = target(edge, tree)
+        show(io, tree, child, level + 1)
+    end
 end
 
 end # module
