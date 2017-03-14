@@ -16,12 +16,11 @@ Base.mod{T<:ForwardDiff.Dual}(x::T, y::T) = ForwardDiff.Dual(mod(ForwardDiff.val
 @inline Base.rem(x::ForwardDiff.Dual, n::Real) = ForwardDiff.Dual(rem(ForwardDiff.value(x), n), ForwardDiff.partials(x))
 
 include("test_util.jl")
-# include("test_tree.jl")
 include("test_frames.jl")
 include("test_spatial.jl")
 include("test_double_pendulum.jl")
 include("test_mechanism_algorithms.jl")
-include("test_mechanism_manipulation.jl")
+# include("test_mechanism_manipulation.jl")
 
 # notebooks
 @testset "example notebooks" begin

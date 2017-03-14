@@ -116,10 +116,6 @@ end
 
 function remove_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
     disconnected = isempty(in_edges(vertex, g)) && isempty(out_edges(vertex, g))
-    if !disconnected
-        @show in_edges(vertex, g)
-        @show out_edges(vertex, g)
-    end
     disconnected || error("Vertex must be disconnected from the rest of the graph before it can be removed.")
     index = vertex_index(vertex)
     deleteat!(g.vertices, index)

@@ -141,7 +141,7 @@ end
             # find world, floating joint, floating body of mechanism1, and determine a new floating body
             world = root_body(mechanism1)
             subtreeRootVertex = children(root_vertex(mechanism1))[1]
-            floatingJoint = edge_to_parent_data(subtreeRootVertex)
+            floatingjoint = edge_to_parent_data(subtreeRootVertex)
             floatingBody = vertex_data(subtreeRootVertex)
             newFloatingBody = rand(collect(non_root_bodies(mechanism1)))
 
@@ -155,7 +155,7 @@ end
             # copy non-floating joint configurations and velocities
             x2 = MechanismState(Float64, mechanism2)
             for (joint1, joint2) in jointmap
-                if joint1 != floatingJoint
+                if joint1 != floatingjoint
                     joint2Rerooted = get(flippedJointMapping, joint2, joint2)
                     set_configuration!(x2, joint2Rerooted, configuration(x1, joint1))
                     set_velocity!(x2, joint2Rerooted, velocity(x1, joint1))
@@ -179,7 +179,7 @@ end
 
             # make sure that joint accelerations for non-floating joints are the same
             for (joint1, joint2) in jointmap
-                if joint1 != floatingJoint
+                if joint1 != floatingjoint
                     joint2Rerooted = get(flippedJointMapping, joint2, joint2)
                     v̇1 = view(result1.v̇, velocity_range(x1, joint1))
                     v̇2 = view(result2.v̇, velocity_range(x2, joint2Rerooted))

@@ -7,7 +7,7 @@ the mass of `base`).
 function subtree_mass{T}(base::RigidBody{T}, mechanism::Mechanism{T})
     result = isroot(base, mechanism) ? zero(T) : spatial_inertia(base).mass
     for joint in edges_to_children(base, mechanism.tree)
-        result += subtree_mass(successor(joint, mechanism))
+        result += subtree_mass(successor(joint, mechanism), mechanism)
     end
     result
 end
@@ -270,7 +270,7 @@ function momentum_matrix!(out::MomentumMatrix, state::MechanismState)
     mechanism = state.mechanism
     for joint in tree_joints(mechanism)
         body = successor(joint, mechanism)
-        part = crb_inertia(state, body) * motion_subspace(state, joint)
+        part = crb_inertia(state, body) * motion_subspace_in_world(state, joint)
         @framecheck out.frame part.frame # TODO: transform part to out.frame instead?
         n = 3 * num_cols(part)
         copy!(out.angular, pos, part.angular, 1, n)
@@ -443,6 +443,7 @@ end
 function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian::AbstractMatrix, constraintbias::AbstractVector)
     # TODO: allocations
     structure = state.constraint_jacobian_structure
+    mechanism = state.mechanism
     rows = rowvals(structure)
     signs = nonzeros(structure)
     nontreejoints = non_tree_joints(state)
@@ -460,15 +461,15 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
 
         # Jacobian rows.
         for j in nzrange(structure, i)
-            treejoint = tree_joints(mechanism)[j]
-            J = motion_subspace(state, treejoint)
+            treejoint = tree_joints(mechanism)[rows[j]]
+            J = motion_subspace_in_world(state, treejoint)
             sign = signs[j]
             colstart = first(velocity_range(state, treejoint))
             force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, sign)
         end
 
         # Constraint bias.
-        has_fixed_subspaces(joint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.")
+        has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.")
         kjoint = UnsafeVectorView(constraintbias, range)
         pred = predecessor(nontreejoint, mechanism)
         succ = successor(nontreejoint, mechanism)
