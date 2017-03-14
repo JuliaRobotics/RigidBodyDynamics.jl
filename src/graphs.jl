@@ -5,6 +5,8 @@ using Compat
 export
     DirectedGraph,
     SpanningTree,
+    Edge,
+    Vertex,
     vertex_index,
     edge_index,
     vertex_type,
@@ -256,5 +258,25 @@ function Base.show(io::IO, tree::SpanningTree, vertex = root(tree), level::Int64
         show(io, tree, child, level + 1)
     end
 end
+
+# Useful for wrapping an existing type with the edge interface.
+type Edge{T}
+    data::T
+    id::Int64
+
+    Edge(data::T) = new(data, -1)
+end
+edge_index(edge::Edge) = edge.id
+edge_index!(edge::Edge, index::Int64) = (edge.id = index)
+
+# Useful for wrapping an existing type with the vertex interface.
+type Vertex{T}
+    data::T
+    id::Int64
+
+    Vertex(data::T) = new(data, -1)
+end
+vertex_index(vertex::Vertex) = vertex.id
+vertex_index!(vertex::Vertex, index::Int64) = (vertex.id = vertex)
 
 end # module
