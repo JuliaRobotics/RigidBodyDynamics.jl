@@ -63,13 +63,14 @@ Return the default frame of the root body.
 """
 root_frame(mechanism::Mechanism) = default_frame(root_body(mechanism))
 
-# """
-# $(SIGNATURES)
-#
-# Return the path from rigid body `from` to `to` along edges of the `Mechanism`'s
-# kinematic tree.
-# """
-#TODO: # path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = path(findfirst(tree(mechanism), from), findfirst(tree(mechanism), to))
+"""
+$(SIGNATURES)
+
+Return the path from rigid body `from` to `to` along edges of the `Mechanism`'s
+kinematic tree.
+"""
+path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = Graphs.path(from, to, mechanism.tree)
+
 function Base.show(io::IO, mechanism::Mechanism)
     println(io, "Spanning tree:")
     print(io, mechanism.tree)

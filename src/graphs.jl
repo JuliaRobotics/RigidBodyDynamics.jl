@@ -5,6 +5,7 @@ using Compat
 export
     DirectedGraph,
     SpanningTree,
+    TreePath,
     Edge,
     Vertex,
     vertex_index,
@@ -275,12 +276,15 @@ end
 
 
 # Path
-immutable TreePath{E}
+immutable TreePath{V, E}
+    source::V
+    target::V
     source_to_lca::Vector{E}
     target_to_lca::Vector{E}
 end
 
 function Base.show(io::IO, path::TreePath)
+    println(io, "Path from $(path.source) to $(path.target):")
     for edge in path.source_to_lca
         print(io, "↑ ")
         showcompact(io, edge)
@@ -297,18 +301,20 @@ end
 function path{V, E}(src::V, target::V, tree::SpanningTree{V, E})
     source_to_lca = E[]
     target_to_lca = E[]
-    while src != target
-        if tree_index(src, tree) > tree_index(target, tree)
-            edge = edge_to_parent(src, tree)
+    source_current = src
+    target_current = target
+    while source_current != target_current
+        if tree_index(source_current, tree) > tree_index(target_current, tree)
+            edge = edge_to_parent(source_current, tree)
             push!(source_to_lca, edge)
-            src = source(edge, tree)
+            source_current = source(edge, tree)
         else
-            edge = edge_to_parent(target, tree)
+            edge = edge_to_parent(target_current, tree)
             push!(target_to_lca, edge)
-            target = source(edge, tree)
+            target_current = source(edge, tree)
         end
     end
-    TreePath(source_to_lca, target_to_lca)
+    TreePath(src, target, source_to_lca, target_to_lca)
 end
 
 end # module

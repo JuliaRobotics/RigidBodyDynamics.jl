@@ -48,21 +48,60 @@ Compute the center of mass of the whole `Mechanism` in the given state.
 """
 center_of_mass(state::MechanismState) = center_of_mass(state, non_root_bodies(state.mechanism))
 
-# FIXME
-# """
-# $(SIGNATURES)
-#
-# Compute a geometric Jacobian (also known as a basic, or spatial Jacobian)
-# for a path in the graph of joints and bodies of a `Mechanism`,
-# in the given state.
-#
-# See also [`path`](@ref), [`GeometricJacobian`](@ref).
-# """
-# function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::Path{RigidBody{M}, Joint{M}})
-#     copysign = (motionSubspace::GeometricJacobian, sign::Int64) -> sign < 0 ? -motionSubspace : motionSubspace
-#     motionSubspaces = [copysign(motion_subspace(state, joint), sign)::GeometricJacobian for (joint, sign) in zip(path.edgeData, path.directions)]
-#     hcat(motionSubspaces...)
-# end
+function _set_jacobian_part!(out::GeometricJacobian, part::GeometricJacobian, nextbaseframe::CartesianFrame3D, startind::Int64)
+    @framecheck part.frame out.frame
+    @framecheck part.base nextbaseframe
+    n = 3 * num_cols(part)
+    copy!(out.angular, startind, part.angular, 1, n)
+    copy!(out.linear, startind, part.linear, 1, n)
+    startind += n
+    nextbaseframe = part.body
+    startind, nextbaseframe
+end
+
+function geometric_jacobian!{A, X, M, C}(out::GeometricJacobian{A}, state::MechanismState{X, M, C},
+        path::TreePath{RigidBody{M}, Joint{M}})
+    @boundscheck begin
+        nv = mapreduce(num_velocities, +, 0, path.source_to_lca) + mapreduce(num_velocities, +, 0, path.target_to_lca)
+        nv == num_cols(out) || error("size mismatch")
+    end
+
+    mechanism = state.mechanism
+    nextbaseframe = out.base
+    startind = 1
+    for joint in path.source_to_lca
+        S = -motion_subspace_in_world(state, joint)
+        startind, nextbaseframe = _set_jacobian_part!(out, S, nextbaseframe, startind)
+    end
+    for i = length(path.target_to_lca) : -1 : 1
+        joint = path.target_to_lca[i]
+        S = motion_subspace_in_world(state, joint)
+        startind, nextbaseframe = _set_jacobian_part!(out, S, nextbaseframe, startind)
+        if i == 1
+            @framecheck S.body out.body
+        end
+    end
+    out
+end
+
+"""
+$(SIGNATURES)
+
+Compute a geometric Jacobian (also known as a basic, or spatial Jacobian)
+for a path in the graph of joints and bodies of a `Mechanism`,
+in the given state.
+
+See also [`path`](@ref), [`GeometricJacobian`](@ref).
+"""
+function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
+    nv = mapreduce(num_velocities, +, 0, path.source_to_lca) + mapreduce(num_velocities, +, 0, path.target_to_lca)
+    angular = Matrix{C}(3, nv)
+    linear = Matrix{C}(3, nv)
+    bodyframe = default_frame(path.target)
+    baseframe = default_frame(path.source)
+    jac = GeometricJacobian(bodyframe, baseframe, root_frame(state.mechanism), angular, linear)
+    geometric_jacobian!(jac, state, path)
+end
 
 """
 $(SIGNATURES)
@@ -72,7 +111,7 @@ the given state and joint acceleration vector ``\\dot{v}``.
 """
 function relative_acceleration(state::MechanismState, body::RigidBody, base::RigidBody, v̇::AbstractVector)
     # This is kind of a strange algorithm due to the availability of bias accelerations w.r.t. world
-    # in MechanismState, while computation of the v̇-dependent follows the shortest path in the tree.
+    # in MechanismState, while computation of the v̇-dependent terms follows the shortest path in the tree.
     # TODO: consider doing everything in body frame
 
     C = cache_eltype(state)
