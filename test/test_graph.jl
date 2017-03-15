@@ -144,4 +144,87 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
         @test target(edge, graph) == newsource
         @test data(edge) == -olddata
     end
+
+    @testset "SpanningTree" begin
+        rootdata = 0
+
+        # graph1: tree grown incrementally
+        graph1 = DirectedGraph{Vertex{Int64}, Edge{Int32}}()
+        root1 = Vertex(rootdata)
+        add_vertex!(graph1, root1)
+        tree1 = SpanningTree(graph1, root1)
+
+        # graph2: tree constructed after graph is built
+        graph2 = DirectedGraph{Vertex{Int64}, Edge{Int32}}()
+        root2 = Vertex(rootdata)
+        add_vertex!(graph2, root2)
+
+        nedges = 15
+        for i = 1 : nedges
+            parentind = rand(1 : num_vertices(graph1))
+            childdata = i
+            edgedata = Int32(i + 3)
+            add_edge!(tree1, vertices(tree1)[parentind], Vertex(childdata), Edge(edgedata))
+            add_edge!(graph2, vertices(graph2)[parentind], Vertex(childdata), Edge(edgedata))
+        end
+
+        tree2 = SpanningTree(graph2, root2)
+
+        @test all(data.(vertices(tree1)) == data.(vertices(tree2)))
+        for (v1, v2) in zip(vertices(tree1), vertices(tree2))
+            if v1 == root(tree1)
+                @test v2 == root(tree2)
+            else
+                @test data(edge_to_parent(v1, tree1)) == data(edge_to_parent(v2, tree2))
+
+                outedgedata1 = data.(collect(edges_to_children(v1, tree1)))
+                outedgedata2 = data.(collect(edges_to_children(v2, tree2)))
+                @test isempty(setdiff(outedgedata1, outedgedata2))
+
+                @test isempty(setdiff(out_edges(v1, graph1), edges_to_children(v1, tree1)))
+                @test isempty(setdiff(out_edges(v2, graph2), edges_to_children(v2, tree2)))
+            end
+        end
+
+        tree = tree1
+        show(DevNull, tree)
+
+        @test_throws AssertionError add_edge!(tree, rand(vertices(tree)), rand(vertices(tree)), Edge(rand(Int32)))
+
+        for src in vertices(tree)
+            for dest in vertices(tree)
+                src_ancestors = ancestors(src, tree)
+                dest_ancestors = ancestors(dest, tree)
+                lca = lowest_common_ancestor(src, dest, tree)
+                p = path(src, dest, tree)
+
+                for (v, v_ancestors, pathsegment) in [(src, src_ancestors, p.source_to_lca); (dest, dest_ancestors, p.target_to_lca)]
+                    if v == root(tree)
+                        @test tree_index(v, tree) == 1
+                        @test lca == v
+                        @test length(v_ancestors) == 1
+                        @test isempty(pathsegment)
+                    end
+                    for v_ancestor in v_ancestors
+                        @test tree_index(v_ancestor, tree) <= tree_index(v, tree)
+                    end
+                    @test lca ∈ v_ancestors
+                    if v != lca
+                        @test source(last(pathsegment), tree) == lca
+                    end
+                end
+
+                for v in intersect(src_ancestors, dest_ancestors)
+                    @test tree_index(v, tree) <= tree_index(lca, tree)
+                    if v != lca
+                        @test v ∉ (v -> source(v, tree)).(p.source_to_lca)
+                        @test v ∉ (v -> source(v, tree)).(p.target_to_lca)
+                    end
+                end
+                for v in setdiff(src_ancestors, dest_ancestors)
+                    @test tree_index(v, tree) > tree_index(lca, tree)
+                end
+            end
+        end
+    end
 end

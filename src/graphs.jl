@@ -8,6 +8,7 @@ export
     TreePath,
     Edge,
     Vertex,
+    data,
     vertex_index,
     edge_index,
     vertex_type,
@@ -32,7 +33,8 @@ export
     edge_to_parent,
     edges_to_children,
     tree_index,
-    data,
+    ancestors,
+    lowest_common_ancestor,
     path
 
 # Vertex interface
@@ -230,7 +232,11 @@ function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = (graph,
     SpanningTree(g, edges)
 end
 
-function _add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, edge::E)
+# adds an edge and vertex to both the tree and the underlying graph
+function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E)
+    @assert target ∉ vertices(tree)
+    add_edge!(tree.graph, source, target, edge)
+
     push!(tree.edges, edge)
     push!(tree.inedges, edge)
     push!(tree.outedges, Set{E}())
@@ -238,13 +244,6 @@ function _add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, edge::E)
     resize!(tree.edge_tree_indices, max(edge_index(edge), length(tree.edge_tree_indices)))
     tree.edge_tree_indices[edge_index(edge)] = num_edges(tree)
     tree
-end
-
-# adds an edge and vertex to both the tree and the underlying graph
-function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E)
-    @assert target ∉ vertices(tree)
-    add_edge!(tree.graph, source, target, edge)
-    _add_edge!(tree, source, edge)
 end
 
 function Base.show(io::IO, tree::SpanningTree, vertex = root(tree), level::Int64 = 0)
@@ -265,12 +264,21 @@ function Base.show(io::IO, tree::SpanningTree, vertex = root(tree), level::Int64
     end
 end
 
+function ancestors{V, E}(vertex::V, tree::SpanningTree{V, E})
+    ret = [vertex]
+    while vertex != root(tree)
+        vertex = source(edge_to_parent(vertex, tree), tree)
+        push!(ret, vertex)
+    end
+    ret
+end
+
 function lowest_common_ancestor{V, E}(v1::V, v2::V, tree::SpanningTree{V, E})
     while v1 != v2
         if tree_index(v1, tree) > tree_index(v2, tree)
             v1 = source(edge_to_parent(v1, tree), tree)
         else
-            v2 = source(edge_to_parent(v1, tree), tree)
+            v2 = source(edge_to_parent(v2, tree), tree)
         end
     end
     v1
