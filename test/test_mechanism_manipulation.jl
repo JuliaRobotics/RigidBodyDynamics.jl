@@ -87,7 +87,7 @@ end
         @test tree_joints(mechanism) == nonfixedjoints
         state_no_fixed_joints = MechanismState(Float64, mechanism)
         set_configuration!(state_no_fixed_joints, q)
-        M_no_fixed_joints = mass_matrix(state)
+        M_no_fixed_joints = mass_matrix(state_no_fixed_joints)
         @test isapprox(M_no_fixed_joints, M, atol = 1e-12)
     end
 
@@ -200,61 +200,61 @@ end
     #     end # for
     # end # reattach
 
-    @testset "maximal coordinates" begin
-        # create random tree mechanism and equivalent mechanism in maximal coordinates
-        treeMechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
-        mcMechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(treeMechanism)
-
-        # randomize state of tree mechanism
-        treeState = MechanismState(Float64, treeMechanism)
-        rand!(treeState)
-
-        # put maximal coordinate system in state that is equivalent to tree mechanism state
-        mcState = MechanismState(Float64, mcMechanism)
-        for oldbody in non_root_bodies(treeMechanism)
-            newbody = bodymap[oldbody]
-            joint = newfloatingjoints[newbody]
-
-            tf = relative_transform(treeState, joint.frameAfter, joint.frameBefore)
-            floating_joint_transform_to_configuration!(joint, configuration(mcState, joint), tf)
-
-            twist = transform(relative_twist(treeState, joint.frameAfter, joint.frameBefore), inv(tf))
-            floating_joint_twist_to_velocity!(joint, velocity(mcState, joint), twist)
-        end
-        setdirty!(mcState)
-
-        # do dynamics
-        treeDynamicsResult = DynamicsResult(Float64, treeMechanism);
-        dynamics!(treeDynamicsResult, treeState)
-
-        mcDynamicsResult = DynamicsResult(Float64, mcMechanism);
-        dynamics!(mcDynamicsResult, mcState)
-
-        # compare spatial accelerations of bodies
-        for (treebody, mcbody) in bodymap
-            treeAccel = relative_acceleration(treeState, treebody, root_body(treeMechanism), treeDynamicsResult.v̇)
-            mcAccel = relative_acceleration(mcState, mcbody, root_body(mcMechanism), mcDynamicsResult.v̇)
-            @test isapprox(treeAccel, mcAccel; atol = 1e-12)
-        end
-    end # maximal coordinates
-
-    @testset "generic scalar dynamics" begin # TODO: move to a better place
-        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
-        mechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(mechanism)
-
-        stateFloat64 = MechanismState(Float64, mechanism)
-        rand!(stateFloat64)
-        stateDual = MechanismState(ForwardDiff.Dual{0, Float64}, mechanism)
-        configuration(stateDual)[:] = configuration(stateFloat64)
-        velocity(stateDual)[:] = velocity(stateFloat64)
-
-        dynamicsResultFloat64 = DynamicsResult(Float64, mechanism)
-        dynamics!(dynamicsResultFloat64, stateFloat64)
-
-        dynamicsResultDual = DynamicsResult(ForwardDiff.Dual{0, Float64}, mechanism)
-        dynamics!(dynamicsResultDual, stateDual)
-
-        @test isapprox(dynamicsResultFloat64.v̇, dynamicsResultDual.v̇; atol = 1e-3)
-        @test isapprox(dynamicsResultFloat64.λ, dynamicsResultDual.λ; atol = 1e-3)
-    end
+    # @testset "maximal coordinates" begin
+    #     # create random tree mechanism and equivalent mechanism in maximal coordinates
+    #     treeMechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
+    #     mcMechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(treeMechanism)
+    #
+    #     # randomize state of tree mechanism
+    #     treeState = MechanismState(Float64, treeMechanism)
+    #     rand!(treeState)
+    #
+    #     # put maximal coordinate system in state that is equivalent to tree mechanism state
+    #     mcState = MechanismState(Float64, mcMechanism)
+    #     for oldbody in non_root_bodies(treeMechanism)
+    #         newbody = bodymap[oldbody]
+    #         joint = newfloatingjoints[newbody]
+    #
+    #         tf = relative_transform(treeState, joint.frameAfter, joint.frameBefore)
+    #         floating_joint_transform_to_configuration!(joint, configuration(mcState, joint), tf)
+    #
+    #         twist = transform(relative_twist(treeState, joint.frameAfter, joint.frameBefore), inv(tf))
+    #         floating_joint_twist_to_velocity!(joint, velocity(mcState, joint), twist)
+    #     end
+    #     setdirty!(mcState)
+    #
+    #     # do dynamics
+    #     treeDynamicsResult = DynamicsResult(Float64, treeMechanism);
+    #     dynamics!(treeDynamicsResult, treeState)
+    #
+    #     mcDynamicsResult = DynamicsResult(Float64, mcMechanism);
+    #     dynamics!(mcDynamicsResult, mcState)
+    #
+    #     # compare spatial accelerations of bodies
+    #     for (treebody, mcbody) in bodymap
+    #         treeAccel = relative_acceleration(treeState, treebody, root_body(treeMechanism), treeDynamicsResult.v̇)
+    #         mcAccel = relative_acceleration(mcState, mcbody, root_body(mcMechanism), mcDynamicsResult.v̇)
+    #         @test isapprox(treeAccel, mcAccel; atol = 1e-12)
+    #     end
+    # end # maximal coordinates
+    #
+    # @testset "generic scalar dynamics" begin # TODO: move to a better place
+    #     mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
+    #     mechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(mechanism)
+    #
+    #     stateFloat64 = MechanismState(Float64, mechanism)
+    #     rand!(stateFloat64)
+    #     stateDual = MechanismState(ForwardDiff.Dual{0, Float64}, mechanism)
+    #     configuration(stateDual)[:] = configuration(stateFloat64)
+    #     velocity(stateDual)[:] = velocity(stateFloat64)
+    #
+    #     dynamicsResultFloat64 = DynamicsResult(Float64, mechanism)
+    #     dynamics!(dynamicsResultFloat64, stateFloat64)
+    #
+    #     dynamicsResultDual = DynamicsResult(ForwardDiff.Dual{0, Float64}, mechanism)
+    #     dynamics!(dynamicsResultDual, stateDual)
+    #
+    #     @test isapprox(dynamicsResultFloat64.v̇, dynamicsResultDual.v̇; atol = 1e-3)
+    #     @test isapprox(dynamicsResultFloat64.λ, dynamicsResultDual.λ; atol = 1e-3)
+    # end
 end # mechanism manipulation
