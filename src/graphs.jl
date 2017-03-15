@@ -18,6 +18,8 @@ export
     target,
     out_edges,
     in_edges,
+    out_neighbors,
+    in_neighbors,
     num_vertices,
     num_edges,
     add_vertex!,
@@ -25,6 +27,7 @@ export
     remove_vertex!,
     remove_edge!,
     rewire!,
+    flip_direction!,
     root,
     edge_to_parent,
     edges_to_children,
@@ -61,8 +64,6 @@ for typename in (:Edge, :Vertex)
 end
 
 @compat abstract type AbstractGraph{V, E} end
-vertex_type{V, E}(::Type{AbstractGraph{V, E}}) = V
-edge_type{V, E}(::Type{AbstractGraph{V, E}}) = E
 num_vertices(g::AbstractGraph) = length(vertices(g))
 num_edges(g::AbstractGraph) = length(edges(g))
 out_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (target(e, g) for e in out_edges(vertex, g))
@@ -159,6 +160,7 @@ function rewire!{V, E}(g::DirectedGraph{V, E}, edge::E, newsource::V, newtarget:
 end
 
 function flip_direction!{V, E}(edge::E, g::DirectedGraph{V, E})
+    @which flip_direction!(edge)
     flip_direction!(edge)
     rewire!(g, edge, target(edge, g), source(edge, g))
 end
@@ -228,10 +230,7 @@ function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = (graph,
     SpanningTree(g, edges)
 end
 
-# adds an edge and vertex to both the tree and the underlying graph
-function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E)
-    @assert target ∉ vertices(tree)
-    add_edge!(tree.graph, source, target, edge)
+function _add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, edge::E)
     push!(tree.edges, edge)
     push!(tree.inedges, edge)
     push!(tree.outedges, Set{E}())
@@ -239,6 +238,13 @@ function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E
     resize!(tree.edge_tree_indices, max(edge_index(edge), length(tree.edge_tree_indices)))
     tree.edge_tree_indices[edge_index(edge)] = num_edges(tree)
     tree
+end
+
+# adds an edge and vertex to both the tree and the underlying graph
+function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E)
+    @assert target ∉ vertices(tree)
+    add_edge!(tree.graph, source, target, edge)
+    _add_edge!(tree, source, edge)
 end
 
 function Base.show(io::IO, tree::SpanningTree, vertex = root(tree), level::Int64 = 0)

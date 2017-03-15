@@ -194,6 +194,7 @@ function remove_fixed_tree_joints!(mechanism::Mechanism)
 
     # Update graph.
     fixedjoints = filter(j -> isa(j.jointType, Fixed), tree_joints(mechanism))
+    newtreejoints = setdiff(tree_joints(mechanism), fixedjoints)
     for fixedjoint in fixedjoints
         predecessor = source(fixedjoint, graph)
         successor = target(fixedjoint, graph)
@@ -230,7 +231,7 @@ function remove_fixed_tree_joints!(mechanism::Mechanism)
     end
 
     # Recompute spanning tree (preserves order for non-fixed joints)
-    mechanism.tree = SpanningTree(graph, setdiff(tree_joints(mechanism), fixedjoints))
+    mechanism.tree = SpanningTree(graph, newtreejoints)
 
     # Recanonicalize frames
     canonicalize_frame_definitions!(mechanism)

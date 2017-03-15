@@ -78,7 +78,7 @@
         body = rand([bs...])
         delete!(bs, body)
         base = rand([bs...])
-        p = path(mechanism, base, body)
+        p = RigidBodyDynamics.path(mechanism, base, body)
         J = geometric_jacobian(x, p)
         vpath = velocity(x, p)
         T = relative_twist(x, body, base)
