@@ -196,42 +196,42 @@ function remove_fixed_tree_joints!(mechanism::Mechanism)
     fixedjoints = filter(j -> isa(j.jointType, Fixed), tree_joints(mechanism))
     newtreejoints = setdiff(tree_joints(mechanism), fixedjoints)
     for fixedjoint in fixedjoints
-        predecessor = source(fixedjoint, graph)
-        successor = target(fixedjoint, graph)
+        pred = source(fixedjoint, graph)
+        succ = target(fixedjoint, graph)
 
         # Add identity joint transform as a body-fixed frame definition.
         jointtransform = Transform3D{T}(fixedjoint.frameAfter, fixedjoint.frameBefore)
-        add_frame!(predecessor, jointtransform)
+        add_frame!(pred, jointtransform)
 
         # Migrate body fixed frames to parent body.
-        for tf in frame_definitions(successor)
-            add_frame!(predecessor, tf)
+        for tf in frame_definitions(succ)
+            add_frame!(pred, tf)
         end
 
         # Add inertia to parent body.
-        if has_defined_inertia(predecessor)
-            inertia = spatial_inertia(successor)
-            parentinertia = spatial_inertia(predecessor)
-            toparent = fixed_transform(predecessor, inertia.frame, parentinertia.frame)
-            spatial_inertia!(predecessor, parentinertia + transform(inertia, toparent))
+        if has_defined_inertia(pred)
+            inertia = spatial_inertia(succ)
+            parentinertia = spatial_inertia(pred)
+            toparent = fixed_transform(pred, inertia.frame, parentinertia.frame)
+            spatial_inertia!(pred, parentinertia + transform(inertia, toparent))
         end
 
         # Merge vertex into parent.
-        for joint in in_edges(successor, graph)
+        for joint in copy(in_edges(succ, graph))
             if joint == fixedjoint
                 remove_edge!(graph, joint)
             else
-                rewire!(graph, joint, source(joint, graph), predecessor)
+                rewire!(graph, joint, source(joint, graph), pred)
             end
         end
-        for joint in out_edges(successor, graph)
-            rewire!(graph, joint, predecessor, target(joint, graph))
+        for joint in copy(out_edges(succ, graph))
+            rewire!(graph, joint, pred, target(joint, graph))
         end
-        remove_vertex!(mechanism.graph, successor)
+        remove_vertex!(mechanism.graph, succ)
     end
 
     # Recompute spanning tree (preserves order for non-fixed joints)
-    mechanism.tree = SpanningTree(graph, newtreejoints)
+    mechanism.tree = SpanningTree(graph, root_body(mechanism), newtreejoints)
 
     # Recanonicalize frames
     canonicalize_frame_definitions!(mechanism)
