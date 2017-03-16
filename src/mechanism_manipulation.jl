@@ -154,7 +154,7 @@ reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D{T} = Transform3D{T}(default_frame(newSubtreeRootBody), frame_after(joint))),
     begin
         attach!(mechanism, parentBody, joint, jointToParent, newSubtreeRootBody, newSubTreeRootBodyToJoint)
-        remove_joint!(mechanism, edge_to_parent(oldSubtreeRootBody, mechanism.tree))
+        remove_joint!(mechanism, joint_to_parent(oldSubtreeRootBody, mechanism))
     end)
 
 Base.@deprecate remove_fixed_joints!(mechanism::Mechanism) remove_fixed_tree_joints!(mechanism)

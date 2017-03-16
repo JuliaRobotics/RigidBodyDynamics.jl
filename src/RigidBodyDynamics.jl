@@ -85,6 +85,8 @@ export
     predecessor,
     in_joints,
     out_joints,
+    joints_to_children,
+    joint_to_parent,
     configuration_derivative,
     velocity_to_configuration_derivative!,
     configuration_derivative_to_velocity!,

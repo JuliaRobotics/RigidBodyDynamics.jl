@@ -148,7 +148,7 @@ end
             joint_to_world = Transform3D{Float64}(frame_before(newfloatingjoint), default_frame(world))
             body_to_joint = Transform3D{Float64}(default_frame(newfloatingbody), frame_after(newfloatingjoint))
             attach!(mechanism2, bodymap[world], newfloatingjoint, joint_to_world, bodymap[newfloatingbody], body_to_joint)
-            remove_joint!(mechanism2, jointmap[floatingjoint]) # edge_to_parent(bodymap[floatingbody], mechanism.tree)
+            remove_joint!(mechanism2, jointmap[floatingjoint])
 
             # mimic the same state for the rerooted mechanism
             # copy non-floating joint configurations and velocities
