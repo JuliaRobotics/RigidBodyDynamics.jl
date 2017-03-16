@@ -47,6 +47,7 @@ function RigidBodyDynamics.Graphs.flip_direction!(joint::Joint)
     joint.frameBefore = newbefore
     joint.frameAfter = newafter
     joint.jointType = flip_direction(joint.jointType)
+    joint
 end
 
 Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")

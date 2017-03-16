@@ -45,6 +45,13 @@ tree_joints(mechanism::Mechanism) = edges(mechanism.tree)
 """
 $(SIGNATURES)
 
+Return the `Joint`s that are not part of the `Mechanism`'s spanning tree as an iterable collection.
+"""
+non_tree_joints(mechanism::Mechanism) = setdiff(edges(mechanism.graph), edges(mechanism.tree))
+
+"""
+$(SIGNATURES)
+
 Return the `RigidBody`s that are part of the `Mechanism` as an iterable collection.
 """
 bodies{T}(mechanism::Mechanism{T}) = vertices(mechanism.graph)
@@ -211,8 +218,6 @@ function gravitational_spatial_acceleration(mechanism::Mechanism)
     frame = mechanism.gravitationalAcceleration.frame
     SpatialAcceleration(frame, frame, frame, zeros(SVector{3, eltype(mechanism)}), mechanism.gravitationalAcceleration.v)
 end
-
-non_tree_joints(mechanism::Mechanism) = setdiff(edges(mechanism.graph), edges(mechanism.tree))
 
 tree_index(joint::Joint, mechanism::Mechanism) = Graphs.tree_index(joint, mechanism.tree)
 tree_index(body::RigidBody, mechanism::Mechanism) = Graphs.tree_index(body, mechanism.tree)

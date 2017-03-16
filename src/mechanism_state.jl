@@ -102,6 +102,11 @@ Return the length of the joint velocity vector ``v``.
 """
 num_velocities(state::MechanismState) = length(state.v)
 
+"""
+$(SIGNATURES)
+
+Return the `Joint`s that are not part of the underlying `Mechanism`'s spanning tree as an iterable collection.
+"""
 non_tree_joints(state::MechanismState) = state.nontreejoints
 
 state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
