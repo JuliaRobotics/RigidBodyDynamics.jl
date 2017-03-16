@@ -71,15 +71,12 @@ export
     local_coordinates!,
     global_coordinates!,
     root_frame,
-    root_vertex,
     tree,
-    non_root_vertices,
     root_body,
     non_root_bodies,
     isroot,
-    isleaf, # TODO: remove?
     bodies,
-    path, # TODO: remove?
+    path,
     joints,
     tree_joints,
     successor,
@@ -109,10 +106,10 @@ export
     add_body_fixed_frame!,
     fixed_transform,
     attach!,
-    reattach!,
+    remove_joint!,
     maximal_coordinates,
     submechanism,
-    remove_fixed_tree_joints!, # deprecated
+    remove_fixed_joints!, # deprecated
     remove_fixed_tree_joints!,
     rand_mechanism,
     rand_chain_mechanism,

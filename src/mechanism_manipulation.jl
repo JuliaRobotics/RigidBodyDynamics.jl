@@ -133,6 +133,7 @@ Reconstruct the mechanism's spanning tree.
 """
 function rebuild_spanning_tree!(mechanism::Mechanism, next_edge = first #= breadth first =#)
     mechanism.tree = SpanningTree(mechanism.graph, root_body(mechanism), next_edge)
+    canonicalize_frame_definitions!(mechanism)
 end
 
 """
