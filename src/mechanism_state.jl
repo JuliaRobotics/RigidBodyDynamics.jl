@@ -394,7 +394,7 @@ function transform_to_root(state::MechanismState, body::RigidBody)
         joint = edge_to_parent(body, state.mechanism.tree)
         parentbody = predecessor(joint, state.mechanism)
         parent_to_root = transform_to_root(state, parentbody)
-        before_joint_to_parent = frame_definition(parentbody, joint.frameBefore) # FIXME: slow!
+        before_joint_to_parent = frame_definition(parentbody, frame_before(joint)) # FIXME: slow!
         parent_to_root * before_joint_to_parent * transform(state, joint)
     end)
 end

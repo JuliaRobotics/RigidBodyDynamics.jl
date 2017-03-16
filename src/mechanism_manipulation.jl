@@ -7,9 +7,9 @@ See [`Joint`](@ref) for definitions of the terms successor and predecessor.
 
 The `Transform3D`s `jointToPredecessor` and `successorToJoint` define where
 `joint` is attached to each body. `jointToPredecessor` should define
-`joint.frameBefore` with respect to any frame fixed to `predecessor`, and likewise
+`frame_before(joint)` with respect to any frame fixed to `predecessor`, and likewise
 `successorToJoint` should define any frame fixed to `successor` with respect to
-`joint.frameAfter`.
+`frame_after(joint)`.
 
 `predecessor` is required to already be among the bodies of the `Mechanism`.
 
@@ -19,7 +19,7 @@ If `successor` is not yet a part of the `Mechanism`, it will be added to the
 using Lagrange multipliers (as opposed to using recursive algorithms).
 """
 function attach!{T}(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint, jointToPredecessor::Transform3D{T},
-        successor::RigidBody{T}, successorToJoint::Transform3D{T} = Transform3D{T}(default_frame(successor), joint.frameAfter))
+        successor::RigidBody{T}, successorToJoint::Transform3D{T} = Transform3D{T}(default_frame(successor), frame_after(joint)))
     # TODO: check that jointToPredecessor.from and successorToJoint.to match joint.
 
     # define where joint is attached on predecessor
@@ -41,8 +41,8 @@ function _copyjoint!{T}(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::Joint{T
     srcpredecessor = source(srcjoint, src.graph)
     srcsuccessor = target(srcjoint, src.graph)
 
-    joint_to_predecessor = fixed_transform(srcpredecessor, srcjoint.frameBefore, default_frame(srcpredecessor))
-    successor_to_joint = fixed_transform(srcsuccessor, default_frame(srcsuccessor), srcjoint.frameAfter)
+    joint_to_predecessor = fixed_transform(srcpredecessor, frame_before(srcjoint), default_frame(srcpredecessor))
+    successor_to_joint = fixed_transform(srcsuccessor, default_frame(srcsuccessor), frame_after(srcjoint))
 
     destpredecessor = get!(() -> deepcopy(srcpredecessor), bodymap, srcpredecessor)
     destsuccessor = get!(() -> deepcopy(srcsuccessor), bodymap, srcsuccessor)
@@ -151,7 +151,7 @@ end
 Base.@deprecate(
 reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
-    newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D{T} = Transform3D{T}(default_frame(newSubtreeRootBody), joint.frameAfter)),
+    newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D{T} = Transform3D{T}(default_frame(newSubtreeRootBody), frame_after(joint))),
     begin
         attach!(mechanism, parentBody, joint, jointToParent, newSubtreeRootBody, newSubTreeRootBodyToJoint)
         remove_joint!(mechanism, edge_to_parent(oldSubtreeRootBody, mechanism.tree))
@@ -179,7 +179,7 @@ function remove_fixed_tree_joints!(mechanism::Mechanism)
         succ = target(fixedjoint, graph)
 
         # Add identity joint transform as a body-fixed frame definition.
-        jointtransform = Transform3D{T}(fixedjoint.frameAfter, fixedjoint.frameBefore)
+        jointtransform = Transform3D{T}(frame_after(fixedjoint), frame_before(fixedjoint))
         add_frame!(pred, jointtransform)
 
         # Migrate body fixed frames to parent body.
@@ -273,9 +273,9 @@ function rand_tree_mechanism{T}(::Type{T}, parentselector::Function, jointTypes.
     for i = 1 : length(jointTypes)
         @assert jointTypes[i] <: JointType{T}
         joint = Joint("joint$i", rand(jointTypes[i]))
-        jointToParentBody = rand(Transform3D{T}, joint.frameBefore, default_frame(parentbody))
+        jointToParentBody = rand(Transform3D{T}, frame_before(joint), default_frame(parentbody))
         body = RigidBody(rand(SpatialInertia{T}, CartesianFrame3D("body$i")))
-        body_to_joint = Transform3D{T}(default_frame(body), joint.frameAfter)
+        body_to_joint = Transform3D{T}(default_frame(body), frame_after(joint))
         attach!(mechanism, parentbody, joint, jointToParentBody, body, body_to_joint)
         parentbody = parentselector(mechanism)
     end

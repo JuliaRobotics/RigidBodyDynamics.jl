@@ -9,7 +9,7 @@
             pred = rand(bodies(mechanism_with_loops))
             succ = rand(bodies(mechanism_with_loops))
             joint = Joint("non-tree-$i", Fixed{Float64}())
-            attach!(mechanism_with_loops, pred, joint, Transform3D{Float64}(joint.frameBefore, default_frame(pred)), succ)
+            attach!(mechanism_with_loops, pred, joint, Transform3D{Float64}(frame_before(joint), default_frame(pred)), succ)
         end
 
         show(DevNull, mechanism_with_loops)
@@ -77,7 +77,7 @@
     @testset "joint_torque! / geometric_jacobian" begin
         for joint in Vector{Any}(tree_joints(mechanism)) # TODO: https://github.com/JuliaLang/julia/issues/20034
             qjoint = configuration(x, joint)
-            wrench = rand(Wrench{Float64}, joint.frameAfter)
+            wrench = rand(Wrench{Float64}, frame_after(joint))
             τ = Vector{Float64}(num_velocities(joint))
             joint_torque!(joint, τ, qjoint, wrench)
             S = motion_subspace(joint, qjoint)
@@ -120,8 +120,8 @@
     #         TAutodiff = constraint_wrench_subspace(joint, qjointAutodiff)#::RigidBodyDynamics.WrenchSubspace{eltype(qjointAutodiff)} # TODO
     #         angular = map(x -> ForwardDiff.partials(x, 1), TAutodiff.angular)
     #         linear = map(x -> ForwardDiff.partials(x, 1), TAutodiff.linear)
-    #         Ṫ = WrenchMatrix(joint.frameAfter, angular, linear)
-    #         jointTwist = transform(x, relative_twist(x, joint.frameAfter, joint.frameBefore), joint.frameAfter)
+    #         Ṫ = WrenchMatrix(frame_after(joint), angular, linear)
+    #         jointTwist = transform(x, relative_twist(x, frame_after(joint), frame_before(joint)), frame_after(joint))
     #         bias = fill(NaN, 6 - num_velocities(joint))
     #         constraint_bias!(joint, bias, jointTwist)
     #         @test isapprox(Ṫ.angular' * jointTwist.angular + Ṫ.linear' * jointTwist.linear, bias; atol = 1e-14)
@@ -326,7 +326,7 @@
         τ = inverse_dynamics(x, v̇, externalWrenches)
         floatingjoint = first(out_joints(root_body(mechanism), mechanism))
         τfloating = τ[velocity_range(x, floatingjoint)]
-        floatingjointwrench = Wrench(floatingjoint.frameAfter, SVector{3}(τfloating[1 : 3]), SVector{3}(τfloating[4 : 6]))
+        floatingjointwrench = Wrench(frame_after(floatingjoint), SVector{3}(τfloating[1 : 3]), SVector{3}(τfloating[4 : 6]))
         floatingjointwrench = transform(x, floatingjointwrench, root_frame(mechanism))
         ḣ = Wrench(momentum_matrix(x), v̇) + momentum_rate_bias(x) # momentum rate of change
         gravitational_force = mass(mechanism) * mechanism.gravitationalAcceleration

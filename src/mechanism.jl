@@ -204,7 +204,7 @@ end
 function canonicalize_frame_definitions!{T}(mechanism::Mechanism{T}, body::RigidBody{T})
     if !isroot(body, mechanism)
         joint = edge_to_parent(body, mechanism.tree)
-        change_default_frame!(body, joint.frameAfter)
+        change_default_frame!(body, frame_after(joint))
     end
 end
 

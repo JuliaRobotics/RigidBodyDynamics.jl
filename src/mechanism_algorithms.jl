@@ -455,7 +455,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         range = rowstart : nextrowstart - 1
 
         # Constraint wrench subspace.
-        jointtransform = relative_transform(state, nontreejoint.frameAfter, nontreejoint.frameBefore) # TODO: expensive
+        jointtransform = relative_transform(state, frame_after(nontreejoint), frame_before(nontreejoint)) # TODO: expensive
         T = constraint_wrench_subspace(nontreejoint, jointtransform)
         T = transform(T, transform_to_root(state, T.frame)) # TODO: expensive
 

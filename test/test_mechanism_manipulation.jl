@@ -1,15 +1,15 @@
 function floating_joint_transform_to_configuration!(joint::Joint, q::AbstractVector, jointTransform::Transform3D)
-    @framecheck joint.frameBefore jointTransform.to
-    @framecheck joint.frameAfter jointTransform.from
+    @framecheck frame_before(joint) jointTransform.to
+    @framecheck frame_after(joint) jointTransform.from
     joint.jointType::QuaternionFloating
     RigidBodyDynamics.rotation!(joint.jointType, q, jointTransform.rot)
     RigidBodyDynamics.translation!(joint.jointType, q, jointTransform.trans)
 end
 
 function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, jointTwist::Twist)
-    @framecheck joint.frameBefore jointTwist.base
-    @framecheck joint.frameAfter jointTwist.body
-    @framecheck joint.frameAfter jointTwist.frame
+    @framecheck frame_before(joint) jointTwist.base
+    @framecheck frame_after(joint) jointTwist.body
+    @framecheck frame_after(joint) jointTwist.frame
     joint.jointType::QuaternionFloating
     RigidBodyDynamics.angular_velocity!(joint.jointType, v, jointTwist.angular)
     RigidBodyDynamics.linear_velocity!(joint.jointType, v, jointTwist.linear)
@@ -145,8 +145,8 @@ end
 
             # reroot mechanism2
             newfloatingjoint = Joint("newFloating", QuaternionFloating{Float64}())
-            joint_to_world = Transform3D{Float64}(newfloatingjoint.frameBefore, default_frame(world))
-            body_to_joint = Transform3D{Float64}(default_frame(newfloatingbody), newfloatingjoint.frameAfter)
+            joint_to_world = Transform3D{Float64}(frame_before(newfloatingjoint), default_frame(world))
+            body_to_joint = Transform3D{Float64}(default_frame(newfloatingbody), frame_after(newfloatingjoint))
             attach!(mechanism2, bodymap[world], newfloatingjoint, joint_to_world, bodymap[newfloatingbody], body_to_joint)
             remove_joint!(mechanism2, jointmap[floatingjoint]) # edge_to_parent(bodymap[floatingbody], mechanism.tree)
 
@@ -211,10 +211,10 @@ end
             newbody = bodymap[oldbody]
             joint = newfloatingjoints[newbody]
 
-            tf = relative_transform(treeState, joint.frameAfter, joint.frameBefore)
+            tf = relative_transform(treeState, frame_after(joint), frame_before(joint))
             floating_joint_transform_to_configuration!(joint, configuration(mcState, joint), tf)
 
-            twist = transform(relative_twist(treeState, joint.frameAfter, joint.frameBefore), inv(tf))
+            twist = transform(relative_twist(treeState, frame_after(joint), frame_before(joint)), inv(tf))
             floating_joint_twist_to_velocity!(joint, velocity(mcState, joint), twist)
         end
         setdirty!(mcState)

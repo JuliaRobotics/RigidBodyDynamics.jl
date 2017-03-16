@@ -39,11 +39,14 @@ end
 Joint{T}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T}) = Joint{T}(name, frameBefore, frameAfter, jointType)
 Joint(name::String, jointType::JointType) = Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
 
+frame_before(joint::Joint) = joint.frameBefore
+frame_after(joint::Joint) = joint.frameAfter
+
 RigidBodyDynamics.Graphs.edge_index(joint::Joint) = joint.id
 RigidBodyDynamics.Graphs.edge_index!(joint::Joint, id::Int64) = (joint.id = id)
 function RigidBodyDynamics.Graphs.flip_direction!(joint::Joint)
-    newbefore = joint.frameAfter
-    newafter = joint.frameBefore
+    newbefore = frame_after(joint)
+    newafter = frame_before(joint)
     joint.frameBefore = newbefore
     joint.frameAfter = newafter
     joint.jointType = flip_direction(joint.jointType)
@@ -100,7 +103,7 @@ after the joint to the frame before the joint for joint configuration vector ``q
 """
 function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform3D{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
-    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_transform(joint.jointType, joint.frameAfter, joint.frameBefore, q)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_transform(joint.jointType, frame_after(joint), frame_before(joint), q)
 end
 
 """
@@ -115,7 +118,7 @@ the frame after the joint, which is attached to the joint's successor.
 """
 function motion_subspace{M, X}(joint::Joint{M}, q::AbstractVector{X})::MotionSubspace{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
-    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _motion_subspace(joint.jointType, joint.frameAfter, joint.frameBefore, q)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _motion_subspace(joint.jointType, frame_after(joint), frame_before(joint), q)
 end
 
 """
@@ -133,8 +136,8 @@ its successor.
 The constraint wrench subspace is orthogonal to the motion subspace.
 """
 function constraint_wrench_subspace{M, X}(joint::Joint{M}, jointTransform::Transform3D{X})#::WrenchSubspace{promote_type(M, X)} # FIXME: type assertion causes segfault! see https://github.com/JuliaLang/julia/issues/20034. should be fixed in 0.6
-    @framecheck jointTransform.from joint.frameAfter
-    @framecheck jointTransform.to joint.frameBefore
+    @framecheck jointTransform.from frame_after(joint)
+    @framecheck jointTransform.to frame_before(joint)
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _constraint_wrench_subspace(joint.jointType, jointTransform)
 end
 
@@ -148,7 +151,7 @@ in configuration ``q`` and at velocity ``v``, when the joint acceleration
 function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::SpatialAcceleration{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _bias_acceleration(joint.jointType, joint.frameAfter, joint.frameBefore, q, v)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _bias_acceleration(joint.jointType, frame_after(joint), frame_before(joint), q, v)
 end
 
 """
@@ -228,7 +231,7 @@ Note that this is the same as `Twist(motion_subspace(joint, q), v)`.
 function joint_twist{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::Twist{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_twist(joint.jointType, joint.frameAfter, joint.frameBefore, q, v)
+    @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_twist(joint.jointType, frame_after(joint), frame_before(joint), q, v)
 end
 
 """
@@ -240,7 +243,7 @@ vector of joint torques ``\\tau`` (in place), in configuration `q`.
 function joint_torque!{M}(joint::Joint{M}, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)::Void
     @boundscheck check_num_velocities(joint, τ)
     @boundscheck check_num_positions(joint, q)
-    @framecheck(joint_wrench.frame, joint.frameAfter)
+    @framecheck(joint_wrench.frame, frame_after(joint))
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_torque!(joint.jointType, τ, q, joint_wrench)
 end
 
