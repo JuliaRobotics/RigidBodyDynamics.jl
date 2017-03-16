@@ -586,17 +586,6 @@ function Base.show(io::IO, jac::GeometricJacobian)
     print(io, "GeometricJacobian: body: \"$(name(jac.body))\", base: \"$(name(jac.base))\", expressed in \"$(name(jac.frame))\":\n$(Array(jac))")
 end
 
-function Base.hcat(jacobians::GeometricJacobian...)
-    frame = jacobians[1].frame
-    for j = 2 : length(jacobians)
-        @framecheck(jacobians[j].frame, frame)
-        @framecheck(jacobians[j].base, jacobians[j - 1].body)
-    end
-    angular = hcat((jac.angular for jac in jacobians)...)
-    linear = hcat((jac.linear for jac in jacobians)...)
-    GeometricJacobian(jacobians[end].body, jacobians[1].base, frame, angular, linear)
-end
-
 """
 $(SIGNATURES)
 

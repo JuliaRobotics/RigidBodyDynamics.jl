@@ -4,12 +4,24 @@
     rand!(x)
 
     @testset "show" begin
-        for joint in joints(mechanism)
+        mechanism_with_loops = deepcopy(mechanism)
+        for i = 1 : 5
+            pred = rand(bodies(mechanism_with_loops))
+            succ = rand(bodies(mechanism_with_loops))
+            joint = Joint("non-tree-$i", Fixed{Float64}())
+            attach!(mechanism_with_loops, pred, joint, Transform3D{Float64}(joint.frameBefore, default_frame(pred)), succ)
+        end
+
+        show(DevNull, mechanism_with_loops)
+        for joint in joints(mechanism_with_loops)
             show(DevNull, joint)
+            showcompact(DevNull, joint)
         end
-        for body in bodies(mechanism)
+        for body in bodies(mechanism_with_loops)
             show(DevNull, body)
+            showcompact(DevNull, body)
         end
+        show(DevNull, x)
     end
 
     @testset "basic stuff" begin
@@ -132,6 +144,12 @@
                 twist_autodiff = relative_twist(x_autodiff, body, base)
                 accel_vec = [ForwardDiff.partials(x, 1)::Float64 for x in (Array(twist_autodiff))]
                 @test isapprox(Array(Ṫ), accel_vec; atol = 1e-12)
+
+                root = root_body(mechanism)
+                f = default_frame(body)
+                Ṫbody = transform(x, relative_acceleration(x, body, root, v̇), f)
+                Ṫbase = transform(x, relative_acceleration(x, base, root, v̇), f)
+                @test isapprox(transform(x, -Ṫbase + Ṫbody, Ṫ.frame), Ṫ; atol = 1e-12)
             end
         end
     end
