@@ -126,57 +126,26 @@ function submechanism{T}(mechanism::Mechanism{T}, submechanismroot::RigidBody{T}
     ret, bodymap, jointmap
 end
 
-# FIXME: reimplement this functionality in a simplified way
-# """
-# $(SIGNATURES)
-#
-# Detach the subtree rooted at `oldSubtreeRootBody`, reroot it so that
-# `newSubtreeRootBody` is the new root, and then attach `newSubtreeRootBody`
-# to `parentBody` using `joint`.
-#
-# Currently doesn't support `Mechanism`s with cycles.
-# """
-# function reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
-#         parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
-#         newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D{T} = Transform3D{T}(default_frame(newSubtreeRootBody), joint.frameAfter))
-#     # TODO: add option to prune frames related to old joints
-#     check_no_cycles(mechanism)
-#
-#     newSubtreeRoot = findfirst(tree(mechanism), newSubtreeRootBody)
-#     oldSubtreeRoot = findfirst(tree(mechanism), oldSubtreeRootBody)
-#     parentVertex = findfirst(tree(mechanism), parentBody)
-#     @assert newSubtreeRoot ∈ toposort(oldSubtreeRoot)
-#     @assert parentVertex ∉ toposort(oldSubtreeRoot)
-#
-#     # detach oldSubtreeRoot
-#     detach!(oldSubtreeRoot)
-#
-#     # reroot
-#     flippedJoints = Dict{Joint{T}, Joint{T}}()
-#     flipDirectionFunction = joint -> begin
-#         flipped = Joint(joint.name * "_flipped", flip_direction(joint.jointType))
-#         flippedJoints[joint] = flipped
-#         flipped
-#     end
-#     subtreeRerooted = reroot(newSubtreeRoot, flipDirectionFunction)
-#
-#     # attach newSubtreeRoot using joint
-#     insert!(parentVertex, subtreeRerooted, joint)
-#     mechanism.toposortedTree = toposort(tree(mechanism))
-#
-#     # define frames related to new joint
-#     add_frame!(parentBody, jointToParent)
-#     add_frame!(newSubtreeRootBody, inv(newSubTreeRootBodyToJoint))
-#
-#     # define identities between new frames and old frames and recanonicalize frame definitions
-#     for (oldJoint, newJoint) in flippedJoints
-#         add_body_fixed_frame!(mechanism, Transform3D{T}(newJoint.frameBefore, oldJoint.frameAfter))
-#         add_body_fixed_frame!(mechanism, Transform3D{T}(newJoint.frameAfter, oldJoint.frameBefore))
-#     end
-#     canonicalize_frame_definitions!(mechanism)
-#
-#     flippedJoints
-# end
+"""
+$(SIGNATURES)
+
+Reconstruct the mechanism's spanning tree.
+"""
+function rebuild_spanning_tree!(mechanism::Mechanism, next_edge = first #= breadth first =#)
+    mechanism.tree = SpanningTree(mechanism.graph, root_body(mechanism), next_edge)
+end
+
+"""
+$(SIGNATURES)
+
+Remove a joint from the mechanism. Rebuilds the spanning tree if the joint is
+part of the current spanning tree.
+"""
+function remove_joint!(mechanism::Mechanism, joint::Joint, spanning_tree_next_edge = first #= breadth first =#)
+    istreejoint = joint ∈ tree_joints(mechanism)
+    remove_edge!(mechanism.graph, joint)
+    istreejoint && rebuild_spanning_tree!(mechanism, spanning_tree_next_edge)
+end
 
 Base.@deprecate remove_fixed_joints!(mechanism::Mechanism) remove_fixed_tree_joints!(mechanism)
 

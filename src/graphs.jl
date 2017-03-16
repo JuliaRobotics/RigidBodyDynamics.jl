@@ -166,7 +166,6 @@ function rewire!{V, E}(g::DirectedGraph{V, E}, edge::E, newsource::V, newtarget:
 end
 
 function flip_direction!{V, E}(edge::E, g::DirectedGraph{V, E})
-    @which flip_direction!(edge)
     flip_direction!(edge)
     rewire!(g, edge, target(edge, g), source(edge, g))
 end
@@ -215,25 +214,29 @@ function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, edges::AbstractVect
     SpanningTree(g, root, edges, inedges, outedges, edge_tree_indices)
 end
 
-function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = (graph, frontier) -> first(frontier))
+function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = first #= breadth first =#)
     treevertices = [root]
     edges = E[]
     frontier = E[]
     append!(frontier, out_edges(root, g))
+    append!(frontier, in_edges(root, g))
     while !isempty(frontier)
         # select a new edge
-        e = next_edge(g, frontier)
-        parent = source(e, g)
-        child = target(e, g)
-
-        # add edge to tree
+        e = next_edge(frontier)
+        if source(e, g) ∉ treevertices
+            flip_direction!(e, g)
+        end
         push!(edges, e)
+        child = target(e, g)
+        push!(treevertices, child)
 
         # update the frontier
-        push!(treevertices, child)
         filter!(x -> x ∉ in_edges(child, g), frontier)
+        filter!(x -> x ∉ out_edges(child, g), frontier)
         append!(frontier, x for x in out_edges(child, g) if target(x, g) ∉ treevertices)
+        append!(frontier, x for x in in_edges(child, g) if source(x, g) ∉ treevertices)
     end
+    length(treevertices) == num_vertices(g) || error("Graph is not connected.")
     SpanningTree(g, root, edges)
 end
 
