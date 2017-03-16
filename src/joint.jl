@@ -29,9 +29,26 @@ type Joint{T<:Number}
     frameBefore::CartesianFrame3D
     frameAfter::CartesianFrame3D
     jointType::JointType{T}
+    id::Int64
+
+    function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T})
+        new(name, frameBefore, frameAfter, jointType, -1)
+    end
 end
 
+Joint{T}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T}) = Joint{T}(name, frameBefore, frameAfter, jointType)
 Joint(name::String, jointType::JointType) = Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
+
+RigidBodyDynamics.Graphs.edge_index(joint::Joint) = joint.id
+RigidBodyDynamics.Graphs.edge_index!(joint::Joint, id::Int64) = (joint.id = id)
+function RigidBodyDynamics.Graphs.flip_direction!(joint::Joint)
+    newbefore = joint.frameAfter
+    newafter = joint.frameBefore
+    joint.frameBefore = newbefore
+    joint.frameAfter = newafter
+    joint.jointType = flip_direction(joint.jointType)
+    joint
+end
 
 Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
 Base.showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")

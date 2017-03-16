@@ -10,17 +10,18 @@ a list of definitions of coordinate systems that are rigidly attached to it.
 type RigidBody{T<:Number}
     name::String
     inertia::Nullable{SpatialInertia{T}}
-    frameDefinitions::Set{Transform3D{T}}
+    frameDefinitions::Vector{Transform3D{T}}
+    id::Int64
 
     # inertia undefined; can be used for the root of a kinematic tree
     function (::Type{RigidBody{T}}){T<:Number}(name::String)
         frame = CartesianFrame3D(name)
-        new{T}(name, Nullable{SpatialInertia{T}}(), Set([Transform3D{T}(frame)]))
+        new{T}(name, Nullable{SpatialInertia{T}}(), [Transform3D{T}(frame)], -1)
     end
 
     # other bodies
     function (::Type{RigidBody{T}}){T<:Number}(name::String, inertia::SpatialInertia{T})
-        new{T}(name, Nullable(inertia), Set([Transform3D{T}(inertia.frame)]))
+        new{T}(name, Nullable(inertia), [Transform3D{T}(inertia.frame)], -1)
     end
 end
 
@@ -31,6 +32,8 @@ RigidBody{T}(inertia::SpatialInertia{T}) = RigidBody{T}(name(inertia.frame), ine
 name(b::RigidBody) = b.name
 Base.show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(name(b))\"")
 Base.showcompact(io::IO, b::RigidBody) = print(io, "$(name(b))")
+RigidBodyDynamics.Graphs.vertex_index(b::RigidBody) = b.id
+RigidBodyDynamics.Graphs.vertex_index!(b::RigidBody, id::Int64) = (b.id = id)
 
 """
 $(SIGNATURES)
@@ -81,7 +84,7 @@ to `body` are defined.
 
 See [`frame_definitions(body)`](@ref), [`frame_definition(body, frame)`](@ref).
 """
-default_frame(body::RigidBody) = first(frame_definitions(body)).to # allows standardization on a frame to reduce number of transformations required
+default_frame(body::RigidBody) = body.frameDefinitions[1].to # allows standardization on a frame to reduce number of transformations required
 
 """
 $(SIGNATURES)
@@ -140,14 +143,7 @@ Change the default frame of `body` to `frame` (which should already be among
 function change_default_frame!(body::RigidBody, newDefaultFrame::CartesianFrame3D)
     if newDefaultFrame != default_frame(body)
         oldToNew = inv(frame_definition(body, newDefaultFrame))
-
-        # change body-fixed frame definitions so that they transform to the new default frame
-        newDefinitions = similar(body.frameDefinitions)
-        for tf in body.frameDefinitions
-            push!(newDefinitions, oldToNew * tf)
-        end
-        body.frameDefinitions = newDefinitions
-        # map!(tf -> oldToNew * tf, body.frameDefinitions) # TODO: not defined; open issue
+        map!(tf -> oldToNew * tf, body.frameDefinitions)
 
         # transform body's spatial inertia to new default frame
         if has_defined_inertia(body)

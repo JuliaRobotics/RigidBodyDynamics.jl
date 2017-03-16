@@ -2,20 +2,19 @@ __precompile__()
 
 module RigidBodyDynamics
 
-include("tree.jl")
-
-import Base: *, +, /, -
 using Base.Random
 using StaticArrays
 using Rotations
 using LightXML
 using DocStringExtensions
 using Compat
+import Base: *, +, /, -
+import Compat.Iterators: filter
+import Compat.Iterators: flatten
 
 const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
 
-import Compat.Iterators: filter
-
+include("graphs.jl")
 include("util.jl")
 include("third_party_addendum.jl")
 
@@ -26,7 +25,7 @@ include("joint_types.jl")
 include("joint.jl")
 include("cache_element.jl")
 
-importall .TreeDataStructure
+using .Graphs
 include("mechanism.jl")
 include("mechanism_manipulation.jl")
 include("mechanism_state.jl")
@@ -72,17 +71,18 @@ export
     local_coordinates!,
     global_coordinates!,
     root_frame,
-    root_vertex,
     tree,
-    non_root_vertices,
     root_body,
     non_root_bodies,
     isroot,
-    isleaf, # TODO: remove?
     bodies,
-    toposort, # TODO: remove?
-    path, # TODO: remove?
+    path,
     joints,
+    tree_joints,
+    successor,
+    predecessor,
+    in_joints,
+    out_joints,
     configuration_derivative,
     velocity_to_configuration_derivative!,
     configuration_derivative_to_velocity!,
@@ -95,6 +95,7 @@ export
     num_cols,
     joint_transform,
     motion_subspace,
+    motion_subspace_in_world,
     constraint_wrench_subspace,
     has_fixed_subspaces,
     bias_acceleration,
@@ -105,10 +106,12 @@ export
     add_body_fixed_frame!,
     fixed_transform,
     attach!,
-    reattach!,
+    reattach!, # deprecated
+    remove_joint!,
     maximal_coordinates,
     submechanism,
-    remove_fixed_joints!,
+    remove_fixed_joints!, # deprecated
+    remove_fixed_tree_joints!,
     rand_mechanism,
     rand_chain_mechanism,
     rand_tree_mechanism,

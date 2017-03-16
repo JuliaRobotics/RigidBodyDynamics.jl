@@ -4,17 +4,29 @@
     rand!(x)
 
     @testset "show" begin
-        for joint in joints(mechanism)
+        mechanism_with_loops = deepcopy(mechanism)
+        for i = 1 : 5
+            pred = rand(bodies(mechanism_with_loops))
+            succ = rand(bodies(mechanism_with_loops))
+            joint = Joint("non-tree-$i", Fixed{Float64}())
+            attach!(mechanism_with_loops, pred, joint, Transform3D{Float64}(joint.frameBefore, default_frame(pred)), succ)
+        end
+
+        show(DevNull, mechanism_with_loops)
+        for joint in joints(mechanism_with_loops)
             show(DevNull, joint)
+            showcompact(DevNull, joint)
         end
-        for body in bodies(mechanism)
+        for body in bodies(mechanism_with_loops)
             show(DevNull, body)
+            showcompact(DevNull, body)
         end
+        show(DevNull, x)
     end
 
     @testset "basic stuff" begin
-        q = vcat([configuration(x, edge_to_parent_data(vertex)) for vertex in non_root_vertices(mechanism)]...)
-        v = vcat([velocity(x, edge_to_parent_data(vertex)) for vertex in non_root_vertices(mechanism)]...)
+        q = vcat([configuration(x, joint) for joint in tree_joints(mechanism)]...)
+        v = vcat([velocity(x, joint) for joint in tree_joints(mechanism)]...)
 
         @test q == configuration(x)
         @test v == velocity(x)
@@ -63,7 +75,7 @@
     end
 
     @testset "joint_torque! / geometric_jacobian" begin
-        for joint in joints(mechanism)
+        for joint in Vector{Any}(tree_joints(mechanism)) # TODO: https://github.com/JuliaLang/julia/issues/20034
             qjoint = configuration(x, joint)
             wrench = rand(Wrench{Float64}, joint.frameAfter)
             τ = Vector{Float64}(num_velocities(joint))
@@ -74,19 +86,21 @@
     end
 
     @testset "geometric_jacobian / relative_twist" begin
-        bs = Set(bodies(mechanism))
-        body = rand([bs...])
-        delete!(bs, body)
-        base = rand([bs...])
-        p = path(mechanism, base, body)
-        J = geometric_jacobian(x, p)
-        vpath = velocity(x, p)
-        T = relative_twist(x, body, base)
-        @test isapprox(Twist(J, vpath), T; atol = 1e-12)
+        for i = 1 : 100
+            bs = Set(bodies(mechanism))
+            body = rand([bs...])
+            delete!(bs, body)
+            base = rand([bs...])
+            p = RigidBodyDynamics.path(mechanism, base, body)
+            J = geometric_jacobian(x, p)
+            vpath = velocity(x, p)
+            T = relative_twist(x, body, base)
+            @test isapprox(Twist(J, vpath), T; atol = 1e-12)
+        end
     end
 
     @testset "motion_subspace / constraint_wrench_subspace" begin
-        for joint in joints(mechanism)
+        for joint in Vector{Any}(tree_joints(mechanism)) # TODO: https://github.com/JuliaLang/julia/issues/20034
             qjoint = configuration(x, joint)
             S = motion_subspace(joint, qjoint)
             jointTransform = joint_transform(joint, qjoint)
@@ -130,36 +144,48 @@
                 twist_autodiff = relative_twist(x_autodiff, body, base)
                 accel_vec = [ForwardDiff.partials(x, 1)::Float64 for x in (Array(twist_autodiff))]
                 @test isapprox(Array(Ṫ), accel_vec; atol = 1e-12)
+
+                root = root_body(mechanism)
+                f = default_frame(body)
+                Ṫbody = transform(x, relative_acceleration(x, body, root, v̇), f)
+                Ṫbase = transform(x, relative_acceleration(x, base, root, v̇), f)
+                @test isapprox(transform(x, -Ṫbase + Ṫbody, Ṫ.frame), Ṫ; atol = 1e-12)
             end
         end
     end
 
     @testset "motion subspace / twist wrt world" begin
-        for vertex in non_root_vertices(mechanism)
-            body = vertex_data(vertex)
-            joint = edge_to_parent_data(vertex)
-            parentBody = vertex_data(parent(vertex))
-            @test isapprox(relative_twist(x, body, parentBody), Twist(motion_subspace(x, joint), velocity(x, joint)); atol = 1e-12)
+        for joint in Vector{Any}(tree_joints(mechanism)) # TODO: https://github.com/JuliaLang/julia/issues/20034
+            body = successor(joint, mechanism)
+            parentBody = predecessor(joint, mechanism)
+            @test isapprox(relative_twist(x, body, parentBody), Twist(motion_subspace_in_world(x, joint), velocity(x, joint)); atol = 1e-12)
         end
     end
 
     @testset "composite rigid body inertias" begin
-        for vertex in non_root_vertices(mechanism)
-            body = vertex_data(vertex)
+        for joint in Vector{Any}(tree_joints(mechanism)) # TODO: https://github.com/JuliaLang/julia/issues/20034
+            body = successor(joint, mechanism)
             crb = crb_inertia(x, body)
-            subtree = toposort(vertex)
-            @test isapprox(sum((b::RigidBody) -> spatial_inertia(x, b), [vertex_data(v) for v in subtree]), crb; atol = 1e-12)
+            stack = [body]
+            subtree = typeof(body)[]
+            while !isempty(stack)
+                b = pop!(stack)
+                push!(subtree, b)
+                for joint in out_joints(b, mechanism)
+                    push!(stack, successor(joint, mechanism))
+                end
+            end
+            @test isapprox(sum((b::RigidBody) -> spatial_inertia(x, b), subtree), crb; atol = 1e-12)
         end
     end
 
     @testset "momentum_matrix / summing momenta" begin
         A = momentum_matrix(x)
         Amat = Array(A)
-        for vertex in non_root_vertices(mechanism)
-            body = vertex_data(vertex)
-            joint = edge_to_parent_data(vertex)
+        for joint in Vector{Any}(tree_joints(mechanism)) # TODO: https://github.com/JuliaLang/julia/issues/20034
+            body = successor(joint, mechanism)
             Ajoint = Amat[:, velocity_range(x, joint)]
-            @test isapprox(Array(crb_inertia(x, body) * motion_subspace(x, joint)), Ajoint; atol = 1e-12)
+            @test isapprox(Array(crb_inertia(x, body) * motion_subspace_in_world(x, joint)), Ajoint; atol = 1e-12)
         end
 
         v = velocity(x)
@@ -298,16 +324,15 @@
         v̇ = rand(num_velocities(mechanism))
         externalWrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in non_root_bodies(mechanism))
         τ = inverse_dynamics(x, v̇, externalWrenches)
-        floatingBodyVertex = children(root_vertex(mechanism))[1]
-        floatingJoint = edge_to_parent_data(floatingBodyVertex)
-        τfloating = τ[velocity_range(x, floatingJoint)]
-        floatingJointWrench = Wrench(edge_to_parent_data(floatingBodyVertex).frameAfter, SVector{3}(τfloating[1 : 3]), SVector{3}(τfloating[4 : 6]))
-        floatingJointWrench = transform(x, floatingJointWrench, root_frame(mechanism))
+        floatingjoint = first(out_joints(root_body(mechanism), mechanism))
+        τfloating = τ[velocity_range(x, floatingjoint)]
+        floatingjointwrench = Wrench(floatingjoint.frameAfter, SVector{3}(τfloating[1 : 3]), SVector{3}(τfloating[4 : 6]))
+        floatingjointwrench = transform(x, floatingjointwrench, root_frame(mechanism))
         ḣ = Wrench(momentum_matrix(x), v̇) + momentum_rate_bias(x) # momentum rate of change
         gravitational_force = mass(mechanism) * mechanism.gravitationalAcceleration
         com = center_of_mass(x)
         gravitational_wrench = Wrench(gravitational_force.frame, cross(com, gravitational_force).v, gravitational_force.v)
-        total_wrench = floatingJointWrench + gravitational_wrench + sum((w) -> transform(x, w, root_frame(mechanism)), values(externalWrenches))
+        total_wrench = floatingjointwrench + gravitational_wrench + sum((w) -> transform(x, w, root_frame(mechanism)), values(externalWrenches))
         @test isapprox(total_wrench, ḣ; atol = 1e-12)
     end
 

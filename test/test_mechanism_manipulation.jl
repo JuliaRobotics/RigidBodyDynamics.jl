@@ -81,19 +81,20 @@ end
         rand!(state)
         q = configuration(state)
         M = mass_matrix(state)
-        nonFixedJointVertices = collect(filter(v -> !isa(edge_to_parent_data(v).jointType, Fixed), non_root_vertices(mechanism)))
+        nonfixedjoints = collect(filter(j -> !isa(j.jointType, Fixed), tree_joints(mechanism)))
 
-        remove_fixed_joints!(mechanism)
-        @test non_root_vertices(mechanism) == nonFixedJointVertices
+        remove_fixed_tree_joints!(mechanism)
+        @test tree_joints(mechanism) == nonfixedjoints
         state_no_fixed_joints = MechanismState(Float64, mechanism)
         set_configuration!(state_no_fixed_joints, q)
-        M_no_fixed_joints = mass_matrix(state)
+        M_no_fixed_joints = mass_matrix(state_no_fixed_joints)
         @test isapprox(M_no_fixed_joints, M, atol = 1e-12)
     end
 
     @testset "submechanism" begin
-        for testnum = 1 : 10
+        for testnum = 1 : 100
             jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
+            jointTypes = [Revolute{Float64} for i = 1 : 4]
             shuffle!(jointTypes)
             mechanism = rand_tree_mechanism(Float64, jointTypes...)
             state = MechanismState(Float64, mechanism)
@@ -101,21 +102,19 @@ end
             M = mass_matrix(state)
 
             submechanismRoot = rand(collect(bodies(mechanism)))
-            mechanismPart = submechanism(mechanism, submechanismRoot)
-            @test root_body(mechanismPart) == submechanismRoot
+            mechanismPart, bodymap, jointmap = submechanism(mechanism, submechanismRoot)
+            @test root_body(mechanismPart) == bodymap[submechanismRoot]
             @test mechanism.gravitationalAcceleration.v == mechanismPart.gravitationalAcceleration.v
 
             substate = MechanismState(Float64, mechanismPart)
-            for joint in joints(mechanismPart)
-                set_configuration!(substate, joint, configuration(state, joint))
-                set_velocity!(substate, joint, velocity(state, joint))
+            for (oldjoint, newjoint) in jointmap
+                set_configuration!(substate, newjoint, configuration(state, oldjoint))
+                set_velocity!(substate, newjoint, velocity(state, oldjoint))
             end
             Msub = mass_matrix(substate)
-            if !isleaf(root_vertex(mechanismPart))
-                firstJoint = edge_to_parent_data(children(root_vertex(mechanismPart))[1])
-                offset = first(velocity_range(state, firstJoint)) - 1
-                vRange = (1 : num_velocities(mechanismPart)) + offset
-                @test isapprox(M[vRange, vRange] - Msub, zeros(Msub.data), atol = 1e-10)
+            if num_velocities(mechanismPart) > 0
+                indices = vcat([velocity_range(state, joint) for joint in tree_joints(mechanism) if joint ∈ keys(jointmap)]...)
+                @test isapprox(M[indices, indices], Msub, atol = 1e-10)
             end
         end
     end
@@ -140,36 +139,36 @@ end
 
             # find world, floating joint, floating body of mechanism1, and determine a new floating body
             world = root_body(mechanism1)
-            subtreeRootVertex = children(root_vertex(mechanism1))[1]
-            floatingJoint = edge_to_parent_data(subtreeRootVertex)
-            floatingBody = vertex_data(subtreeRootVertex)
-            newFloatingBody = rand(collect(non_root_bodies(mechanism1)))
+            floatingjoint = first(out_joints(world, mechanism1))
+            floatingbody = successor(floatingjoint, mechanism1)
+            newfloatingbody = rand(collect(non_root_bodies(mechanism1)))
 
             # reroot mechanism2
-            newFloatingJoint = Joint("newFloating", QuaternionFloating{Float64}())
-            jointToWorld = Transform3D{Float64}(newFloatingJoint.frameBefore, default_frame(world))
-            bodyToJoint = Transform3D{Float64}(default_frame(newFloatingBody), newFloatingJoint.frameAfter)
-            flippedJointMapping = reattach!(mechanism2, bodymap[floatingBody], bodymap[world], newFloatingJoint, jointToWorld, bodymap[newFloatingBody], bodyToJoint)
+            newfloatingjoint = Joint("newFloating", QuaternionFloating{Float64}())
+            joint_to_world = Transform3D{Float64}(newfloatingjoint.frameBefore, default_frame(world))
+            body_to_joint = Transform3D{Float64}(default_frame(newfloatingbody), newfloatingjoint.frameAfter)
+            attach!(mechanism2, bodymap[world], newfloatingjoint, joint_to_world, bodymap[newfloatingbody], body_to_joint)
+            remove_joint!(mechanism2, jointmap[floatingjoint]) # edge_to_parent(bodymap[floatingbody], mechanism.tree)
 
             # mimic the same state for the rerooted mechanism
             # copy non-floating joint configurations and velocities
             x2 = MechanismState(Float64, mechanism2)
             for (joint1, joint2) in jointmap
-                if joint1 != floatingJoint
-                    joint2Rerooted = get(flippedJointMapping, joint2, joint2)
+                if joint1 != floatingjoint
+                    joint2Rerooted = joint2 #get(flippedJointMapping, joint2, joint2)
                     set_configuration!(x2, joint2Rerooted, configuration(x1, joint1))
                     set_velocity!(x2, joint2Rerooted, velocity(x1, joint1))
                 end
             end
 
             # set configuration and velocity of new floating joint
-            newFloatingJointTransform = inv(jointToWorld) * relative_transform(x1, bodyToJoint.from, jointToWorld.to) * inv(bodyToJoint)
-            floating_joint_transform_to_configuration!(newFloatingJoint, configuration(x2, newFloatingJoint), newFloatingJointTransform)
+            newfloatingjointTransform = inv(joint_to_world) * relative_transform(x1, body_to_joint.from, joint_to_world.to) * inv(body_to_joint)
+            floating_joint_transform_to_configuration!(newfloatingjoint, configuration(x2, newfloatingjoint), newfloatingjointTransform)
 
-            newFloatingJointTwist = transform(x1, relative_twist(x1, newFloatingBody, world), bodyToJoint.from)
-            newFloatingJointTwist = transform(newFloatingJointTwist, bodyToJoint)
-            newFloatingJointTwist = Twist(bodyToJoint.to, jointToWorld.from, newFloatingJointTwist.frame, newFloatingJointTwist.angular, newFloatingJointTwist.linear)
-            floating_joint_twist_to_velocity!(newFloatingJoint, velocity(x2, newFloatingJoint), newFloatingJointTwist)
+            newfloatingjointTwist = transform(x1, relative_twist(x1, newfloatingbody, world), body_to_joint.from)
+            newfloatingjointTwist = transform(newfloatingjointTwist, body_to_joint)
+            newfloatingjointTwist = Twist(body_to_joint.to, joint_to_world.from, newfloatingjointTwist.frame, newfloatingjointTwist.angular, newfloatingjointTwist.linear)
+            floating_joint_twist_to_velocity!(newfloatingjoint, velocity(x2, newfloatingjoint), newfloatingjointTwist)
 
             # do dynamics
             result1 = DynamicsResult(Float64, mechanism1)
@@ -179,8 +178,8 @@ end
 
             # make sure that joint accelerations for non-floating joints are the same
             for (joint1, joint2) in jointmap
-                if joint1 != floatingJoint
-                    joint2Rerooted = get(flippedJointMapping, joint2, joint2)
+                if joint1 != floatingjoint
+                    joint2Rerooted = joint2 #get(flippedJointMapping, joint2, joint2)
                     v̇1 = view(result1.v̇, velocity_range(x1, joint1))
                     v̇2 = view(result2.v̇, velocity_range(x2, joint2Rerooted))
                     @test isapprox(v̇1, v̇2)

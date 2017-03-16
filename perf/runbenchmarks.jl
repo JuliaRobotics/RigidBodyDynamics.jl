@@ -1,16 +1,14 @@
 using RigidBodyDynamics
 using BenchmarkTools
-import RigidBodyDynamics.TreeDataStructure: children, edge_to_parent_data
 
 const ScalarType = Float64
 # const ScalarType = Float32
 
 function create_floating_atlas()
-    atlasUrdfUrl = "https://raw.githubusercontent.com/RobotLocomotion/drake/6e3ca768cbaabf15d0f2bed0fb5bd703fa022aa5/drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"
-    atlasUrdf = RigidBodyDynamics.cached_download(atlasUrdfUrl, "atlas.urdf")
-    atlas = parse_urdf(ScalarType, atlasUrdf)
-    for child in children(root_vertex(atlas))
-        joint = edge_to_parent_data(child)
+    url = "https://raw.githubusercontent.com/RobotLocomotion/drake/6e3ca768cbaabf15d0f2bed0fb5bd703fa022aa5/drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"
+    urdf = RigidBodyDynamics.cached_download(url, "atlas.urdf")
+    atlas = parse_urdf(ScalarType, urdf)
+    for joint in out_joints(root_body(atlas), atlas)
         joint.jointType = QuaternionFloating{ScalarType}()
     end
     atlas
@@ -19,12 +17,12 @@ end
 function create_benchmark_suite()
     suite = BenchmarkGroup()
     mechanism = create_floating_atlas()
-    remove_fixed_joints!(mechanism)
+    remove_fixed_tree_joints!(mechanism)
 
     let
         state = MechanismState(ScalarType, mechanism)
         result = DynamicsResult(ScalarType, mechanism)
-        suite["mass_matrix"] = @benchmarkable mass_matrix!($(result.massMatrix), $state) setup = rand!($state)
+        suite["mass_matrix"] = @benchmarkable mass_matrix!($(result.massmatrix), $state) setup = rand!($state)
     end
 
     let
@@ -32,7 +30,7 @@ function create_benchmark_suite()
         result = DynamicsResult(ScalarType, mechanism)
         torques = Vector{ScalarType}(num_velocities(mechanism))
         suite["inverse_dynamics"] = @benchmarkable(
-            inverse_dynamics!($torques, $(result.jointWrenches), $(result.accelerations), $state, v̇, externalWrenches),
+            inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalWrenches),
             setup = (
                 v̇ = rand(num_velocities($mechanism));
                 externalWrenches = Dict(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in non_root_bodies($mechanism));
