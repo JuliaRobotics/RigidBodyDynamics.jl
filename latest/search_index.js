@@ -821,15 +821,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Function",
-    "text": "attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds jointToPredecessor and successorToJoint define where joint is attached to each body. jointToPredecessor should define joint.frameBefore with respect to any frame fixed to predecessor, and likewise successorToJoint should define any frame fixed to successor with respect to joint.frameAfter.\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
+    "text": "attach!(mechanism, parentbody, childmechanism)\nattach!(mechanism, parentbody, childmechanism, childroot_to_parent)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.attach!-Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}",
+    "location": "mechanism.html#RigidBodyDynamics.attach!",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
-    "category": "Method",
-    "text": "attach!(mechanism, parentBody, childMechanism)\n\n\nAttach childMechanism to mechanism.\n\nEssentially replaces the root body of childMechanism with parentBody (which belongs to mechanism).\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
+    "category": "Function",
+    "text": "attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds jointToPredecessor and successorToJoint define where joint is attached to each body. jointToPredecessor should define joint.frameBefore with respect to any frame fixed to predecessor, and likewise successorToJoint should define any frame fixed to successor with respect to joint.frameAfter.\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
 },
 
 {
@@ -837,7 +837,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.maximal_coordinates",
     "category": "Method",
-    "text": "maximal_coordinates(mechanism)\n\n\nReturn a dynamically equivalent Mechanism, but with a flat tree structure with all bodies attached to the root body with a quaternion floating joint, and with the 'tree edge' joints of the input Mechanism transformed into non-tree edge joints (a constraint enforced using Lagrange multipliers in dynamics!).\n\n\n\n"
+    "text": "maximal_coordinates(mechanism)\n\n\nReturn a dynamically equivalent Mechanism, but with a flat tree structure with all bodies attached to the root body with a quaternion floating joint, and with the 'tree edge' joints of the input Mechanism transformed into non-tree edge joints (a constraint enforced using Lagrange multipliers in dynamics!). In addition, return:\n\na mapping from bodies in the maximal-coordinate Mechanism to their floating joints.\na mapping from bodies in the input Mechanism to bodies in the returned Mechanism\na mapping from joints in the input Mechanism to joints in the returned Mechanism\n\n\n\n"
 },
 
 {
@@ -853,15 +853,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "Method",
-    "text": "rand_floating_tree_mechanism(t, nonFloatingJointTypes)\n\n\nCreate a random tree Mechanism (without loops), with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n"
+    "text": "rand_floating_tree_mechanism(t, nonFloatingJointTypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n"
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_mechanism-Tuple{Type{T},Function,Vararg{Any,N}}",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Tuple{Type{T},Function,Vararg{Any,N}}",
     "page": "Mechanism",
-    "title": "RigidBodyDynamics.rand_mechanism",
+    "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
-    "text": "rand_mechanism(?, parentSelector, jointTypes)\n\n\nCreate a random Mechanism with the given joint types. Each new body is attached to a parent selected using the parentSelector function.\n\n\n\n"
+    "text": "rand_tree_mechanism(?, parentselector, jointTypes)\n\n\nCreate a random tree Mechanism with the given joint types. Each new body is attached to a parent selected using the parentselector function.\n\n\n\n"
 },
 
 {
@@ -869,23 +869,23 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
-    "text": "rand_tree_mechanism(t, jointTypes)\n\n\nCreate a random tree Mechanism (without loops).\n\n\n\n"
+    "text": "rand_tree_mechanism(t, jointTypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n"
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.reattach!",
+    "location": "mechanism.html#RigidBodyDynamics.remove_fixed_tree_joints!-Tuple{RigidBodyDynamics.Mechanism}",
     "page": "Mechanism",
-    "title": "RigidBodyDynamics.reattach!",
-    "category": "Function",
-    "text": "reattach!(mechanism, oldSubtreeRootBody, parentBody, joint, jointToParent, newSubtreeRootBody, newSubTreeRootBodyToJoint)\nreattach!(mechanism, oldSubtreeRootBody, parentBody, joint, jointToParent, newSubtreeRootBody)\n\n\nDetach the subtree rooted at oldSubtreeRootBody, reroot it so that newSubtreeRootBody is the new root, and then attach newSubtreeRootBody to parentBody using joint.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
-},
-
-{
-    "location": "mechanism.html#RigidBodyDynamics.remove_fixed_joints!-Tuple{RigidBodyDynamics.Mechanism}",
-    "page": "Mechanism",
-    "title": "RigidBodyDynamics.remove_fixed_joints!",
+    "title": "RigidBodyDynamics.remove_fixed_tree_joints!",
     "category": "Method",
-    "text": "remove_fixed_joints!(mechanism)\n\n\nRemove any fixed joints present as tree edges in mechanism by merging the rigid bodies that these fixed joints join together into bodies with equivalent inertial properties.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
+    "text": "remove_fixed_tree_joints!(mechanism)\n\n\nRemove any fixed joints present as tree edges in mechanism by merging the rigid bodies that these fixed joints join together into bodies with equivalent inertial properties. Return the fixed joints that were removed.\n\n\n\n"
+},
+
+{
+    "location": "mechanism.html#RigidBodyDynamics.remove_joint!",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.remove_joint!",
+    "category": "Function",
+    "text": "remove_joint!(mechanism, joint, spanning_tree_next_edge)\nremove_joint!(mechanism, joint)\n\n\nRemove a joint from the mechanism. Rebuilds the spanning tree if the joint is part of the current spanning tree.\n\n\n\n"
 },
 
 {
@@ -893,7 +893,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.submechanism",
     "category": "Method",
-    "text": "submechanism(mechanism, submechanismRootBody)\n\n\nCreate a Mechanism from the subtree of mechanism rooted at submechanismRootBody.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
+    "text": "submechanism(mechanism, submechanismroot)\n\n\nCreate a new Mechanism from the subtree of mechanism rooted at submechanismroot.\n\nAlso return mappings from the bodies and joints of the input mechanism to the bodies and joints of the submechanism.\n\nAny non-tree joint in mechanism will appear in the returned Mechanism if and only if both its successor and its predecessor are part of the subtree.\n\n\n\n"
+},
+
+{
+    "location": "mechanism.html#RigidBodyDynamics.rebuild_spanning_tree!",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.rebuild_spanning_tree!",
+    "category": "Function",
+    "text": "rebuild_spanning_tree!(mechanism)\nrebuild_spanning_tree!(mechanism, next_edge)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
 },
 
 {
@@ -905,9 +913,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.TreeDataStructure.path-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}",
+    "location": "mechanism.html#RigidBodyDynamics.Graphs.path-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}",
     "page": "Mechanism",
-    "title": "RigidBodyDynamics.TreeDataStructure.path",
+    "title": "RigidBodyDynamics.Graphs.path",
     "category": "Method",
     "text": "path(mechanism, from, to)\n\n\nReturn the path from rigid body from to to along edges of the Mechanism's kinematic tree.\n\n\n\n"
 },
@@ -925,7 +933,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.fixed_transform",
     "category": "Method",
-    "text": "fixed_transform(mechanism, from, to)\n\n\nReturn the transform from CartesianFrame3D from to to, both of which are rigidly attached to the same RigidBody.\n\n\n\n"
+    "text": "fixed_transform(mechanism, from, to)\n\n\nReturn the transform from CartesianFrame3D from to to, both of which are rigidly attached to the same RigidBody.\n\nNote: this function is linear in the number of bodies and is not meant to be called in tight loops.\n\n\n\n"
+},
+
+{
+    "location": "mechanism.html#RigidBodyDynamics.in_joints-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.Mechanism}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.in_joints",
+    "category": "Method",
+    "text": "in_joints(body, mechanism)\n\n\nReturn the joints that have body as their successor.\n\n\n\n"
 },
 
 {
@@ -953,6 +969,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanism.html#RigidBodyDynamics.out_joints-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.Mechanism}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.out_joints",
+    "category": "Method",
+    "text": "out_joints(body, mechanism)\n\n\nReturn the joints that have body as their predecessor.\n\n\n\n"
+},
+
+{
+    "location": "mechanism.html#RigidBodyDynamics.predecessor-Tuple{RigidBodyDynamics.Joint,RigidBodyDynamics.Mechanism}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.predecessor",
+    "category": "Method",
+    "text": "predecessor(joint, mechanism)\n\n\nReturn the body 'before' the joint, i.e. the 'tail' of the joint interpreted as an arrow in the Mechanism's kinematic graph.\n\nSee Joint.\n\n\n\n"
+},
+
+{
     "location": "mechanism.html#RigidBodyDynamics.root_body-Tuple{RigidBodyDynamics.Mechanism}",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.root_body",
@@ -969,11 +1001,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanism.html#RigidBodyDynamics.successor-Tuple{RigidBodyDynamics.Joint,RigidBodyDynamics.Mechanism}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.successor",
+    "category": "Method",
+    "text": "successor(joint, mechanism)\n\n\nReturn the body 'after' the joint, i.e. the 'head' of the joint interpreted as an arrow in the Mechanism's kinematic graph.\n\nSee Joint.\n\n\n\n"
+},
+
+{
+    "location": "mechanism.html#RigidBodyDynamics.tree_joints-Tuple{RigidBodyDynamics.Mechanism}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.tree_joints",
+    "category": "Method",
+    "text": "tree_joints(mechanism)\n\n\nReturn the Joints that are part of the Mechanism's spanning tree as an iterable collection.\n\n\n\n"
+},
+
+{
     "location": "mechanism.html#RigidBodyDynamics.body_fixed_frame_definition-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.body_fixed_frame_definition",
     "category": "Method",
-    "text": "body_fixed_frame_definition(mechanism, frame)\n\n\nReturn the definition of body-fixed frame frame, i.e., the Transform3D from frame to the default frame of the body to which it is attached.\n\nSee also default_frame, frame_definition.\n\n\n\n"
+    "text": "body_fixed_frame_definition(mechanism, frame)\n\n\nReturn the definition of body-fixed frame frame, i.e., the Transform3D from frame to the default frame of the body to which it is attached.\n\nNote: this function is linear in the number of bodies and is not meant to be called in tight loops.\n\nSee also default_frame, frame_definition.\n\n\n\n"
 },
 
 {
@@ -981,7 +1029,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.body_fixed_frame_to_body",
     "category": "Method",
-    "text": "body_fixed_frame_to_body(mechanism, frame)\n\n\nReturn the RigidBody to which frame is attached.\n\n\n\n"
+    "text": "body_fixed_frame_to_body(mechanism, frame)\n\n\nReturn the RigidBody to which frame is attached.\n\nNote: this function is linear in the number of bodies and is not meant to be called in tight loops.\n\n\n\n"
+},
+
+{
+    "location": "mechanism.html#RigidBodyDynamics.non_tree_joints-Tuple{RigidBodyDynamics.Mechanism}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.non_tree_joints",
+    "category": "Method",
+    "text": "non_tree_joints(mechanism)\n\n\nReturn the Joints that are not part of the Mechanism's spanning tree as an iterable collection.\n\n\n\n"
 },
 
 {
@@ -1038,14 +1094,6 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.configuration",
     "category": "Method",
     "text": "configuration(state, joint)\n\n\nReturn the part of the configuration vector q associated with joint.\n\n\n\n"
-},
-
-{
-    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}",
-    "page": "MechanismState",
-    "title": "RigidBodyDynamics.configuration",
-    "category": "Method",
-    "text": "configuration(state, path)\n\n\nReturn the part of the Mechanism's configuration vector q associated with the joints on path.\n\n\n\n"
 },
 
 {
@@ -1177,14 +1225,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}",
-    "page": "MechanismState",
-    "title": "RigidBodyDynamics.velocity",
-    "category": "Method",
-    "text": "velocity(state, path)\n\n\nReturn the part of the Mechanism's velocity vector v associated with the joints on path.\n\n\n\n"
-},
-
-{
     "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity",
@@ -1222,6 +1262,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Base.Random.rand!",
     "category": "Method",
     "text": "rand!(state)\n\n\nRandomize both the configuration and velocity. Invalidates cache variables.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.non_tree_joints-Tuple{RigidBodyDynamics.MechanismState}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.non_tree_joints",
+    "category": "Method",
+    "text": "non_tree_joints(state)\n\n\nReturn the Joints that are not part of the underlying Mechanism's spanning tree as an iterable collection.\n\n\n\n"
 },
 
 {
@@ -1293,7 +1341,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(result, state, torques, externalWrenches)\ndynamics!(result, state, torques)\ndynamics!(result, state)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
+    "text": "dynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
 },
 
 {
@@ -1301,11 +1349,11 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(ẋ, result, state, stateVec, torques, externalWrenches)\ndynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "text": "dynamics!(result, state, torques)\ndynamics!(result, state)\ndynamics!(result, state, torques, externalwrenches)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.TreeDataStructure.Path{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}",
+    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.geometric_jacobian",
     "category": "Method",
@@ -1325,7 +1373,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics",
     "category": "Function",
-    "text": "inverse_dynamics(state, v̇, externalWrenches)\ninverse_dynamics(state, v̇)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
+    "text": "inverse_dynamics(state, v̇)\ninverse_dynamics(state, v̇, externalwrenches)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
 },
 
 {
@@ -1333,7 +1381,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "Function",
-    "text": "inverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇, externalWrenches)\ninverse_dynamics!(torquesOut, jointWrenchesOut, accelerations, state, v̇)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+    "text": "inverse_dynamics!(torquesout, jointwrenchesOut, accelerations, state, v̇)\ninverse_dynamics!(torquesout, jointwrenchesOut, accelerations, state, v̇, externalwrenches)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
@@ -1389,15 +1437,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias!",
     "category": "Function",
-    "text": "dynamics_bias!(torques, biasAccelerations, wrenches, state)\ndynamics_bias!(torques, biasAccelerations, wrenches, state, externalWrenches)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+    "text": "dynamics_bias!(torques, biasaccelerations, wrenches, state, externalwrenches)\ndynamics_bias!(torques, biasaccelerations, wrenches, state)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.subtree_mass-Tuple{RigidBodyDynamics.TreeDataStructure.TreeVertex{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T}}}",
+    "location": "algorithms.html#RigidBodyDynamics.subtree_mass-Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.subtree_mass",
     "category": "Method",
-    "text": "subtree_mass(base)\n\n\nReturn the mass of a subtree of a Mechanism, rooted at base (including the mass of base).\n\n\n\n"
+    "text": "subtree_mass(base, mechanism)\n\n\nReturn the mass of a subtree of a Mechanism, rooted at base (including the mass of base).\n\n\n\n"
 },
 
 {
