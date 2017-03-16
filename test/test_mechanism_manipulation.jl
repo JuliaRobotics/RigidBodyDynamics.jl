@@ -91,51 +91,33 @@ end
         @test isapprox(M_no_fixed_joints, M, atol = 1e-12)
     end
 
-    # @testset "submechanism" begin
-    #     for testnum = 1 : 100
-    #         # jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]]#; [Fixed{Float64} for i = 1 : 10]]
-    #         jointTypes = [Revolute{Float64} for i = 1 : 5]
-    #         shuffle!(jointTypes)
-    #         mechanism = rand_tree_mechanism(Float64, jointTypes...)
-    #         state = MechanismState(Float64, mechanism)
-    #         rand!(state)
-    #         M = mass_matrix(state)
-    #
-    #         submechanismRoot = rand(collect(bodies(mechanism)))
-    #         mechanismPart, bodymap, jointmap = submechanism(mechanism, submechanismRoot)
-    #         # @test root_body(mechanismPart) == bodymap[submechanismRoot]
-    #         # @test mechanism.gravitationalAcceleration.v == mechanismPart.gravitationalAcceleration.v
-    #
-    #         substate = MechanismState(Float64, mechanismPart)
-    #         for (oldjoint, newjoint) in jointmap
-    #             set_configuration!(substate, newjoint, configuration(state, oldjoint))
-    #             set_velocity!(substate, newjoint, velocity(state, oldjoint))
-    #         end
-    #         Msub = mass_matrix(substate)
-    #         if num_velocities(mechanismPart) > 0
-    #             oldjoint, newjoint = first(jointmap)
-    #             offset = first(velocity_range(state, oldjoint)) - first(velocity_range(substate, newjoint))
-    #             vRange = (1 : num_velocities(mechanismPart)) + offset
-    #             if !isapprox(M[vRange, vRange], Msub, atol = 1e-10)
-    #                 # @show M[vRange, vRange]
-    #                 # println()
-    #                 # @show Msub
-    #                 # println()
-    #                 println("M[vRange, vRange] - Msub:")
-    #                 display(M[vRange, vRange] - Msub)
-    #                 println()
-    #                 display(tree_joints(mechanism))
-    #                 println()
-    #                 println(mechanism)
-    #                 println()
-    #                 println(mechanismPart)
-    #                 println()
-    #                 println()
-    #             end
-    #             @test isapprox(M[vRange, vRange], Msub, atol = 1e-10)
-    #         end
-    #     end
-    # end
+    @testset "submechanism" begin
+        for testnum = 1 : 100
+            jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
+            jointTypes = [Revolute{Float64} for i = 1 : 4]
+            shuffle!(jointTypes)
+            mechanism = rand_tree_mechanism(Float64, jointTypes...)
+            state = MechanismState(Float64, mechanism)
+            rand!(state)
+            M = mass_matrix(state)
+
+            submechanismRoot = rand(collect(bodies(mechanism)))
+            mechanismPart, bodymap, jointmap = submechanism(mechanism, submechanismRoot)
+            @test root_body(mechanismPart) == bodymap[submechanismRoot]
+            @test mechanism.gravitationalAcceleration.v == mechanismPart.gravitationalAcceleration.v
+
+            substate = MechanismState(Float64, mechanismPart)
+            for (oldjoint, newjoint) in jointmap
+                set_configuration!(substate, newjoint, configuration(state, oldjoint))
+                set_velocity!(substate, newjoint, velocity(state, oldjoint))
+            end
+            Msub = mass_matrix(substate)
+            if num_velocities(mechanismPart) > 0
+                indices = vcat([velocity_range(state, joint) for joint in tree_joints(mechanism) if joint ∈ keys(jointmap)]...)
+                @test isapprox(M[indices, indices], Msub, atol = 1e-10)
+            end
+        end
+    end
 
     # FIXME
     # @testset "reattach" begin
