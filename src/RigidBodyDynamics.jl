@@ -106,6 +106,7 @@ export
     add_body_fixed_frame!,
     fixed_transform,
     attach!,
+    reattach!, # deprecated
     remove_joint!,
     maximal_coordinates,
     submechanism,

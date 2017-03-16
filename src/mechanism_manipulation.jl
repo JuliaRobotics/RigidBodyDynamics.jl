@@ -148,6 +148,15 @@ function remove_joint!(mechanism::Mechanism, joint::Joint, spanning_tree_next_ed
     istreejoint && rebuild_spanning_tree!(mechanism, spanning_tree_next_edge)
 end
 
+Base.@deprecate(
+reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
+    parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
+    newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D{T} = Transform3D{T}(default_frame(newSubtreeRootBody), joint.frameAfter)),
+    begin
+        attach!(mechanism, parentBody, joint, jointToParent, newSubtreeRootBody, newSubTreeRootBodyToJoint)
+        remove_joint!(mechanism, edge_to_parent(oldSubtreeRootBody, mechanism.tree))
+    end)
+
 Base.@deprecate remove_fixed_joints!(mechanism::Mechanism) remove_fixed_tree_joints!(mechanism)
 
 """
@@ -266,8 +275,8 @@ function rand_tree_mechanism{T}(::Type{T}, parentselector::Function, jointTypes.
         joint = Joint("joint$i", rand(jointTypes[i]))
         jointToParentBody = rand(Transform3D{T}, joint.frameBefore, default_frame(parentbody))
         body = RigidBody(rand(SpatialInertia{T}, CartesianFrame3D("body$i")))
-        bodyToJoint = Transform3D{T}(default_frame(body), joint.frameAfter)
-        attach!(mechanism, parentbody, joint, jointToParentBody, body, bodyToJoint)
+        body_to_joint = Transform3D{T}(default_frame(body), joint.frameAfter)
+        attach!(mechanism, parentbody, joint, jointToParentBody, body, body_to_joint)
         parentbody = parentselector(mechanism)
     end
     return mechanism
@@ -298,5 +307,5 @@ function rand_floating_tree_mechanism{T}(t::Type{T}, nonFloatingJointTypes...)
         only_root = length(bodies(mechanism)) == 1
         only_root ? root_body(mechanism) : rand(collect(non_root_bodies(mechanism)))
     end
-    rand_mechanism(t, parentselector, [QuaternionFloating{T}; nonFloatingJointTypes...]...)
+    rand_tree_mechanism(t, parentselector, [QuaternionFloating{T}; nonFloatingJointTypes...]...)
 end

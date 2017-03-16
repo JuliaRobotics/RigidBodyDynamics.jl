@@ -267,7 +267,7 @@ for (fun, veclength) in [(:configuration, :num_positions), (:velocity, :num_velo
             ret = Vector{X}($veclength(path))
             setvectorpart! = (out, part, startind) -> begin
                 n = length(part)
-                n > 0 && copy!(out, startind, part, n)
+                n > 0 && copy!(out, startind, part, 1, n)
                 startind + n
             end
             startind = 1

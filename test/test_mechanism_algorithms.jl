@@ -74,15 +74,17 @@
     end
 
     @testset "geometric_jacobian / relative_twist" begin
-        bs = Set(bodies(mechanism))
-        body = rand([bs...])
-        delete!(bs, body)
-        base = rand([bs...])
-        p = RigidBodyDynamics.path(mechanism, base, body)
-        J = geometric_jacobian(x, p)
-        vpath = velocity(x, p)
-        T = relative_twist(x, body, base)
-        @test isapprox(Twist(J, vpath), T; atol = 1e-12)
+        for i = 1 : 100
+            bs = Set(bodies(mechanism))
+            body = rand([bs...])
+            delete!(bs, body)
+            base = rand([bs...])
+            p = RigidBodyDynamics.path(mechanism, base, body)
+            J = geometric_jacobian(x, p)
+            vpath = velocity(x, p)
+            T = relative_twist(x, body, base)
+            @test isapprox(Twist(J, vpath), T; atol = 1e-12)
+        end
     end
 
     @testset "motion_subspace / constraint_wrench_subspace" begin
