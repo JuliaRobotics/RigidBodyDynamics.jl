@@ -63,6 +63,8 @@ export
     name, # TODO: remove?
     has_defined_inertia,
     default_frame,
+    frame_before,
+    frame_after,
     add_frame!,
     transform,
     newton_euler,
@@ -83,6 +85,8 @@ export
     predecessor,
     in_joints,
     out_joints,
+    joints_to_children,
+    joint_to_parent,
     configuration_derivative,
     velocity_to_configuration_derivative!,
     configuration_derivative_to_velocity!,

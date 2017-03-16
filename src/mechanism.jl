@@ -195,6 +195,22 @@ Return the joints that have `body` as their [`successor`](@ref).
 """
 in_joints(body::RigidBody, mechanism::Mechanism) = in_edges(body, mechanism.graph)
 
+"""
+$(SIGNATURES)
+
+Return the joints that are part of the mechanism's kinematic tree and have
+`body` as their predecessor.
+"""
+joints_to_children(body::RigidBody, mechanism::Mechanism) = edges_to_children(body, mechanism.tree)
+
+"""
+$(SIGNATURES)
+
+Return the joint that is part of the mechanism's kinematic tree and has
+`body` as its successor.
+"""
+joint_to_parent(body::RigidBody, mechanism::Mechanism) = edge_to_parent(body, mechanism.tree)
+
 
 Base.@deprecate add_body_fixed_frame!{T}(mechanism::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T}) add_frame!(body, transform)
 function add_body_fixed_frame!{T}(mechanism::Mechanism{T}, transform::Transform3D{T})
@@ -203,8 +219,8 @@ end
 
 function canonicalize_frame_definitions!{T}(mechanism::Mechanism{T}, body::RigidBody{T})
     if !isroot(body, mechanism)
-        joint = edge_to_parent(body, mechanism.tree)
-        change_default_frame!(body, joint.frameAfter)
+        joint = joint_to_parent(body, mechanism)
+        change_default_frame!(body, frame_after(joint))
     end
 end
 
@@ -232,7 +248,7 @@ function constraint_jacobian_structure(mechanism::Mechanism)
         succ = successor(nonTreeJoint, mechanism)
         for (body, sign) in Dict(succ => 1, pred => -1)
             while !isroot(body, mechanism)
-                joint = edge_to_parent(body, mechanism.tree)
+                joint = joint_to_parent(body, mechanism)
                 ret[tree_index(joint, mechanism), col] += sign
                 body = predecessor(joint, mechanism)
             end

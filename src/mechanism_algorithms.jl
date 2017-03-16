@@ -6,7 +6,7 @@ the mass of `base`).
 """
 function subtree_mass{T}(base::RigidBody{T}, mechanism::Mechanism{T})
     result = isroot(base, mechanism) ? zero(T) : spatial_inertia(base).mass
-    for joint in edges_to_children(base, mechanism.tree)
+    for joint in joints_to_children(base, mechanism)
         result += subtree_mass(successor(joint, mechanism), mechanism)
     end
     result
@@ -125,7 +125,7 @@ function relative_acceleration(state::MechanismState, body::RigidBody, base::Rig
     while body != base
         do_body = tree_index(body, mechanism) > tree_index(base, mechanism)
 
-        joint = do_body ? edge_to_parent(body, mechanism.tree) : edge_to_parent(base, mechanism.tree)
+        joint = do_body ? joint_to_parent(body, mechanism) : joint_to_parent(base, mechanism)
         S = motion_subspace_in_world(state, joint)
         v̇joint = UnsafeVectorView(v̇, velocity_range(state, joint))
         jointaccel = SpatialAcceleration(S, v̇joint)
@@ -222,7 +222,7 @@ function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismSta
             # Hji, Hij
             body = predecessor(jointi, mechanism)
             while (!isroot(body, mechanism))
-                jointj = edge_to_parent(body, mechanism.tree) # TODO: Mechanism function
+                jointj = joint_to_parent(body, mechanism)
                 jrange = velocity_range(state, jointj)
                 if length(jrange) > 0
                     Sj = motion_subspace_in_world(state, jointj)
@@ -455,7 +455,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         range = rowstart : nextrowstart - 1
 
         # Constraint wrench subspace.
-        jointtransform = relative_transform(state, nontreejoint.frameAfter, nontreejoint.frameBefore) # TODO: expensive
+        jointtransform = relative_transform(state, frame_after(nontreejoint), frame_before(nontreejoint)) # TODO: expensive
         T = constraint_wrench_subspace(nontreejoint, jointtransform)
         T = transform(T, transform_to_root(state, T.frame)) # TODO: expensive
 
