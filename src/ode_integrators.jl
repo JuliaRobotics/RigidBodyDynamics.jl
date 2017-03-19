@@ -142,8 +142,11 @@ type MuntheKaasStageCache{N, T<:Number}
     vds::SVector{N, Vector{T}} # time derivatives of vs
     ϕs::SVector{N, Vector{T}} # local coordinates around q0 for each stage
     ϕds::SVector{N, Vector{T}} # time derivatives of ϕs
+    ss::SVector{N, Vector{T}} # additional state for each stage
+    sds::SVector{N, Vector{T}} # time derivatives of ss
     ϕstep::Vector{T} # local coordinates around q0 after complete step
     vstep::Vector{T} # velocity after complete step
+    sstep::Vector{T} # additional state after complete step
 
     function (::Type{MuntheKaasStageCache{N, T}}){N, T<:Number}()
         q0 = Vector{T}()
@@ -151,12 +154,17 @@ type MuntheKaasStageCache{N, T<:Number}
         vds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
         ϕs = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
         ϕds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
+        ss = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
+        sds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
         ϕstep = Vector{T}()
         vstep = Vector{T}()
-        new{N, T}(q0, vs, vds, ϕs, ϕds, ϕstep, vstep)
+        sstep = Vector{T}()
+        new{N, T}(q0, vs, vds, ϕs, ϕds, ss, sds, ϕstep, vstep, sstep)
     end
 end
+
 set_num_positions!(cache::MuntheKaasStageCache, n::Int64) = resize!(cache.q0, n)
+
 function set_num_velocities!(cache::MuntheKaasStageCache, n::Int64)
     for v in cache.vs resize!(v, n) end
     for vd in cache.vds resize!(vd, n) end
@@ -164,6 +172,12 @@ function set_num_velocities!(cache::MuntheKaasStageCache, n::Int64)
     for ϕd in cache.ϕds resize!(ϕd, n) end
     resize!(cache.ϕstep, n)
     resize!(cache.vstep, n)
+end
+
+function set_num_additional_states!(cache::MuntheKaasStageCache, n::Int64)
+    for s in cache.ss resize!(s, n) end
+    for sd in cache.sds resize!(sd, n) end
+    resize!(cache.sstep, n)
 end
 
 """
@@ -188,7 +202,7 @@ From [Iserles et al., 'Lie-group methods' (2000)](https://hal.archives-ouvertes.
 Another useful reference is [Park and Chung, 'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005)](http://www.ent.mrt.ac.lk/iml/paperbase/TRO%20Collection/TRO/2005/october/7.pdf).
 """
 immutable MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}
-    dynamics!::F # dynamics!(vd, t, state), sets vd (time derivative of v) given time t and state
+    dynamics!::F # dynamics!(vd, sd, t, state), sets vd (time derivative of v) and sd (time derivative of s) given time t and state
     tableau::ButcherTableau{N, T, L}
     sink::S
     stages::MuntheKaasStageCache{N, T}
@@ -221,7 +235,9 @@ Take a single integration step.
 `state` must be of a type for which the following functions are defined:
 * `configuration(state)`, returns the configuration vector in global coordinates;
 * `velocity(state)`, returns the velocity vector;
+* `additional_state(state)`, returns the vector of additional states;
 * `set_velocity!(state, v)`, sets velocity vector to `v`;
+* `set_additional_state!(state, s)`, sets vector of additional states to `s`;
 * `global_coordinates!(state, q0, ϕ)`, sets global coordinates in state based on local coordinates `ϕ` centered around global coordinates `q0`;
 * `local_coordinates!(state, ϕ, ϕd, q0)`, converts state's global configuration `q` and velocity `v` to local coordinates centered around global coordinates `q0`.
 """
@@ -231,33 +247,39 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
     n = num_stages(integrator)
 
     # Use current configuration as the configuration around which the local coordinates for this step will be centered.
-    q0, v0 = stages.q0, stages.vstep
+    q0, v0, s0 = stages.q0, stages.vstep, stages.sstep
     copy!(q0, configuration(state))
     copy!(v0, velocity(state))
+    copy!(s0, additional_state(state))
 
     # Compute integrator stages.
     for i = 1 : n
         # Update local coordinates and velocities
         ϕ = stages.ϕs[i]
         v = stages.vs[i]
+        s = stages.ss[i]
         fill!(ϕ, zero(eltype(ϕ)))
         copy!(v, v0)
+        copy!(s, s0)
         for j = 1 : i - 1
             aij = tableau.a[i, j]
             if aij != zero(aij)
                 weight = Δt * aij
                 scaleadd!(ϕ, stages.ϕds[j], weight)
                 scaleadd!(v, stages.vds[j], weight)
+                scaleadd!(s, stages.sds[j], weight)
             end
         end
 
         # Convert from local to global coordinates and set state
         global_coordinates!(state, q0, ϕ)
         set_velocity!(state, v)
+        set_additional_state!(state, s)
 
         # Dynamics in global coordinates
         vd = stages.vds[i]
-        integrator.dynamics!(vd, t + Δt * tableau.c[i], state)
+        sd = stages.sds[i]
+        integrator.dynamics!(vd, sd, t + Δt * tableau.c[i], state)
 
         # Convert back to local coordinates
         ϕd = stages.ϕds[i] # TODO: ϕ not actually needed, just ϕd!
@@ -268,15 +290,18 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
     ϕ = stages.ϕstep
     fill!(ϕ, zero(eltype(ϕ)))
     v = stages.vstep # already initialized to v0
+    s = stages.sstep # already initialized to s0
     for i = 1 : n
         weight = tableau.b[i] * Δt
         scaleadd!(ϕ, stages.ϕds[i], weight)
         scaleadd!(v, stages.vds[i], weight)
+        scaleadd!(s, stages.sds[i], weight)
     end
 
     # Convert from local to global coordinates
     global_coordinates!(state, q0, ϕ)
     set_velocity!(state, v)
+    set_additional_state!(state, s)
 
     nothing
 end
@@ -320,6 +345,7 @@ function integrate(integrator::MuntheKaasIntegrator, state0, finalTime, Δt; max
     state = state0
     set_num_positions!(integrator.stages, length(configuration(state)))
     set_num_velocities!(integrator.stages, length(velocity(state)))
+    set_num_additional_states!(integrator.stages, length(additional_state(state)))
     initialize(integrator.sink, t, state)
     minSleepTime = 1. / 60. # based on visualizer fps
 

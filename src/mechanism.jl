@@ -119,6 +119,19 @@ num_velocities(mechanism::Mechanism) = mapreduce(num_velocities, +, 0, tree_join
 """
 $(SIGNATURES)
 
+Return the dimension of the vector of additional states ``s`` (used for stateful contact models).
+"""
+function num_additional_states(mechanism::Mechanism)
+    ret = 0
+    for body in bodies(mechanism), point in contact_points(body)
+        ret += num_states(friction_model(contact_model(point)))
+    end
+    ret
+end
+
+"""
+$(SIGNATURES)
+
 Return the `RigidBody` to which `frame` is attached.
 
 Note: this function is linear in the number of bodies and is not meant to be

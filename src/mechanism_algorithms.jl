@@ -709,6 +709,7 @@ upon `body`.
 function dynamics!{T, X, M, Tau, W}(result::DynamicsResult{T}, state::MechanismState{X, M},
         torques::AbstractVector{Tau} = ConstVector(zero(T), num_velocities(state)),
         externalwrenches::AbstractVector{Wrench{W}} = ConstVector(zero(Wrench{T}, root_frame(state.mechanism)), num_bodies(state.mechanism)))
+    fill!(result.ṡ, zero(T)) # TODO
     dynamics_bias!(result.dynamicsbias, result.accelerations, result.jointwrenches, state, externalwrenches)
     mass_matrix!(result.massmatrix, state)
     constraint_jacobian_and_bias!(state, result.constraintjacobian, result.constraintbias)

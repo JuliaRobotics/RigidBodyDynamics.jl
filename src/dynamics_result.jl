@@ -18,6 +18,7 @@ type DynamicsResult{M<:Number, T<:Number}
 
     v̇::Vector{T}
     λ::Vector{T}
+    ṡ::Vector{T}
 
     # the following are indexed by vertex_index(body). TODO: consider adding a BodyMap type:
     accelerations::Vector{SpatialAcceleration{T}}
@@ -40,7 +41,7 @@ type DynamicsResult{M<:Number, T<:Number}
         constraintbias = Vector{T}(nconstraints)
         v̇ = Vector{T}(nv)
         λ = Vector{T}(nconstraints)
-
+        ṡ = Vector{T}(num_additional_states(mechanism))
         accelerations = Vector{SpatialAcceleration{T}}(num_bodies(mechanism))
         jointwrenches = Vector{Wrench{T}}(num_bodies(mechanism))
 
@@ -50,7 +51,7 @@ type DynamicsResult{M<:Number, T<:Number}
         Y = Matrix{T}(nconstraints, nv)
 
         new{M, T}(mechanism, massmatrix, dynamicsbias, constraintjacobian, constraintbias,
-            v̇, λ, accelerations, jointwrenches, L, A, z, Y)
+            v̇, λ, ṡ, accelerations, jointwrenches, L, A, z, Y)
     end
 end
 
