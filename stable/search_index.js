@@ -829,7 +829,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Function",
-    "text": "attach!(mechanism, parentbody, childmechanism)\nattach!(mechanism, parentbody, childmechanism, childroot_to_parent)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
+    "text": "attach!(mechanism, parentbody, childmechanism, childroot_to_parent)\nattach!(mechanism, parentbody, childmechanism)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
 },
 
 {
@@ -901,7 +901,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rebuild_spanning_tree!",
     "category": "Function",
-    "text": "rebuild_spanning_tree!(mechanism)\nrebuild_spanning_tree!(mechanism, next_edge)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
+    "text": "rebuild_spanning_tree!(mechanism, next_edge)\nrebuild_spanning_tree!(mechanism)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
 },
 
 {
@@ -1357,7 +1357,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(result, state, torques)\ndynamics!(result, state)\ndynamics!(result, state, torques, externalwrenches)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
+    "text": "dynamics!(result, state)\ndynamics!(result, state, torques)\ndynamics!(result, state, torques, externalwrenches)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
 },
 
 {
@@ -1365,7 +1365,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "text": "dynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
 },
 
 {
@@ -1453,7 +1453,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias!",
     "category": "Function",
-    "text": "dynamics_bias!(torques, biasaccelerations, wrenches, state, externalwrenches)\ndynamics_bias!(torques, biasaccelerations, wrenches, state)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+    "text": "dynamics_bias!(torques, biasaccelerations, wrenches, state)\ndynamics_bias!(torques, biasaccelerations, wrenches, state, externalwrenches)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
