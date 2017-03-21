@@ -25,6 +25,9 @@
     @test isapprox(inv(t1) * (t1 * v), v)
     @test isapprox(t1 * p - t1 * v, Point3D(f1, t1.trans))
 
+    @test_throws DimensionMismatch Point3D(f2, rand(2))
+    @test_throws DimensionMismatch Point3D(f2, rand(4))
+
     show(DevNull, t1)
     show(DevNull, p)
     show(DevNull, v)
