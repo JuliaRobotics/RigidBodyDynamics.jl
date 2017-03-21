@@ -261,6 +261,19 @@ function maximal_coordinates(mechanism::Mechanism)
     ret, newfloatingjoints, bodymap, jointmap
 end
 
+add_environment_primitive!(mechanism::Mechanism, halfspace::HalfSpace3D) = push!(mechanism.environment, halfspace)
+
+# add_environment_primitive!(mechanism::Mechanism, box::Box3D) = push!(mechanism.environment, box) # TODO: ensure that any frames associated with the box are attached to the root body
+#
+# function add_box!(mechanism::Mechanism, framename::String, center::Point3D, length::Number, width::Number, height::Number)
+#     frame = CartesianFrame3D(framename)
+#     tf = Transform3D(frame, center.frame, center.v)
+#     add_frame!(root_body(mechanism), tf)
+#     box = Box3D(frame, length / 2, width / 2, height / 2)
+#     add_environment_primitive!(mechanism, box)
+#     box
+# end
+
 """
 $(SIGNATURES)
 

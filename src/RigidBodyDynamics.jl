@@ -127,6 +127,8 @@ export
     submechanism,
     remove_fixed_joints!, # deprecated
     remove_fixed_tree_joints!,
+    add_environment_primitive!,
+    add_box!,
     rand_mechanism,
     rand_chain_mechanism,
     rand_tree_mechanism,

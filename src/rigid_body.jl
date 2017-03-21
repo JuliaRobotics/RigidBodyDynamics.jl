@@ -160,8 +160,9 @@ $(SIGNATURES)
 Add a new contact point to the rigid body
 """
 function add_contact_point!{T}(body::RigidBody{T}, point::DefaultContactPoint{T})
-    tf = fixed_transform(body, point.location.frame, default_frame(body))
-    point.location = tf * point.location
+    loc = location(point)
+    tf = fixed_transform(body, loc.frame, default_frame(body))
+    point.location = tf * loc
     push!(body.contact_points, point)
     nothing
 end

@@ -587,35 +587,40 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
     end
 end
 
-function detect_contact(position::Point3D) # TODO
-    T = eltype(position)
-    separation = position.v[3]
-    normal = FreeVector3D(position.frame, SVector(zero(T), zero(T), one(T)))
-    separation, normal
-end
-
 function contact_dynamics!{X, M, C, T}(result::DynamicsResult{M, T}, state::MechanismState{X, M, C})
-    # TODO: minor allocations
-    frame = root_frame(state.mechanism)
-    for body in bodies(state.mechanism)
+    mechanism = state.mechanism
+    root = root_body(mechanism)
+    frame = default_frame(root)
+    for body in bodies(mechanism)
         wrench = zero(Wrench{T}, frame)
         points = contact_points(body)
         if !isempty(points)
+            # TODO: AABB
             body_to_root = transform_to_root(state, body)
             twist = twist_wrt_world(state, body)
-            state_derivs = contact_state_derivatives(result, body)
             states = contact_states(state, body)
+            state_derivs = contact_state_derivatives(result, body)
             for i = 1 : length(points)
                 @inbounds c = points[i]
-                contact_state = states[i]
-                contact_state_deriv = state_derivs[i]
-                position = body_to_root * c.location
-                velocity = point_velocity(twist, position)
-                separation, normal = detect_contact(position) # TODO
-                penetration = -separation
-                model = contact_model(c)
-                force = Contact.contact_dynamics!(contact_state_deriv, contact_state, model, penetration, velocity, normal)
-                wrench += Wrench(position, force)
+                # TODO: AABB check here
+                point = body_to_root * location(c)
+                velocity = point_velocity(twist, point)
+                for primitive in mechanism.environment.halfspaces
+                    model = contact_model(c)
+                    contact_state = states[i]
+                    contact_state_deriv = state_derivs[i]
+                    # TODO: would be good to move this to Contact module
+                    # arguments: model, state, state_deriv, point, velocity, primitive
+                    if point_inside(primitive, point)
+                        separation, normal = Contact.detect_contact(primitive, point)
+                        force = Contact.contact_dynamics!(contact_state_deriv, contact_state,
+                            model, -separation, velocity, normal)
+                        wrench += Wrench(point, force)
+                    else
+                        Contact.reset!(contact_state)
+                        Contact.zero!(contact_state_deriv)
+                    end
+                end
             end
         end
         set_contact_wrench!(result, body, wrench)
