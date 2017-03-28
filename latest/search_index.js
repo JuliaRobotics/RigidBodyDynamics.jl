@@ -829,7 +829,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Function",
-    "text": "attach!(mechanism, parentbody, childmechanism)\nattach!(mechanism, parentbody, childmechanism, childroot_to_parent)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
+    "text": "attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds jointToPredecessor and successorToJoint define where joint is attached to each body. jointToPredecessor should define frame_before(joint) with respect to any frame fixed to predecessor, and likewise successorToJoint should define any frame fixed to successor with respect to frame_after(joint).\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
 },
 
 {
@@ -837,7 +837,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Function",
-    "text": "attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds jointToPredecessor and successorToJoint define where joint is attached to each body. jointToPredecessor should define frame_before(joint) with respect to any frame fixed to predecessor, and likewise successorToJoint should define any frame fixed to successor with respect to frame_after(joint).\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
+    "text": "attach!(mechanism, parentbody, childmechanism, childroot_to_parent)\nattach!(mechanism, parentbody, childmechanism)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
 },
 
 {
@@ -1113,6 +1113,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanismstate.html#RigidBodyDynamics.bias_acceleration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.bias_acceleration",
+    "category": "Method",
+    "text": "bias_acceleration(state, joint)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.bias_acceleration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.bias_acceleration",
+    "category": "Method",
+    "text": "bias_acceleration(state, body)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n"
+},
+
+{
     "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration",
@@ -1137,6 +1153,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanismstate.html#RigidBodyDynamics.crb_inertia-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.crb_inertia",
+    "category": "Method",
+    "text": "crb_inertia(state, body)\n\n\nReturn the composite rigid body inertia body expressed in the root frame of the mechanism.\n\n\n\n"
+},
+
+{
     "location": "mechanismstate.html#RigidBodyDynamics.global_coordinates!-Tuple{RigidBodyDynamics.MechanismState,Union{Base.ReshapedArray{T,1,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray{T,1},SubArray{T,1,A<:Union{Base.ReshapedArray{T,N,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray},I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex,Colon,Int64,Range{Int64}},N}},L}},Union{Base.ReshapedArray{T,1,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray{T,1},SubArray{T,1,A<:Union{Base.ReshapedArray{T,N,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray},I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex,Colon,Int64,Range{Int64}},N}},L}}}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.global_coordinates!",
@@ -1150,6 +1174,22 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.local_coordinates!",
     "category": "Method",
     "text": "local_coordinates!(state, ϕ, ϕd, q0)\n\n\nCompute local coordinates phi centered around (global) configuration vector q_0, as well as their time derivatives dotphi.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.motion_subspace-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.motion_subspace",
+    "category": "Method",
+    "text": "motion_subspace(state, joint)\n\n\nReturn the motion subspace of the given joint expressed in frame_after(joint).\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.motion_subspace_in_world-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.motion_subspace_in_world",
+    "category": "Method",
+    "text": "motion_subspace_in_world(state, joint)\n\n\nReturn the motion subspace of the given joint expressed in the root frame of the mechanism.\n\n\n\n"
 },
 
 {
@@ -1249,6 +1289,38 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanismstate.html#RigidBodyDynamics.spatial_inertia-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.spatial_inertia",
+    "category": "Method",
+    "text": "spatial_inertia(state, body)\n\n\nReturn the spatial inertia of body expressed in the root frame of the mechanism.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.transform",
+    "category": "Method",
+    "text": "transform(state, joint)\n\n\nReturn the joint transform for the given joint, i.e. the transform from frame_after(joint) to frame_before(joint).\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.transform_to_root-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.transform_to_root",
+    "category": "Method",
+    "text": "transform_to_root(state, body)\n\n\nReturn the transform from default_frame(body) to the root frame of the mechanism.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.twist_wrt_world-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.twist_wrt_world",
+    "category": "Method",
+    "text": "twist_wrt_world(state, body)\n\n\nReturn the twist of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame.\n\n\n\n"
+},
+
+{
     "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity",
@@ -1310,6 +1382,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.non_tree_joints",
     "category": "Method",
     "text": "non_tree_joints(state)\n\n\nReturn the Joints that are not part of the underlying Mechanism's spanning tree as an iterable collection.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.twist",
+    "category": "Method",
+    "text": "twist(state, joint)\n\n\nReturn the joint twist for the given joint, i.e. the twist of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism.\n\n\n\n"
 },
 
 {
@@ -1381,7 +1461,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "text": "dynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
 },
 
 {
@@ -1389,7 +1469,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(result, state, torques, externalwrenches)\ndynamics!(result, state, torques)\ndynamics!(result, state)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
+    "text": "dynamics!(result, state, torques, externalwrenches)\ndynamics!(result, state)\ndynamics!(result, state, torques)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
 },
 
 {
@@ -1445,7 +1525,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "Function",
-    "text": "inverse_dynamics!(torquesout, jointwrenchesOut, accelerations, state, v̇)\ninverse_dynamics!(torquesout, jointwrenchesOut, accelerations, state, v̇, externalwrenches)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+    "text": "inverse_dynamics!(torquesout, jointwrenchesOut, accelerations, state, v̇, externalwrenches)\ninverse_dynamics!(torquesout, jointwrenchesOut, accelerations, state, v̇)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
