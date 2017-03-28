@@ -469,6 +469,14 @@ in the unconstrained joint-space equations of motion
 ```math
 M(q) \\dot{v} + c(q, v, w_\\text{ext}) = \\tau
 ```
+given joint configuration vector ``q``, joint velocity vector ``v``,
+joint acceleration vector ``\\dot{v}`` and (optionally) external
+wrenches ``w_\\text{ext}``.
+
+The `externalwrenches` argument can be used to specify additional
+wrenches that act on the `Mechanism`'s bodies. `externalwrenches` should be a
+vector for which `externalwrenches[vertex_index(body)]` is the wrench exerted
+upon `body`.
 
 $noalloc_doc
 """
@@ -491,6 +499,11 @@ M(q) \\dot{v} + c(q, v, w_\\text{ext}) = \\tau
 given joint configuration vector ``q``, joint velocity vector ``v``,
 joint acceleration vector ``\\dot{v}`` and (optionally) external
 wrenches ``w_\\text{ext}``.
+
+The `externalwrenches` argument can be used to specify additional
+wrenches that act on the `Mechanism`'s bodies. `externalwrenches` should be a
+vector for which `externalwrenches[vertex_index(body)]` is the wrench exerted
+upon `body`.
 
 This method implements the recursive Newton-Euler algorithm.
 
@@ -687,6 +700,11 @@ K(q) \\dot{v} = -k
 ```
 given joint configuration vector ``q``, joint velocity vector ``v``, and
 (optionally) joint torques ``\\tau`` and external wrenches ``w_\\text{ext}``.
+
+The `externalwrenches` argument can be used to specify additional
+wrenches that act on the `Mechanism`'s bodies. `externalwrenches` should be a
+vector for which `externalwrenches[vertex_index(body)]` is the wrench exerted
+upon `body`.
 """
 function dynamics!{T, X, M, Tau, W}(result::DynamicsResult{T}, state::MechanismState{X, M},
         torques::AbstractVector{Tau} = ConstVector(zero(T), num_velocities(state)),
