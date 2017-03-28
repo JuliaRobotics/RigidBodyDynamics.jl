@@ -9,14 +9,19 @@ Type parameters:
 * `T`: the scalar type of the dynamics-related variables.
 """
 type DynamicsResult{M<:Number, T<:Number}
+    mechanism::Mechanism{M}
+
     massmatrix::Symmetric{T, Matrix{T}}
     dynamicsbias::Vector{T}
     constraintjacobian::Matrix{T}
     constraintbias::Vector{T}
+
     v̇::Vector{T}
     λ::Vector{T}
-    accelerations::Dict{RigidBody{M}, SpatialAcceleration{T}}
-    jointwrenches::Dict{RigidBody{M}, Wrench{T}}
+
+    # the following are indexed by vertex_index(body). TODO: consider adding a BodyMap type:
+    accelerations::Vector{SpatialAcceleration{T}}
+    jointwrenches::Vector{Wrench{T}} # TODO: index by joint tree index?
     # see solve_dynamics! for meaning of the following variables:
     L::Matrix{T} # lower triangular
     A::Matrix{T} # symmetric
@@ -35,17 +40,23 @@ type DynamicsResult{M<:Number, T<:Number}
         constraintbias = Vector{T}(nconstraints)
         v̇ = Vector{T}(nv)
         λ = Vector{T}(nconstraints)
-        accelerations = Dict{RigidBody{M}, SpatialAcceleration{T}}()
-        sizehint!(accelerations, num_bodies(mechanism))
-        jointwrenches = Dict{RigidBody{M}, Wrench{T}}()
-        sizehint!(jointwrenches, num_bodies(mechanism))
+
+        accelerations = Vector{SpatialAcceleration{T}}(num_bodies(mechanism))
+        jointwrenches = Vector{Wrench{T}}(num_bodies(mechanism))
+
         L = Matrix{T}(nv, nv)
         A = Matrix{T}(nconstraints, nconstraints)
         z = Vector{T}(nv)
         Y = Matrix{T}(nconstraints, nv)
 
-        new{M, T}(massmatrix, dynamicsbias, constraintjacobian, constraintbias, v̇, λ, accelerations, jointwrenches, L, A, z, Y)
+        new{M, T}(mechanism, massmatrix, dynamicsbias, constraintjacobian, constraintbias,
+            v̇, λ, accelerations, jointwrenches, L, A, z, Y)
     end
 end
 
 DynamicsResult{M, T}(::Type{T}, mechanism::Mechanism{M}) = DynamicsResult{M, T}(mechanism)
+
+acceleration(result::DynamicsResult, body::RigidBody) = result.accelerations[vertex_index(body)]
+set_acceleration!(result::DynamicsResult, body::RigidBody, accel::SpatialAcceleration) = (result.accelerations[vertex_index(body)] = accel)
+joint_wrench(result::DynamicsResult, body::RigidBody) = result.jointwrenches[vertex_index(body)]
+set_joint_wrench!(result::DynamicsResult, body::RigidBody, wrench::Wrench) = (result.jointwrenches[vertex_index(body)] = wrench)

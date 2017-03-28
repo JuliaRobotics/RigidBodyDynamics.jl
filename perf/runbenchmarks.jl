@@ -33,7 +33,7 @@ function create_benchmark_suite()
             inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalWrenches),
             setup = (
                 v̇ = rand(num_velocities($mechanism));
-                externalWrenches = Dict(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in non_root_bodies($mechanism));
+                externalWrenches = [rand(Wrench{ScalarType}, root_frame($mechanism)) for i = 1 : num_bodies($mechanism)];
                 rand!($state)
             )
         )
@@ -46,7 +46,7 @@ function create_benchmark_suite()
             setup=(
                 rand!($state);
                 τ = rand(num_velocities($mechanism));
-                externalWrenches = Dict(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in non_root_bodies($mechanism))
+                externalWrenches = [rand(Wrench{ScalarType}, root_frame($mechanism)) for i = 1 : num_bodies($mechanism)];
             )
         )
     end

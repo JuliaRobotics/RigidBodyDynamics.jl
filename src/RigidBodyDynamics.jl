@@ -94,6 +94,7 @@ export
     configuration_derivative_to_velocity!,
     num_positions,
     num_velocities,
+    num_bodies,
     configuration,
     configuration_range,
     velocity,
