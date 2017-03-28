@@ -1,21 +1,11 @@
-# associative type that signifies an empty dictionary and does not allocate memory
-immutable NullDict{K, V} <: Associative{K, V}
-end
-# Base.length(::NullDict) = 0
-# Base.start(::NullDict) = 0
-# Base.done(::NullDict, state) = true
-# Base.get(::NullDict, key, default) = default
-Base.haskey(::NullDict, k) = false
-
-# ultimate sparse AbstractVector type that does not allocate memory
-immutable NullVector{T} <: AbstractVector{T}
+immutable ConstVector{T} <: AbstractVector{T}
+    val::T
     length::Int64
 end
-Base.size(A::NullVector) = (A.length, )
-Base.getindex{T}(A::NullVector{T}, i::Int) = zero(T)
-# Base.setindex!(A::NullVector, v, i::Int) = error()
-# Base.setindex!{N}(A::NullVector, v, I::Vararg{Int, N}) = error()
-Base.linearindexing{T}(::Type{NullVector{T}}) = Base.LinearFast()
+Base.size(A::ConstVector) = (A.length, )
+Base.getindex{T}(A::ConstVector{T}, i::Int) = (@boundscheck checkbounds(A, i); A.val)
+Base.linearindexing{T}(::Type{ConstVector{T}}) = Base.LinearFast()
+
 
 # type of a view of a vector
 # TODO: a bit too specific
