@@ -504,6 +504,17 @@ for ForceSpaceElement in (:Momentum, :Wrench)
     @eval begin
         Base.convert{T<:Number}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) = f
 
+        """
+        $(SIGNATURES)
+
+        Create a $($(string(ForceSpaceElement))) given the angular and linear
+        components, which should be expressed in the same frame.
+        """
+        function $ForceSpaceElement(angular::FreeVector3D, linear::FreeVector3D)
+            @framecheck angular.frame linear.frame
+            $ForceSpaceElement(angular.frame, angular.v, linear.v)
+        end
+
         function Base.convert{T<:Number}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement)
             $ForceSpaceElement(f.frame, convert(SVector{3, T}, f.angular), convert(SVector{3, T}, f.linear))
         end
@@ -546,6 +557,16 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         Base.isapprox(x::$ForceSpaceElement, y::$ForceSpaceElement; atol = 1e-12) = x.frame == y.frame && isapprox(x.angular, y.angular, atol = atol) && isapprox(x.linear, y.linear, atol = atol)
     end
 end
+
+# Wrench-specific functions
+"""
+$(SIGNATURES)
+
+Create a Wrench from a force, ``f``, and the application point of the force, ``r``.
+The torque part of the wrench will be computed as ``r \\times f``. The force
+and the application point should be expressed in the same frame.
+"""
+Wrench(application_point::Point3D, force::FreeVector3D) = Wrench(application_point × force, force)
 
 # WrenchSubspace is the return type of e.g. constraint_wrench_subspace(::Joint, ...)
 @compat const WrenchSubspace{T} = WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
@@ -756,4 +777,16 @@ function kinetic_energy(I::SpatialInertia, twist::Twist)
     c = I.crossPart
     m = I.mass
     (dot(ω, J * ω) + dot(v, m * v + 2 * cross(ω, c))) / 2
+end
+
+"""
+$(SIGNATURES)
+
+Given a twist ``T_{j}^{k,i}`` of frame ``j`` with respect to frame ``i``, expressed in frame ``k``,
+and the location of a point fixed in frame ``j``, also expressed in frame ``k``, compute the velocity
+of the point relative to frame ``i``.
+"""
+function point_velocity(twist::Twist, point::Point3D)
+    @framecheck twist.frame point.frame
+    FreeVector3D(twist.frame, twist.angular × point.v + twist.linear)
 end

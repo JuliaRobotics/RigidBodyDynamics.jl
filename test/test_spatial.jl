@@ -46,6 +46,18 @@ end
         @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f2, f4) # wrong frame
         @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f4, f3) # wrong base
         @test isapprox(Array(transform(T1, H31)), Ad(H31) * Array(T1))
+
+        # 2.17 in Duindam:
+        f0 = CartesianFrame3D("0")
+        fi = CartesianFrame3D("i")
+        Qi = Point3D(fi, rand(SVector{3}))
+        H = rand(Transform3D{Float64}, fi, f0)
+        T0 = log(H)
+        Q0 = H * Qi
+        Q̇0 = point_velocity(T0, Q0)
+        f = t -> Array((exp(Twist(T0.body, T0.base, T0.frame, t * T0.angular, t * T0.linear)) * Qi).v)
+        Q̇0check = ForwardDiff.derivative(f, 1.)
+        @test isapprox(Q̇0.v, Q̇0check)
     end
 
     @testset "wrench" begin
@@ -53,6 +65,20 @@ end
         H21 = rand(Transform3D{Float64}, f2, f1)
         @test isapprox(Array(transform(W, H21)), Ad(inv(H21))' * Array(W))
         @test_throws ArgumentError transform(W, inv(H21)) # wrong frame
+
+        point2 = Point3D(f2, zeros(SVector{3}))
+        force2 = FreeVector3D(f2, rand(SVector{3}))
+        W2 = Wrench(point2, force2)
+        @test isapprox(W2.angular, zeros(SVector{3}))
+        @test isapprox(W2.linear, force2.v)
+        @test W2.frame == force2.frame
+
+        point1 = H21 * point2
+        force1 = H21 * force2
+        W1 = Wrench(point1, force1)
+        @test W1.frame == f1
+        @test isapprox(W1, transform(W2, H21))
+        @test_throws ArgumentError Wrench(point1, force2) # wrong frame
     end
 
     @testset "momentum" begin
