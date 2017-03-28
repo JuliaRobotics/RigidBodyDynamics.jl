@@ -129,13 +129,13 @@ end
 # whereas a Point3D is also translated
 for VectorType in (:FreeVector3D, :Point3D)
     @eval begin
-        type $VectorType{V<:AbstractVector}
+        immutable $VectorType{V<:AbstractVector}
             frame::CartesianFrame3D
             v::V
 
-            function (::Type{$VectorType{V}}){V<:AbstractVector}(frame::CartesianFrame3D, v::V)
-                @boundscheck length(v) == 3
-                new{V}(frame, v)
+            function $VectorType(frame::CartesianFrame3D, v::V)
+                @boundscheck length(v) == 3 || throw(DimensionMismatch())
+                new(frame, v)
             end
         end
 
