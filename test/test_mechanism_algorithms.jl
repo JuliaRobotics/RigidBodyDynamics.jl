@@ -74,7 +74,7 @@
         end
     end
 
-    @testset "joint_torque! / geometric_jacobian" begin
+    @testset "joint_torque! / motion_subspace" begin
         for joint in tree_joints(mechanism)
             qjoint = configuration(x, joint)
             wrench = rand(Wrench{Float64}, frame_after(joint))
@@ -86,16 +86,32 @@
     end
 
     @testset "geometric_jacobian / relative_twist" begin
+        frame = CartesianFrame3D()
         for i = 1 : 100
             bs = Set(bodies(mechanism))
             body = rand([bs...])
             delete!(bs, body)
             base = rand([bs...])
             p = RigidBodyDynamics.path(mechanism, base, body)
-            J = geometric_jacobian(x, p)
             vpath = velocity(x, p)
+
+            J = geometric_jacobian(x, p)
             T = relative_twist(x, body, base)
             @test isapprox(Twist(J, vpath), T; atol = 1e-12)
+
+            J1 = GeometricJacobian(J.body, J.base, J.frame, similar(J.angular), similar(J.linear))
+            geometric_jacobian!(J1, x, p)
+            @test isapprox(Twist(J1, vpath), T; atol = 1e-12)
+
+            H = rand(Transform3D{Float64}, root_frame(mechanism), frame)
+            J2 = GeometricJacobian(J.body, J.base, frame, similar(J.angular), similar(J.linear))
+            @test_throws ArgumentError geometric_jacobian!(J, x, p, H)
+            geometric_jacobian!(J2, x, p, H)
+            @test isapprox(Twist(J2, vpath), transform(T, H); atol = 1e-12)
+
+            J3 = GeometricJacobian(J.body, J.base, default_frame(body), similar(J.angular), similar(J.linear))
+            geometric_jacobian!(J3, x, p)
+            @test isapprox(Twist(J3, vpath), transform(x, T, default_frame(body)); atol = 1e-12)
         end
     end
 
