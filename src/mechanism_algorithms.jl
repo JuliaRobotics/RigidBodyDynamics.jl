@@ -59,20 +59,40 @@ function _set_jacobian_part!(out::GeometricJacobian, part::GeometricJacobian, ne
     startind, nextbaseframe
 end
 
-function geometric_jacobian!{A, X, M, C}(out::GeometricJacobian{A}, state::MechanismState{X, M, C},
-        path::TreePath{RigidBody{M}, Joint{M}})
-    @boundscheck num_velocities(path) == num_cols(out) || error("size mismatch")
+const geometric_jacobian_doc = """Compute a geometric Jacobian (also known as a
+basic, or spatial Jacobian) associated with the joints that form a path in the
+`Mechanism`'s spanning tree, in the given state.
 
+A geometric Jacobian maps the vector of velocities associated with the joint path
+to the twist of the body succeeding the last joint in the path with respect to
+the body preceding the first joint in the path.
+
+See also [`path`](@ref), [`GeometricJacobian`](@ref), [`velocity(state, path)`](@ref),
+[`Twist`](@ref).
+"""
+
+"""
+$(SIGNATURES)
+
+$geometric_jacobian_doc
+
+`transformfun` is a callable that may be used to transform the individual motion
+subspaces of each of the joints to the frame in which `out` is expressed.
+
+$noalloc_doc
+"""
+function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path::TreePath, transformfun)
+    @boundscheck num_velocities(path) == num_cols(out) || error("size mismatch")
     mechanism = state.mechanism
     nextbaseframe = out.base
     startind = 1
     for joint in path.source_to_lca
-        S = -motion_subspace_in_world(state, joint)
+        S = -transformfun(motion_subspace_in_world(state, joint))
         startind, nextbaseframe = _set_jacobian_part!(out, S, nextbaseframe, startind)
     end
     for i = length(path.target_to_lca) : -1 : 1
         joint = path.target_to_lca[i]
-        S = motion_subspace_in_world(state, joint)
+        S = transformfun(motion_subspace_in_world(state, joint))
         startind, nextbaseframe = _set_jacobian_part!(out, S, nextbaseframe, startind)
         if i == 1
             @framecheck S.body out.body
@@ -84,11 +104,44 @@ end
 """
 $(SIGNATURES)
 
-Compute a geometric Jacobian (also known as a basic, or spatial Jacobian)
-for a path in the graph of joints and bodies of a `Mechanism`,
-in the given state.
+$geometric_jacobian_doc
 
-See also [`path`](@ref), [`GeometricJacobian`](@ref).
+`root_to_desired` is the transform from the `Mechanism`'s root frame to the frame
+in which `out` is expressed.
+
+$noalloc_doc
+"""
+function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path::TreePath, root_to_desired::Transform3D)
+    geometric_jacobian!(out, state, path, S -> transform(S, root_to_desired))
+end
+
+"""
+$(SIGNATURES)
+
+$geometric_jacobian_doc
+
+See [`geometric_jacobian!(out, state, path, root_to_desired)`](@ref). Uses `state`
+to compute the transform from the `Mechanism`'s root frame to the frame in which
+`out` is expressed.
+
+$noalloc_doc
+"""
+function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path::TreePath)
+    if out.frame == root_frame(state.mechanism)
+        geometric_jacobian!(out, state, path, identity)
+    else
+        geometric_jacobian!(out, state, path, inv(transform_to_root(state, out.frame)))
+    end
+end
+
+"""
+$(SIGNATURES)
+
+$geometric_jacobian_doc
+
+The Jacobian is computed in the `Mechanism`'s root frame.
+
+See [`geometric_jacobian!(out, state, path)`](@ref).
 """
 function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
     nv = num_velocities(path)
@@ -97,7 +150,7 @@ function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::TreeP
     bodyframe = default_frame(path.target)
     baseframe = default_frame(path.source)
     jac = GeometricJacobian(bodyframe, baseframe, root_frame(state.mechanism), angular, linear)
-    geometric_jacobian!(jac, state, path)
+    geometric_jacobian!(jac, state, path, identity)
 end
 
 """
@@ -252,26 +305,34 @@ const momentum_matrix_doc = """Compute the momentum matrix ``A(q)`` of the
 
 The momentum matrix maps the `Mechanism`'s joint velocity vector ``v`` to
 its total momentum.
+
+See also [`MomentumMatrix`](@ref).
+"""
+
+const momentum_matrix!_doc = """$momentum_matrix_doc
+The `out` argument must be a mutable `MomentumMatrix` with as many columns as
+the dimension of the `Mechanism`'s joint velocity vector ``v``.
 """
 
 """
 $(SIGNATURES)
 
-$momentum_matrix_doc
+$momentum_matrix!_doc
+
+`transformfun` is a callable that may be used to transform the individual
+momentum matrix blocks associated with each of the joints to the frame in which
+`out` is expressed.
 
 $noalloc_doc
-
-The `out` argument must be a mutable `MomentumMatrix` with as many columns as
-the dimension of the `Mechanism`'s joint velocity vector ``v``.
 """
-function momentum_matrix!(out::MomentumMatrix, state::MechanismState)
+function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformfun)
     @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
     pos = 1
     mechanism = state.mechanism
     for joint in tree_joints(mechanism)
         body = successor(joint, mechanism)
-        part = crb_inertia(state, body) * motion_subspace_in_world(state, joint)
-        @framecheck out.frame part.frame # TODO: transform part to out.frame instead?
+        part = transformfun(crb_inertia(state, body) * motion_subspace_in_world(state, joint))
+        @framecheck out.frame part.frame
         n = 3 * num_cols(part)
         copy!(out.angular, pos, part.angular, 1, n)
         copy!(out.linear, pos, part.linear, 1, n)
@@ -282,13 +343,48 @@ end
 """
 $(SIGNATURES)
 
+$momentum_matrix!_doc
+
+`root_to_desired` is the transform from the `Mechanism`'s root frame to the frame
+in which `out` is expressed.
+
+$noalloc_doc
+"""
+function momentum_matrix!(out::MomentumMatrix, state::MechanismState, root_to_desired::Transform3D)
+    momentum_matrix!(out, state, IJ -> transform(IJ, root_to_desired))
+end
+
+"""
+$(SIGNATURES)
+
+$momentum_matrix!_doc
+
+See [`momentum_matrix!(out, state, root_to_desired)`](@ref). Uses `state`
+to compute the transform from the `Mechanism`'s root frame to the frame in which
+`out` is expressed.
+
+$noalloc_doc
+"""
+function momentum_matrix!(out::MomentumMatrix, state::MechanismState)
+    if out.frame == root_frame(state.mechanism)
+        momentum_matrix!(out, state, identity)
+    else
+        momentum_matrix!(out, state, inv(transform_to_root(state, out.frame)))
+    end
+end
+
+"""
+$(SIGNATURES)
+
 $momentum_matrix_doc
+
+See [`momentum_matrix!(out, state)`](@ref).
 """
 function momentum_matrix(state::MechanismState)
     ncols = num_velocities(state)
     T = cache_eltype(state)
     ret = MomentumMatrix(root_frame(state.mechanism), Matrix{T}(3, ncols), Matrix{T}(3, ncols))
-    momentum_matrix!(ret, state)
+    momentum_matrix!(ret, state, identity)
     ret
 end
 
