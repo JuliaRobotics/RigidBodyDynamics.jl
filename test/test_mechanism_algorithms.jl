@@ -205,9 +205,24 @@
         end
 
         v = velocity(x)
-        h = Momentum(A, v)
         hSum = sum(b -> spatial_inertia(x, b) * twist_wrt_world(x, b), non_root_bodies(mechanism))
-        @test isapprox(h, hSum; atol = 1e-12)
+        @test isapprox(Momentum(A, v), hSum; atol = 1e-12)
+
+        A1 = MomentumMatrix(A.frame, similar(A.angular), similar(A.linear))
+        momentum_matrix!(A1, x)
+        @test isapprox(Momentum(A1, v), hSum; atol = 1e-12)
+
+        frame = CartesianFrame3D()
+        A2 = MomentumMatrix(frame, similar(A.angular), similar(A.linear))
+        H = rand(Transform3D{Float64}, root_frame(mechanism), frame)
+        @test_throws ArgumentError momentum_matrix!(A, x, H)
+        momentum_matrix!(A2, x, H)
+        @test isapprox(Momentum(A2, v), transform(hSum, H); atol = 1e-12)
+
+        body = rand(collect(bodies(mechanism)))
+        A3 = MomentumMatrix(default_frame(body), similar(A.angular), similar(A.linear))
+        momentum_matrix!(A3, x)
+        @test isapprox(Momentum(A3, v), transform(x, hSum, default_frame(body)); atol = 1e-12)
     end
 
     @testset "mass matrix / kinetic energy" begin
