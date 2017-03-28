@@ -12,7 +12,7 @@ import Compat.Iterators: filter
 create_autodiff(x, dx) = [ForwardDiff.Dual(x[i], dx[i]) for i in 1 : length(x)]
 
 # TODO: open a PR with ForwardDiff:
-Base.mod{T<:ForwardDiff.Dual}(x::T, y::T) = ForwardDiff.Dual(mod(ForwardDiff.value(x), ForwardDiff.value(y)), ForwardDiff.partials(x))
+@inline Base.mod2pi{T<:ForwardDiff.Dual}(x::T) = ForwardDiff.Dual(mod2pi(ForwardDiff.value(x)), ForwardDiff.partials(x))
 @inline Base.rem(x::ForwardDiff.Dual, n::Real) = ForwardDiff.Dual(rem(ForwardDiff.value(x), n), ForwardDiff.partials(x))
 
 include("test_graph.jl")
