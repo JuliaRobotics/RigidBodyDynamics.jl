@@ -259,33 +259,41 @@ for fun in (:num_velocities, :num_positions)
     end
 end
 
-for (fun, veclength) in [(:configuration, :num_positions), (:velocity, :num_velocities)]
-    @eval begin
-        funstring = string($fun)
-        """
-        $(SIGNATURES)
-
-        Return the part of the `Mechanism`'s $funstring vector associated with
-        the joints along `path`.
-        """
-        function $fun{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
-            ret = Vector{X}($veclength(path))
-            setvectorpart! = (out, part, startind) -> begin
-                n = length(part)
-                n > 0 && copy!(out, startind, part, 1, n)
-                startind + n
-            end
-            startind = 1
-            for joint in path.source_to_lca
-                startind = setvectorpart!(ret, $fun(state, joint), startind)
-            end
-            for i = length(path.target_to_lca) : -1 : 1
-                joint = path.target_to_lca[i]
-                startind = setvectorpart!(ret, $fun(state, joint), startind)
-            end
-            ret
-        end
+function set_path_vector!{X, M, C}(ret::AbstractVector, state::MechanismState{X, M, C}, path::TreePath, fun)
+    setvectorpart! = (out, part, startind) -> begin
+        n = length(part)
+        n > 0 && copy!(out, startind, part, 1, n)
+        startind + n
     end
+    startind = 1
+    for joint in path.source_to_lca
+        startind = setvectorpart!(ret, fun(state, joint), startind)
+    end
+    for i = length(path.target_to_lca) : -1 : 1
+        joint = path.target_to_lca[i]
+        startind = setvectorpart!(ret, fun(state, joint), startind)
+    end
+    ret
+end
+
+"""
+$(SIGNATURES)
+
+Return the part of the `Mechanism`'s configuration vector ``q`` associated with
+the joints along `path`.
+"""
+function configuration{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
+    set_path_vector!(Vector{X}(num_positions(path)), state, path, configuration)
+end
+
+"""
+$(SIGNATURES)
+
+Return the part of the `Mechanism`'s velocity vector ``v`` associated with
+the joints along `path`.
+"""
+function velocity{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
+    set_path_vector!(Vector{X}(num_velocities(path)), state, path, velocity)
 end
 
 """
