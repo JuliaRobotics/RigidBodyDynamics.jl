@@ -351,6 +351,12 @@ end
 configuration_range(state::MechanismState, joint::Joint) = first(parentindexes(configuration(state, joint)))
 velocity_range(state::MechanismState, joint::Joint) = first(parentindexes(velocity(state, joint)))
 
+"""
+$(SIGNATURES)
+
+Return the joint transform for the given joint, i.e. the transform from
+`frame_after(joint)` to `frame_before(joint)`.
+"""
 function transform(state::MechanismState, joint::Joint)
     index = tree_index(joint, state.mechanism)
     @cache_element_get!(state.joint_transforms[index], begin
@@ -359,6 +365,13 @@ function transform(state::MechanismState, joint::Joint)
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Return the joint twist for the given joint, i.e. the twist of
+`frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
+root frame of the mechanism.
+"""
 function twist(state::MechanismState, joint::Joint)
     index = tree_index(joint, state.mechanism)
     @cache_element_get!(state.joint_twists[index], begin
@@ -368,6 +381,13 @@ function twist(state::MechanismState, joint::Joint)
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Return the bias acceleration across the given joint, i.e. the spatial acceleration
+of `frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
+root frame of the mechanism when all joint accelerations are zero.
+"""
 function bias_acceleration(state::MechanismState, joint::Joint)
     index = tree_index(joint, state.mechanism)
     @cache_element_get!(state.joint_bias_accelerations[index], begin
@@ -377,6 +397,11 @@ function bias_acceleration(state::MechanismState, joint::Joint)
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Return the motion subspace of the given joint expressed in `frame_after(joint)`.
+"""
 function motion_subspace(state::MechanismState, joint::Joint)
     index = tree_index(joint, state.mechanism)
     @cache_element_get!(state.motion_subspaces[index], begin
@@ -385,6 +410,12 @@ function motion_subspace(state::MechanismState, joint::Joint)
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Return the motion subspace of the given joint expressed in the root frame of
+the mechanism.
+"""
 function motion_subspace_in_world(state::MechanismState, joint::Joint)
     index = tree_index(joint, state.mechanism)
     @cache_element_get!(state.motion_subspaces_in_world[index], begin
@@ -396,6 +427,12 @@ function motion_subspace_in_world(state::MechanismState, joint::Joint)
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Return the transform from `default_frame(body)` to the root frame of the
+mechanism.
+"""
 function transform_to_root(state::MechanismState, body::RigidBody)
     index = vertex_index(body)
     @cache_element_get!(state.transforms_to_world[index], begin
@@ -407,6 +444,12 @@ function transform_to_root(state::MechanismState, body::RigidBody)
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Return the twist of `default_frame(body)` with respect to the root frame of the
+mechanism, expressed in the root frame.
+"""
 function twist_wrt_world(state::MechanismState, body::RigidBody)
     index = vertex_index(body)
     @cache_element_get!(state.twists_wrt_world[index], begin
@@ -419,6 +462,14 @@ function twist_wrt_world(state::MechanismState, body::RigidBody)
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Return the bias acceleration of the given body with respect to the world,
+i.e. the spatial acceleration of `default_frame(body)` with respect to the
+root frame of the mechanism, expressed in the root frame, when all joint
+accelerations are zero.
+"""
 function bias_acceleration(state::MechanismState, body::RigidBody)
     index = vertex_index(body)
     @cache_element_get!(state.bias_accelerations_wrt_world[index], begin
@@ -438,6 +489,12 @@ function bias_acceleration(state::MechanismState, body::RigidBody)
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Return the spatial inertia of `body` expressed in the root frame of the
+mechanism.
+"""
 function spatial_inertia(state::MechanismState, body::RigidBody)
     index = vertex_index(body)
     @cache_element_get!(state.inertias[index], begin
@@ -445,6 +502,12 @@ function spatial_inertia(state::MechanismState, body::RigidBody)
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Return the composite rigid body inertia `body` expressed in the root frame of the
+mechanism.
+"""
 function crb_inertia(state::MechanismState, body::RigidBody)
     index = vertex_index(body)
     @cache_element_get!(state.crb_inertias[index], begin
