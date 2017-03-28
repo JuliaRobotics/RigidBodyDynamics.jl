@@ -8,7 +8,7 @@ using Rotations
 using LightXML
 using DocStringExtensions
 using Compat
-import Base: *, +, /, -
+import Base: *, +, /, -, \
 import Compat.Iterators: filter
 import Compat.Iterators: flatten
 
@@ -67,6 +67,7 @@ export
     frame_after,
     add_frame!,
     transform,
+    invtransform,
     newton_euler,
     torque,
     joint_torque!,
