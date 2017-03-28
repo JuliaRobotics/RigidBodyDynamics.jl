@@ -184,7 +184,7 @@ function rotation_vector_rate{T}(rotation_vector::AbstractVector{T}, angular_vel
 end
 
 function angle_difference(a, b)
-    mod(b - a + pi, 2 * π) - π
+    mod2pi(b - a + pi) - π
 end
 
 function transform_spatial_motion{R <: Rotation{3}}(angular::SVector{3}, linear::SVector{3}, rot::R, trans::SVector{3})
