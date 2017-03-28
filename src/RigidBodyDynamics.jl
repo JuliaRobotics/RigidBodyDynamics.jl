@@ -70,6 +70,7 @@ export
     newton_euler,
     torque,
     joint_torque!,
+    point_velocity,
     local_coordinates!,
     global_coordinates!,
     root_frame,

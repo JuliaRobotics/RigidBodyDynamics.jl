@@ -46,6 +46,18 @@ end
         @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f2, f4) # wrong frame
         @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f4, f3) # wrong base
         @test isapprox(Array(transform(T1, H31)), Ad(H31) * Array(T1))
+
+        # 2.17 in Duindam:
+        f0 = CartesianFrame3D("0")
+        fi = CartesianFrame3D("i")
+        Qi = Point3D(fi, rand(SVector{3}))
+        H = rand(Transform3D{Float64}, fi, f0)
+        T0 = log(H)
+        Q0 = H * Qi
+        Q̇0 = point_velocity(T0, Q0)
+        f = t -> Array((exp(Twist(T0.body, T0.base, T0.frame, t * T0.angular, t * T0.linear)) * Qi).v)
+        Q̇0check = ForwardDiff.derivative(f, 1.)
+        @test isapprox(Q̇0.v, Q̇0check)
     end
 
     @testset "wrench" begin
