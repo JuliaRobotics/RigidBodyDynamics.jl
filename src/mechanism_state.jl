@@ -72,7 +72,7 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         crb_inertias = [CacheElement{SpatialInertia{C}}() for i = 1 : nb]
 
         # Set root-body related cache elements once and for all.
-        rootindex = tree_index(root_body(mechanism), mechanism)
+        rootindex = vertex_index(root_body(mechanism))
         rootframe = root_frame(mechanism)
         update!(transforms_to_world[rootindex], Transform3D(C, rootframe))
         update!(twists_wrt_world[rootindex], zero(Twist{C}, rootframe, rootframe, rootframe))
@@ -145,7 +145,7 @@ function setdirty!(state::MechanismState)
 
     for body in bodies(mechanism)
         if !isroot(body, mechanism)
-            index = tree_index(body, mechanism)
+            index = vertex_index(body)
             setdirty!(state.transforms_to_world[index])
             setdirty!(state.twists_wrt_world[index])
             setdirty!(state.bias_accelerations_wrt_world[index])
@@ -397,7 +397,7 @@ function motion_subspace_in_world(state::MechanismState, joint::Joint)
 end
 
 function transform_to_root(state::MechanismState, body::RigidBody)
-    index = tree_index(body, state.mechanism)
+    index = vertex_index(body)
     @cache_element_get!(state.transforms_to_world[index], begin
         joint = joint_to_parent(body, state.mechanism)
         parentbody = predecessor(joint, state.mechanism)
@@ -408,7 +408,7 @@ function transform_to_root(state::MechanismState, body::RigidBody)
 end
 
 function twist_wrt_world(state::MechanismState, body::RigidBody)
-    index = tree_index(body, state.mechanism)
+    index = vertex_index(body)
     @cache_element_get!(state.twists_wrt_world[index], begin
         joint = joint_to_parent(body, state.mechanism)
         parentbody = predecessor(joint, state.mechanism)
@@ -420,7 +420,7 @@ function twist_wrt_world(state::MechanismState, body::RigidBody)
 end
 
 function bias_acceleration(state::MechanismState, body::RigidBody)
-    index = tree_index(body, state.mechanism)
+    index = vertex_index(body)
     @cache_element_get!(state.bias_accelerations_wrt_world[index], begin
         joint = joint_to_parent(body, state.mechanism)
         parentbody = predecessor(joint, state.mechanism)
@@ -439,14 +439,14 @@ function bias_acceleration(state::MechanismState, body::RigidBody)
 end
 
 function spatial_inertia(state::MechanismState, body::RigidBody)
-    index = tree_index(body, state.mechanism)
+    index = vertex_index(body)
     @cache_element_get!(state.inertias[index], begin
         transform(spatial_inertia(body), transform_to_root(state, body))
     end)
 end
 
 function crb_inertia(state::MechanismState, body::RigidBody)
-    index = tree_index(body, state.mechanism)
+    index = vertex_index(body)
     @cache_element_get!(state.crb_inertias[index], begin
         ret = spatial_inertia(state, body)
         for joint in joints_to_children(body, state.mechanism)
