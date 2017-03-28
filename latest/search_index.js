@@ -837,7 +837,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Function",
-    "text": "attach!(mechanism, parentbody, childmechanism)\nattach!(mechanism, parentbody, childmechanism, childroot_to_parent)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
+    "text": "attach!(mechanism, parentbody, childmechanism, childroot_to_parent)\nattach!(mechanism, parentbody, childmechanism)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
 },
 
 {
@@ -909,7 +909,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rebuild_spanning_tree!",
     "category": "Function",
-    "text": "rebuild_spanning_tree!(mechanism)\nrebuild_spanning_tree!(mechanism, next_edge)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
+    "text": "rebuild_spanning_tree!(mechanism, next_edge)\nrebuild_spanning_tree!(mechanism)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
 },
 
 {
@@ -1121,6 +1121,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.configuration",
+    "category": "Method",
+    "text": "configuration(state, path)\n\n\nReturn the part of the Mechanism's configuration vector q associated with the joints along path.\n\n\n\n"
+},
+
+{
     "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration",
@@ -1249,6 +1257,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.velocity",
+    "category": "Method",
+    "text": "velocity(state, path)\n\n\nReturn the part of the Mechanism's velocity vector v associated with the joints along path.\n\n\n\n"
+},
+
+{
     "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity",
@@ -1365,7 +1381,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "text": "dynamics!(result, state, torques)\ndynamics!(result, state, torques, externalwrenches)\ndynamics!(result, state)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
 },
 
 {
@@ -1373,7 +1389,31 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(result, state, torques, externalwrenches)\ndynamics!(result, state)\ndynamics!(result, state, torques)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\n\n\n"
+    "text": "dynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\ndynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+},
+
+{
+    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian!-Tuple{RigidBodyDynamics.GeometricJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath,Any}",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics.geometric_jacobian!",
+    "category": "Method",
+    "text": "geometric_jacobian!(out, state, path, transformfun)\n\n\nCompute a geometric Jacobian (also known as a basic, or spatial Jacobian) associated with the joints that form a path in the Mechanism's spanning tree, in the given state.\n\nA geometric Jacobian maps the vector of velocities associated with the joint path to the twist of the body succeeding the last joint in the path with respect to the body preceding the first joint in the path.\n\nSee also path, GeometricJacobian, velocity(state, path), Twist.\n\ntransformfun is a callable that may be used to transform the individual motion subspaces of each of the joints to the frame in which out is expressed.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+},
+
+{
+    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian!-Tuple{RigidBodyDynamics.GeometricJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath,RigidBodyDynamics.Transform3D}",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics.geometric_jacobian!",
+    "category": "Method",
+    "text": "geometric_jacobian!(out, state, path, root_to_desired)\n\n\nCompute a geometric Jacobian (also known as a basic, or spatial Jacobian) associated with the joints that form a path in the Mechanism's spanning tree, in the given state.\n\nA geometric Jacobian maps the vector of velocities associated with the joint path to the twist of the body succeeding the last joint in the path with respect to the body preceding the first joint in the path.\n\nSee also path, GeometricJacobian, velocity(state, path), Twist.\n\nroot_to_desired is the transform from the Mechanism's root frame to the frame in which out is expressed.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+},
+
+{
+    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian!-Tuple{RigidBodyDynamics.GeometricJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath}",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics.geometric_jacobian!",
+    "category": "Method",
+    "text": "geometric_jacobian!(out, state, path)\n\n\nCompute a geometric Jacobian (also known as a basic, or spatial Jacobian) associated with the joints that form a path in the Mechanism's spanning tree, in the given state.\n\nA geometric Jacobian maps the vector of velocities associated with the joint path to the twist of the body succeeding the last joint in the path with respect to the body preceding the first joint in the path.\n\nSee also path, GeometricJacobian, velocity(state, path), Twist.\n\nSee geometric_jacobian!(out, state, path, root_to_desired). Uses state to compute the transform from the Mechanism's root frame to the frame in which out is expressed.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
@@ -1381,7 +1421,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.geometric_jacobian",
     "category": "Method",
-    "text": "geometric_jacobian(state, path)\n\n\nCompute a geometric Jacobian (also known as a basic, or spatial Jacobian) for a path in the graph of joints and bodies of a Mechanism, in the given state.\n\nSee also path, GeometricJacobian.\n\n\n\n"
+    "text": "geometric_jacobian(state, path)\n\n\nCompute a geometric Jacobian (also known as a basic, or spatial Jacobian) associated with the joints that form a path in the Mechanism's spanning tree, in the given state.\n\nA geometric Jacobian maps the vector of velocities associated with the joint path to the twist of the body succeeding the last joint in the path with respect to the body preceding the first joint in the path.\n\nSee also path, GeometricJacobian, velocity(state, path), Twist.\n\nThe Jacobian is computed in the Mechanism's root frame.\n\nSee geometric_jacobian!(out, state, path).\n\n\n\n"
 },
 
 {
@@ -1397,7 +1437,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics",
     "category": "Function",
-    "text": "inverse_dynamics(state, v̇, externalwrenches)\ninverse_dynamics(state, v̇)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
+    "text": "inverse_dynamics(state, v̇)\ninverse_dynamics(state, v̇, externalwrenches)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
 },
 
 {
@@ -1433,11 +1473,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "algorithms.html#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState,Any}",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics.momentum_matrix!",
+    "category": "Method",
+    "text": "momentum_matrix!(out, state, transformfun)\n\n\nCompute the momentum matrix A(q) of the Mechanism in the given state.\n\nThe momentum matrix maps the Mechanism's joint velocity vector v to its total momentum.\n\nSee also MomentumMatrix.\n\nThe out argument must be a mutable MomentumMatrix with as many columns as the dimension of the Mechanism's joint velocity vector v.\n\ntransformfun is a callable that may be used to transform the individual momentum matrix blocks associated with each of the joints to the frame in which out is expressed.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+},
+
+{
+    "location": "algorithms.html#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Transform3D}",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics.momentum_matrix!",
+    "category": "Method",
+    "text": "momentum_matrix!(out, state, root_to_desired)\n\n\nCompute the momentum matrix A(q) of the Mechanism in the given state.\n\nThe momentum matrix maps the Mechanism's joint velocity vector v to its total momentum.\n\nSee also MomentumMatrix.\n\nThe out argument must be a mutable MomentumMatrix with as many columns as the dimension of the Mechanism's joint velocity vector v.\n\nroot_to_desired is the transform from the Mechanism's root frame to the frame in which out is expressed.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+},
+
+{
     "location": "algorithms.html#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState}",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.momentum_matrix!",
     "category": "Method",
-    "text": "momentum_matrix!(out, state)\n\n\nCompute the momentum matrix A(q) of the Mechanism in the given state.\n\nThe momentum matrix maps the Mechanism's joint velocity vector v to its total momentum.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\nThe out argument must be a mutable MomentumMatrix with as many columns as the dimension of the Mechanism's joint velocity vector v.\n\n\n\n"
+    "text": "momentum_matrix!(out, state)\n\n\nCompute the momentum matrix A(q) of the Mechanism in the given state.\n\nThe momentum matrix maps the Mechanism's joint velocity vector v to its total momentum.\n\nSee also MomentumMatrix.\n\nThe out argument must be a mutable MomentumMatrix with as many columns as the dimension of the Mechanism's joint velocity vector v.\n\nSee momentum_matrix!(out, state, root_to_desired). Uses state to compute the transform from the Mechanism's root frame to the frame in which out is expressed.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
@@ -1445,7 +1501,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.momentum_matrix",
     "category": "Method",
-    "text": "momentum_matrix(state)\n\n\nCompute the momentum matrix A(q) of the Mechanism in the given state.\n\nThe momentum matrix maps the Mechanism's joint velocity vector v to its total momentum.\n\n\n\n"
+    "text": "momentum_matrix(state)\n\n\nCompute the momentum matrix A(q) of the Mechanism in the given state.\n\nThe momentum matrix maps the Mechanism's joint velocity vector v to its total momentum.\n\nSee also MomentumMatrix.\n\nSee momentum_matrix!(out, state).\n\n\n\n"
 },
 
 {
@@ -1461,7 +1517,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias!",
     "category": "Function",
-    "text": "dynamics_bias!(torques, biasaccelerations, wrenches, state)\ndynamics_bias!(torques, biasaccelerations, wrenches, state, externalwrenches)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+    "text": "dynamics_bias!(torques, biasaccelerations, wrenches, state, externalwrenches)\ndynamics_bias!(torques, biasaccelerations, wrenches, state)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
