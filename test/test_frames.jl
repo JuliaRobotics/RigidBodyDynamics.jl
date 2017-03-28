@@ -28,6 +28,17 @@
     @test_throws DimensionMismatch Point3D(f2, rand(2))
     @test_throws DimensionMismatch Point3D(f2, rand(4))
 
+    @test isapprox(transform(p, t1), t1 * p)
+    @test isapprox(invtransform(transform(p, t1), t1), p)
+
+    @test isapprox(transform(v, t1), t1 * v)
+    @test isapprox(invtransform(transform(v, t1), t1), v)
+
+    @test isapprox(p, Point3D(p.frame, p.v[1], p.v[2], p.v[3]))
+    @test isapprox(-v, zero(v) - v)
+
+    @test isapprox(norm(v), sqrt(dot(v, v)))
+
     show(DevNull, t1)
     show(DevNull, p)
     show(DevNull, v)
