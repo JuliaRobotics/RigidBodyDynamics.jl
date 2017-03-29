@@ -17,13 +17,17 @@ const noalloc_doc = """This method does its computation in place, performing no 
 include("graphs.jl")
 include("util.jl")
 include("third_party_addendum.jl")
+include("cache_element.jl")
 
 include("frames.jl")
 include("spatial.jl")
-include("rigid_body.jl")
+include("contact.jl")
+
 include("joint_types.jl")
 include("joint.jl")
-include("cache_element.jl")
+
+using .Contact
+include("rigid_body.jl")
 
 using .Graphs
 include("mechanism.jl")
@@ -108,6 +112,8 @@ export
     bias_acceleration,
     spatial_inertia,
     spatial_inertia!,
+    add_contact_point!,
+    contact_points,
     crb_inertia,
     setdirty!,
     add_body_fixed_frame!,
