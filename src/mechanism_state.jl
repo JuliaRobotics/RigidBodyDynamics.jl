@@ -38,7 +38,7 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
     bias_accelerations_wrt_world::Vector{CacheElement{SpatialAcceleration{C}}}
     inertias::Vector{CacheElement{SpatialInertia{C}}}
     crb_inertias::Vector{CacheElement{SpatialInertia{C}}}
-    contact_states::Vector{Vector{ViscoelasticCoulombState{X}}} # TODO: generalize, consider moving to separate type
+    contact_states::Vector{Vector{DefaultSoftContactState{X}}} # TODO: consider moving to separate type
 
     function (::Type{MechanismState{X, M, C}}){X<:Number, M<:Number, C<:Number}(mechanism::Mechanism{M})
         nb = num_bodies(mechanism)
@@ -75,13 +75,13 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         bias_accelerations_wrt_world = [CacheElement{SpatialAcceleration{C}}() for i = 1 : nb]
         inertias = [CacheElement{SpatialInertia{C}}() for i = 1 : nb]
         crb_inertias = [CacheElement{SpatialInertia{C}}() for i = 1 : nb]
-        contact_states = [Vector{ViscoelasticCoulombState{X}}() for i = 1 : nb]
+        contact_states = [Vector{DefaultSoftContactState{C}}() for i = 1 : nb]
         startind = 1
         for body in bodies(mechanism), point in contact_points(body)
-            model = friction_model(contact_model(point))
+            model = contact_model(point)
             n = num_states(model)
-            displacement = FreeVector3D(root_frame(mechanism), view(s, startind : startind + n - 1))
-            push!(contact_states[tree_index(body, mechanism)], ViscoelasticCoulombState(model, displacement))
+            s_part = view(s, startind : startind + n - 1)
+            push!(contact_states[vertex_index(body)], SoftContactState(model, s_part, root_frame(mechanism)))
             startind += n
         end
 
@@ -179,6 +179,18 @@ function setdirty!(state::MechanismState)
     end
 end
 
+"""
+$(SIGNATURES)
+
+Reset all contact state variables.
+"""
+function reset_contact_state!(state::MechanismState)
+    for states in state.contact_states
+        for state in states
+            reset!(state)
+        end
+    end
+end
 
 """
 $(SIGNATURES)
@@ -194,6 +206,7 @@ function zero_configuration!(state::MechanismState)
     for joint in tree_joints(state.mechanism)
         zero_configuration!(joint, configuration(state, joint))
     end
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -205,6 +218,7 @@ Zero the velocity vector ``v``. Invalidates cache variables.
 function zero_velocity!(state::MechanismState)
     X = eltype(state.v)
     fill!(state.v,  zero(X))
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -229,6 +243,7 @@ function rand_configuration!(state::MechanismState)
     for joint in tree_joints(state.mechanism)
         rand_configuration!(joint, configuration(state, joint))
     end
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -240,6 +255,7 @@ Invalidates cache variables.
 """
 function rand_velocity!(state::MechanismState)
     rand!(state.v)
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -335,6 +351,7 @@ Invalidates cache variables.
 """
 function set_configuration!(state::MechanismState, joint::Joint, q::AbstractVector)
     configuration(state, joint)[:] = q
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -346,6 +363,7 @@ Invalidates cache variables.
 """
 function set_velocity!(state::MechanismState, joint::Joint, v::AbstractVector)
     velocity(state, joint)[:] = v
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -382,9 +400,12 @@ end
 function set!(state::MechanismState, x::AbstractVector)
     nq = num_positions(state)
     nv = num_velocities(state)
-    length(x) == nq + nv || error("wrong size")
+    ns = num_additional_states(state)
+    length(x) == nq + nv + ns || error("wrong size")
+    start = 1
     @inbounds copy!(state.q, 1, x, 1, nq)
-    @inbounds copy!(state.v, 1, x, nq + 1, nv)
+    @inbounds copy!(state.v, 1, x, start += nq, nv)
+    @inbounds copy!(state.s, 1, x, start += nv, ns)
     setdirty!(state)
 end
 
@@ -561,7 +582,7 @@ function crb_inertia(state::MechanismState, body::RigidBody)
     end)
 end
 
-contact_states(state::MechanismState, body::RigidBody) = state.contact_states[tree_index(body, state.mechanism)]
+contact_states(state::MechanismState, body::RigidBody) = state.contact_states[vertex_index(body)]
 
 function newton_euler(state::MechanismState, body::RigidBody, accel::SpatialAcceleration)
     inertia = spatial_inertia(state, body)

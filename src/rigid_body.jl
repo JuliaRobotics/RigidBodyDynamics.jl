@@ -11,17 +11,18 @@ type RigidBody{T<:Number}
     name::String
     inertia::Nullable{SpatialInertia{T}}
     frameDefinitions::Vector{Transform3D{T}}
+    contact_points::Vector{DefaultContactPoint{T}} # TODO: allow different contact models
     id::Int64
 
     # inertia undefined; can be used for the root of a kinematic tree
     function (::Type{RigidBody{T}}){T<:Number}(name::String)
         frame = CartesianFrame3D(name)
-        new{T}(name, Nullable{SpatialInertia{T}}(), [Transform3D{T}(frame)], -1)
+        new{T}(name, Nullable{SpatialInertia{T}}(), [Transform3D{T}(frame)], DefaultContactPoint{T}[], -1)
     end
 
     # other bodies
     function (::Type{RigidBody{T}}){T<:Number}(name::String, inertia::SpatialInertia{T})
-        new{T}(name, Nullable(inertia), [Transform3D{T}(inertia.frame)], -1)
+        new{T}(name, Nullable(inertia), [Transform3D{T}(inertia.frame)], DefaultContactPoint{T}[], -1)
     end
 end
 
@@ -144,10 +145,31 @@ function change_default_frame!(body::RigidBody, newDefaultFrame::CartesianFrame3
     if newDefaultFrame != default_frame(body)
         oldToNew = inv(frame_definition(body, newDefaultFrame))
         map!(tf -> oldToNew * tf, body.frameDefinitions)
-
-        # transform body's spatial inertia to new default frame
         if has_defined_inertia(body)
             body.inertia = Nullable(transform(spatial_inertia(body), oldToNew))
         end
+        for point in contact_points(body)
+            point.location = oldToNew * point.location
+        end
     end
 end
+
+"""
+$(SIGNATURES)
+
+Add a new contact point to the rigid body
+"""
+function add_contact_point!{T}(body::RigidBody{T}, point::DefaultContactPoint{T})
+    loc = location(point)
+    tf = fixed_transform(body, loc.frame, default_frame(body))
+    point.location = tf * loc
+    push!(body.contact_points, point)
+    nothing
+end
+
+"""
+$(SIGNATURES)
+
+Return the contact points attached to the body as an ordered collection.
+"""
+contact_points(body::RigidBody) = body.contact_points

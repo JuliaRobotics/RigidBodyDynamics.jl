@@ -272,6 +272,7 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
         end
 
         # Convert from local to global coordinates and set state
+        # TODO: multiple setdirty! calls when using MechanismState:
         global_coordinates!(state, q0, ϕ)
         set_velocity!(state, v)
         set_additional_state!(state, s)
@@ -299,6 +300,7 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
     end
 
     # Convert from local to global coordinates
+    # TODO: multiple setdirty! calls when using MechanismState:
     global_coordinates!(state, q0, ϕ)
     set_velocity!(state, v)
     set_additional_state!(state, s)
