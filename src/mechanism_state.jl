@@ -554,9 +554,33 @@ function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
     tf
 end
 
+@inline function non_root_body_sum(state::MechanismState, start, fun, body_itr)
+    ret = start
+    for body in body_itr
+        if !isroot(body, state.mechanism)
+            ret += fun(state, body)
+        end
+    end
+    ret
+end
+
+function momentum(state::MechanismState, body_itr)
+    T = cache_eltype(state)
+    non_root_body_sum(state, zero(Momentum{T}, root_frame(state.mechanism)), momentum, body_itr)
+end
+
+function momentum_rate_bias(state::MechanismState, body_itr)
+    T = cache_eltype(state)
+    non_root_body_sum(state, zero(Wrench{T}, root_frame(state.mechanism)), momentum_rate_bias, body_itr)
+end
+
+function kinetic_energy(state::MechanismState, body_itr)
+    T = cache_eltype(state)
+    non_root_body_sum(state, zero(T), kinetic_energy, body_itr)
+end
+
 for fun in (:momentum, :momentum_rate_bias, :kinetic_energy)
-    @eval $fun(state::MechanismState) = sum($fun(state, body) for body in non_root_bodies(state.mechanism)) # TODO: allocations
-    @eval $fun(state::MechanismState, body_itr) = sum($fun(state, body) for body in body_itr) # TODO: allocations
+    @eval $fun(state::MechanismState) = $fun(state, bodies(state.mechanism))
 end
 
 """
