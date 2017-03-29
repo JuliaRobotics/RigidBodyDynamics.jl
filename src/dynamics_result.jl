@@ -22,9 +22,10 @@ type DynamicsResult{M<:Number, T<:Number}
 
     # the following are indexed by vertex_index(body). TODO: consider adding a BodyMap type:
     contactwrenches::Vector{Wrench{T}}
+    totalwrenches::Vector{Wrench{T}}
     accelerations::Vector{SpatialAcceleration{T}}
     jointwrenches::Vector{Wrench{T}} # TODO: index by joint tree index?
-    contact_state_derivatives::Vector{Vector{VectorSegment{T}}}
+    contact_state_derivatives::Vector{Vector{DefaultSoftContactStateDeriv{T}}}
 
     # see solve_dynamics! for meaning of the following variables:
     L::Matrix{T} # lower triangular
@@ -42,25 +43,27 @@ type DynamicsResult{M<:Number, T<:Number}
         dynamicsbias = Vector{T}(nv)
         constraintjacobian = Matrix{T}(nconstraints, nv)
         constraintbias = Vector{T}(nconstraints)
-        contactwrenches = Vector{Wrench{T}}(num_bodies(mechanism))
 
         v̇ = Vector{T}(nv)
         λ = Vector{T}(nconstraints)
         ṡ = Vector{T}(num_additional_states(mechanism))
 
-        contact_state_derivatives = Vector{Vector{VectorSegment{T}}}(num_bodies(mechanism))
+        contactwrenches = Vector{Wrench{T}}(num_bodies(mechanism))
+        totalwrenches = Vector{Wrench{T}}(num_bodies(mechanism))
+        accelerations = Vector{SpatialAcceleration{T}}(num_bodies(mechanism))
+        jointwrenches = Vector{Wrench{T}}(num_bodies(mechanism))
+        contact_state_derivatives = Vector{Vector{DefaultSoftContactStateDeriv{T}}}(num_bodies(mechanism))
         start = 1
         for body in bodies(mechanism)
-            derivs = VectorSegment{T}[]
+            derivs = DefaultSoftContactStateDeriv{T}[]
             for point in contact_points(body)
-                model = friction_model(contact_model(point)) # TODO: crufty
-                push!(derivs, view(ṡ, start : start + num_states(model) - 1))
+                model = contact_model(point)
+                ṡ_part = view(ṡ, start : start + num_states(model) - 1)
+                push!(derivs, SoftContactStateDeriv(model, ṡ_part, root_frame(mechanism)))
                 start += num_states(model)
             end
             contact_state_derivatives[vertex_index(body)] = derivs
         end
-        accelerations = Vector{SpatialAcceleration{T}}(num_bodies(mechanism))
-        jointwrenches = Vector{Wrench{T}}(num_bodies(mechanism))
 
         L = Matrix{T}(nv, nv)
         A = Matrix{T}(nconstraints, nconstraints)
@@ -68,7 +71,8 @@ type DynamicsResult{M<:Number, T<:Number}
         Y = Matrix{T}(nconstraints, nv)
 
         new{M, T}(mechanism, massmatrix, dynamicsbias, constraintjacobian, constraintbias,
-            v̇, λ, ṡ, contactwrenches, accelerations, jointwrenches, contact_state_derivatives, L, A, z, Y)
+            v̇, λ, ṡ, contactwrenches, totalwrenches, accelerations, jointwrenches, contact_state_derivatives,
+            L, A, z, Y)
     end
 end
 

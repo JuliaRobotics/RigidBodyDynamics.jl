@@ -124,7 +124,7 @@ Return the dimension of the vector of additional states ``s`` (used for stateful
 function num_additional_states(mechanism::Mechanism)
     ret = 0
     for body in bodies(mechanism), point in contact_points(body)
-        ret += num_states(friction_model(contact_model(point)))
+        ret += num_states(contact_model(point))
     end
     ret
 end
