@@ -893,7 +893,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.remove_joint!",
     "category": "Function",
-    "text": "remove_joint!(mechanism, joint)\nremove_joint!(mechanism, joint, spanning_tree_next_edge)\n\n\nRemove a joint from the mechanism. Rebuilds the spanning tree if the joint is part of the current spanning tree.\n\n\n\n"
+    "text": "remove_joint!(mechanism, joint, spanning_tree_next_edge)\nremove_joint!(mechanism, joint)\n\n\nRemove a joint from the mechanism. Rebuilds the spanning tree if the joint is part of the current spanning tree.\n\n\n\n"
 },
 
 {
@@ -909,7 +909,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rebuild_spanning_tree!",
     "category": "Function",
-    "text": "rebuild_spanning_tree!(mechanism, next_edge)\nrebuild_spanning_tree!(mechanism)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
+    "text": "rebuild_spanning_tree!(mechanism)\nrebuild_spanning_tree!(mechanism, next_edge)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
 },
 
 {
@@ -1441,11 +1441,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState{X,M,C},Any}",
+    "location": "algorithms.html#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState,Any}",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.center_of_mass",
     "category": "Method",
-    "text": "center_of_mass(state, itr)\n\n\nCompute the center of mass of an iterable subset of a Mechanism's bodies in the given state.\n\n\n\n"
+    "text": "center_of_mass(state, itr)\n\n\nCompute the center of mass of an iterable subset of a Mechanism's bodies in the given state. Ignores the root body of the mechanism.\n\n\n\n"
 },
 
 {
@@ -1461,7 +1461,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(result, state)\ndynamics!(result, state, torques)\ndynamics!(result, state, torques, externalwrenches)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies. externalwrenches should be a vector for which externalwrenches[vertex_index(body)] is the wrench exerted upon body.\n\n\n\n"
+    "text": "dynamics!(result, state, torques, externalwrenches)\ndynamics!(result, state)\ndynamics!(result, state, torques)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies. externalwrenches should be a vector for which externalwrenches[vertex_index(body)] is the wrench exerted upon body.\n\n\n\n"
 },
 
 {
@@ -1469,7 +1469,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\ndynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "text": "dynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\ndynamics!(ẋ, result, state, stateVec, torques)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
 },
 
 {
@@ -1509,7 +1509,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.gravitational_potential_energy",
     "category": "Method",
-    "text": "gravitational_potential_energy(state)\n\n\nCompute the gravitational potential energy in the given state, computed as the negation of the dot product of the gravitational force and the center of mass expressed in the Mechanism's root frame.\n\n\n\n"
+    "text": "gravitational_potential_energy(state)\n\n\nReturn the gravitational potential energy in the given state, computed as the negation of the dot product of the gravitational force and the center of mass expressed in the Mechanism's root frame.\n\n\n\n"
 },
 
 {
@@ -1525,7 +1525,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "Function",
-    "text": "inverse_dynamics!(torquesout, jointwrenchesout, accelerations, state, v̇)\ninverse_dynamics!(torquesout, jointwrenchesout, accelerations, state, v̇, externalwrenches)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies. externalwrenches should be a vector for which externalwrenches[vertex_index(body)] is the wrench exerted upon body.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+    "text": "inverse_dynamics!(torquesout, jointwrenchesout, accelerations, state, v̇, externalwrenches)\ninverse_dynamics!(torquesout, jointwrenchesout, accelerations, state, v̇)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies. externalwrenches should be a vector for which externalwrenches[vertex_index(body)] is the wrench exerted upon body.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
@@ -1597,7 +1597,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias!",
     "category": "Function",
-    "text": "dynamics_bias!(torques, biasaccelerations, wrenches, state, externalwrenches)\ndynamics_bias!(torques, biasaccelerations, wrenches, state)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies. externalwrenches should be a vector for which externalwrenches[vertex_index(body)] is the wrench exerted upon body.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+    "text": "dynamics_bias!(torques, biasaccelerations, wrenches, state)\ndynamics_bias!(torques, biasaccelerations, wrenches, state, externalwrenches)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies. externalwrenches should be a vector for which externalwrenches[vertex_index(body)] is the wrench exerted upon body.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
