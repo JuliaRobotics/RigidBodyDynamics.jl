@@ -23,18 +23,22 @@ mass(m::Mechanism) = subtree_mass(root_body(m), m)
 $(SIGNATURES)
 
 Compute the center of mass of an iterable subset of a `Mechanism`'s bodies in
-the given state.
+the given state. Ignores the root body of the mechanism.
 """
-function center_of_mass{X, M, C}(state::MechanismState{X, M, C}, itr)
-    frame = root_frame(state.mechanism)
-    com = Point3D(frame, zeros(SVector{3, C}))
-    mass = zero(C)
+function center_of_mass(state::MechanismState, itr)
+    T = cache_eltype(state)
+    mechanism = state.mechanism
+    frame = root_frame(mechanism)
+    com = Point3D(frame, zeros(SVector{3, T}))
+    mass = zero(T)
     for body in itr
-        inertia = spatial_inertia(body)
-        if inertia.mass > zero(C)
-            bodyCom = center_of_mass(inertia)
-            com += inertia.mass * FreeVector3D(transform(state, bodyCom, frame))
-            mass += inertia.mass
+        if !isroot(body, mechanism)
+            inertia = spatial_inertia(body)
+            if inertia.mass > 0
+                bodycom = transform_to_root(state, body) * center_of_mass(inertia)
+                com += inertia.mass * FreeVector3D(bodycom)
+                mass += inertia.mass
+            end
         end
     end
     com /= mass
@@ -46,7 +50,7 @@ $(SIGNATURES)
 
 Compute the center of mass of the whole `Mechanism` in the given state.
 """
-center_of_mass(state::MechanismState) = center_of_mass(state, non_root_bodies(state.mechanism))
+center_of_mass(state::MechanismState) = center_of_mass(state, bodies(state.mechanism))
 
 function _set_jacobian_part!(out::GeometricJacobian, part::GeometricJacobian, nextbaseframe::CartesianFrame3D, startind::Int64)
     @framecheck part.frame out.frame
@@ -197,15 +201,13 @@ end
 """
 $(SIGNATURES)
 
-Compute the gravitational potential energy in the given state, computed as the
+Return the gravitational potential energy in the given state, computed as the
 negation of the dot product of the gravitational force and the center
 of mass expressed in the `Mechanism`'s root frame.
 """
 function gravitational_potential_energy{X, M, C}(state::MechanismState{X, M, C})
-    m = mass(state.mechanism)
-    gravitationalForce = m * state.mechanism.gravitationalAcceleration
-    centerOfMass = transform(state, center_of_mass(state), gravitationalForce.frame)
-    -dot(gravitationalForce, FreeVector3D(centerOfMass))
+    gravitationalforce = mass(state.mechanism) * state.mechanism.gravitationalAcceleration
+    -dot(gravitationalforce, FreeVector3D(center_of_mass(state)))
  end
 
  function force_space_matrix_transpose_mul_jacobian!(out::Matrix, rowstart::Int64, colstart::Int64,

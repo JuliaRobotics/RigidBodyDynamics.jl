@@ -75,6 +75,11 @@ function create_benchmark_suite()
         suite["kinetic_energy"] = @benchmarkable(kinetic_energy($state), setup = rand!($state))
     end
 
+    let
+        state = MechanismState(ScalarType, mechanism)
+        suite["gravitational_potential_energy"] = @benchmarkable(gravitational_potential_energy($state), setup = rand!($state))
+    end
+
     suite
 end
 
