@@ -16,7 +16,8 @@ export SoftContactModel,
 export num_states,
     location,
     contact_model,
-    contact_dynamics!
+    contact_dynamics!,
+    reset!
 
 # specific models
 export HuntCrossleyModel,
