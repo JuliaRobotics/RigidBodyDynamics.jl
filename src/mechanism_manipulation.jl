@@ -261,6 +261,7 @@ function maximal_coordinates(mechanism::Mechanism)
     ret, newfloatingjoints, bodymap, jointmap
 end
 
+add_environment_primitive!(mechanism::Mechanism, halfspace::HalfSpace3D) = push!(mechanism.environment, halfspace)
 """
 $(SIGNATURES)
 
