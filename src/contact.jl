@@ -2,6 +2,7 @@ module Contact
 
 using RigidBodyDynamics # TODO: modularize more
 using StaticArrays
+using ForwardDiff
 using Compat
 
 import RigidBodyDynamics: VectorSegment
@@ -13,6 +14,7 @@ export SoftContactModel,
     ContactPoint,
     ContactEnvironment,
     HalfSpace3D,
+    Box3D
 
 # interface functions
 export num_states,
@@ -236,12 +238,98 @@ point_inside(halfspace::HalfSpace3D, p::Point3D) = separation(halfspace, p) <= 0
 detect_contact(halfspace::HalfSpace3D, p::Point3D) = separation(halfspace, p), halfspace.outward_normal
 
 
+type Box3D{T}
+    frame::CartesianFrame3D
+    halfdims::SVector{3, T}
+end
+Base.eltype{T}(::Type{Box3D{T}}) = T
+
+Box3D(frame::CartesianFrame3D, x, y, z) = Box3D(frame, SVector(x, y, z))
+center(box::Box3D) = Point3D(box.frame)
+
+
+function point_inside(box::Box3D, p::Point3D)
+    # no allocations
+    @framecheck box.frame p.frame
+    all(abs.(p.v) .<= box.halfdims)
+end
+
+function _closest_point_on_surface_inside(box::Box3D, p::Point3D)
+    # no allocations
+    @framecheck box.frame p.frame
+    v = p.v
+    maxdiff = v - box.halfdims
+    mindiff = v + box.halfdims
+
+    dmax = abs.(maxdiff)
+    dmin = abs.(mindiff)
+
+    maxind = indmin(dmax)
+    minind = indmin(dmin)
+
+    coord, ind = ifelse(dmax[maxind] <= dmin[minind], (box.halfdims[maxind], maxind), (-box.halfdims[minind], minind))
+    vec = if ind == 1
+        SVector(coord, v[2], v[3])
+    elseif ind == 2
+        SVector(v[1], coord, v[3])
+    else
+        SVector(v[1], v[2], coord)
+    end
+    Point3D(p.frame, vec)
+end
+
+function _closest_point_on_surface_outside(box::Box3D, p::Point3D)
+    # no allocations
+    @framecheck box.frame p.frame
+    temp = max.(-box.halfdims, p.v)
+    vec = min.(temp, box.halfdims)
+    Point3D(p.frame, vec)
+end
+
+function closest_point_on_surface(box::Box3D, p::Point3D)
+    # no allocations
+    point_inside(box, p) ? _closest_point_on_surface_inside(box, p) : _closest_point_on_surface_outside(box, p)
+end
+
+function detect_contact(box::Box3D, p::Point3D)
+    # no allocations
+    @framecheck box.frame p.frame
+
+    frame = p.frame
+    T = eltype(p)
+    x = ForwardDiff.Dual(p.v[1], one(T), zero(T), zero(T))
+    y = ForwardDiff.Dual(p.v[2], zero(T), one(T), zero(T))
+    z = ForwardDiff.Dual(p.v[3], zero(T), zero(T), one(T))
+    pdiff = Point3D(frame, SVector(x, y, z))
+
+    # TODO: consider doing this without computing closest point explicitly
+    inside = point_inside(box, p)
+    closestdiff = inside ? _closest_point_on_surface_inside(box, p) : _closest_point_on_surface_outside(box, p)
+    closest = Point3D(frame, ForwardDiff.value.(closestdiff.v))
+    Δdiff = pdiff - closestdiff
+    distsquared_diff = dot(Δdiff, Δdiff)
+
+    distsquared = ForwardDiff.value(distsquared_diff)
+    dist = sqrt(distsquared)
+    separation = ifelse(inside, -dist, dist)
+
+    signed_distsquared_diff = inside ? -distsquared_diff : distsquared_diff
+    grad = ForwardDiff.partials(signed_distsquared_diff)
+    gradnorm = normalize(SVector(grad[1], grad[2], grad[3]))
+    outward_normal = FreeVector3D(frame, gradnorm)
+
+    separation, outward_normal
+end
+
+
 # ContactEnvironment
 type ContactEnvironment{T}
     halfspaces::Vector{HalfSpace3D{T}}
+    # boxes::Vector{Box3D{T}}
     ContactEnvironment() = new(HalfSpace3D{T}[])
 end
 
 Base.push!(environment::ContactEnvironment, halfspace::HalfSpace3D) = push!(environment.halfspaces, halfspace)
+# Base.push!(environment::ContactEnvironment, box::Box3D) = push!(environment.boxes, box)
 
 end
