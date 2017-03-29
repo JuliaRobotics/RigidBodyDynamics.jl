@@ -1,54 +1,129 @@
 module Contact
 
-using RigidBodyDynamics
+using RigidBodyDynamics # TODO: modularize more
 using StaticArrays
 using Compat
 
-export NormalForceModel,
-    FrictionModel,
-    SoftContactModel,
-    ContactPoint,
-    DefaultContactPoint
+import RigidBodyDynamics: VectorSegment
 
-export normal_force,
-    friction_force,
+# base types
+export SoftContactModel,
+    SoftContactState,
+    SoftContactStateDeriv,
+    ContactPoint
+
+# interface functions
+export num_states,
+    location,
     contact_model,
-    normal_force_model,
-    friction_model,
-    num_states,
-    reset!,
-    dynamics!,
     contact_dynamics!
 
+# specific models
 export HuntCrossleyModel,
     hunt_crossley_hertz
 
-export
-    ViscoelasticCoulombModel,
-    ViscoelasticCoulombState
+export ViscoelasticCoulombModel,
+    ViscoelasticCoulombState,
+    ViscoelasticCoulombStateDeriv
 
-# Types
-@compat abstract type NormalForceModel{T} end
-normal_force(::NormalForceModel, z, ż) = error("Subtypes must implement")
+# defaults
+export DefaultContactPoint,
+    DefaultSoftContactState,
+    DefaultSoftContactStateDeriv
 
-@compat abstract type FrictionModel{T} end
-# TODO: FrictionModel interface
+# Normal force model/state/state derivative interface:
+# * `normal_force(model, state, z::Number, ż::Number)`: return the normal force given penetration `z` and penetration velocity `ż`
+# * `num_states(model)`: return the number of state variables associated with the model
+# * `state(model, statevec, frame)`: create a new state associated with the model
+# * `state_derivative(model, statederivvec, frame)`: create a new state derivative associated with the model
+# * `reset!(state)`: resets the contact state
+# * `dynamics!(state_deriv, model, state, fnormal)`: sets state_deriv given the current state and the normal force
 
-immutable SoftContactModel{N <: NormalForceModel, F <: FrictionModel}
-    normal_force_model::N
-    friction_model::F
+# Friction model/state/state derivative interface:
+# * `friction_force(model, state, fnormal::Number, tangential_velocity::FreeVector3D)`: return the friction force given normal force `fnormal` and tangential velocity `tangential_velocity`
+# * `num_states(model)`: return the number of state variables associated with the model
+# * `state(model, statevec, frame)`: create a new state associated with the model
+# * `state_derivative(model, statederivvec, frame)`: create a new state derivative associated with the model
+# * `reset!(state)`: resets the contact state
+# * `dynamics!(state_deriv, model, state, ftangential)`: sets state_deriv given the current state and the tangential force force
+
+## SoftContactModel and related types.
+immutable SoftContactModel{N, F}
+    normal::N
+    friction::F
 end
-normal_force_model(model::SoftContactModel) = model.normal_force_model
-friction_model(model::SoftContactModel) = model.friction_model
 
+immutable SoftContactState{N, F}
+    normal::N
+    friction::F
+end
+
+immutable SoftContactStateDeriv{N, F}
+    normal::N
+    friction::F
+end
+
+normal_force_model(model::SoftContactModel) = model.normal
+friction_model(model::SoftContactModel) = model.friction
+
+normal_force_state(state::SoftContactState) = state.normal
+friction_state(state::SoftContactState) = state.friction
+
+normal_force_state_deriv(deriv::SoftContactStateDeriv) = deriv.normal
+friction_state_deriv(deriv::SoftContactStateDeriv) = deriv.friction
+
+num_states(model::SoftContactModel) = num_states(normal_force_model(model)) + num_states(friction_model(model))
+
+for (fun, returntype) in [(:state, :SoftContactState), (:state_derivative, :SoftContactStateDeriv)]
+    @eval function $returntype(model::SoftContactModel, vec::AbstractVector, frame::CartesianFrame3D)
+        nnormal = num_states(normal_force_model(model))
+        nfriction = num_states(friction_model(model))
+        vecnormal = view(vec, 1 : nnormal - 1)
+        vecfriction = view(vec, 1 + nnormal : nnormal + nfriction)
+        $returntype($fun(normal_force_model(model), vecnormal, frame), $fun(friction_model(model), vecfriction, frame))
+    end
+end
+
+reset!(state::SoftContactState) = (reset!(normal_force_state(state)); reset!(friction_state(state)))
+zero!(deriv::SoftContactStateDeriv) = (zero!(friction_state_deriv(deriv)); zero!(friction_state_deriv(deriv)))
+
+## ContactPoint
 type ContactPoint{T, M <: SoftContactModel}
     location::Point3D{SVector{3, T}}
     model::M
 end
+location(point::ContactPoint) = point.location
 contact_model(point::ContactPoint) = point.model
 
-# Normal contact models
-immutable HuntCrossleyModel{T} <: NormalForceModel{T}
+function contact_dynamics!(state_deriv::SoftContactStateDeriv, state::SoftContactState,
+        model::SoftContactModel, penetration::Number, velocity::FreeVector3D, normal::FreeVector3D)
+    T = typeof(penetration)
+    z = penetration
+    force = if z > 0
+        ż = -dot(velocity, normal) # penetration velocity
+        fnormal = max(normal_force(normal_force_model(model), normal_force_state(state), z, ż), 0)
+        dynamics!(normal_force_state_deriv(state_deriv), normal_force_model(model), normal_force_state(state), fnormal)
+
+        tangential_velocity = velocity + ż * normal
+        ftangential = friction_force(friction_model(model), friction_state(state), fnormal, tangential_velocity)
+        dynamics!(friction_state_deriv(state_deriv), friction_model(model), friction_state(state), ftangential)
+
+        fnormal * normal + ftangential
+    else
+        reset!(state)
+        zero!(state_deriv)
+        FreeVector3D(normal.frame, zero(SVector{3, T}))
+    end
+end
+
+
+## Models with no state
+reset!(::Void) = nothing
+zero!(::Void) = nothing
+
+
+## Normal contact models
+immutable HuntCrossleyModel{T}
     # (2) in Marhefka, Orin, "A Compliant Contact Model with Nonlinear Damping for Simulation of Robotic Systems"
     k::T
     λ::T
@@ -60,33 +135,48 @@ function hunt_crossley_hertz(; k = 50e3, α = 0.2)
     HuntCrossleyModel(k, λ, 3/2)
 end
 
-function normal_force(model::HuntCrossleyModel, z, ż)
+num_states(::HuntCrossleyModel) = 0
+state(::HuntCrossleyModel, ::AbstractVector, ::CartesianFrame3D) = nothing
+state_derivative(::HuntCrossleyModel, ::AbstractVector, ::CartesianFrame3D) = nothing
+
+function normal_force(model::HuntCrossleyModel, ::Void, z, ż)
     zn = z^model.n
     f = model.λ * zn * ż + model.k * zn # (2) in Marhefka, Orin (note: z is penetration, returning repelling force)
 end
 
+dynamics!(ẋ::Void, model::HuntCrossleyModel, state::Void, fnormal::Number) = nothing
+
+
 # Friction models
-immutable ViscoelasticCoulombModel{T} <: FrictionModel{T}
+immutable ViscoelasticCoulombModel{T}
     # See section 11.8 of Featherstone, "Rigid Body Dynamics Algorithms", 2008
     μ::T
     k::T
     b::T
 end
 
-# One state for each direction; technically only need one for each tangential direction, but this is easier to work with:
+type ViscoelasticCoulombState{V}
+    tangential_displacement::FreeVector3D{V} # Use a 3-vector; technically only need one state for each tangential direction, but this is easier to work with.
+end
+
+type ViscoelasticCoulombStateDeriv{V}
+    deriv::FreeVector3D{V}
+end
+
 num_states(::ViscoelasticCoulombModel) = 3
-
-type ViscoelasticCoulombState{T, V}
-    model::ViscoelasticCoulombModel{T}
-    tangential_displacement::FreeVector3D{V}
+function state(::ViscoelasticCoulombModel, statevec::AbstractVector, frame::CartesianFrame3D)
+    ViscoelasticCoulombState(FreeVector3D(frame, statevec))
+end
+function state_derivative(::ViscoelasticCoulombModel, statederivvec::AbstractVector, frame::CartesianFrame3D)
+    ViscoelasticCoulombStateDeriv(FreeVector3D(frame, statederivvec))
 end
 
-function reset!(state::ViscoelasticCoulombState)
-    fill!(state.tangential_displacement.v, 0)
-end
+reset!(state::ViscoelasticCoulombState) = fill!(state.tangential_displacement.v, 0)
+zero!(deriv::ViscoelasticCoulombStateDeriv) = fill!(deriv.deriv.v, 0)
 
-function friction_force{T}(model::ViscoelasticCoulombModel{T}, state::ViscoelasticCoulombState{T},
-        fnormal::T, tangential_velocity::FreeVector3D)
+function friction_force(model::ViscoelasticCoulombModel, state::ViscoelasticCoulombState,
+        fnormal, tangential_velocity::FreeVector3D)
+    T = typeof(fnormal)
     μ = model.μ
     k = model.k
     b = model.b
@@ -106,33 +196,16 @@ function friction_force{T}(model::ViscoelasticCoulombModel{T}, state::Viscoelast
     end
 end
 
-function dynamics!{T}(ẋ::AbstractVector{T}, model::ViscoelasticCoulombModel{T}, state::ViscoelasticCoulombState{T}, ftangential::FreeVector3D)
-    # TODO: type of ẋ?
+function dynamics!(ẋ::ViscoelasticCoulombStateDeriv, model::ViscoelasticCoulombModel, state::ViscoelasticCoulombState, ftangential::FreeVector3D)
     k = model.k
     b = model.b
     x = state.tangential_displacement
-    ẋ .= (-(k * x + ftangential) / b).v
+    @framecheck ẋ.deriv.frame state.tangential_displacement.frame
+    ẋ.deriv.v .= (-(k * x + ftangential) / b).v
 end
 
 @compat const DefaultContactPoint{T} = ContactPoint{T,SoftContactModel{HuntCrossleyModel{T},ViscoelasticCoulombModel{T}}}
-
-# TODO: generalize:
-function contact_dynamics!(contact_state_deriv::AbstractVector, contact_state::ViscoelasticCoulombState,
-        model::SoftContactModel, penetration::Number, velocity::FreeVector3D, normal::FreeVector3D)
-    z = penetration
-    force = if z > 0
-        ż = -dot(velocity, normal) # penetration velocity
-        fnormal = normal_force(normal_force_model(model), z, ż)
-        fnormal = max(fnormal, zero(fnormal))
-        tangential_velocity = velocity + ż * normal
-        ftangential = friction_force(friction_model(model), contact_state, fnormal, tangential_velocity)
-        Contact.dynamics!(contact_state_deriv, friction_model(model), contact_state, ftangential)
-        fnormal * normal + ftangential
-    else
-        reset!(contact_state)
-        contact_state_deriv .= 0
-        zero(normal)
-    end
-end
+@compat const DefaultSoftContactState{T} = SoftContactState{Void, ViscoelasticCoulombState{VectorSegment{T}}}
+@compat const DefaultSoftContactStateDeriv{T} = SoftContactStateDeriv{Void, ViscoelasticCoulombStateDeriv{VectorSegment{T}}}
 
 end
