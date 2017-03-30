@@ -689,11 +689,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "rigidbody.html#RigidBodyDynamics.add_contact_point!-Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Contact.ContactPoint{T,RigidBodyDynamics.Contact.SoftContactModel{RigidBodyDynamics.Contact.HuntCrossleyModel{T},RigidBodyDynamics.Contact.ViscoelasticCoulombModel{T}}}}",
+    "page": "Rigid bodies",
+    "title": "RigidBodyDynamics.add_contact_point!",
+    "category": "Method",
+    "text": "add_contact_point!(body, point)\n\n\nAdd a new contact point to the rigid body\n\n\n\n"
+},
+
+{
     "location": "rigidbody.html#RigidBodyDynamics.add_frame!-Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Transform3D{T}}",
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.add_frame!",
     "category": "Method",
     "text": "add_frame!(body, transform)\n\n\nAdd a new frame definition to body, represented by a homogeneous transform from the CartesianFrame3D to be added to any other frame that is already attached to body.\n\n\n\n"
+},
+
+{
+    "location": "rigidbody.html#RigidBodyDynamics.contact_points-Tuple{RigidBodyDynamics.RigidBody}",
+    "page": "Rigid bodies",
+    "title": "RigidBodyDynamics.contact_points",
+    "category": "Method",
+    "text": "contact_points(body)\n\n\nReturn the contact points attached to the body as an ordered collection.\n\n\n\n"
 },
 
 {
@@ -829,7 +845,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Function",
-    "text": "attach!(mechanism, parentbody, childmechanism, childroot_to_parent)\nattach!(mechanism, parentbody, childmechanism)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
+    "text": "attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds jointToPredecessor and successorToJoint define where joint is attached to each body. jointToPredecessor should define frame_before(joint) with respect to any frame fixed to predecessor, and likewise successorToJoint should define any frame fixed to successor with respect to frame_after(joint).\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
 },
 
 {
@@ -837,7 +853,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Function",
-    "text": "attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds jointToPredecessor and successorToJoint define where joint is attached to each body. jointToPredecessor should define frame_before(joint) with respect to any frame fixed to predecessor, and likewise successorToJoint should define any frame fixed to successor with respect to frame_after(joint).\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
+    "text": "attach!(mechanism, parentbody, childmechanism)\nattach!(mechanism, parentbody, childmechanism, childroot_to_parent)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
 },
 
 {
@@ -893,7 +909,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.remove_joint!",
     "category": "Function",
-    "text": "remove_joint!(mechanism, joint, spanning_tree_next_edge)\nremove_joint!(mechanism, joint)\n\n\nRemove a joint from the mechanism. Rebuilds the spanning tree if the joint is part of the current spanning tree.\n\n\n\n"
+    "text": "remove_joint!(mechanism, joint)\nremove_joint!(mechanism, joint, spanning_tree_next_edge)\n\n\nRemove a joint from the mechanism. Rebuilds the spanning tree if the joint is part of the current spanning tree.\n\n\n\n"
 },
 
 {
@@ -909,7 +925,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rebuild_spanning_tree!",
     "category": "Function",
-    "text": "rebuild_spanning_tree!(mechanism)\nrebuild_spanning_tree!(mechanism, next_edge)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
+    "text": "rebuild_spanning_tree!(mechanism, next_edge)\nrebuild_spanning_tree!(mechanism)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
 },
 
 {
@@ -974,6 +990,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.joints_to_children",
     "category": "Method",
     "text": "joints_to_children(body, mechanism)\n\n\nReturn the joints that are part of the mechanism's kinematic tree and have body as their predecessor.\n\n\n\n"
+},
+
+{
+    "location": "mechanism.html#RigidBodyDynamics.num_additional_states-Tuple{RigidBodyDynamics.Mechanism}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.num_additional_states",
+    "category": "Method",
+    "text": "num_additional_states(mechanism)\n\n\nReturn the dimension of the vector of additional states s (used for stateful contact models).\n\n\n\n"
 },
 
 {
@@ -1101,7 +1125,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.MechanismState",
     "category": "Type",
-    "text": "immutable MechanismState{X<:Number, M<:Number, C<:Number}\n\nA MechanismState stores state information for an entire Mechanism. It contains the joint configuration and velocity vectors q and v, as well as cache variables that depend on q and v and are aimed at preventing double work.\n\nType parameters:\n\nX: the scalar type of the q and v vectors.\nM: the scalar type of the Mechanism\nC: the scalar type of the cache variables (== promote_type(X, M))\n\n\n\n"
+    "text": "immutable MechanismState{X<:Number, M<:Number, C<:Number}\n\nA MechanismState stores state information for an entire Mechanism. It contains the joint configuration and velocity vectors q and v, and a vector of additional states s. In addition, it stores cache variables that depend on q and v and are aimed at preventing double work.\n\nType parameters:\n\nX: the scalar type of the q, v, and s vectors.\nM: the scalar type of the Mechanism\nC: the scalar type of the cache variables (== promote_type(X, M))\n\n\n\n"
 },
 
 {
@@ -1110,6 +1134,14 @@ var documenterSearchIndex = {"docs": [
     "title": "The MechanismState type",
     "category": "section",
     "text": "MechanismState"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.additional_state-Tuple{RigidBodyDynamics.MechanismState}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.additional_state",
+    "category": "Method",
+    "text": "additional_state(state)\n\n\nReturn the vector of additional states s.\n\n\n\n"
 },
 
 {
@@ -1193,6 +1225,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanismstate.html#RigidBodyDynamics.num_additional_states-Tuple{RigidBodyDynamics.MechanismState}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.num_additional_states",
+    "category": "Method",
+    "text": "num_additional_states(state)\n\n\nReturn the length of the vector of additional states s (currently used for stateful contact models).\n\n\n\n"
+},
+
+{
     "location": "mechanismstate.html#RigidBodyDynamics.num_positions-Tuple{RigidBodyDynamics.MechanismState}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.num_positions",
@@ -1246,6 +1286,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.relative_twist",
     "category": "Method",
     "text": "relative_twist(state, body, base)\n\n\nReturn the twist of body with respect to base, expressed in the Mechanism's root frame.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.set_additional_state!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1}}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.set_additional_state!",
+    "category": "Method",
+    "text": "set_additional_state!(state, s)\n\n\nSet the vector of additional states s.\n\n\n\n"
 },
 
 {
@@ -1385,6 +1433,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanismstate.html#RigidBodyDynamics.reset_contact_state!-Tuple{RigidBodyDynamics.MechanismState}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.reset_contact_state!",
+    "category": "Method",
+    "text": "reset_contact_state!(state)\n\n\nReset all contact state variables.\n\n\n\n"
+},
+
+{
     "location": "mechanismstate.html#RigidBodyDynamics.twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.twist",
@@ -1461,7 +1517,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(result, state, torques)\ndynamics!(result, state)\ndynamics!(result, state, torques, externalwrenches)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies. externalwrenches should be a vector for which externalwrenches[vertex_index(body)] is the wrench exerted upon body.\n\n\n\n"
+    "text": "dynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\ndynamics!(ẋ, result, state, stateVec, torques)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
 },
 
 {
@@ -1469,7 +1525,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Function",
-    "text": "dynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "text": "dynamics!(result, state, torques)\ndynamics!(result, state)\ndynamics!(result, state, torques, externalwrenches)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies. externalwrenches should be a vector for which externalwrenches[vertex_index(body)] is the wrench exerted upon body.\n\n\n\n"
 },
 
 {
@@ -1525,7 +1581,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "Function",
-    "text": "inverse_dynamics!(torquesout, jointwrenchesout, accelerations, state, v̇)\ninverse_dynamics!(torquesout, jointwrenchesout, accelerations, state, v̇, externalwrenches)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies. externalwrenches should be a vector for which externalwrenches[vertex_index(body)] is the wrench exerted upon body.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+    "text": "inverse_dynamics!(torquesout, jointwrenchesout, accelerations, state, v̇, externalwrenches)\ninverse_dynamics!(torquesout, jointwrenchesout, accelerations, state, v̇)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies. externalwrenches should be a vector for which externalwrenches[vertex_index(body)] is the wrench exerted upon body.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
 },
 
 {
@@ -1701,7 +1757,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Simulation",
     "title": "Base.step",
     "category": "Method",
-    "text": "step(integrator, t, state, Δt)\n\n\nTake a single integration step.\n\nstate must be of a type for which the following functions are defined:\n\nconfiguration(state), returns the configuration vector in global coordinates;\nvelocity(state), returns the velocity vector;\nset_velocity!(state, v), sets velocity vector to v;\nglobal_coordinates!(state, q0, ϕ), sets global coordinates in state based on local coordinates ϕ centered around global coordinates q0;\nlocal_coordinates!(state, ϕ, ϕd, q0), converts state's global configuration q and velocity v to local coordinates centered around global coordinates q0.\n\n\n\n"
+    "text": "step(integrator, t, state, Δt)\n\n\nTake a single integration step.\n\nstate must be of a type for which the following functions are defined:\n\nconfiguration(state), returns the configuration vector in global coordinates;\nvelocity(state), returns the velocity vector;\nadditional_state(state), returns the vector of additional states;\nset_velocity!(state, v), sets velocity vector to v;\nset_additional_state!(state, s), sets vector of additional states to s;\nglobal_coordinates!(state, q0, ϕ), sets global coordinates in state based on local coordinates ϕ centered around global coordinates q0;\nlocal_coordinates!(state, ϕ, ϕd, q0), converts state's global configuration q and velocity v to local coordinates centered around global coordinates q0.\n\n\n\n"
 },
 
 {
