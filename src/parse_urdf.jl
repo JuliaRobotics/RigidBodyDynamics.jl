@@ -79,7 +79,7 @@ end
 
 function parse_joint_and_link{T}(mechanism::Mechanism{T}, xml_parent::XMLElement, xml_child::XMLElement, xml_joint::XMLElement)
     parentname = attribute(xml_parent, "name")
-    candidate_parents = filter(b -> RigidBodyDynamics.name(b) == parentname, bodies(mechanism))
+    candidate_parents = collect(filter(b -> RigidBodyDynamics.name(b) == parentname, bodies(mechanism)))
     length(candidate_parents) == 1 || error("Duplicate name: $(parentname)")
     parent = first(candidate_parents)
     joint = parse_joint(T, xml_joint)
@@ -116,7 +116,7 @@ function parse_urdf{T}(scalartype::Type{T}, filename)
     end
 
     # create a spanning tree
-    roots = filter(v -> isempty(in_edges(v, graph)), vertices)
+    roots = collect(filter(v -> isempty(in_edges(v, graph)), vertices))
     length(roots) != 1 && error("Can only handle a single root")
     tree = SpanningTree(graph, first(roots))
 
