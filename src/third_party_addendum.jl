@@ -3,29 +3,29 @@
 
 function *{S1, S2, T, L}(A::StaticMatrix, B::ContiguousSMatrixColumnView{S1, S2, T, L})
     data = A * parent(B)
-    typeof(B)(data, (:, B.indexes[2]), B.offset1, B.stride1)
+    view(data, :, B.indexes[2])
 end
 
 function +{S1, S2, T, L}(A::ContiguousSMatrixColumnView{S1, S2, T, L}, B::ContiguousSMatrixColumnView{S1, S2, T, L})
     @boundscheck size(A) == size(B) || error("size mismatch")
     data = parent(A) + parent(B)
-    typeof(A)(data, A.indexes, A.offset1, A.stride1)
+    view(data, :, A.indexes[2])
 end
 
 function -{S1, S2, T, L}(A::ContiguousSMatrixColumnView{S1, S2, T, L}, B::ContiguousSMatrixColumnView{S1, S2, T, L})
     @boundscheck size(A) == size(B) || error("size mismatch")
     data = parent(A) - parent(B)
-    typeof(A)(data, A.indexes, A.offset1, A.stride1)
+    view(data, :, A.indexes[2])
 end
 
 function -{S1, S2, T, L}(A::ContiguousSMatrixColumnView{S1, S2, T, L})
     data = -parent(A)
-    typeof(A)(data, A.indexes, A.offset1, A.stride1)
+    view(data, :, A.indexes[2])
 end
 
 function *{S1, S2, T, L}(s::Number, A::ContiguousSMatrixColumnView{S1, S2, T, L})
     data = s * parent(A)
-    typeof(A)(data, A.indexes, A.offset1, A.stride1)
+    view(data, :, A.indexes[2])
 end
 
 # FIXME: hack to get around ambiguities

@@ -35,13 +35,13 @@ Base.linearindexing{T}(::Type{UnsafeVectorView{T}}) = Base.LinearFast()
         ret = view(data, :, 1 : 0)
         return :($ret)
     elseif N == 6
-        return :(ContiguousSMatrixColumnView{3, 6, $T, 18}(mat, (:, $colrange), 0, 1)) # faster way to create view)
+        return :(view(mat, :, $colrange))
     else
         fillerSize = 6 - N
         filler = fill(NaN, SMatrix{3, fillerSize, T, 3 * fillerSize})
         return quote
             data = hcat(mat, $filler)::SMatrix{3, 6, $T, 18}
-            ContiguousSMatrixColumnView{3, 6, $T, 18}(data, (:, $colrange), 0, 1)
+            view(data, :, $colrange)
         end
     end
 end
@@ -77,7 +77,13 @@ macro rtti_dispatch(typeTuple, signature)
     :($(esc(ret)))
 end
 
-@compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
+@static if VERSION >= v"0.6-"
+    @compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
+else
+    @compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
+end
+
+
 @compat const RotMatrix3{T} = RotMatrix{3, T, 9}
 
 # TODO: use fusing broadcast instead of these functions in 0.6, where they don't allocate.
