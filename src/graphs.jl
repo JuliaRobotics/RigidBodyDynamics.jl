@@ -56,7 +56,7 @@ for typename in (:Edge, :Vertex)
             data::T
             id::Int64
 
-            $typename(data::T) = new(data, -1)
+            (::Type{$typename{T}}){T}(data::T) = new{T}(data, -1)
         end
         $typename{T}(data::T) = $typename{T}(data)
         data(x::$typename) = x.data
@@ -80,7 +80,7 @@ type DirectedGraph{V, E} <: AbstractGraph{V, E}
     inedges::Vector{Vector{E}}
     outedges::Vector{Vector{E}}
 
-    DirectedGraph() = new(V[], E[], V[], V[], Set{E}[], Set{E}[])
+    (::Type{DirectedGraph{V, E}}){V, E}() = new{V, E}(V[], E[], V[], V[], Set{E}[], Set{E}[])
 end
 
 # AbstractGraph interface

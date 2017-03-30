@@ -133,9 +133,9 @@ for VectorType in (:FreeVector3D, :Point3D)
             frame::CartesianFrame3D
             v::V
 
-            function $VectorType(frame::CartesianFrame3D, v::V)
+            function (::Type{$VectorType{V}}){V}(frame::CartesianFrame3D, v::V)
                 @boundscheck length(v) == 3 || throw(DimensionMismatch())
-                new(frame, v)
+                new{V}(frame, v)
             end
         end
 

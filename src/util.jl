@@ -4,7 +4,7 @@ immutable ConstVector{T} <: AbstractVector{T}
 end
 Base.size(A::ConstVector) = (A.length, )
 Base.getindex{T}(A::ConstVector{T}, i::Int) = (@boundscheck checkbounds(A, i); A.val)
-Base.linearindexing{T}(::Type{ConstVector{T}}) = Base.LinearFast()
+@compat Base.IndexStyle{T}(::Type{ConstVector{T}}) = IndexLinear()
 
 
 # type of a view of a vector
@@ -23,7 +23,7 @@ Base.size(v::UnsafeVectorView) = (v.len,)
 Base.getindex(v::UnsafeVectorView, idx) = unsafe_load(v.ptr, idx + v.offset)
 Base.setindex!(v::UnsafeVectorView, value, idx) = unsafe_store!(v.ptr, value, idx + v.offset)
 Base.length(v::UnsafeVectorView) = v.len
-Base.linearindexing{T}(::Type{UnsafeVectorView{T}}) = Base.LinearFast()
+@compat Base.IndexStyle{T}(::Type{UnsafeVectorView{T}}) = IndexLinear()
 
 # Functions such as motion_subspace(::Joint, ...) need to return types with a number of columns that depends on the joint type.
 # Using a 'view' of a 3×6 SMatrix as the underlying data type gets around type instabilities in motion_subspace while still using an isbits type.
@@ -35,13 +35,13 @@ Base.linearindexing{T}(::Type{UnsafeVectorView{T}}) = Base.LinearFast()
         ret = view(data, :, 1 : 0)
         return :($ret)
     elseif N == 6
-        return :(ContiguousSMatrixColumnView{3, 6, $T, 18}(mat, (:, $colrange), 0, 1)) # faster way to create view)
+        return :(view(mat, :, $colrange))
     else
         fillerSize = 6 - N
         filler = fill(NaN, SMatrix{3, fillerSize, T, 3 * fillerSize})
         return quote
             data = hcat(mat, $filler)::SMatrix{3, 6, $T, 18}
-            ContiguousSMatrixColumnView{3, 6, $T, 18}(data, (:, $colrange), 0, 1)
+            view(data, :, $colrange)
         end
     end
 end
@@ -77,7 +77,13 @@ macro rtti_dispatch(typeTuple, signature)
     :($(esc(ret)))
 end
 
-@compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
+@static if VERSION >= v"0.6-"
+    @compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
+else
+    @compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
+end
+
+
 @compat const RotMatrix3{T} = RotMatrix{3, T, 9}
 
 # TODO: use fusing broadcast instead of these functions in 0.6, where they don't allocate.

@@ -179,7 +179,7 @@ expressed in a centroidal frame.
 MomentumMatrix
 
 # SpatialInertia-specific functions
-Base.convert{T}(::Type{SpatialInertia{T}}, inertia::SpatialInertia{T}) = inertia
+Base.convert{T<:Number}(::Type{SpatialInertia{T}}, inertia::SpatialInertia{T}) = inertia
 
 function Base.convert{T<:Number}(::Type{SpatialInertia{T}}, inertia::SpatialInertia)
     SpatialInertia(inertia.frame, convert(SMatrix{3, 3, T}, inertia.moment), convert(SVector{3, T}, inertia.crossPart), convert(T, inertia.mass))
