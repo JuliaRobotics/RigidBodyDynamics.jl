@@ -20,7 +20,8 @@ using Lagrange multipliers (as opposed to using recursive algorithms).
 """
 function attach!{T}(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint, jointToPredecessor::Transform3D{T},
         successor::RigidBody{T}, successorToJoint::Transform3D{T} = Transform3D{T}(default_frame(successor), frame_after(joint)))
-    # TODO: check that jointToPredecessor.from and successorToJoint.to match joint.
+    @assert jointToPredecessor.from == frame_before(joint)
+    @assert successorToJoint.to == frame_after(joint)
 
     # define where joint is attached on predecessor
     add_frame!(predecessor, jointToPredecessor)

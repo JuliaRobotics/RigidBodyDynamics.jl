@@ -21,6 +21,7 @@ export num_states,
     contact_dynamics!,
     reset!,
     point_inside,
+    separation,
     detect_contact
 
 # specific models
