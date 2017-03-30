@@ -65,7 +65,7 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
         end
         original = deepcopy(graph)
 
-        vertex = rand(filter(v -> isempty(in_edges(v, graph)) && isempty(out_edges(v, graph)), vertices(graph)))
+        vertex = rand(collect(filter(v -> isempty(in_edges(v, graph)) && isempty(out_edges(v, graph)), vertices(graph))))
         remove_vertex!(graph, vertex)
         @test vertex ∉ vertices(graph)
         for v in vertices(graph)
