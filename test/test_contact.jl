@@ -1,5 +1,3 @@
-using RigidBodyDynamics.Contact
-
 @testset "contact" begin
     @testset "HalfSpace3D" begin
         frame = CartesianFrame3D()

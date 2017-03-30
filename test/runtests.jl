@@ -2,6 +2,7 @@ using Base.Test
 
 using RigidBodyDynamics
 using RigidBodyDynamics.Graphs
+using RigidBodyDynamics.Contact
 using Rotations
 using StaticArrays
 using ForwardDiff
@@ -22,6 +23,7 @@ include("test_spatial.jl")
 include("test_contact.jl")
 include("test_double_pendulum.jl")
 include("test_mechanism_algorithms.jl")
+include("test_simulate.jl")
 include("test_mechanism_manipulation.jl")
 
 # notebooks
