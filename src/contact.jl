@@ -217,9 +217,9 @@ type HalfSpace3D{T}
     point::Point3D{SVector{3, T}}
     outward_normal::FreeVector3D{SVector{3, T}}
 
-    function HalfSpace3D(point::Point3D{SVector{3, T}}, outward_normal::FreeVector3D{SVector{3, T}})
+    function (::Type{HalfSpace3D{T}}){T}(point::Point3D{SVector{3, T}}, outward_normal::FreeVector3D{SVector{3, T}})
         @framecheck point.frame outward_normal.frame
-        new(point, outward_normal)
+        new{T}(point, outward_normal)
     end
 end
 
@@ -240,7 +240,7 @@ detect_contact(halfspace::HalfSpace3D, p::Point3D) = separation(halfspace, p), h
 # ContactEnvironment
 type ContactEnvironment{T}
     halfspaces::Vector{HalfSpace3D{T}}
-    ContactEnvironment() = new(HalfSpace3D{T}[])
+    (::Type{ContactEnvironment{T}}){T}() = new{T}(HalfSpace3D{T}[])
 end
 
 Base.push!(environment::ContactEnvironment, halfspace::HalfSpace3D) = push!(environment.halfspaces, halfspace)

@@ -31,8 +31,8 @@ type Joint{T<:Number}
     jointType::JointType{T}
     id::Int64
 
-    function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T})
-        new(name, frameBefore, frameAfter, jointType, -1)
+    function (::Type{Joint{T}}){T}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T})
+        new{T}(name, frameBefore, frameAfter, jointType, -1)
     end
 end
 
