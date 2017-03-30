@@ -589,6 +589,46 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
     end
 end
 
+function contact_dynamics!{X, M, C, T}(result::DynamicsResult{M, T}, state::MechanismState{X, M, C})
+    mechanism = state.mechanism
+    root = root_body(mechanism)
+    frame = default_frame(root)
+    for body in bodies(mechanism)
+        wrench = zero(Wrench{T}, frame)
+        points = contact_points(body)
+        if !isempty(points)
+            # TODO: AABB
+            body_to_root = transform_to_root(state, body)
+            twist = twist_wrt_world(state, body)
+            states = contact_states(state, body)
+            state_derivs = contact_state_derivatives(result, body)
+            for i = 1 : length(points)
+                @inbounds c = points[i]
+                # TODO: AABB check here
+                point = body_to_root * location(c)
+                velocity = point_velocity(twist, point)
+                for primitive in mechanism.environment.halfspaces
+                    model = contact_model(c)
+                    contact_state = states[i]
+                    contact_state_deriv = state_derivs[i]
+                    # TODO: would be good to move this to Contact module
+                    # arguments: model, state, state_deriv, point, velocity, primitive
+                    if point_inside(primitive, point)
+                        separation, normal = Contact.detect_contact(primitive, point)
+                        force = Contact.contact_dynamics!(contact_state_deriv, contact_state,
+                            model, -separation, velocity, normal)
+                        wrench += Wrench(point, force)
+                    else
+                        Contact.reset!(contact_state)
+                        Contact.zero!(contact_state_deriv)
+                    end
+                end
+            end
+        end
+        set_contact_wrench!(result, body, wrench)
+    end
+end
+
 function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
     # version for general scalar types
     # TODO: make more efficient
@@ -711,7 +751,11 @@ upon `body`.
 function dynamics!{T, X, M, Tau, W}(result::DynamicsResult{T}, state::MechanismState{X, M},
         torques::AbstractVector{Tau} = ConstVector(zero(T), num_velocities(state)),
         externalwrenches::AbstractVector{Wrench{W}} = ConstVector(zero(Wrench{T}, root_frame(state.mechanism)), num_bodies(state.mechanism)))
-    dynamics_bias!(result.dynamicsbias, result.accelerations, result.jointwrenches, state, externalwrenches)
+    contact_dynamics!(result, state)
+    for i in eachindex(result.totalwrenches) # TODO: dot syntax on 0.6
+        result.totalwrenches[i] = externalwrenches[i] + result.contactwrenches[i]
+    end
+    dynamics_bias!(result.dynamicsbias, result.accelerations, result.jointwrenches, state, result.totalwrenches)
     mass_matrix!(result.massmatrix, state)
     constraint_jacobian_and_bias!(state, result.constraintjacobian, result.constraintbias)
     dynamics_solve!(result, torques)

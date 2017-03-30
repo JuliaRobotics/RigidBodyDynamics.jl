@@ -8,6 +8,7 @@ state-dependent information.
 type Mechanism{T<:Number}
     graph::DirectedGraph{RigidBody{T}, Joint{T}}
     tree::SpanningTree{RigidBody{T}, Joint{T}}
+    environment::ContactEnvironment{T}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
     function (::Type{Mechanism{T}}){T<:Number}(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
@@ -15,7 +16,8 @@ type Mechanism{T<:Number}
         add_vertex!(graph, rootBody)
         tree = SpanningTree(graph, rootBody)
         gravitationalAcceleration = FreeVector3D(default_frame(rootBody), gravity)
-        new{T}(graph, tree, gravitationalAcceleration)
+        environment = ContactEnvironment{T}()
+        new{T}(graph, tree, environment, gravitationalAcceleration)
     end
 end
 
@@ -115,6 +117,19 @@ $(SIGNATURES)
 Return the dimension of the joint velocity vector ``v``.
 """
 num_velocities(mechanism::Mechanism) = mapreduce(num_velocities, +, 0, tree_joints(mechanism))
+
+"""
+$(SIGNATURES)
+
+Return the dimension of the vector of additional states ``s`` (used for stateful contact models).
+"""
+function num_additional_states(mechanism::Mechanism)
+    ret = 0
+    for body in bodies(mechanism), point in contact_points(body)
+        ret += num_states(contact_model(point))
+    end
+    ret
+end
 
 """
 $(SIGNATURES)

@@ -2,23 +2,26 @@
 $(TYPEDEF)
 
 A `MechanismState` stores state information for an entire `Mechanism`. It
-contains the joint configuration and velocity vectors ``q`` and ``v``, as well
-as cache variables that depend on ``q`` and ``v`` and are aimed at preventing
-double work.
+contains the joint configuration and velocity vectors ``q`` and ``v``, and
+a vector of additional states ``s``. In addition, it stores cache
+variables that depend on ``q`` and ``v`` and are aimed at preventing double work.
 
 Type parameters:
-* `X`: the scalar type of the ``q`` and ``v`` vectors.
+* `X`: the scalar type of the ``q``, ``v``, and ``s`` vectors.
 * `M`: the scalar type of the `Mechanism`
 * `C`: the scalar type of the cache variables (`== promote_type(X, M)`)
 """
 immutable MechanismState{X<:Number, M<:Number, C<:Number}
     mechanism::Mechanism{M}
     nontreejoints::Vector{Joint{M}}
-    constraint_jacobian_structure::SparseMatrixCSC{Int64,Int64} # TODO: consider just using a Vector{Vector{Pair{Int64, Int64}}}
+    constraint_jacobian_structure::SparseMatrixCSC{Int64,Int64} # TODO: replace with a Vector{Path{RigidBody{M}, Joint{M}}}
 
-    # state vector
+    # configurations, velocities
     q::Vector{X}
     v::Vector{X}
+
+    # additional state
+    s::Vector{X}
 
     # joint-specific
     qs::Vector{VectorSegment{X}}
@@ -35,12 +38,14 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
     bias_accelerations_wrt_world::Vector{CacheElement{SpatialAcceleration{C}}}
     inertias::Vector{CacheElement{SpatialInertia{C}}}
     crb_inertias::Vector{CacheElement{SpatialInertia{C}}}
+    contact_states::Vector{Vector{DefaultSoftContactState{X}}} # TODO: consider moving to separate type
 
     function (::Type{MechanismState{X, M, C}}){X<:Number, M<:Number, C<:Number}(mechanism::Mechanism{M})
         nb = num_bodies(mechanism)
 
         q = Vector{X}(num_positions(mechanism))
         v = zeros(X, num_velocities(mechanism))
+        s = zeros(X, num_additional_states(mechanism))
 
         qs = Vector{VectorSegment{X}}(nb)
         vs = Vector{VectorSegment{X}}(nb)
@@ -70,6 +75,15 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         bias_accelerations_wrt_world = [CacheElement{SpatialAcceleration{C}}() for i = 1 : nb]
         inertias = [CacheElement{SpatialInertia{C}}() for i = 1 : nb]
         crb_inertias = [CacheElement{SpatialInertia{C}}() for i = 1 : nb]
+        contact_states = [Vector{DefaultSoftContactState{C}}() for i = 1 : nb]
+        startind = 1
+        for body in bodies(mechanism), point in contact_points(body)
+            model = contact_model(point)
+            n = num_states(model)
+            s_part = view(s, startind : startind + n - 1)
+            push!(contact_states[vertex_index(body)], SoftContactState(model, s_part, root_frame(mechanism)))
+            startind += n
+        end
 
         # Set root-body related cache elements once and for all.
         rootindex = vertex_index(root_body(mechanism))
@@ -79,9 +93,10 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         update!(bias_accelerations_wrt_world[rootindex], zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe))
 
         new{X, M, C}(mechanism, non_tree_joints(mechanism), constraint_jacobian_structure(mechanism),
-            q, v, qs, vs,
+            q, v, s, qs, vs,
             joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world,
-            transforms_to_world, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias)
+            transforms_to_world, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
+            contact_states)
     end
 end
 MechanismState{X, M}(::Type{X}, mechanism::Mechanism{M}) = MechanismState{X, M, promote_type(X, M)}(mechanism)
@@ -101,6 +116,15 @@ $(SIGNATURES)
 Return the length of the joint velocity vector ``v``.
 """
 num_velocities(state::MechanismState) = length(state.v)
+
+"""
+$(SIGNATURES)
+
+Return the length of the vector of additional states ``s`` (currently used
+for stateful contact models).
+"""
+num_additional_states(state::MechanismState) = length(state.s)
+
 
 """
 $(SIGNATURES)
@@ -155,6 +179,18 @@ function setdirty!(state::MechanismState)
     end
 end
 
+"""
+$(SIGNATURES)
+
+Reset all contact state variables.
+"""
+function reset_contact_state!(state::MechanismState)
+    for states in state.contact_states
+        for state in states
+            reset!(state)
+        end
+    end
+end
 
 """
 $(SIGNATURES)
@@ -170,6 +206,7 @@ function zero_configuration!(state::MechanismState)
     for joint in tree_joints(state.mechanism)
         zero_configuration!(joint, configuration(state, joint))
     end
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -181,6 +218,7 @@ Zero the velocity vector ``v``. Invalidates cache variables.
 function zero_velocity!(state::MechanismState)
     X = eltype(state.v)
     fill!(state.v,  zero(X))
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -205,6 +243,7 @@ function rand_configuration!(state::MechanismState)
     for joint in tree_joints(state.mechanism)
         rand_configuration!(joint, configuration(state, joint))
     end
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -216,6 +255,7 @@ Invalidates cache variables.
 """
 function rand_velocity!(state::MechanismState)
     rand!(state.v)
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -251,7 +291,14 @@ vector to ensure that dependent cache variables are invalidated.
 velocity(state::MechanismState) = state.v
 Base.@deprecate velocity_vector(state::MechanismState) velocity(state)
 
-state_vector(state::MechanismState) = [configuration(state); velocity(state)]
+"""
+$(SIGNATURES)
+
+Return the vector of additional states ``s``.
+"""
+additional_state(state::MechanismState) = state.s
+
+state_vector(state::MechanismState) = [configuration(state); velocity(state); additional_state(state)]
 
 for fun in (:num_velocities, :num_positions)
     @eval function $fun{T}(path::TreePath{RigidBody{T}, Joint{T}})
@@ -304,6 +351,7 @@ Invalidates cache variables.
 """
 function set_configuration!(state::MechanismState, joint::Joint, q::AbstractVector)
     configuration(state, joint)[:] = q
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -315,6 +363,7 @@ Invalidates cache variables.
 """
 function set_velocity!(state::MechanismState, joint::Joint, v::AbstractVector)
     velocity(state, joint)[:] = v
+    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -338,12 +387,25 @@ function set_velocity!(state::MechanismState, v::AbstractVector)
     setdirty!(state)
 end
 
+"""
+$(SIGNATURES)
+
+Set the vector of additional states ``s``.
+"""
+function set_additional_state!(state::MechanismState, s::AbstractVector)
+    copy!(state.s, s)
+    # note: setdirty! is currently not needed because no cache variables depend on s
+end
+
 function set!(state::MechanismState, x::AbstractVector)
     nq = num_positions(state)
     nv = num_velocities(state)
-    length(x) == nq + nv || error("wrong size")
+    ns = num_additional_states(state)
+    length(x) == nq + nv + ns || error("wrong size")
+    start = 1
     @inbounds copy!(state.q, 1, x, 1, nq)
-    @inbounds copy!(state.v, 1, x, nq + 1, nv)
+    @inbounds copy!(state.v, 1, x, start += nq, nv)
+    @inbounds copy!(state.s, 1, x, start += nv, ns)
     setdirty!(state)
 end
 
@@ -519,6 +581,8 @@ function crb_inertia(state::MechanismState, body::RigidBody)
         ret
     end)
 end
+
+contact_states(state::MechanismState, body::RigidBody) = state.contact_states[vertex_index(body)]
 
 function newton_euler(state::MechanismState, body::RigidBody, accel::SpatialAcceleration)
     inertia = spatial_inertia(state, body)

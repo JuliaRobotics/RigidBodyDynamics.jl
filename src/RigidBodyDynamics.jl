@@ -12,29 +12,6 @@ import Base: *, +, /, -, \
 import Compat.Iterators: filter
 import Compat.Iterators: flatten
 
-const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
-
-include("graphs.jl")
-include("util.jl")
-include("third_party_addendum.jl")
-
-include("frames.jl")
-include("spatial.jl")
-include("rigid_body.jl")
-include("joint_types.jl")
-include("joint.jl")
-include("cache_element.jl")
-
-using .Graphs
-include("mechanism.jl")
-include("mechanism_manipulation.jl")
-include("mechanism_state.jl")
-include("dynamics_result.jl")
-include("mechanism_algorithms.jl")
-include("parse_urdf.jl")
-include("ode_integrators.jl")
-include("simulate.jl")
-
 export
     # types
     CartesianFrame3D,
@@ -94,11 +71,13 @@ export
     configuration_derivative_to_velocity!,
     num_positions,
     num_velocities,
+    num_additional_states,
     num_bodies,
     configuration,
     configuration_range,
     velocity,
     velocity_range,
+    additional_state,
     num_cols,
     joint_transform,
     motion_subspace,
@@ -108,6 +87,8 @@ export
     bias_acceleration,
     spatial_inertia,
     spatial_inertia!,
+    add_contact_point!,
+    contact_points,
     crb_inertia,
     setdirty!,
     add_body_fixed_frame!,
@@ -119,6 +100,7 @@ export
     submechanism,
     remove_fixed_joints!, # deprecated
     remove_fixed_tree_joints!,
+    add_environment_primitive!,
     rand_mechanism,
     rand_chain_mechanism,
     rand_tree_mechanism,
@@ -132,6 +114,7 @@ export
     zero_velocity!,
     set_configuration!,
     set_velocity!,
+    set_additional_state!,
     set!,
     zero!,
     add_frame!,
@@ -159,5 +142,34 @@ export
     simulate,
     # macros
     @framecheck
+
+const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
+
+include("graphs.jl")
+include("util.jl")
+include("third_party_addendum.jl")
+include("cache_element.jl")
+
+include("frames.jl")
+include("spatial.jl")
+include("contact.jl")
+
+include("joint_types.jl")
+include("joint.jl")
+
+using .Contact
+include("rigid_body.jl")
+
+using .Graphs
+include("mechanism.jl")
+include("mechanism_manipulation.jl")
+include("mechanism_state.jl")
+include("dynamics_result.jl")
+include("mechanism_algorithms.jl")
+include("parse_urdf.jl")
+include("ode_integrators.jl")
+include("simulate.jl")
+
+
 
 end # module

@@ -461,34 +461,4 @@
             @test isapprox(ϕ, zeros(num_velocities(joint)); atol = 1e-6) # FIXME: tolerance is way too high
         end
     end
-
-    @testset "simulate" begin
-        # use simulate function (Munthe-Kaas integrator)
-        acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
-        x = MechanismState(Float64, acrobot)
-        rand!(x)
-        total_energy_before = gravitational_potential_energy(x) + kinetic_energy(x)
-        times, qs, vs = simulate(x, 1.)
-        set_configuration!(x, qs[end])
-        set_velocity!(x, vs[end])
-        total_energy_after = gravitational_potential_energy(x) + kinetic_energy(x)
-        @test isapprox(total_energy_after, total_energy_before, atol = 1e-3)
-
-        total_energy_before = gravitational_potential_energy(x) + kinetic_energy(x)
-        result = DynamicsResult(Float64, acrobot)
-
-        # use RingBufferStorage
-        using RigidBodyDynamics.OdeIntegrators
-        passive_dynamics! = (vd::AbstractArray, t, state) -> begin
-            dynamics!(result, state)
-            copy!(vd, result.v̇)
-            nothing
-        end
-        storage = RingBufferStorage{Float64}(3)
-        integrator = MuntheKaasIntegrator(passive_dynamics!, runge_kutta_4(Float64), storage)
-        integrate(integrator, x, 1., 1e-4, maxRealtimeRate = 2.0)
-        set_configuration!(x, storage.qs[storage.lastIndex])
-        set_velocity!(x, storage.vs[storage.lastIndex])
-        @test isapprox(gravitational_potential_energy(x) + kinetic_energy(x), total_energy_before, atol = 1e-1)
-    end
 end
