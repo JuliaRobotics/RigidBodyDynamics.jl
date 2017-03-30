@@ -4,7 +4,7 @@ immutable ConstVector{T} <: AbstractVector{T}
 end
 Base.size(A::ConstVector) = (A.length, )
 Base.getindex{T}(A::ConstVector{T}, i::Int) = (@boundscheck checkbounds(A, i); A.val)
-Base.linearindexing{T}(::Type{ConstVector{T}}) = Base.LinearFast()
+@compat Base.IndexStyle{T}(::Type{ConstVector{T}}) = IndexLinear()
 
 
 # type of a view of a vector
@@ -23,7 +23,7 @@ Base.size(v::UnsafeVectorView) = (v.len,)
 Base.getindex(v::UnsafeVectorView, idx) = unsafe_load(v.ptr, idx + v.offset)
 Base.setindex!(v::UnsafeVectorView, value, idx) = unsafe_store!(v.ptr, value, idx + v.offset)
 Base.length(v::UnsafeVectorView) = v.len
-Base.linearindexing{T}(::Type{UnsafeVectorView{T}}) = Base.LinearFast()
+@compat Base.IndexStyle{T}(::Type{UnsafeVectorView{T}}) = IndexLinear()
 
 # Functions such as motion_subspace(::Joint, ...) need to return types with a number of columns that depends on the joint type.
 # Using a 'view' of a 3×6 SMatrix as the underlying data type gets around type instabilities in motion_subspace while still using an isbits type.
