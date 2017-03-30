@@ -144,7 +144,7 @@ Change the default frame of `body` to `frame` (which should already be among
 function change_default_frame!(body::RigidBody, newDefaultFrame::CartesianFrame3D)
     if newDefaultFrame != default_frame(body)
         oldToNew = inv(frame_definition(body, newDefaultFrame))
-        map!(tf -> oldToNew * tf, body.frameDefinitions)
+        map!(tf -> oldToNew * tf, body.frameDefinitions, body.frameDefinitions)
         if has_defined_inertia(body)
             body.inertia = Nullable(transform(spatial_inertia(body), oldToNew))
         end
