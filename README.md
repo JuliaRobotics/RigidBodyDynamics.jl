@@ -3,10 +3,12 @@
 [![Build Status](https://travis-ci.org/tkoolen/RigidBodyDynamics.jl.svg?branch=master)](https://travis-ci.org/tkoolen/RigidBodyDynamics.jl)
 [![codecov.io](https://codecov.io/github/tkoolen/RigidBodyDynamics.jl/coverage.svg?branch=master)](https://codecov.io/github/tkoolen/RigidBodyDynamics.jl?branch=master)
 [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://tkoolen.github.io/RigidBodyDynamics.jl/latest)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://tkoolen.github.io/RigidBodyDynamics.jl/stable)
 
 RigidBodyDynamics.jl is a rigid body dynamics library in pure Julia.
 
 ## News
+* March 20, 2017: [tagged version 0.1.0](https://github.com/JuliaLang/METADATA.jl/pull/8431).
 * February 16, 2017: [tagged version 0.0.6](https://github.com/JuliaLang/METADATA.jl/pull/7989).
 * February 14, 2017: [tagged version 0.0.5](https://github.com/JuliaLang/METADATA.jl/pull/7953).
 * December 12, 2016: [tagged version 0.0.4](https://github.com/JuliaLang/METADATA.jl/pull/7256).
