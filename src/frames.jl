@@ -213,6 +213,7 @@ Base.dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.fr
 (*)(t::Transform3D, vector::FreeVector3D) = begin @framecheck(t.from, vector.frame); FreeVector3D(t.to, t.rot * vector.v) end
 (\)(t::Transform3D, point::FreeVector3D) = begin @framecheck point.frame t.to; FreeVector3D(t.from, At_mul_B(t.rot, point.v)) end
 Base.norm(v::FreeVector3D) = norm(v.v)
+Base.normalize(v::FreeVector3D, p = 2) = FreeVector3D(v.frame, normalize(v.v, p))
 
 # Mixed Point3D and FreeVector3D
 (+)(p1::FreeVector3D, p2::FreeVector3D) = begin @framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v + p2.v) end
