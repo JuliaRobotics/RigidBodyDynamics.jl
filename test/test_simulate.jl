@@ -30,7 +30,7 @@
         @test isapprox(gravitational_potential_energy(x) + kinetic_energy(x), total_energy_before, atol = 1e-3)
     end
 
-    @testset "Contact sim" begin
+    @testset "elastic ball drop" begin
         # Drop a single rigid body with a contact point at the center of mass
         # onto the floor with a conservative contact model. Check energy
         # balances and bounce heights.
@@ -84,5 +84,39 @@
             currentsign = newsign
         end
         @test switches > 3
+    end
+
+    @testset "inclined plane" begin
+        θ = 0.5 # plane angle
+        μcrit = tan(θ) # μ > μcrit should show sticking behavior, μ < μcrit should show sliding behavior
+
+        # set up point mass + inclined plane
+        world = RigidBody{Float64}("world")
+        mechanism = Mechanism(world)
+        floatingjoint = Joint("floating", QuaternionFloating{Float64}())
+        body = RigidBody("body", SpatialInertia(CartesianFrame3D("inertia"), eye(SMatrix{3, 3}), zeros(SVector{3}), 2.))
+        attach!(mechanism, world, floatingjoint, Transform3D{Float64}(frame_before(floatingjoint), default_frame(world)), body)
+        worldframe = root_frame(mechanism)
+        inclinedplane = HalfSpace3D(Point3D(worldframe, zeros(SVector{3})), FreeVector3D(worldframe, sin(θ), 0., cos(θ)))
+        add_environment_primitive!(mechanism, inclinedplane)
+
+        # simulate inclined plane friction experiments
+        normalmodel = hunt_crossley_hertz(k = 50e3; α = 1.)
+        contactlocation = Point3D(default_frame(body), 0., 0., 0.)
+        for μ in (μcrit + 1e-2, μcrit - 1e-2)
+            frictionmodel = ViscoelasticCoulombModel(μ, 50e3, 1e4)
+            m, b = deepcopy((mechanism, body))
+            add_contact_point!(b, ContactPoint(contactlocation, SoftContactModel(normalmodel, frictionmodel)))
+            state = MechanismState(Float64, m)
+            simulate(state, 1., Δt = 1e-3) # settle into steady state
+            x1 = transform(state, contactlocation, worldframe)
+            simulate(state, 1., Δt = 1e-3)
+            x2 = transform(state, contactlocation, worldframe)
+            if μ > μcrit # should stick
+                @test isapprox(x1, x2, atol = 1e-4)
+            else # should slip
+                @test !isapprox(x1, x2, atol = 1e-1)
+            end
+        end
     end
 end
