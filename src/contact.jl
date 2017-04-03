@@ -219,7 +219,7 @@ type HalfSpace3D{T}
 
     function (::Type{HalfSpace3D{T}}){T}(point::Point3D{SVector{3, T}}, outward_normal::FreeVector3D{SVector{3, T}})
         @framecheck point.frame outward_normal.frame
-        new{T}(point, outward_normal)
+        new{T}(point, normalize(outward_normal))
     end
 end
 
