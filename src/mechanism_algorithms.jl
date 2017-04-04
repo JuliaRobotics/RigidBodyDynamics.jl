@@ -151,8 +151,8 @@ function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::TreeP
     nv = num_velocities(path)
     angular = Matrix{C}(3, nv)
     linear = Matrix{C}(3, nv)
-    bodyframe = default_frame(path.target)
-    baseframe = default_frame(path.source)
+    bodyframe = default_frame(target(path))
+    baseframe = default_frame(source(path))
     jac = GeometricJacobian(bodyframe, baseframe, root_frame(state.mechanism), angular, linear)
     geometric_jacobian!(jac, state, path, identity)
 end
