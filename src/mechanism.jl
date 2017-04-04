@@ -271,3 +271,6 @@ function constraint_jacobian_structure(mechanism::Mechanism)
     end
     dropzeros!(ret)
 end
+
+findbody(mechanism::Mechanism, name::String) = findunique(b -> b.name == name, bodies(mechanism))
+findjoint(mechanism::Mechanism, name::String) = findunique(j -> j.name == name, joints(mechanism))

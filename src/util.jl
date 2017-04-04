@@ -222,3 +222,10 @@ function angular_velocity_in_body(quat::Quat, quat_derivative::AbstractVector)
      -q.z  q.y -q.x  q.w]
     2 * (MInv * quat_derivative)
 end
+
+function findunique(f, A)
+    results = find(f, A)
+    length(results) == 0 && error("No results found.")
+    length(results) > 1 && error("Multiple results found:\n$(A[results])")
+    A[first(results)]
+end

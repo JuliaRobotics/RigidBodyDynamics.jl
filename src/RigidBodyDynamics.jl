@@ -140,6 +140,8 @@ export
     dynamics!,
     parse_urdf,
     simulate,
+    findbody,
+    findjoint,
     # macros
     @framecheck
 

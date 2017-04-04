@@ -26,6 +26,11 @@
     joint2ToBody1 = Transform3D(joint2.frameBefore, default_frame(body1), SVector(0, 0, l1))
     attach!(doublePendulum, body1, joint2, joint2ToBody1, body2)
 
+    @test findbody(doublePendulum, body1.name) == body1
+    @test_throws ErrorException findbody(doublePendulum, "bla")
+    @test findjoint(doublePendulum, joint2.name) == joint2
+    @test_throws ErrorException findjoint(doublePendulum, "bla")
+
     x = MechanismState(Float64, doublePendulum)
     rand!(x)
 
