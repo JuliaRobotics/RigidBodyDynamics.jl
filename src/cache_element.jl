@@ -4,7 +4,7 @@ type CacheElement{T}
     (::Type{CacheElement{T}}){T}() = new{T}(true)
 end
 
-@inline function update!{T}(element::CacheElement{T}, data::T)
+@inline function update!{T}(element::CacheElement{T}, data)
     element.data = data
     element.dirty = false
 end
