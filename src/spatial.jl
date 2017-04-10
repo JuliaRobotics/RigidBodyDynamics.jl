@@ -30,13 +30,19 @@ immutable SpatialInertia{T<:Number}
 end
 
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
-    @eval immutable $MotionSpaceElement{T<:Number}
+    @eval immutable $MotionSpaceElement{V<:AbstractVector}
         # describes motion of body w.r.t. base, expressed in frame
         body::CartesianFrame3D
         base::CartesianFrame3D
         frame::CartesianFrame3D
-        angular::SVector{3, T}
-        linear::SVector{3, T}
+        angular::V
+        linear::V
+
+        function (::Type{$MotionSpaceElement{V}}){V<:AbstractVector}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::V, linear::V)
+            @boundscheck length(angular) == 3 || error("size mismatch")
+            @boundscheck length(linear) == 3 || error("size mismatch")
+            new{V}(body, base, frame, angular, linear)
+        end
     end
 end
 
@@ -81,10 +87,16 @@ See [`Twist`](@ref).
 SpatialAcceleration
 
 for ForceSpaceElement in (:Momentum, :Wrench)
-    @eval immutable $ForceSpaceElement{T<:Number}
+    @eval immutable $ForceSpaceElement{V<:AbstractVector}
         frame::CartesianFrame3D
-        angular::SVector{3, T}
-        linear::SVector{3, T}
+        angular::V
+        linear::V
+
+        function (::Type{$ForceSpaceElement{V}}){V<:AbstractVector}(frame::CartesianFrame3D, angular::V, linear::V)
+            @boundscheck length(angular) == 3 || error("size mismatch")
+            @boundscheck length(linear) == 3 || error("size mismatch")
+            new{V}(frame, angular, linear)
+        end
     end
 end
 
@@ -287,12 +299,17 @@ end
 # MotionSpaceElement-specific
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     @eval begin
-        Base.convert{T<:Number}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement{T}) = m
-        Base.convert{T<:Number}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement) = $MotionSpaceElement(m.body, m.base, m.frame, convert(SVector{3, T}, m.angular), convert(SVector{3, T}, m.linear))
-        Base.convert{T}(::Type{Vector{T}}, m::$MotionSpaceElement{T}) = [m.angular...; m.linear...]
-        Base.Array{T}(m::$MotionSpaceElement{T}) = convert(Vector{T}, m)
-        Base.eltype{T}(::Type{$MotionSpaceElement{T}}) = T
-        StaticArrays.similar_type{T1, T2}(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) = $MotionSpaceElement{T2}
+        @inline function $MotionSpaceElement{V1, V2}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::V1, linear::V2)
+            V = promote_type(V1, V2)
+            $MotionSpaceElement{V}(body, base, frame, angular, linear)
+        end
+
+        Base.convert{V<:AbstractVector}(::Type{$MotionSpaceElement{V}}, m::$MotionSpaceElement{V}) = m
+        Base.convert{V<:AbstractVector}(::Type{$MotionSpaceElement{V}}, m::$MotionSpaceElement) = $MotionSpaceElement(m.body, m.base, m.frame, convert(V, m.angular), convert(V, m.linear))
+        Base.convert{T}(::Type{Vector{T}}, m::$MotionSpaceElement) = convert(Vector{T}, [m.angular; m.linear])
+        Base.Array(m::$MotionSpaceElement) = convert(Vector{eltype(m)}, m)
+        Base.eltype{V}(::Type{$MotionSpaceElement{V}}) = eltype(V)
+        # StaticArrays.similar_type{T1, T2}(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) = $MotionSpaceElement{T2}
 
         function Base.show(io::IO, m::$MotionSpaceElement)
             print(io, "$($(string(MotionSpaceElement))) of \"$(name(m.body))\" w.r.t \"$(name(m.base))\" in \"$(name(m.frame))\":\nangular: $(m.angular), linear: $(m.linear)")
@@ -321,13 +338,25 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
 
         change_base(m::$MotionSpaceElement, base::CartesianFrame3D) = $MotionSpaceElement(m.body, base, m.frame, m.angular, m.linear)
 
-        function Base.zero{T}(::Type{$MotionSpaceElement{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
-            $MotionSpaceElement(body, base, frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
+        function Base.zero{V<:AbstractVector}(::Type{$MotionSpaceElement{V}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
+            T = eltype(V)
+            $MotionSpaceElement(body, base, frame, zeros(T, 3), zeros(T, 3))
         end
 
-        function Random.rand{T}(::Type{$MotionSpaceElement{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
-            $MotionSpaceElement(body, base, frame, rand(SVector{3, T}), rand(SVector{3, T}))
+        function Base.zero{V<:StaticVector}(::Type{$MotionSpaceElement{V}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
+            $MotionSpaceElement(body, base, frame, zero(V), zero(V))
         end
+
+        function Random.rand{V<:AbstractVector}(::Type{$MotionSpaceElement{V}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
+            T = eltype(V)
+            $MotionSpaceElement(body, base, frame, rand(T, 3), rand(T, 3))
+        end
+
+        function Random.rand{V<:StaticVector}(::Type{$MotionSpaceElement{V}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
+            $MotionSpaceElement(body, base, frame, rand(V), rand(V))
+        end
+
+        Random.rand(::Type{$MotionSpaceElement}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) = rand($MotionSpaceElement{SVector{3, Float64}}, body, base, frame)
     end
 end
 
@@ -500,7 +529,15 @@ end
 # ForceSpaceElement-specific
 for ForceSpaceElement in (:Momentum, :Wrench)
     @eval begin
-        Base.convert{T<:Number}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) = f
+        @inline function $ForceSpaceElement{V1, V2}(frame::CartesianFrame3D, angular::V1, linear::V2)
+            V = promote_type(V1, V2)
+            $ForceSpaceElement{V}(frame, angular, linear)
+        end
+
+        Base.convert{V<:AbstractVector}(::Type{$ForceSpaceElement{V}}, f::$ForceSpaceElement{V}) = f
+        function Base.convert{V<:AbstractVector}(::Type{$ForceSpaceElement{V}}, f::$ForceSpaceElement)
+            $ForceSpaceElement(f.frame, convert(V, f.angular), convert(V, f.linear))
+        end
 
         """
         $(SIGNATURES)
@@ -513,19 +550,32 @@ for ForceSpaceElement in (:Momentum, :Wrench)
             $ForceSpaceElement(angular.frame, angular.v, linear.v)
         end
 
-        function Base.convert{T<:Number}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement)
-            $ForceSpaceElement(f.frame, convert(SVector{3, T}, f.angular), convert(SVector{3, T}, f.linear))
-        end
-
-        Base.eltype{T}(::Type{$ForceSpaceElement{T}}) = T
-        StaticArrays.similar_type{T1, T2}(::Type{$ForceSpaceElement{T1}}, ::Type{T2}) = $ForceSpaceElement{T2}
+        Base.eltype{V}(::Type{$ForceSpaceElement{V}}) = eltype(V)
+        # StaticArrays.similar_type{T1, T2}(::Type{$ForceSpaceElement{T1}}, ::Type{T2}) = $ForceSpaceElement{T2}
 
         function Base.show(io::IO, f::$ForceSpaceElement)
             print(io, "$($(string(ForceSpaceElement))) expressed in \"$(name(f.frame))\":\nangular: $(f.angular), linear: $(f.linear)")
         end
 
-        Base.zero{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
-        Random.rand{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, rand(SVector{3, T}), rand(SVector{3, T}))
+        function Base.zero{V<:AbstractVector}(::Type{$ForceSpaceElement{V}}, frame::CartesianFrame3D)
+            T = eltype(V)
+            $ForceSpaceElement(frame, zeros(T, 3), zeros(T, 3))
+        end
+
+        function Base.zero{V<:StaticVector}(::Type{$ForceSpaceElement{V}}, frame::CartesianFrame3D)
+            $ForceSpaceElement(frame, zero(V), zero(V))
+        end
+
+        function Random.rand{V<:AbstractVector}(::Type{$ForceSpaceElement{V}}, frame::CartesianFrame3D)
+            T = eltype(V)
+            $ForceSpaceElement(frame, rand(T, 3), rand(T, 3))
+        end
+
+        function Random.rand{V<:StaticVector}(::Type{$ForceSpaceElement{V}}, frame::CartesianFrame3D)
+            $ForceSpaceElement(frame, rand(V), rand(V))
+        end
+
+        Random.rand(::Type{$ForceSpaceElement}, frame::CartesianFrame3D) = rand($ForceSpaceElement{SVector{3, Float64}}, frame)
 
         """
         $(SIGNATURES)

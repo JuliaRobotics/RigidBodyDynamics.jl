@@ -77,7 +77,7 @@
     @testset "joint_torque! / motion_subspace" begin
         for joint in tree_joints(mechanism)
             qjoint = configuration(x, joint)
-            wrench = rand(Wrench{Float64}, frame_after(joint))
+            wrench = rand(Wrench, frame_after(joint))
             τ = Vector{Float64}(num_velocities(joint))
             joint_torque!(joint, τ, qjoint, wrench)
             S = motion_subspace(joint, qjoint)
@@ -353,7 +353,7 @@
         rand_velocity!(x)
 
         v̇ = rand(num_velocities(mechanism))
-        externalwrenches = [rand(Wrench{Float64}, root_frame(mechanism)) for i = 1 : num_bodies(mechanism)]
+        externalwrenches = [rand(Wrench, root_frame(mechanism)) for i = 1 : num_bodies(mechanism)]
         τ = inverse_dynamics(x, v̇, externalwrenches)
         floatingjoint = first(out_joints(root_body(mechanism), mechanism))
         τfloating = τ[velocity_range(x, floatingjoint)]
@@ -372,7 +372,7 @@
         x = MechanismState(Float64, mechanism)
         rand!(x)
         externalTorques = rand(num_velocities(mechanism))
-        externalwrenches = [rand(Wrench{Float64}, root_frame(mechanism)) for i = 1 : num_bodies(mechanism)]
+        externalwrenches = [rand(Wrench, root_frame(mechanism)) for i = 1 : num_bodies(mechanism)]
 
         result = DynamicsResult(Float64, mechanism)
         dynamics!(result, x, externalTorques, externalwrenches)
@@ -385,7 +385,7 @@
         x = MechanismState(Float64, mechanism)
         rand!(x)
         torques = rand(num_velocities(mechanism))
-        externalwrenches = [rand(Wrench{Float64}, root_frame(mechanism)) for i = 1 : num_bodies(mechanism)]
+        externalwrenches = [rand(Wrench, root_frame(mechanism)) for i = 1 : num_bodies(mechanism)]
 
         result1 = DynamicsResult(Float64, mechanism)
         ẋ = Vector{Float64}(length(state_vector(x)))
@@ -402,7 +402,7 @@
         x = MechanismState(Float64, mechanism)
         rand_configuration!(x)
         rand_velocity!(x)
-        externalwrenches = [rand(Wrench{Float64}, root_frame(mechanism)) for i = 1 : num_bodies(mechanism)]
+        externalwrenches = [rand(Wrench, root_frame(mechanism)) for i = 1 : num_bodies(mechanism)]
         τ = rand(num_velocities(mechanism))
         result = DynamicsResult(Float64, mechanism)
         dynamics!(result, x, τ, externalwrenches)
