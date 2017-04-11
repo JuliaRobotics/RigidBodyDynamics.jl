@@ -88,7 +88,7 @@ vertices(g::DirectedGraph) = g.vertices
 edges(g::DirectedGraph) = g.edges
 source{V, E}(edge::E, g::DirectedGraph{V, E}) = g.sources[edge_index(edge)]
 target{V, E}(edge::E, g::DirectedGraph{V, E}) = g.targets[edge_index(edge)]
-@noinline in_edges{V, E}(vertex::V, g::DirectedGraph{V, E}) = g.inedges[vertex_index(vertex)]
+in_edges{V, E}(vertex::V, g::DirectedGraph{V, E}) = g.inedges[vertex_index(vertex)]
 out_edges{V, E}(vertex::V, g::DirectedGraph{V, E}) = g.outedges[vertex_index(vertex)]
 
 Base.show{V, E}(io::IO, ::DirectedGraph{V, E}) = print(io, "DirectedGraph{$V, $E}(…)")
@@ -131,7 +131,7 @@ function remove_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
     g
 end
 
-@noinline function remove_edge!{V, E}(g::DirectedGraph{V, E}, edge::E)
+function remove_edge!{V, E}(g::DirectedGraph{V, E}, edge::E)
     target_inedges = in_edges(target(edge, g), g)
     deleteat!(target_inedges, findfirst(target_inedges, edge))
     source_outedges = out_edges(source(edge, g), g)
