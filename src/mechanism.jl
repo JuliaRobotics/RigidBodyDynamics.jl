@@ -253,24 +253,5 @@ end
 tree_index(joint::Joint, mechanism::Mechanism) = Graphs.tree_index(joint, mechanism.tree)
 tree_index(body::RigidBody, mechanism::Mechanism) = Graphs.tree_index(body, mechanism.tree)
 
-function constraint_jacobian_structure(mechanism::Mechanism)
-    # TODO: move to MechanismState
-    # columns correspond to non-tree joints, rows correspond to tree joints
-    nonTreeJoints = non_tree_joints(mechanism)
-    ret = spzeros(Int64, num_edges(mechanism.tree), length(nonTreeJoints))
-    for (col, nonTreeJoint) in enumerate(nonTreeJoints)
-        pred = predecessor(nonTreeJoint, mechanism)
-        succ = successor(nonTreeJoint, mechanism)
-        for (body, sign) in Dict(succ => 1, pred => -1)
-            while !isroot(body, mechanism)
-                joint = joint_to_parent(body, mechanism)
-                ret[tree_index(joint, mechanism), col] += sign
-                body = predecessor(joint, mechanism)
-            end
-        end
-    end
-    dropzeros!(ret)
-end
-
 findbody(mechanism::Mechanism, name::String) = findunique(b -> b.name == name, bodies(mechanism))
 findjoint(mechanism::Mechanism, name::String) = findunique(j -> j.name == name, joints(mechanism))
