@@ -600,7 +600,7 @@ function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismSt
     for joint in tree_joints(state.mechanism)
         q = configuration(state, joint)
         v = velocity(state, joint)
-        q̇ = UnsafeVectorView(out, configuration_range(state, joint))
+        q̇ = fastview(out, configuration_range(state, joint))
         velocity_to_configuration_derivative!(joint, q̇, q, v)
     end
 end
@@ -725,9 +725,9 @@ function local_coordinates!(state::MechanismState, ϕ::StridedVector, ϕd::Strid
     for joint in tree_joints(mechanism)
         qrange = configuration_range(state, joint)
         vrange = velocity_range(state, joint)
-        ϕjoint = UnsafeVectorView(ϕ, vrange)
-        ϕdjoint = UnsafeVectorView(ϕd, vrange)
-        q0joint = UnsafeVectorView(q0, qrange)
+        ϕjoint = fastview(ϕ, vrange)
+        ϕdjoint = fastview(ϕd, vrange)
+        q0joint = fastview(q0, qrange)
         qjoint = configuration(state, joint)
         vjoint = velocity(state, joint)
         local_coordinates!(joint, ϕjoint, ϕdjoint, q0joint, qjoint, vjoint)
@@ -743,8 +743,8 @@ configuration vector ``q``.
 function global_coordinates!(state::MechanismState, q0::StridedVector, ϕ::StridedVector)
     mechanism = state.mechanism
     for joint in tree_joints(mechanism)
-        q0joint = UnsafeVectorView(q0, configuration_range(state, joint))
-        ϕjoint = UnsafeVectorView(ϕ, velocity_range(state, joint))
+        q0joint = fastview(q0, configuration_range(state, joint))
+        ϕjoint = fastview(ϕ, velocity_range(state, joint))
         qjoint = configuration(state, joint)
         global_coordinates!(joint, qjoint, q0joint, ϕjoint)
     end

@@ -11,19 +11,43 @@ Base.getindex{T}(A::ConstVector{T}, i::Int) = (@boundscheck checkbounds(A, i); A
 # TODO: a bit too specific
 @compat const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true}
 
-# non-allocating, unsafe vector view
-# from https://github.com/mlubin/ReverseDiffSparse.jl/commit/8e3ade867581aad6ade7c898ada2ed58e0ad42bb
+
+"""
+Views in Julia still allocate some memory (since they need to keep
+a reference to the original array). This type allocates no memory
+and does no bounds checking. Use it with caution.
+
+Originally from https://github.com/mlubin/ReverseDiffSparse.jl/commit/8e3ade867581aad6ade7c898ada2ed58e0ad42bb.
+"""
 immutable UnsafeVectorView{T} <: AbstractVector{T}
     offset::Int
     len::Int
     ptr::Ptr{T}
 end
-UnsafeVectorView{T}(parent::StridedVector{T}, range::UnitRange) = UnsafeVectorView(start(range) - 1, length(range), pointer(parent))
-Base.size(v::UnsafeVectorView) = (v.len,)
-Base.getindex(v::UnsafeVectorView, idx) = unsafe_load(v.ptr, idx + v.offset)
-Base.setindex!(v::UnsafeVectorView, value, idx) = unsafe_store!(v.ptr, value, idx + v.offset)
-Base.length(v::UnsafeVectorView) = v.len
-@compat Base.IndexStyle{T}(::Type{UnsafeVectorView{T}}) = IndexLinear()
+
+@inline UnsafeVectorView(parent::Union{Vector, Base.FastContiguousSubArray}, range::UnitRange) = UnsafeVectorView(start(range) - 1, length(range), pointer(parent))
+@inline Base.size(v::UnsafeVectorView) = (v.len,)
+@inline Base.getindex(v::UnsafeVectorView, idx) = unsafe_load(v.ptr, idx + v.offset)
+@inline Base.setindex!(v::UnsafeVectorView, value, idx) = unsafe_store!(v.ptr, value, idx + v.offset)
+@inline Base.length(v::UnsafeVectorView) = v.len
+@compat Base.IndexStyle{V <: UnsafeVectorView}(::Type{V}) = IndexLinear()
+
+"""
+UnsafeVectorView only works for isbits types. For other types, we're already
+allocating lots of memory elsewhere, so creating a new SubArray is fine.
+This function looks type-unstable, but the isbits(T) test can be evaluated
+by the compiler, so the result is actually type-stable.
+
+From https://github.com/rdeits/NNLS.jl/blob/0a9bf56774595b5735bc738723bd3cb94138c5bd/src/NNLS.jl#L218.
+"""
+@inline function fastview{T}(parent::Union{Vector{T}, Base.FastContiguousSubArray{T}}, range::UnitRange)
+    if isbits(T)
+        UnsafeVectorView(parent, range)
+    else
+        view(parent, range)
+    end
+end
+
 
 # Functions such as motion_subspace(::Joint, ...) need to return types with a number of columns that depends on the joint type.
 # Using a 'view' of a 3×6 SMatrix as the underlying data type gets around type instabilities in motion_subspace while still using an isbits type.
