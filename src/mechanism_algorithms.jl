@@ -184,7 +184,7 @@ function relative_acceleration(state::MechanismState, body::RigidBody, base::Rig
 
         joint = do_body ? joint_to_parent(body, mechanism) : joint_to_parent(base, mechanism)
         S = motion_subspace_in_world(state, joint)
-        v̇joint = UnsafeVectorView(v̇, velocity_range(state, joint))
+        v̇joint = fastview(v̇, velocity_range(state, joint))
         jointaccel = SpatialAcceleration(S, v̇joint)
 
         if do_body
@@ -411,7 +411,7 @@ function spatial_accelerations!{T, X, M}(out::AbstractVector{SpatialAcceleration
     for joint in tree_joints(mechanism)
         body = successor(joint, mechanism)
         S = motion_subspace_in_world(state, joint)
-        v̇joint = UnsafeVectorView(v̇, velocity_range(state, joint))
+        v̇joint = fastview(v̇, velocity_range(state, joint))
         jointaccel = SpatialAcceleration(S, v̇joint)
         out[vertex_index(body)] = out[vertex_index(predecessor(joint, mechanism))] + jointaccel
     end
@@ -455,7 +455,7 @@ function joint_wrenches_and_torques!{T, X, M}(
             net_wrenches_in_joint_wrenches_out[vertex_index(parentbody)] += jointwrench # action = -reaction
         end
         jointwrench = transform(jointwrench, inv(transform_to_root(state, body))) # TODO: stay in world frame?
-        @inbounds τjoint = UnsafeVectorView(torquesout, velocity_range(state, joint))
+        @inbounds τjoint = fastview(torquesout, velocity_range(state, joint))
         joint_torque!(joint, τjoint, configuration(state, joint), jointwrench)
     end
 end
@@ -578,7 +578,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
 
         # Constraint bias.
         has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.")
-        kjoint = UnsafeVectorView(constraintbias, range)
+        kjoint = fastview(constraintbias, range)
         pred = predecessor(nontreejoint, mechanism)
         succ = successor(nontreejoint, mechanism)
         biasaccel = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred)) + (bias_acceleration(state, succ) + -bias_acceleration(state, pred)) # 8.47 in Featherstone

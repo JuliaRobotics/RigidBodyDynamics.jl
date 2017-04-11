@@ -32,4 +32,14 @@ import RigidBodyDynamics: hat, rotation_vector_rate, colwise
         v2 = @SVector [1, 2, 3, 4]
         @test_throws DimensionMismatch colwise(+, M, v2)
     end
+
+    @testset "fastview" begin
+        x1 = rand(5)
+        x2 = [BigFloat(rand()) for i = 1 : 5]
+        for x in (x1, x2)
+            for range in (i : j for i in 1 : length(x), j in 1 : length(x) if j >= i)
+                @test view(x, range) == RigidBodyDynamics.fastview(x, range)
+            end
+        end
+    end
 end
