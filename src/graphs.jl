@@ -301,6 +301,9 @@ immutable TreePath{V, E}
     target_to_lca::Vector{E}
 end
 
+source(path::TreePath) = path.source
+target(path::TreePath) = path.target
+
 function Base.show(io::IO, path::TreePath)
     println(io, "Path from $(path.source) to $(path.target):")
     for edge in path.source_to_lca
