@@ -552,15 +552,10 @@ end
 
 function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian::AbstractMatrix, constraintbias::AbstractVector)
     # TODO: allocations
-    structure = state.constraint_jacobian_structure
     mechanism = state.mechanism
-    rows = rowvals(structure)
-    signs = nonzeros(structure)
-    nontreejoints = non_tree_joints(state)
     rowstart = 1
     constraintjacobian[:] = 0
-    for i = 1 : length(nontreejoints)
-        nontreejoint = nontreejoints[i]
+    for (nontreejoint, path) in state.constraint_jacobian_structure
         nextrowstart = rowstart + num_constraints(nontreejoint)
         range = rowstart : nextrowstart - 1
 
@@ -570,12 +565,15 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         T = transform(T, transform_to_root(state, T.frame)) # TODO: expensive
 
         # Jacobian rows.
-        for j in nzrange(structure, i)
-            treejoint = tree_joints(mechanism)[rows[j]]
+        for treejoint in path.source_to_lca
             J = motion_subspace_in_world(state, treejoint)
-            sign = signs[j]
             colstart = first(velocity_range(state, treejoint))
-            force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, sign)
+            force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, -1)
+        end
+        for treejoint in path.target_to_lca
+            J = motion_subspace_in_world(state, treejoint)
+            colstart = first(velocity_range(state, treejoint))
+            force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, 1)
         end
 
         # Constraint bias.

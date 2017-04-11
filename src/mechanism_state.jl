@@ -13,8 +13,7 @@ Type parameters:
 """
 immutable MechanismState{X<:Number, M<:Number, C<:Number}
     mechanism::Mechanism{M}
-    nontreejoints::Vector{Joint{M}}
-    constraint_jacobian_structure::SparseMatrixCSC{Int64,Int64} # TODO: replace with a Vector{Path{RigidBody{M}, Joint{M}}}
+    constraint_jacobian_structure::Vector{Tuple{Joint{M}, TreePath{RigidBody{M}, Joint{M}}}}
 
     # configurations, velocities
     q::Vector{X}
@@ -92,7 +91,10 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         update!(twists_wrt_world[rootindex], zero(Twist{C}, rootframe, rootframe, rootframe))
         update!(bias_accelerations_wrt_world[rootindex], zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe))
 
-        new{X, M, C}(mechanism, non_tree_joints(mechanism), constraint_jacobian_structure(mechanism),
+        m = mechanism
+        constraint_jacobian_structure = [(j, path(m, predecessor(j, m), successor(j, m))) for j in non_tree_joints(m)]
+
+        new{X, M, C}(mechanism, constraint_jacobian_structure,
             q, v, s, qs, vs,
             joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world,
             transforms_to_world, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
