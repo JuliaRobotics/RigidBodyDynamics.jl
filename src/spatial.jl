@@ -534,8 +534,9 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         """
         function transform(f::$ForceSpaceElement, transform::Transform3D)
             @framecheck(f.frame, transform.from)
-            linear = rotation(transform) * f.linear
-            angular = rotation(transform) * f.angular + cross(translation(transform), linear)
+            rot = rotation(transform)
+            linear = rot * f.linear
+            angular = rot * f.angular + cross(translation(transform), linear)
             $ForceSpaceElement(transform.to, angular, linear)
         end
 
