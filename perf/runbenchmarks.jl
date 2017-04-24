@@ -59,6 +59,10 @@ end
 function runbenchmarks()
     suite = create_benchmark_suite()
     tune!(suite)
+    for benchmark in values(suite)
+        benchmark.params.evals = 1 # IMPORTANT: otherwise we're testing caching
+    end
+
     Profile.clear_malloc_data()
     results = run(suite, verbose = true)
     for result in results
