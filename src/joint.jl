@@ -101,7 +101,7 @@ $(SIGNATURES)
 Return a `Transform3D` representing the homogeneous transform from the frame
 after the joint to the frame before the joint for joint configuration vector ``q``.
 """
-function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform3D{promote_type(M, X)}
+function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform3DS{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_transform(joint.jointType, frame_after(joint), frame_before(joint), q)
 end
@@ -135,7 +135,7 @@ its successor.
 
 The constraint wrench subspace is orthogonal to the motion subspace.
 """
-function constraint_wrench_subspace{M, X}(joint::Joint{M}, jointTransform::Transform3D{X})#::WrenchSubspace{promote_type(M, X)} # FIXME: type assertion causes segfault! see https://github.com/JuliaLang/julia/issues/20034. should be fixed in 0.6
+function constraint_wrench_subspace{M, A}(joint::Joint{M}, jointTransform::Transform3D{A})#::WrenchSubspace{promote_type(M, X)} # FIXME: type assertion causes segfault! see https://github.com/JuliaLang/julia/issues/20034. should be fixed in 0.6
     @framecheck jointTransform.from frame_after(joint)
     @framecheck jointTransform.to frame_before(joint)
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _constraint_wrench_subspace(joint.jointType, jointTransform)

@@ -37,6 +37,8 @@ export
     MechanismState,
     DynamicsResult,
     # functions
+    rotation,
+    translation,
     name, # TODO: remove?
     has_defined_inertia,
     default_frame,

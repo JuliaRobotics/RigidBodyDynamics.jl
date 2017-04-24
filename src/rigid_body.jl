@@ -10,19 +10,19 @@ a list of definitions of coordinate systems that are rigidly attached to it.
 type RigidBody{T<:Number}
     name::String
     inertia::Nullable{SpatialInertia{T}}
-    frameDefinitions::Vector{Transform3D{T}}
+    frameDefinitions::Vector{Transform3DS{T}}
     contact_points::Vector{DefaultContactPoint{T}} # TODO: allow different contact models
     id::Int64
 
     # inertia undefined; can be used for the root of a kinematic tree
     function (::Type{RigidBody{T}}){T<:Number}(name::String)
         frame = CartesianFrame3D(name)
-        new{T}(name, Nullable{SpatialInertia{T}}(), [Transform3D{T}(frame)], DefaultContactPoint{T}[], -1)
+        new{T}(name, Nullable{SpatialInertia{T}}(), [eye(Transform3DS{T}, frame)], DefaultContactPoint{T}[], -1)
     end
 
     # other bodies
     function (::Type{RigidBody{T}}){T<:Number}(name::String, inertia::SpatialInertia{T})
-        new{T}(name, Nullable(inertia), [Transform3D{T}(inertia.frame)], DefaultContactPoint{T}[], -1)
+        new{T}(name, Nullable(inertia), [eye(Transform3DS{T}, inertia.frame)], DefaultContactPoint{T}[], -1)
     end
 end
 
@@ -123,7 +123,7 @@ Add a new frame definition to `body`, represented by a homogeneous transform
 from the `CartesianFrame3D` to be added to any other frame that is already
 attached to `body`.
 """
-function add_frame!{T}(body::RigidBody{T}, transform::Transform3D{T})
+function add_frame!{T}(body::RigidBody{T}, transform::Transform3D)
     # note: overwrites any existing frame definition
     # transform.to needs to be among (transform.from for transform in frame_definitions(body))
     definitions = body.frameDefinitions

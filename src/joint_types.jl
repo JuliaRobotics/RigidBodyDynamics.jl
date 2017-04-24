@@ -72,10 +72,7 @@ end
 
 function _joint_transform(
         jt::QuaternionFloating, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
-    S = promote_type(eltype(jt), eltype(q))
-    rot = convert(Quat{S}, rotation(jt, q))
-    trans = convert(SVector{3, S}, translation(jt, q))
-    Transform3D{S}(frameAfter, frameBefore, rot, trans)
+    Transform3D(frameAfter, frameBefore, rotation(jt, q), translation(jt, q))
 end
 
 function _motion_subspace{T<:Number, X<:Number}(
@@ -86,8 +83,8 @@ function _motion_subspace{T<:Number, X<:Number}(
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function _constraint_wrench_subspace{T<:Number, X<:Number}(jt::QuaternionFloating{T}, jointTransform::Transform3D{X})
-    S = promote_type(T, X)
+function _constraint_wrench_subspace{T<:Number, A<:AbstractMatrix}(jt::QuaternionFloating{T}, jointTransform::Transform3D{A})
+    S = promote_type(eltype(typeof((jt))), eltype(typeof(jointTransform)))
     WrenchSubspace(jointTransform.from, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
@@ -188,8 +185,8 @@ function _global_coordinates!(jt::QuaternionFloating, q::AbstractVector, q0::Abs
     ξ = Twist(frameAfter, frame0, frame0, ξrot, ξtrans)
     relative_transform = exp(ξ)
     t = t0 * relative_transform
-    rotation!(jt, q, t.rot)
-    translation!(jt, q, t.trans)
+    rotation!(jt, q, rotation(t))
+    translation!(jt, q, translation(t))
     nothing
 end
 
@@ -279,8 +276,8 @@ function _motion_subspace{T<:Number, X<:Number}(
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function _constraint_wrench_subspace{T<:Number, X<:Number}(jt::Prismatic{T}, jointTransform::Transform3D{X})
-    S = promote_type(T, X)
+function _constraint_wrench_subspace{T<:Number, A<:AbstractMatrix}(jt::Prismatic{T}, jointTransform::Transform3D{A})
+    S = promote_type(eltype(typeof((jt))), eltype(typeof(jointTransform)))
     R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
     angular = hcat(R, zeros(SMatrix{3, 2, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), R[:, (1, 2)])
@@ -339,8 +336,8 @@ function _motion_subspace{T<:Number, X<:Number}(
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function _constraint_wrench_subspace{T<:Number, X<:Number}(jt::Revolute{T}, jointTransform::Transform3D{X})
-    S = promote_type(T, X)
+function _constraint_wrench_subspace{T<:Number, A<:AbstractMatrix}(jt::Revolute{T}, jointTransform::Transform3D{A})
+    S = promote_type(eltype(typeof((jt))), eltype(typeof(jointTransform)))
     R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
     angular = hcat(R[:, (1, 2)], zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 2, S}), R)
@@ -369,7 +366,7 @@ num_velocities(::Fixed) = 0
 
 function _joint_transform{T<:Number, X<:Number}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
-    Transform3D(promote_type(T, X), frameAfter, frameBefore)
+    eye(Transform3DS{promote_type(T, X)}, frameAfter, frameBefore)
 end
 
 function _joint_twist{T<:Number, X<:Number}(
@@ -383,8 +380,8 @@ function _motion_subspace{T<:Number, X<:Number}(
     MotionSubspace(frameAfter, frameBefore, frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
-function _constraint_wrench_subspace{T<:Number, X<:Number}(jt::Fixed{T}, jointTransform::Transform3D{X})
-    S = promote_type(T, X)
+function _constraint_wrench_subspace{T<:Number, A<:AbstractMatrix}(jt::Fixed{T}, jointTransform::Transform3D{A})
+    S = promote_type(eltype(typeof((jt))), eltype(typeof(jointTransform)))
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
     WrenchSubspace(jointTransform.from, angular, linear)

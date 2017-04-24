@@ -73,7 +73,7 @@ function parse_root_link{T}(mechanism::Mechanism{T}, xml_link::XMLElement)
     parent = root_body(mechanism)
     body = parse_body(T, xml_link)
     joint = Joint("$(name(body))_to_world", Fixed{T}())
-    joint_to_parent = Transform3D{T}(frame_before(joint), default_frame(parent))
+    joint_to_parent = eye(Transform3DS{T}, frame_before(joint), default_frame(parent))
     attach!(mechanism, parent, joint, joint_to_parent, body)
 end
 

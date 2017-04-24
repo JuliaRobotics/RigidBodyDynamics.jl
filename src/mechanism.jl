@@ -227,8 +227,8 @@ Return the joint that is part of the mechanism's kinematic tree and has
 joint_to_parent(body::RigidBody, mechanism::Mechanism) = edge_to_parent(body, mechanism.tree)
 
 
-Base.@deprecate add_body_fixed_frame!{T}(mechanism::Mechanism{T}, body::RigidBody{T}, transform::Transform3D{T}) add_frame!(body, transform)
-function add_body_fixed_frame!{T}(mechanism::Mechanism{T}, transform::Transform3D{T})
+Base.@deprecate add_body_fixed_frame!{T}(mechanism::Mechanism{T}, body::RigidBody{T}, transform::Transform3D) add_frame!(body, transform)
+function add_body_fixed_frame!{T}(mechanism::Mechanism{T}, transform::Transform3D)
     add_frame!(body_fixed_frame_to_body(mechanism, transform.to), transform)
 end
 
