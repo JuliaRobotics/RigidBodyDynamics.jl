@@ -22,14 +22,14 @@ immutable CartesianFrame3D
 
     function CartesianFrame3D(name::String)
         ret = new(next_frame_id.x)
-        next_frame_id.x += 1
+        next_frame_id.x = Base.Checked.checked_add(next_frame_id.x, 1)
         frame_names[ret.id] = name
         ret
     end
 
     function CartesianFrame3D()
         ret = new(next_frame_id.x)
-        next_frame_id.x += 1
+        next_frame_id.x = Base.Checked.checked_add(next_frame_id.x, 1)
         ret
     end
 end
