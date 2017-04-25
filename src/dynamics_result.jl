@@ -21,10 +21,10 @@ type DynamicsResult{M<:Number, T<:Number}
     ṡ::Vector{T}
 
     # the following are indexed by vertex_index(body). TODO: consider adding a BodyMap type:
-    contactwrenches::Vector{Wrench{T}}
-    totalwrenches::Vector{Wrench{T}}
-    accelerations::Vector{SpatialAcceleration{T}}
-    jointwrenches::Vector{Wrench{T}} # TODO: index by joint tree index?
+    contactwrenches::Vector{SWrench{T}}
+    totalwrenches::Vector{SWrench{T}}
+    accelerations::Vector{SSpatialAcceleration{T}}
+    jointwrenches::Vector{SWrench{T}} # TODO: index by joint tree index?
     contact_state_derivatives::Vector{Vector{DefaultSoftContactStateDeriv{T}}}
 
     # see solve_dynamics! for meaning of the following variables:
@@ -48,10 +48,10 @@ type DynamicsResult{M<:Number, T<:Number}
         λ = Vector{T}(nconstraints)
         ṡ = Vector{T}(num_additional_states(mechanism))
 
-        contactwrenches = Vector{Wrench{T}}(num_bodies(mechanism))
-        totalwrenches = Vector{Wrench{T}}(num_bodies(mechanism))
-        accelerations = Vector{SpatialAcceleration{T}}(num_bodies(mechanism))
-        jointwrenches = Vector{Wrench{T}}(num_bodies(mechanism))
+        contactwrenches = Vector{SWrench{T}}(num_bodies(mechanism))
+        totalwrenches = Vector{SWrench{T}}(num_bodies(mechanism))
+        accelerations = Vector{SSpatialAcceleration{T}}(num_bodies(mechanism))
+        jointwrenches = Vector{SWrench{T}}(num_bodies(mechanism))
         contact_state_derivatives = Vector{Vector{DefaultSoftContactStateDeriv{T}}}(num_bodies(mechanism))
         start = 1
         for body in bodies(mechanism)

@@ -26,15 +26,15 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
     qs::Vector{VectorSegment{X}}
     vs::Vector{VectorSegment{X}}
     joint_transforms::Vector{CacheElement{STransform3D{C}}}
-    joint_twists::Vector{CacheElement{Twist{C}}}
-    joint_bias_accelerations::Vector{CacheElement{SpatialAcceleration{C}}}
+    joint_twists::Vector{CacheElement{STwist{C}}}
+    joint_bias_accelerations::Vector{CacheElement{SSpatialAcceleration{C}}}
     motion_subspaces::Vector{CacheElement{MotionSubspace{C}}}
     motion_subspaces_in_world::Vector{CacheElement{MotionSubspace{C}}} # TODO: should this be here?
 
     # body-specific
     transforms_to_world::Vector{CacheElement{STransform3D{C}}}
-    twists_wrt_world::Vector{CacheElement{Twist{C}}}
-    bias_accelerations_wrt_world::Vector{CacheElement{SpatialAcceleration{C}}}
+    twists_wrt_world::Vector{CacheElement{STwist{C}}}
+    bias_accelerations_wrt_world::Vector{CacheElement{SSpatialAcceleration{C}}}
     inertias::Vector{CacheElement{SpatialInertia{C}}}
     crb_inertias::Vector{CacheElement{SpatialInertia{C}}}
     contact_states::Vector{Vector{DefaultSoftContactState{X}}} # TODO: consider moving to separate type
@@ -63,15 +63,15 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
 
         # joint-specific
         joint_transforms = [CacheElement{STransform3D{C}}() for i = 1 : nb]
-        joint_twists = [CacheElement{Twist{C}}() for i = 1 : nb]
-        joint_bias_accelerations = [CacheElement{SpatialAcceleration{C}}() for i = 1 : nb]
+        joint_twists = [CacheElement{STwist{C}}() for i = 1 : nb]
+        joint_bias_accelerations = [CacheElement{SSpatialAcceleration{C}}() for i = 1 : nb]
         motion_subspaces = [CacheElement{MotionSubspace{C}}() for i = 1 : nb]
         motion_subspaces_in_world = [CacheElement{MotionSubspace{C}}() for i = 1 : nb]
 
         # body-specific
         transforms_to_world = CacheElement{STransform3D{C}}[CacheElement{STransform3D{C}}() for i = 1 : nb]
-        twists_wrt_world = [CacheElement{Twist{C}}() for i = 1 : nb]
-        bias_accelerations_wrt_world = [CacheElement{SpatialAcceleration{C}}() for i = 1 : nb]
+        twists_wrt_world = [CacheElement{STwist{C}}() for i = 1 : nb]
+        bias_accelerations_wrt_world = [CacheElement{SSpatialAcceleration{C}}() for i = 1 : nb]
         inertias = [CacheElement{SpatialInertia{C}}() for i = 1 : nb]
         crb_inertias = [CacheElement{SpatialInertia{C}}() for i = 1 : nb]
         contact_states = [Vector{DefaultSoftContactState{C}}() for i = 1 : nb]
@@ -88,8 +88,8 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         rootindex = vertex_index(root_body(mechanism))
         rootframe = root_frame(mechanism)
         update!(transforms_to_world[rootindex], eye(STransform3D{C}, rootframe))
-        update!(twists_wrt_world[rootindex], zero(Twist{C}, rootframe, rootframe, rootframe))
-        update!(bias_accelerations_wrt_world[rootindex], zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe))
+        update!(twists_wrt_world[rootindex], zero(STwist{C}, rootframe, rootframe, rootframe))
+        update!(bias_accelerations_wrt_world[rootindex], zero(SSpatialAcceleration{C}, rootframe, rootframe, rootframe))
 
         m = mechanism
         constraint_jacobian_structure = [(j, path(m, predecessor(j, m), successor(j, m))) for j in non_tree_joints(m)]
@@ -632,12 +632,12 @@ end
 
 function momentum(state::MechanismState, body_itr)
     T = cache_eltype(state)
-    non_root_body_sum(state, zero(Momentum{T}, root_frame(state.mechanism)), momentum, body_itr)
+    non_root_body_sum(state, zero(SMomentum{T}, root_frame(state.mechanism)), momentum, body_itr)
 end
 
 function momentum_rate_bias(state::MechanismState, body_itr)
     T = cache_eltype(state)
-    non_root_body_sum(state, zero(Wrench{T}, root_frame(state.mechanism)), momentum_rate_bias, body_itr)
+    non_root_body_sum(state, zero(SWrench{T}, root_frame(state.mechanism)), momentum_rate_bias, body_itr)
 end
 
 function kinetic_energy(state::MechanismState, body_itr)
@@ -697,7 +697,7 @@ end
 
 for VectorType in (:Point3D, :FreeVector3D, :Twist, :Momentum, :Wrench)
     @eval begin
-        function transform(state::MechanismState, v::$VectorType, to::CartesianFrame3D)::similar_type(typeof(v), promote_type(cache_eltype(state), eltype(v)))
+        function transform(state::MechanismState, v::$VectorType, to::CartesianFrame3D)
             # TODO: consider transforming in steps, so that computing the relative transform is not necessary
             v.frame == to ? v : transform(v, relative_transform(state, v.frame, to))
         end

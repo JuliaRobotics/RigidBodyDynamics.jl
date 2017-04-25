@@ -1,6 +1,8 @@
 using RigidBodyDynamics
 using BenchmarkTools
 
+import RigidBodyDynamics: SWrench
+
 const ScalarType = Float64
 # const ScalarType = Float32
 
@@ -36,7 +38,7 @@ function create_benchmark_suite()
         inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalWrenches),
         setup = (
             v̇ = rand(num_velocities($mechanism));
-            externalWrenches = [rand(Wrench{ScalarType}, root_frame($mechanism)) for i = 1 : num_bodies($mechanism)];
+            externalWrenches = [rand(SWrench{ScalarType}, root_frame($mechanism)) for i = 1 : num_bodies($mechanism)];
             rand!($state)
         )
     )
@@ -44,7 +46,7 @@ function create_benchmark_suite()
         setup=(
             rand!($state);
             τ = rand(num_velocities($mechanism));
-            externalWrenches = [rand(Wrench{ScalarType}, root_frame($mechanism)) for i = 1 : num_bodies($mechanism)];
+            externalWrenches = [rand(SWrench{ScalarType}, root_frame($mechanism)) for i = 1 : num_bodies($mechanism)];
         )
     )
     suite["momentum_matrix"] = @benchmarkable(momentum_matrix!($mat, $state), setup = rand!($state))

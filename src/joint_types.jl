@@ -91,7 +91,7 @@ end
 function _bias_acceleration{T<:Number, X<:Number}(
         jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
     S = promote_type(T, X)
-    zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
+    zero(SSpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
 end
 
 _has_fixed_subspaces(jt::QuaternionFloating) = true
@@ -212,7 +212,7 @@ function _rand_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
 
 function _bias_acceleration{T<:Number, X<:Number}(
         jt::OneDegreeOfFreedomFixedAxis{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
-    zero(SpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
+    zero(SSpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
 end
 
 _has_fixed_subspaces(jt::OneDegreeOfFreedomFixedAxis) = true
@@ -371,7 +371,7 @@ end
 
 function _joint_twist{T<:Number, X<:Number}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
-    zero(Twist{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
+    zero(STwist{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
 end
 
 function _motion_subspace{T<:Number, X<:Number}(
@@ -392,7 +392,7 @@ _rand_configuration!(::Fixed, q::AbstractVector) = nothing
 
 function _bias_acceleration{T<:Number, X<:Number}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})
-    zero(SpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
+    zero(SSpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
 end
 
 _has_fixed_subspaces(jt::Fixed) = true

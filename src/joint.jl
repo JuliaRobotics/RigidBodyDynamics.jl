@@ -148,7 +148,7 @@ Return the acceleration of the joint's successor with respect to its predecessor
 in configuration ``q`` and at velocity ``v``, when the joint acceleration
 ``\\dot{v}`` is zero.
 """
-function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::SpatialAcceleration{promote_type(M, X)}
+function bias_acceleration{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::SSpatialAcceleration{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _bias_acceleration(joint.jointType, frame_after(joint), frame_before(joint), q, v)
@@ -228,7 +228,7 @@ expressed in the frame after the joint.
 
 Note that this is the same as `Twist(motion_subspace(joint, q), v)`.
 """
-function joint_twist{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::Twist{promote_type(M, X)}
+function joint_twist{M, X}(joint::Joint{M}, q::AbstractVector{X}, v::AbstractVector{X})::STwist{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_twist(joint.jointType, frame_after(joint), frame_before(joint), q, v)
