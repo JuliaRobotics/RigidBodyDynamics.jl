@@ -298,7 +298,11 @@ end
 
 # MotionSpaceElement-specific
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
+    SMotionSpaceElement = Symbol("S$(string(MotionSpaceElement))")
+
     @eval begin
+        @compat const $SMotionSpaceElement{T} = $MotionSpaceElement{SVector{3, T}}
+
         @inline function $MotionSpaceElement{V1, V2}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::V1, linear::V2)
             V = promote_type(V1, V2)
             $MotionSpaceElement{V}(body, base, frame, angular, linear)
@@ -528,7 +532,11 @@ end
 
 # ForceSpaceElement-specific
 for ForceSpaceElement in (:Momentum, :Wrench)
+    SForceSpaceElement = Symbol("S$(string(ForceSpaceElement))")
+
     @eval begin
+        @compat const $SForceSpaceElement{T} = $ForceSpaceElement{SVector{3, T}}
+
         @inline function $ForceSpaceElement{V1, V2}(frame::CartesianFrame3D, angular::V1, linear::V2)
             V = promote_type(V1, V2)
             $ForceSpaceElement{V}(frame, angular, linear)
