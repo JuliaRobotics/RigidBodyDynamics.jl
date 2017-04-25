@@ -366,7 +366,7 @@ num_velocities(::Fixed) = 0
 
 function _joint_transform{T<:Number, X<:Number}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X})
-    eye(Transform3DS{promote_type(T, X)}, frameAfter, frameBefore)
+    eye(STransform3D{promote_type(T, X)}, frameAfter, frameBefore)
 end
 
 function _joint_twist{T<:Number, X<:Number}(

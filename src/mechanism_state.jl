@@ -25,14 +25,14 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
     # joint-specific
     qs::Vector{VectorSegment{X}}
     vs::Vector{VectorSegment{X}}
-    joint_transforms::Vector{CacheElement{Transform3DS{C}}}
+    joint_transforms::Vector{CacheElement{STransform3D{C}}}
     joint_twists::Vector{CacheElement{Twist{C}}}
     joint_bias_accelerations::Vector{CacheElement{SpatialAcceleration{C}}}
     motion_subspaces::Vector{CacheElement{MotionSubspace{C}}}
     motion_subspaces_in_world::Vector{CacheElement{MotionSubspace{C}}} # TODO: should this be here?
 
     # body-specific
-    transforms_to_world::Vector{CacheElement{Transform3DS{C}}}
+    transforms_to_world::Vector{CacheElement{STransform3D{C}}}
     twists_wrt_world::Vector{CacheElement{Twist{C}}}
     bias_accelerations_wrt_world::Vector{CacheElement{SpatialAcceleration{C}}}
     inertias::Vector{CacheElement{SpatialInertia{C}}}
@@ -62,14 +62,14 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         end
 
         # joint-specific
-        joint_transforms = [CacheElement{Transform3DS{C}}() for i = 1 : nb]
+        joint_transforms = [CacheElement{STransform3D{C}}() for i = 1 : nb]
         joint_twists = [CacheElement{Twist{C}}() for i = 1 : nb]
         joint_bias_accelerations = [CacheElement{SpatialAcceleration{C}}() for i = 1 : nb]
         motion_subspaces = [CacheElement{MotionSubspace{C}}() for i = 1 : nb]
         motion_subspaces_in_world = [CacheElement{MotionSubspace{C}}() for i = 1 : nb]
 
         # body-specific
-        transforms_to_world = CacheElement{Transform3DS{C}}[CacheElement{Transform3DS{C}}() for i = 1 : nb]
+        transforms_to_world = CacheElement{STransform3D{C}}[CacheElement{STransform3D{C}}() for i = 1 : nb]
         twists_wrt_world = [CacheElement{Twist{C}}() for i = 1 : nb]
         bias_accelerations_wrt_world = [CacheElement{SpatialAcceleration{C}}() for i = 1 : nb]
         inertias = [CacheElement{SpatialInertia{C}}() for i = 1 : nb]
@@ -87,7 +87,7 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         # Set root-body related cache elements once and for all.
         rootindex = vertex_index(root_body(mechanism))
         rootframe = root_frame(mechanism)
-        update!(transforms_to_world[rootindex], eye(Transform3DS{C}, rootframe))
+        update!(transforms_to_world[rootindex], eye(STransform3D{C}, rootframe))
         update!(twists_wrt_world[rootindex], zero(Twist{C}, rootframe, rootframe, rootframe))
         update!(bias_accelerations_wrt_world[rootindex], zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe))
 

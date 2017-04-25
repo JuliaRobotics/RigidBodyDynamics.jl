@@ -101,7 +101,7 @@ $(SIGNATURES)
 Return a `Transform3D` representing the homogeneous transform from the frame
 after the joint to the frame before the joint for joint configuration vector ``q``.
 """
-function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::Transform3DS{promote_type(M, X)}
+function joint_transform{M, X}(joint::Joint{M}, q::AbstractVector{X})::STransform3D{promote_type(M, X)}
     @boundscheck check_num_positions(joint, q)
     @rtti_dispatch (QuaternionFloating{M}, Revolute{M}, Prismatic{M}, Fixed{M}) _joint_transform(joint.jointType, frame_after(joint), frame_before(joint), q)
 end

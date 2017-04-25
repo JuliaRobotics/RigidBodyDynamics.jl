@@ -83,7 +83,7 @@ end
 @inline Transform3D{A}(from::CartesianFrame3D, to::CartesianFrame3D, mat::A) = Transform3D{A}(from, to, mat)
 
 Base.eltype{A}(::Type{Transform3D{A}}) = eltype(A)
-@compat const Transform3DS{T} = Transform3D{SMatrix{4, 4, T, 16}}
+@compat const STransform3D{T} = Transform3D{SMatrix{4, 4, T, 16}}
 
 @inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3}, trans::SVector{3})
     T = promote_type(eltype(typeof(rot)), eltype(typeof(trans)))
@@ -138,9 +138,9 @@ end
 @inline Base.eye{A<:StaticArray}(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D(from, to, eye(A))
 @inline function Base.eye{A<:AbstractMatrix}(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D)
     T = eltype(A)
-    convert(Transform3D{A}, eye(Transform3DS{T}, from, to))
+    convert(Transform3D{A}, eye(STransform3D{T}, from, to))
 end
-@inline Base.eye(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = eye(Transform3DS{Float64}, from, to)
+@inline Base.eye(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = eye(STransform3D{Float64}, from, to)
 @inline Base.eye{T<:Transform3D}(::Type{T}, frame::CartesianFrame3D) = eye(T, frame, frame)
 
 function Random.rand{A}(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D)
@@ -150,7 +150,7 @@ function Random.rand{A}(::Type{Transform3D{A}}, from::CartesianFrame3D, to::Cart
     convert(Transform3D{A}, Transform3D(from, to, rot, trans))
 end
 
-Random.rand(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = rand(Transform3DS{Float64}, from, to)
+Random.rand(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = rand(STransform3D{Float64}, from, to)
 
 function Base.isapprox(x::Transform3D, y::Transform3D; atol::Real = 1e-12)
     x.from == y.from && x.to == y.to && isapprox(rotation(x), rotation(y), atol = atol) && isapprox(translation(x), translation(y), atol = atol)
