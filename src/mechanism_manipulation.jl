@@ -18,8 +18,8 @@ If `successor` is not yet a part of the `Mechanism`, it will be added to the
 `Mechanism`, effectively creating a loop constraint that will be enforced
 using Lagrange multipliers (as opposed to using recursive algorithms).
 """
-function attach!{T}(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint, jointToPredecessor::Transform3D{T},
-        successor::RigidBody{T}, successorToJoint::Transform3D{T} = Transform3D{T}(default_frame(successor), frame_after(joint)))
+function attach!{T}(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint{T}, jointToPredecessor::Transform3D,
+        successor::RigidBody{T}, successorToJoint::Transform3D = eye(Transform3DS{T}, default_frame(successor), frame_after(joint)))
     @assert jointToPredecessor.from == frame_before(joint)
     @assert successorToJoint.to == frame_after(joint)
 
@@ -64,7 +64,7 @@ belongs to `mechanism`).
 Note: gravitational acceleration for childmechanism is ignored.
 """
 function attach!{T}(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechanism::Mechanism{T},
-        childroot_to_parent::Transform3D{T} = Transform3D(T, default_frame(root_body(childmechanism)), default_frame(parentbody)))
+        childroot_to_parent::Transform3D = eye(Transform3DS{T}, default_frame(root_body(childmechanism)), default_frame(parentbody)))
     # FIXME: test with cycles
 
     @assert mechanism != childmechanism # infinite loop otherwise
@@ -151,8 +151,8 @@ end
 
 Base.@deprecate(
 reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
-    parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D{T},
-    newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D{T} = Transform3D{T}(default_frame(newSubtreeRootBody), frame_after(joint))),
+    parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D,
+    newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D = eye(Transform3DS{T}, default_frame(newSubtreeRootBody), frame_after(joint))),
     begin
         attach!(mechanism, parentBody, joint, jointToParent, newSubtreeRootBody, newSubTreeRootBodyToJoint)
         remove_joint!(mechanism, joint_to_parent(oldSubtreeRootBody, mechanism))
@@ -180,7 +180,7 @@ function remove_fixed_tree_joints!(mechanism::Mechanism)
         succ = target(fixedjoint, graph)
 
         # Add identity joint transform as a body-fixed frame definition.
-        jointtransform = Transform3D{T}(frame_after(fixedjoint), frame_before(fixedjoint))
+        jointtransform = eye(Transform3DS{T}, frame_after(fixedjoint), frame_before(fixedjoint))
         add_frame!(pred, jointtransform)
 
         # Migrate body fixed frames to parent body.
@@ -251,7 +251,7 @@ function maximal_coordinates(mechanism::Mechanism)
         frameafter = default_frame(srcbody)
         body = bodymap[srcbody] = deepcopy(srcbody)
         floatingjoint = newfloatingjoints[body] = Joint(name(body), framebefore, frameafter, QuaternionFloating{T}())
-        attach!(ret, root, floatingjoint, Transform3D(T, framebefore), body, Transform3D(T, frameafter))
+        attach!(ret, root, floatingjoint, eye(Transform3DS{T}, framebefore), body, eye(Transform3DS{T}, frameafter))
     end
 
     # Copy input Mechanism's joints.
@@ -275,9 +275,9 @@ function rand_tree_mechanism{T}(::Type{T}, parentselector::Function, jointTypes.
     for i = 1 : length(jointTypes)
         @assert jointTypes[i] <: JointType{T}
         joint = Joint("joint$i", rand(jointTypes[i]))
-        jointToParentBody = rand(Transform3D{T}, frame_before(joint), default_frame(parentbody))
+        jointToParentBody = rand(Transform3DS{T}, frame_before(joint), default_frame(parentbody))
         body = RigidBody(rand(SpatialInertia{T}, CartesianFrame3D("body$i")))
-        body_to_joint = Transform3D{T}(default_frame(body), frame_after(joint))
+        body_to_joint = eye(Transform3DS{T}, default_frame(body), frame_after(joint))
         attach!(mechanism, parentbody, joint, jointToParentBody, body, body_to_joint)
         parentbody = parentselector(mechanism)
     end

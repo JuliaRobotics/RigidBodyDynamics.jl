@@ -9,7 +9,7 @@
             pred = rand(bodies(mechanism_with_loops))
             succ = rand(bodies(mechanism_with_loops))
             joint = Joint("non-tree-$i", Fixed{Float64}())
-            attach!(mechanism_with_loops, pred, joint, Transform3D{Float64}(frame_before(joint), default_frame(pred)), succ)
+            attach!(mechanism_with_loops, pred, joint, eye(Transform3D, frame_before(joint), default_frame(pred)), succ)
         end
 
         show(DevNull, mechanism_with_loops)
@@ -103,7 +103,7 @@
             geometric_jacobian!(J1, x, p)
             @test isapprox(Twist(J1, vpath), T; atol = 1e-12)
 
-            H = rand(Transform3D{Float64}, root_frame(mechanism), frame)
+            H = rand(Transform3D, root_frame(mechanism), frame)
             J2 = GeometricJacobian(J.body, J.base, frame, similar(J.angular), similar(J.linear))
             @test_throws ArgumentError geometric_jacobian!(J, x, p, H)
             geometric_jacobian!(J2, x, p, H)
@@ -214,7 +214,7 @@
 
         frame = CartesianFrame3D()
         A2 = MomentumMatrix(frame, similar(A.angular), similar(A.linear))
-        H = rand(Transform3D{Float64}, root_frame(mechanism), frame)
+        H = rand(Transform3D, root_frame(mechanism), frame)
         @test_throws ArgumentError momentum_matrix!(A, x, H)
         momentum_matrix!(A2, x, H)
         @test isapprox(Momentum(A2, v), transform(hSum, H); atol = 1e-12)

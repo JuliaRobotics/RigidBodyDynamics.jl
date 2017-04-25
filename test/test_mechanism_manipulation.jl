@@ -2,8 +2,8 @@ function floating_joint_transform_to_configuration!(joint::Joint, q::AbstractVec
     @framecheck frame_before(joint) jointTransform.to
     @framecheck frame_after(joint) jointTransform.from
     joint.jointType::QuaternionFloating
-    RigidBodyDynamics.rotation!(joint.jointType, q, jointTransform.rot)
-    RigidBodyDynamics.translation!(joint.jointType, q, jointTransform.trans)
+    RigidBodyDynamics.rotation!(joint.jointType, q, rotation(jointTransform))
+    RigidBodyDynamics.translation!(joint.jointType, q, translation(jointTransform))
 end
 
 function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, jointTwist::Twist)
@@ -26,7 +26,7 @@ end
         for body in bodies(mechanism2)
             for i = 1 : 5
                 frame = CartesianFrame3D("frame_$i")
-                tf = rand(Transform3D{Float64}, frame, default_frame(body))
+                tf = rand(Transform3D, frame, default_frame(body))
                 add_frame!(body, tf)
                 additionalFrames[frame] = body
             end
@@ -145,8 +145,8 @@ end
 
             # reroot mechanism2
             newfloatingjoint = Joint("newFloating", QuaternionFloating{Float64}())
-            joint_to_world = Transform3D{Float64}(frame_before(newfloatingjoint), default_frame(world))
-            body_to_joint = Transform3D{Float64}(default_frame(newfloatingbody), frame_after(newfloatingjoint))
+            joint_to_world = eye(Transform3D, frame_before(newfloatingjoint), default_frame(world))
+            body_to_joint = eye(Transform3D, default_frame(newfloatingbody), frame_after(newfloatingjoint))
             attach!(mechanism2, bodymap[world], newfloatingjoint, joint_to_world, bodymap[newfloatingbody], body_to_joint)
             remove_joint!(mechanism2, jointmap[floatingjoint])
 

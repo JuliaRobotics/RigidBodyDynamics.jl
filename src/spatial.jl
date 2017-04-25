@@ -179,19 +179,17 @@ expressed in a centroidal frame.
 MomentumMatrix
 
 # SpatialInertia-specific functions
-Base.convert{T<:Number}(::Type{SpatialInertia{T}}, inertia::SpatialInertia{T}) = inertia
-
-function Base.convert{T<:Number}(::Type{SpatialInertia{T}}, inertia::SpatialInertia)
+Base.eltype{T<:Number}(::Type{SpatialInertia{T}}) = T
+@inline Base.convert{T<:Number}(::Type{SpatialInertia{T}}, inertia::SpatialInertia{T}) = inertia
+@inline function Base.convert{T<:Number}(::Type{SpatialInertia{T}}, inertia::SpatialInertia)
     SpatialInertia(inertia.frame, convert(SMatrix{3, 3, T}, inertia.moment), convert(SVector{3, T}, inertia.crossPart), convert(T, inertia.mass))
 end
-
 function Base.convert{T}(::Type{SMatrix{6, 6, T}}, inertia::SpatialInertia)
     J = inertia.moment
     C = hat(inertia.crossPart)
     m = inertia.mass
     [J  C; C' m * eye(SMatrix{3, 3, T})]
 end
-
 Base.convert{T<:Matrix}(::Type{T}, inertia::SpatialInertia) = convert(T, convert(SMatrix{6, 6, eltype(T)}, inertia))
 
 Base.Array{T}(inertia::SpatialInertia{T}) = convert(Matrix{T}, inertia)
@@ -229,21 +227,21 @@ $(SIGNATURES)
 
 Transform the `SpatialInertia` to a different frame.
 """
-function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})::SpatialInertia{promote_type(I, T)}
+function transform(inertia::SpatialInertia, t::Transform3D)
     @framecheck(t.from, inertia.frame)
-    S = promote_type(I, T)
+    T = promote_type(eltype(typeof(inertia)), eltype(typeof(t)))
 
     if t.from == t.to
-        return convert(SpatialInertia{S}, inertia)
-    elseif inertia.mass == zero(I)
-        return zero(SpatialInertia{S}, t.to)
+        return convert(SpatialInertia{T}, inertia)
+    elseif inertia.mass == 0
+        return zero(SpatialInertia{T}, t.to)
     else
         J = inertia.moment
         m = inertia.mass
         c = inertia.crossPart
 
-        R = t.rot
-        p = t.trans
+        R = rotation(t)
+        p = translation(t)
 
         cnew = R * c
         Jnew = hat_squared(cnew)
@@ -252,7 +250,7 @@ function transform{I, T}(inertia::SpatialInertia{I}, t::Transform3D{T})::Spatial
         mInv = inv(m)
         Jnew *= mInv
         Jnew += R * J * R'
-        return SpatialInertia{S}(t.to, Jnew, cnew, m)
+        return SpatialInertia{T}(t.to, Jnew, cnew, m)
     end
 end
 
@@ -277,7 +275,7 @@ function Random.rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
     J = SMatrix{3, 3, T}(Q * diagm(principalMoments) * Q')
 
     # Construct the inertia in CoM frame
-    comFrame = CartesianFrame3D("com")
+    comFrame = CartesianFrame3D()
     spatialInertia = SpatialInertia(comFrame, J, zeros(SVector{3, T}), rand(T))
 
     # Put the center of mass at a random offset
@@ -342,15 +340,15 @@ Transform the `Twist` to a different frame.
 """
 function transform(twist::Twist, transform::Transform3D)
     @framecheck(twist.frame, transform.from)
-    angular, linear = transform_spatial_motion(twist.angular, twist.linear, transform.rot, transform.trans)
+    angular, linear = transform_spatial_motion(twist.angular, twist.linear, rotation(transform), translation(transform))
     Twist(twist.body, twist.base, transform.to, angular, linear)
 end
 
 # log(::Transform3D) + some extra outputs that make log_with_time_derivative faster
 function _log(t::Transform3D)
     # Proposition 2.9 in Murray et al, "A mathematical introduction to robotic manipulation."
-    rot = t.rot
-    p = t.trans
+    rot = rotation(t)
+    p = translation(t)
 
     # Rotational part of local coordinates is simply the rotation vector.
     aa = AngleAxis(rot)
@@ -493,7 +491,7 @@ function transform(accel::SpatialAcceleration, oldToNew::Transform3D, twistOfCur
     linear += accel.linear
 
     # transform to new frame
-    angular, linear = transform_spatial_motion(angular, linear, oldToNew.rot, oldToNew.trans)
+    angular, linear = transform_spatial_motion(angular, linear, rotation(oldToNew), translation(oldToNew))
 
     SpatialAcceleration(accel.body, accel.base, oldToNew.to, angular, linear)
 end
@@ -536,8 +534,9 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         """
         function transform(f::$ForceSpaceElement, transform::Transform3D)
             @framecheck(f.frame, transform.from)
-            linear = transform.rot * f.linear
-            angular = transform.rot * f.angular + cross(transform.trans, linear)
+            rot = rotation(transform)
+            linear = rot * f.linear
+            angular = rot * f.angular + cross(translation(transform), linear)
             $ForceSpaceElement(transform.to, angular, linear)
         end
 
@@ -614,9 +613,9 @@ Transform the `GeometricJacobian` to a different frame.
 """
 function transform(jac::GeometricJacobian, transform::Transform3D)
     @framecheck(jac.frame, transform.from)
-    R = transform.rot
+    R = rotation(transform)
     angular = R * jac.angular
-    linear = R * jac.linear + colwise(cross, transform.trans, angular)
+    linear = R * jac.linear + colwise(cross, translation(transform), angular)
     GeometricJacobian(jac.body, jac.base, transform.to, angular, linear)
 end
 
@@ -653,10 +652,10 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
 
         function transform(mat::$ForceSpaceMatrix, transform::Transform3D)
             @framecheck(mat.frame, transform.from)
-            R = transform.rot
+            R = rotation(transform)
             linear = R * linear_part(mat)
             T = eltype(linear)
-            angular = R * angular_part(mat) + colwise(cross, transform.trans, linear)
+            angular = R * angular_part(mat) + colwise(cross, translation(transform), linear)
             $ForceSpaceMatrix(transform.to, angular, linear)
         end
     end

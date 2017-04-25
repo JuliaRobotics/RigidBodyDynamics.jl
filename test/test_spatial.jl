@@ -1,6 +1,6 @@
 function Ad(H::Transform3D)
-    pHat = RigidBodyDynamics.hat(H.trans)
-    [[H.rot zeros(SMatrix{3, 3, eltype(H)})]; [pHat * H.rot H.rot]]
+    pHat = RigidBodyDynamics.hat(translation(H))
+    [[rotation(H) zeros(SMatrix{3, 3, eltype(H)})]; [pHat * rotation(H) rotation(H)]]
 end
 
 @testset "spatial" begin
@@ -24,21 +24,21 @@ end
 
     @testset "spatial inertia" begin
         I2 = rand(SpatialInertia{Float64}, f2)
-        H21 = rand(Transform3D{Float64}, f2, f1)
+        H21 = rand(Transform3D, f2, f1)
         I1 = transform(I2, H21)
         I3 = rand(SpatialInertia{Float64}, f2)
         @test I2.mass == I1.mass
         @test isapprox(Array(I1), Ad(inv(H21))' * Array(I2) * Ad(inv(H21)); atol = 1e-12)
         @test isapprox(I2, transform(I1, inv(H21)))
         @test isapprox(Array(I2) + Array(I3), Array(I2 + I3); atol = 1e-12)
-        @inferred transform(zero(SpatialInertia{Float32}, f1), Transform3D{Float64}(f1))
+        @inferred transform(zero(SpatialInertia{Float32}, f1), eye(Transform3D, f1))
     end
 
     @testset "twist" begin
         T1 = rand(Twist{Float64}, f2, f1, f3)
         T2 = rand(Twist{Float64}, f3, f2, f3)
         T3 = T1 + T2
-        H31 = rand(Transform3D{Float64}, f3, f1)
+        H31 = rand(Transform3D, f3, f1)
         @test T3.body == T2.body
         @test T3.base == T1.base
         @test T3.frame == f3
@@ -51,7 +51,7 @@ end
         f0 = CartesianFrame3D("0")
         fi = CartesianFrame3D("i")
         Qi = Point3D(fi, rand(SVector{3}))
-        H = rand(Transform3D{Float64}, fi, f0)
+        H = rand(Transform3D, fi, f0)
         T0 = log(H)
         Q0 = H * Qi
         Q̇0 = point_velocity(T0, Q0)
@@ -62,7 +62,7 @@ end
 
     @testset "wrench" begin
         W = rand(Wrench{Float64}, f2)
-        H21 = rand(Transform3D{Float64}, f2, f1)
+        H21 = rand(Transform3D, f2, f1)
         @test isapprox(Array(transform(W, H21)), Ad(inv(H21))' * Array(W))
         @test_throws ArgumentError transform(W, inv(H21)) # wrong frame
 
@@ -85,7 +85,7 @@ end
         T = rand(Twist{Float64}, f2, f1, f2)
         I = rand(SpatialInertia{Float64}, f2)
         T2 = rand(Twist{Float64}, f2, f1, f1)
-        H21 = rand(Transform3D{Float64}, f2, f1)
+        H21 = rand(Transform3D, f2, f1)
         h = I * T
         @test isapprox(Array(I) * Array(T), Array(h); atol = 1e-12)
         @test_throws ArgumentError I * T2 # wrong frame
@@ -100,7 +100,7 @@ end
         v = rand(num_cols(J))
         W = rand(Wrench{Float64}, f3)
         T = Twist(J, v)
-        H = rand(Transform3D{Float64}, f3, f1)
+        H = rand(Transform3D, f3, f1)
         τ = torque(J, W)
         @test J.body == T.body
         @test J.base == T.base
@@ -124,7 +124,7 @@ end
         A = MomentumMatrix(f3, rand(SMatrix{3, n}), rand(SMatrix{3, n}))
         v = rand(num_cols(A))
         h = Momentum(A, v)
-        H = rand(Transform3D{Float64}, f3, f1)
+        H = rand(Transform3D, f3, f1)
         @test h.frame == A.frame
         @test isapprox(Momentum(transform(A, H), v), transform(h, H))
     end
@@ -134,14 +134,14 @@ end
         Ṫ = rand(SpatialAcceleration{Float64}, f2, f1, f2)
         T = rand(Twist{Float64}, f2, f1, f2)
         W = newton_euler(I, Ṫ, T)
-        H = rand(Transform3D{Float64}, f2, f1)
+        H = rand(Transform3D, f2, f1)
         @test isapprox(transform(newton_euler(transform(I, H), transform(Ṫ, H, T, T), transform(T, H)), inv(H)), W)
     end
 
     @testset "kinetic energy" begin
         I = rand(SpatialInertia{Float64}, f2)
         T = rand(Twist{Float64}, f2, f1, f2)
-        H = rand(Transform3D{Float64}, f2, f1)
+        H = rand(Transform3D, f2, f1)
         Ek = kinetic_energy(I, T)
         @test isapprox((1//2 * Array(T)' * Array(I) * Array(T))[1], Ek; atol = 1e-12)
         @test isapprox(kinetic_energy(transform(I, H), transform(T, H)), Ek; atol = 1e-12)
@@ -159,7 +159,7 @@ end
 
             ξhat = [RigidBodyDynamics.hat(ϕrot) ϕtrans]
             ξhat = [ξhat; zeros(1, 4)]
-            H_mat = [H.rot H.trans]
+            H_mat = [rotation(H) translation(H)]
             H_mat = [H_mat; zeros(1, 3) 1.]
             @test isapprox(expm(ξhat), H_mat)
         end
@@ -189,11 +189,11 @@ end
             ω = SVector(T.angular[1], T.angular[2], T.angular[3])
             linear = T.linear
 
-            rotdot = H.rot * hat(ω)
-            transdot = H.rot * linear
+            rotdot = rotation(H) * hat(ω)
+            transdot = rotation(H) * linear
 
-            trans_autodiff = @SVector [ForwardDiff.Dual(H.trans[i], transdot[i]) for i in 1 : 3]
-            rot_autodiff = RotMatrix(@SMatrix [ForwardDiff.Dual(H.rot[i, j], rotdot[i, j]) for i in 1 : 3, j in 1 : 3])
+            trans_autodiff = @SVector [ForwardDiff.Dual(translation(H)[i], transdot[i]) for i in 1 : 3]
+            rot_autodiff = RotMatrix(@SMatrix [ForwardDiff.Dual(rotation(H)[i, j], rotdot[i, j]) for i in 1 : 3, j in 1 : 3])
             H_autodiff = Transform3D(H.from, H.to, rot_autodiff, trans_autodiff)
             ξ_autodiff = log(H_autodiff)
             ξ̇rot_from_autodiff = @SVector [ForwardDiff.partials(ξ_autodiff.angular[i])[1] for i in 1 : 3]

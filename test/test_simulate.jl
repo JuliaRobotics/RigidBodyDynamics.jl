@@ -40,7 +40,7 @@
         bodyframe = CartesianFrame3D()
         body = RigidBody("body", rand(SpatialInertia{Float64}, bodyframe))
         floatingjoint = Joint("floating", QuaternionFloating{Float64}())
-        attach!(mechanism, world, floatingjoint, Transform3D{Float64}(frame_before(floatingjoint), root_frame(mechanism)), body)
+        attach!(mechanism, world, floatingjoint, eye(Transform3D, frame_before(floatingjoint), root_frame(mechanism)), body)
 
         com = center_of_mass(spatial_inertia(body))
         model = SoftContactModel(hunt_crossley_hertz(; α = 0.), ViscoelasticCoulombModel(0.5, 1e3, 1e3))
@@ -95,7 +95,7 @@
         mechanism = Mechanism(world)
         floatingjoint = Joint("floating", QuaternionFloating{Float64}())
         body = RigidBody("body", SpatialInertia(CartesianFrame3D("inertia"), eye(SMatrix{3, 3}), zeros(SVector{3}), 2.))
-        attach!(mechanism, world, floatingjoint, Transform3D{Float64}(frame_before(floatingjoint), default_frame(world)), body)
+        attach!(mechanism, world, floatingjoint, eye(Transform3D, frame_before(floatingjoint), default_frame(world)), body)
         worldframe = root_frame(mechanism)
         inclinedplane = HalfSpace3D(Point3D(worldframe, zeros(SVector{3})), FreeVector3D(worldframe, sin(θ), 0., cos(θ)))
         add_environment_primitive!(mechanism, inclinedplane)

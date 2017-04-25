@@ -17,7 +17,7 @@
     inertia1 = SpatialInertia(CartesianFrame3D("upper_link"), I1 * axis * axis', SVector(0, 0, lc1), m1)
     body1 = RigidBody(inertia1)
     joint1 = Joint("shoulder", Revolute(axis))
-    joint1ToWorld = Transform3D{Float64}(joint1.frameBefore, default_frame(world))
+    joint1ToWorld = eye(Transform3D, joint1.frameBefore, default_frame(world))
     attach!(doublePendulum, world, joint1, joint1ToWorld, body1)
 
     inertia2 = SpatialInertia(CartesianFrame3D("lower_link"), I2 * axis * axis', SVector(0, 0, lc2), m2)
