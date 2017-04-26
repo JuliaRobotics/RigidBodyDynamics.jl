@@ -304,7 +304,7 @@ state_vector(state::MechanismState) = [configuration(state); velocity(state); ad
 
 for fun in (:num_velocities, :num_positions)
     @eval function $fun{T}(path::TreePath{RigidBody{T}, Joint{T}})
-        mapreduce($fun, +, 0, path.source_to_lca) + mapreduce($fun, +, 0, path.target_to_lca)
+        mapreduce(it -> $fun(first(it)), +, 0, path)
     end
 end
 
@@ -315,11 +315,7 @@ function set_path_vector!{X, M, C}(ret::AbstractVector, state::MechanismState{X,
         startind + n
     end
     startind = 1
-    for joint in path.source_to_lca
-        startind = setvectorpart!(ret, fun(state, joint), startind)
-    end
-    for i = length(path.target_to_lca) : -1 : 1
-        joint = path.target_to_lca[i]
+    for (joint, direction) in path
         startind = setvectorpart!(ret, fun(state, joint), startind)
     end
     ret

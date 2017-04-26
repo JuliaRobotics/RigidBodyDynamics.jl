@@ -304,16 +304,42 @@ end
 source(path::TreePath) = path.source
 target(path::TreePath) = path.target
 
+immutable TreePathIteratorState
+    direction::Symbol
+    index::Int
+end
+
+@inline function wrap(state::TreePathIteratorState, path::TreePath)
+    direction = state.direction
+    index = state.index
+    switchdirection = direction == :up && index > length(path.source_to_lca)
+    index = ifelse(switchdirection, length(path.target_to_lca), index)
+    direction = ifelse(switchdirection, :down, direction)
+    TreePathIteratorState(direction, index)
+end
+
+Base.start(path::TreePath) = wrap(TreePathIteratorState(:up, 1), path)
+
+function Base.next(path::TreePath, state::TreePathIteratorState)
+    direction = state.direction
+    index = state.index
+    array = ifelse(direction == :up, path.source_to_lca, path.target_to_lca)
+    increment = ifelse(direction == :up, 1, -1)
+    (array[index], direction), wrap(TreePathIteratorState(direction, index + increment), path)
+end
+
+Base.done(path::TreePath, state::TreePathIteratorState) = state.direction == :down && state.index < 1
+
+Base.eltype{V, E}(path::TreePath{V, E}) = Tuple{E, Symbol}
+Base.length(path::TreePath) = length(path.source_to_lca) + length(path.target_to_lca)
+Base.size(path::TreePath) = (length(path),)
+Base.last(path::TreePath) = isempty(path.target_to_lca) ? last(path.source_to_lca) : first(path.target_to_lca)
+
 function Base.show(io::IO, path::TreePath)
     println(io, "Path from $(path.source) to $(path.target):")
-    for edge in path.source_to_lca
-        print(io, "↑ ")
-        showcompact(io, edge)
-        println(io)
-    end
-    for i = length(path.target_to_lca) : -1 : 1
-        edge = path.target_to_lca[i]
-        print(io, "↓ ")
+    for (edge, direction) in path
+        directionchar = ifelse(direction == :up, '↑', '↓')
+        print(io, "$directionchar ")
         showcompact(io, edge)
         println(io)
     end

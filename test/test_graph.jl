@@ -199,6 +199,7 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
                 p = path(src, dest, tree)
                 @test source(p) == src
                 @test target(p) == dest
+                @test all(map(first, p) .== [p.source_to_lca; reverse(p.target_to_lca)])
 
                 for (v, v_ancestors, pathsegment) in [(src, src_ancestors, p.source_to_lca); (dest, dest_ancestors, p.target_to_lca)]
                     if v == root(tree)
