@@ -566,11 +566,6 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
             sign = ifelse(direction == :up, -1, 1)
             force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, sign)
         end
-        for treejoint in path.target_to_lca
-            J = motion_subspace_in_world(state, treejoint)
-            colstart = first(velocity_range(state, treejoint))
-            force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, 1)
-        end
 
         # Constraint bias.
         has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.")

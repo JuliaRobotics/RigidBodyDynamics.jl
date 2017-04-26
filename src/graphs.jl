@@ -297,43 +297,19 @@ end
 immutable TreePath{V, E}
     source::V
     target::V
-    source_to_lca::Vector{E}
-    target_to_lca::Vector{E}
+    directed_edges::Vector{Pair{E, Symbol}} # Symbol: :up if going from source to LCA, :down if going from LCA to target
 end
 
 source(path::TreePath) = path.source
 target(path::TreePath) = path.target
 
-immutable TreePathIteratorState
-    direction::Symbol
-    index::Int
-end
-
-@inline function wrap(state::TreePathIteratorState, path::TreePath)
-    direction = state.direction
-    index = state.index
-    switchdirection = direction == :up && index > length(path.source_to_lca)
-    index = ifelse(switchdirection, length(path.target_to_lca), index)
-    direction = ifelse(switchdirection, :down, direction)
-    TreePathIteratorState(direction, index)
-end
-
-Base.start(path::TreePath) = wrap(TreePathIteratorState(:up, 1), path)
-
-function Base.next(path::TreePath, state::TreePathIteratorState)
-    direction = state.direction
-    index = state.index
-    array = ifelse(direction == :up, path.source_to_lca, path.target_to_lca)
-    increment = ifelse(direction == :up, 1, -1)
-    (array[index], direction), wrap(TreePathIteratorState(direction, index + increment), path)
-end
-
-Base.done(path::TreePath, state::TreePathIteratorState) = state.direction == :down && state.index < 1
-
-Base.eltype{V, E}(path::TreePath{V, E}) = Tuple{E, Symbol}
-Base.length(path::TreePath) = length(path.source_to_lca) + length(path.target_to_lca)
-Base.size(path::TreePath) = (length(path),)
-Base.last(path::TreePath) = isempty(path.target_to_lca) ? last(path.source_to_lca) : first(path.target_to_lca)
+Base.start(path::TreePath) = start(path.directed_edges)
+Base.next(path::TreePath, state) = next(path.directed_edges, state)
+Base.done(path::TreePath, state) = done(path.directed_edges, state)
+Base.eltype(path::TreePath) = eltype(path.directed_edges)
+Base.length(path::TreePath) = length(path.directed_edges)
+Base.size(path::TreePath) = size(path.directed_edges)
+Base.last(path::TreePath) = last(path.directed_edges)
 
 function Base.show(io::IO, path::TreePath)
     println(io, "Path from $(path.source) to $(path.target):")
@@ -347,7 +323,7 @@ end
 
 function path{V, E}(src::V, target::V, tree::SpanningTree{V, E})
     source_to_lca = E[]
-    target_to_lca = E[]
+    lca_to_target = E[]
     source_current = src
     target_current = target
     while source_current != target_current
@@ -357,11 +333,14 @@ function path{V, E}(src::V, target::V, tree::SpanningTree{V, E})
             source_current = source(edge, tree)
         else
             edge = edge_to_parent(target_current, tree)
-            push!(target_to_lca, edge)
+            push!(lca_to_target, edge)
             target_current = source(edge, tree)
         end
     end
-    TreePath(src, target, source_to_lca, target_to_lca)
+    reverse!(lca_to_target)
+    directed_edges = collect(e => :up for e in source_to_lca)
+    append!(directed_edges, e => :down for e in lca_to_target)
+    TreePath(src, target, directed_edges)
 end
 
 end # module
