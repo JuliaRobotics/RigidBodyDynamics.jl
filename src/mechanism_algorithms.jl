@@ -90,17 +90,12 @@ function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path
     mechanism = state.mechanism
     nextbaseframe = out.base
     startind = 1
-    for joint in path.source_to_lca
-        S = -transformfun(motion_subspace_in_world(state, joint))
-        startind, nextbaseframe = _set_jacobian_part!(out, S, nextbaseframe, startind)
-    end
-    for i = length(path.target_to_lca) : -1 : 1
-        joint = path.target_to_lca[i]
+    lastjoint = last(path)
+    for (joint, direction) in path
         S = transformfun(motion_subspace_in_world(state, joint))
+        direction == :up && (S = -S)
         startind, nextbaseframe = _set_jacobian_part!(out, S, nextbaseframe, startind)
-        if i == 1
-            @framecheck S.body out.body
-        end
+        joint == lastjoint && (@framecheck S.body out.body)
     end
     out
 end
@@ -565,15 +560,11 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         T = transform(T, transform_to_root(state, T.frame)) # TODO: expensive
 
         # Jacobian rows.
-        for treejoint in path.source_to_lca
+        for (treejoint, direction) in path
             J = motion_subspace_in_world(state, treejoint)
             colstart = first(velocity_range(state, treejoint))
-            force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, -1)
-        end
-        for treejoint in path.target_to_lca
-            J = motion_subspace_in_world(state, treejoint)
-            colstart = first(velocity_range(state, treejoint))
-            force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, 1)
+            sign = ifelse(direction == :up, -1, 1)
+            force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, sign)
         end
 
         # Constraint bias.

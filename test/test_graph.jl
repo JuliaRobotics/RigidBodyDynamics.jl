@@ -197,10 +197,17 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
                 dest_ancestors = ancestors(dest, tree)
                 lca = lowest_common_ancestor(src, dest, tree)
                 p = path(src, dest, tree)
+
+                show(DevNull, p)
+                @inferred collect(p)
+
                 @test source(p) == src
                 @test target(p) == dest
 
-                for (v, v_ancestors, pathsegment) in [(src, src_ancestors, p.source_to_lca); (dest, dest_ancestors, p.target_to_lca)]
+                source_to_lca = collect(edge for (edge, direction) in p if direction == :up)
+                target_to_lca = reverse!(collect(edge for (edge, direction) in p if direction == :down))
+
+                for (v, v_ancestors, pathsegment) in [(src, src_ancestors, source_to_lca); (dest, dest_ancestors, target_to_lca)]
                     if v == root(tree)
                         @test tree_index(v, tree) == 1
                         @test lca == v
@@ -219,8 +226,8 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
                 for v in intersect(src_ancestors, dest_ancestors)
                     @test tree_index(v, tree) <= tree_index(lca, tree)
                     if v != lca
-                        @test v ∉ (v -> source(v, tree)).(p.source_to_lca)
-                        @test v ∉ (v -> source(v, tree)).(p.target_to_lca)
+                        @test v ∉ (v -> source(v, tree)).(source_to_lca)
+                        @test v ∉ (v -> source(v, tree)).(target_to_lca)
                     end
                 end
                 for v in setdiff(src_ancestors, dest_ancestors)
