@@ -279,8 +279,9 @@ end
 function _constraint_wrench_subspace{T<:Number, A<:AbstractMatrix}(jt::Prismatic{T}, jointTransform::Transform3D{A})
     S = promote_type(eltype(typeof((jt))), eltype(typeof(jointTransform)))
     R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
+    Rcols12 = hcat(R[:, 1], R[:, 2]) # TODO: index using SVector once StaticArrays 0.5 is required on all Julia versions
     angular = hcat(R, zeros(SMatrix{3, 2, S}))
-    linear = hcat(zeros(SMatrix{3, 3, S}), R[:, (1, 2)])
+    linear = hcat(zeros(SMatrix{3, 3, S}), Rcols12)
     WrenchSubspace(jointTransform.from, angular, linear)
 end
 
@@ -339,7 +340,8 @@ end
 function _constraint_wrench_subspace{T<:Number, A<:AbstractMatrix}(jt::Revolute{T}, jointTransform::Transform3D{A})
     S = promote_type(eltype(typeof((jt))), eltype(typeof(jointTransform)))
     R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
-    angular = hcat(R[:, (1, 2)], zeros(SMatrix{3, 3, S}))
+    Rcols12 = hcat(R[:, 1], R[:, 2]) # TODO: index using SVector once StaticArrays 0.5 is required on all Julia versions
+    angular = hcat(Rcols12, zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 2, S}), R)
     WrenchSubspace(jointTransform.from, angular, linear)
 end

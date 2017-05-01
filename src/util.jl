@@ -48,25 +48,20 @@ From https://github.com/rdeits/NNLS.jl/blob/0a9bf56774595b5735bc738723bd3cb94138
     end
 end
 
+@inline smatrix3x6view(mat::StaticMatrix) = _smatrix3x6view(Size(mat), mat)
 
-# Functions such as motion_subspace(::Joint, ...) need to return types with a number of columns that depends on the joint type.
-# Using a 'view' of a 3×6 SMatrix as the underlying data type gets around type instabilities in motion_subspace while still using an isbits type.
-# See https://github.com/tkoolen/RigidBodyDynamics.jl/issues/84.
-@generated function smatrix3x6view{N, T}(mat::SMatrix{3, N, T})
-    colrange = 1 : N
-    if N == 0
-        data = fill(NaN, SMatrix{3, 6, T, 18})
-        ret = view(data, :, 1 : 0)
-        return :($ret)
-    elseif N == 6
-        return :(view(mat, :, $colrange))
-    else
-        fillerSize = 6 - N
-        filler = fill(NaN, SMatrix{3, fillerSize, T, 3 * fillerSize})
-        return quote
-            data = hcat(mat, $filler)::SMatrix{3, 6, $T, 18}
-            view(data, :, $colrange)
-        end
+@generated function _smatrix3x6view{S}(::Size{S}, mat::StaticMatrix)
+    Snew = (S[1], 6)
+    S[1] == 3 || error()
+    (0 <= S[2] <= Snew[2]) || error()
+    fillercols = Snew[2] - S[2]
+    fillerlength = S[1] * fillercols
+    T = eltype(mat)
+    exprs = vcat([:(mat[$i]) for i = 1 : prod(S)], [:(zero($T)) for i = 1 : fillerlength])
+    colrange =
+    return quote
+        Base.@_inline_meta
+        @inbounds return view(similar_type(mat, Size($Snew))(tuple($(exprs...))), :, 1 : $S[2])
     end
 end
 
