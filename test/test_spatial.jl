@@ -32,6 +32,7 @@ end
         @test isapprox(I2, transform(I1, inv(H21)))
         @test isapprox(Array(I2) + Array(I3), Array(I2 + I3); atol = 1e-12)
         @inferred transform(zero(SpatialInertia{Float32}, f1), eye(Transform3D, f1))
+        @test I2 + zero(I2) == I2
     end
 
     @testset "twist" begin
@@ -46,6 +47,7 @@ end
         @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f2, f4) # wrong frame
         @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f4, f3) # wrong base
         @test isapprox(Array(transform(T1, H31)), Ad(H31) * Array(T1))
+        @test T3 + zero(T3) == T3
 
         # 2.17 in Duindam:
         f0 = CartesianFrame3D("0")
@@ -65,6 +67,7 @@ end
         H21 = rand(Transform3D, f2, f1)
         @test isapprox(Array(transform(W, H21)), Ad(inv(H21))' * Array(W))
         @test_throws ArgumentError transform(W, inv(H21)) # wrong frame
+        @test W + zero(W) == W
 
         point2 = Point3D(f2, zeros(SVector{3}))
         force2 = FreeVector3D(f2, rand(SVector{3}))
@@ -92,6 +95,7 @@ end
         @test isapprox(transform(I, H21) * transform(T, H21), transform(h, H21))
         @test isapprox(Array(transform(h, H21)), Ad(inv(H21))' * Array(h))
         @test_throws ArgumentError transform(h, inv(H21)) # wrong frame
+        @test h + zero(h) == h
     end
 
     @testset "geometric jacobian, power" begin
@@ -136,6 +140,7 @@ end
         W = newton_euler(I, Ṫ, T)
         H = rand(Transform3D, f2, f1)
         @test isapprox(transform(newton_euler(transform(I, H), transform(Ṫ, H, T, T), transform(T, H)), inv(H)), W)
+        @test Ṫ + zero(Ṫ) == Ṫ
     end
 
     @testset "kinetic energy" begin
