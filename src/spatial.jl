@@ -209,6 +209,7 @@ function Base.show(io::IO, inertia::SpatialInertia)
 end
 
 Base.zero{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) = SpatialInertia(frame, zeros(SMatrix{3, 3, T}), zeros(SVector{3, T}), zero(T))
+Base.zero(inertia::SpatialInertia) = zero(typeof(inertia), inertia.frame)
 
 function Base.isapprox(x::SpatialInertia, y::SpatialInertia; atol = 1e-12)
     x.frame == y.frame && isapprox(x.moment, y.moment; atol = atol) && isapprox(x.crossPart, y.crossPart; atol = atol) && isapprox(x.mass, y.mass; atol = atol)
@@ -324,6 +325,8 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
         function Base.zero{T}(::Type{$MotionSpaceElement{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
             $MotionSpaceElement(body, base, frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
         end
+
+        Base.zero(m::$MotionSpaceElement) = zero(typeof(m), m.body, m.base, m.frame)
 
         function Random.rand{T}(::Type{$MotionSpaceElement{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
             $MotionSpaceElement(body, base, frame, rand(SVector{3, T}), rand(SVector{3, T}))
@@ -525,6 +528,7 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         end
 
         Base.zero{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
+        Base.zero(f::$ForceSpaceElement) = zero(typeof(f), f.frame)
         Random.rand{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, rand(SVector{3, T}), rand(SVector{3, T}))
 
         """
