@@ -631,7 +631,7 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
 
     nv = size(M, 1)
     nl = size(K, 1)
-    G = [M K';
+    G = [full(M) K'; # TODO: full because of https://github.com/JuliaLang/julia/issues/21332
          K zeros(nl, nl)]
     r = [τ - c; -k]
     v̇λ = G \ r
