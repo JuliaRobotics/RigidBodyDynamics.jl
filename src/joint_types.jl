@@ -280,8 +280,8 @@ function _constraint_wrench_subspace{T<:Number, A<:AbstractMatrix}(jt::Prismatic
     S = promote_type(eltype(typeof((jt))), eltype(typeof(jointTransform)))
     R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
     Rcols12 = hcat(R[:, 1], R[:, 2]) # TODO: index using SVector once StaticArrays 0.5 is required on all Julia versions
-    angular = hcat(R, zeros(SMatrix{3, 2, S}))
-    linear = hcat(zeros(SMatrix{3, 3, S}), Rcols12)
+    angular = hcat(StaticArrays.similar_type(typeof(R), S)(R), zeros(SMatrix{3, 2, S})) # TODO: remove similar_type once https://github.com/JuliaArrays/StaticArrays.jl/issues/155 is fixed
+    linear = hcat(zeros(SMatrix{3, 3, S}), StaticArrays.similar_type(typeof(Rcols12), S)(Rcols12)) # TODO: remove similar_type once https://github.com/JuliaArrays/StaticArrays.jl/issues/155 is fixed
     WrenchSubspace(jointTransform.from, angular, linear)
 end
 
@@ -341,8 +341,8 @@ function _constraint_wrench_subspace{T<:Number, A<:AbstractMatrix}(jt::Revolute{
     S = promote_type(eltype(typeof((jt))), eltype(typeof(jointTransform)))
     R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
     Rcols12 = hcat(R[:, 1], R[:, 2]) # TODO: index using SVector once StaticArrays 0.5 is required on all Julia versions
-    angular = hcat(Rcols12, zeros(SMatrix{3, 3, S}))
-    linear = hcat(zeros(SMatrix{3, 2, S}), R)
+    angular = hcat(StaticArrays.similar_type(typeof(Rcols12), S)(Rcols12), zeros(SMatrix{3, 3, S})) # TODO: remove similar_type once https://github.com/JuliaArrays/StaticArrays.jl/issues/155 is fixed
+    linear = hcat(zeros(SMatrix{3, 2, S}), StaticArrays.similar_type(typeof(R), S)(R)) # TODO: remove similar_type once https://github.com/JuliaArrays/StaticArrays.jl/issues/155 is fixed
     WrenchSubspace(jointTransform.from, angular, linear)
 end
 
