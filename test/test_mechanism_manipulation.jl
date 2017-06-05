@@ -240,14 +240,15 @@ end
 
         stateFloat64 = MechanismState(Float64, mechanism)
         rand!(stateFloat64)
-        stateDual = MechanismState(ForwardDiff.Dual{0, Float64}, mechanism)
+        NullDual = typeof(ForwardDiff.Dual(0., ()))
+        stateDual = MechanismState(NullDual, mechanism)
         configuration(stateDual)[:] = configuration(stateFloat64)
         velocity(stateDual)[:] = velocity(stateFloat64)
 
         dynamicsResultFloat64 = DynamicsResult(Float64, mechanism)
         dynamics!(dynamicsResultFloat64, stateFloat64)
 
-        dynamicsResultDual = DynamicsResult(ForwardDiff.Dual{0, Float64}, mechanism)
+        dynamicsResultDual = DynamicsResult(NullDual, mechanism)
         dynamics!(dynamicsResultDual, stateDual)
 
         @test isapprox(dynamicsResultFloat64.v̇, dynamicsResultDual.v̇; atol = 1e-3)
