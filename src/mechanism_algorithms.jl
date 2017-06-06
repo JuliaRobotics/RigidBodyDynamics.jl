@@ -703,7 +703,10 @@ function dynamics_solve!{S<:Number, T<:LinAlg.BlasReal}(result::DynamicsResult{S
         LinAlg.BLAS.gemv!('N', one(T), Y, z, one(T), b) # b <- Y z + k
 
         # Compute λ = A⁻¹ b == (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
-        LinAlg.LAPACK.posv!(uplo, A, b) # b == λ <- (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
+        # LinAlg.LAPACK.posv!(uplo, A, b) # NOTE: doesn't work in general because A is only guaranteed to be positive semidefinite
+        singular_value_zero_tolerance = 1e-10 # TODO: more principled choice
+        # TODO: https://github.com/JuliaLang/julia/issues/22242
+        b[:], _ = LinAlg.LAPACK.gelsy!(A, b, singular_value_zero_tolerance) # b == λ <- (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
 
         # Update τBiased: subtract Kᵀ * λ
         LinAlg.BLAS.gemv!('T', -one(T), K, λ, one(T), τBiased) # τBiased <- τ - c - Kᵀ * λ
