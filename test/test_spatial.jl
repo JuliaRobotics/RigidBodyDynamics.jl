@@ -113,6 +113,9 @@ end
         @test isapprox(dot(Array(τ), v), dot(T, W); atol = 1e-12) # power equality
         @test_throws ArgumentError dot(transform(T, H), W)
         @test_throws ArgumentError torque(transform(J, H), W)
+
+        Jmutable = GeometricJacobian(f2, f1, f3, rand(3, n), rand(3, n))
+        @test isapprox(Twist(transform(Jmutable, H), v), transform(Twist(Jmutable, v), H))
     end
 
     @testset "At_mul_B!" begin
