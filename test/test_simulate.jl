@@ -1,4 +1,4 @@
-@testset "simulation" begin
+# @testset "simulation" begin
     @testset "simulate" begin
         # use simulate function (Munthe-Kaas integrator)
         acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
@@ -119,4 +119,4 @@
             end
         end
     end
-end
+# end
