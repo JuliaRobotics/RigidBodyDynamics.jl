@@ -15,7 +15,7 @@ function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, join
     RigidBodyDynamics.linear_velocity!(joint.jointType, v, jointTwist.linear)
 end
 
-@testset "mechanism manipulation" begin
+# @testset "mechanism manipulation" begin
     @testset "attach mechanism" begin
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
         nq = num_positions(mechanism)
@@ -254,4 +254,4 @@ end
         @test isapprox(dynamicsResultFloat64.v̇, dynamicsResultDual.v̇; atol = 1e-3)
         @test isapprox(dynamicsResultFloat64.λ, dynamicsResultDual.λ; atol = 1e-3)
     end
-end # mechanism manipulation
+# end # mechanism manipulation

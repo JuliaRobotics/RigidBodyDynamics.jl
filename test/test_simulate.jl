@@ -1,4 +1,4 @@
-@testset "simulation" begin
+# @testset "simulation" begin
     @testset "simulate" begin
         # use simulate function (Munthe-Kaas integrator)
         acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
@@ -110,13 +110,13 @@
             state = MechanismState(Float64, m)
             simulate(state, 1., Δt = 1e-3) # settle into steady state
             x1 = transform(state, contactlocation, worldframe)
-            simulate(state, 1., Δt = 1e-3)
+            simulate(state, 0.5, Δt = 1e-3)
             x2 = transform(state, contactlocation, worldframe)
             if μ > μcrit # should stick
                 @test isapprox(x1, x2, atol = 1e-4)
             else # should slip
-                @test !isapprox(x1, x2, atol = 1e-1)
+                @test !isapprox(x1, x2, atol = 5e-2)
             end
         end
     end
-end
+# end
