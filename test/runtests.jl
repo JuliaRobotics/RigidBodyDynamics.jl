@@ -35,7 +35,7 @@ include("test_mechanism_manipulation.jl")
         if lowercase(ext) == ".ipynb"
             @testset "$name" begin
                 println("Testing $name.")
-                nbinclude(joinpath(notebookdir, file))
+                nbinclude(joinpath(notebookdir, file), regex = r"^((?!\#NBSKIP).)*$"s)
             end
         end
     end
