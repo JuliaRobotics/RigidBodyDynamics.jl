@@ -14,13 +14,28 @@
     doublePendulum = Mechanism(RigidBody{Float64}("world"); gravity = SVector(0, 0, g))
     world = root_body(doublePendulum)
 
-    inertia1 = SpatialInertia(CartesianFrame3D("upper_link"), I1 * axis * axis', SVector(0, 0, lc1), m1)
+    # IMPORTANT for creating the SpatialInertias below:
+    # 1) the second argument, `crosspart` is mass *times* center of mass
+    # 2) these SpatialInertias are expressed in frames directly after each of the joints,
+    # since the moments of inertia are specified in those frames.
+    # If the moment of inertia data were given in the frame after a joint,
+    # it would be easier to do the following:
+    #
+    #   joint1 = Joint("joint1", Revolute(axis))
+    #   inertia1 = SpatialInertia(CartesianFrame3D("inertia1_centroidal"), I1_about_com * axis * axis', zeros(SVector{3, Float64}), m1)
+    #   link1 = RigidBody(inertia1)
+    #   before_joint_1_to_world = eye(Transform3D, frame_before(joint1), default_frame(world))
+    #   c1_to_joint = Transform3D(inertia1.frame, frame_after(joint1), SVector(lc1, 0, 0))
+    #   attach!(doublePendulum, world, joint1, before_joint_1_to_world, link1, c1_to_joint)
+
+    # create first body and attach it to the world via a revolute joint
+    inertia1 = SpatialInertia(CartesianFrame3D("upper_link"), I1 * axis * axis', m1 * SVector(0, 0, lc1), m1)
     body1 = RigidBody(inertia1)
     joint1 = Joint("shoulder", Revolute(axis))
     joint1ToWorld = eye(Transform3D, joint1.frameBefore, default_frame(world))
     attach!(doublePendulum, world, joint1, joint1ToWorld, body1)
 
-    inertia2 = SpatialInertia(CartesianFrame3D("lower_link"), I2 * axis * axis', SVector(0, 0, lc2), m2)
+    inertia2 = SpatialInertia(CartesianFrame3D("lower_link"), I2 * axis * axis', m2 * SVector(0, 0, lc2), m2)
     body2 = RigidBody(inertia2)
     joint2 = Joint("elbow", Revolute(axis))
     joint2ToBody1 = Transform3D(joint2.frameBefore, default_frame(body1), SVector(0, 0, l1))
