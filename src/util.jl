@@ -6,6 +6,11 @@ Base.size(A::ConstVector) = (A.length, )
 Base.getindex{T}(A::ConstVector{T}, i::Int) = (@boundscheck checkbounds(A, i); A.val)
 @compat Base.IndexStyle{T}(::Type{ConstVector{T}}) = IndexLinear()
 
+# associative type that signifies an empty dictionary and does not allocate memory
+immutable NullDict{K, V} <: Associative{K, V}
+end
+Base.haskey(::NullDict, k) = false
+
 
 # type of a view of a vector
 # TODO: a bit too specific
