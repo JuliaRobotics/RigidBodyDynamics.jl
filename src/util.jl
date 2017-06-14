@@ -120,6 +120,47 @@ end
     end
 end
 
+immutable UnsafeFastDict{I, K, V} <: Associative{K, V}
+    keys::Vector{K}
+    values::Vector{V}
+
+    function (::Type{UnsafeFastDict{I, K, V}}){I, K, V}(kv)
+        keys = K[]
+        values = V[]
+        for (k, v) in kv
+            index = I(k)
+            if index > length(keys)
+                resize!(keys, index)
+                resize!(values, index)
+            end
+            keys[index] = k
+            values[index] = v
+        end
+        new{I, K, V}(keys, values)
+    end
+end
+function UnsafeFastDict(kv, indexfun)
+    T = Core.Inference.return_type(first, Tuple{typeof(kv)})
+    K = T.parameters[1]
+    V = T.parameters[2]
+    UnsafeFastDict{indexfun, K, V}(kv)
+end
+
+# Iteration
+Base.start(d::UnsafeFastDict) = 1
+Base.done(d::UnsafeFastDict, state) = state > length(d)
+Base.next(d::UnsafeFastDict, state) = (d.keys[state] => d.values[state], state + 1)
+
+# Associative
+Base.length(d::UnsafeFastDict) = length(d.values)
+Base.haskey{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = (1 <= I(key) <= length(d)) && (@inbounds return d.keys[I(key)] === key)
+Base.getindex{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = get(d, key)
+Base.setindex!{I, K, V}(d::UnsafeFastDict{I, K, V}, value::V, key::K) = (@boundscheck haskey(d, key) || throw(KeyError(key)); d.values[I(key)] = value)
+Base.get{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = (@boundscheck haskey(d, key) || throw(KeyError(key)); d.values[I(key)])
+Base.keys(d::UnsafeFastDict) = d.keys
+Base.values(d::UnsafeFastDict) = d.values
+
+
 
 #=
 Geometry utilities
