@@ -586,17 +586,19 @@ function contact_dynamics!{X, M, C, T}(result::DynamicsResult{M, T}, state::Mech
             # TODO: AABB
             body_to_root = transform_to_root(state, body)
             twist = twist_wrt_world(state, body)
-            states = contact_states(state, body)
-            state_derivs = contact_state_derivatives(result, body)
+            states_for_body = contact_states(state, body)
+            state_derivs_for_body = contact_state_derivatives(result, body)
             for i = 1 : length(points)
                 @inbounds c = points[i]
-                # TODO: AABB check here
                 point = body_to_root * location(c)
                 velocity = point_velocity(twist, point)
-                for primitive in mechanism.environment.halfspaces
+                states_for_point = states_for_body[i]
+                state_derivs_for_point = state_derivs_for_body[i]
+                for j = 1 : length(mechanism.environment.halfspaces)
+                    primitive = mechanism.environment.halfspaces[j]
+                    contact_state = states_for_point[j]
+                    contact_state_deriv = state_derivs_for_point[j]
                     model = contact_model(c)
-                    contact_state = states[i]
-                    contact_state_deriv = state_derivs[i]
                     # TODO: would be good to move this to Contact module
                     # arguments: model, state, state_deriv, point, velocity, primitive
                     if point_inside(primitive, point)
