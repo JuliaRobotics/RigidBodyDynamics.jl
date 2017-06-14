@@ -42,4 +42,10 @@ import RigidBodyDynamics: hat, rotation_vector_rate, colwise
             end
         end
     end
+
+    @testset "UnsafeFastDict" begin
+        d = RigidBodyDynamics.UnsafeFastDict((i => 3 * i for i in 1 : 3), identity)
+        show(DevNull, d)
+        @test all(keys(d) .== 1 : 3)
+    end
 end

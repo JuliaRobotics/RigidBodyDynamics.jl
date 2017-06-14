@@ -33,19 +33,19 @@ function create_benchmark_suite()
 
     suite["mass_matrix"] = @benchmarkable mass_matrix!($(result.massmatrix), $state) setup = rand!($state)
     suite["inverse_dynamics"] = @benchmarkable(
-        inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalWrenches),
-        setup = (
-            v̇ = rand(num_velocities($mechanism));
-            externalWrenches = [rand(Wrench{ScalarType}, root_frame($mechanism)) for i = 1 : num_bodies($mechanism)];
+        inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalwrenches),
+        setup = begin
+            v̇ = rand(num_velocities($mechanism))
+            externalwrenches = RigidBodyDynamics.BodyDict(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
             rand!($state)
-        )
+        end
     )
-    suite["dynamics"] = @benchmarkable(dynamics!($result, $state, τ, externalWrenches),
-        setup=(
-            rand!($state);
-            τ = rand(num_velocities($mechanism));
-            externalWrenches = [rand(Wrench{ScalarType}, root_frame($mechanism)) for i = 1 : num_bodies($mechanism)];
-        )
+    suite["dynamics"] = @benchmarkable(dynamics!($result, $state, τ, externalwrenches),
+        setup = begin
+            rand!($state)
+            τ = rand(num_velocities($mechanism))
+            externalwrenches = RigidBodyDynamics.BodyDict(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
+        end
     )
     suite["momentum_matrix"] = @benchmarkable(momentum_matrix!($mat, $state), setup = rand!($state))
     suite["geometric_jacobian"] = @benchmarkable(geometric_jacobian!($jac, $state, $p), setup = rand!($state))
