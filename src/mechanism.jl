@@ -124,11 +124,11 @@ $(SIGNATURES)
 Return the dimension of the vector of additional states ``s`` (used for stateful contact models).
 """
 function num_additional_states(mechanism::Mechanism)
-    ret = 0
+    num_states_per_environment_element = 0
     for body in bodies(mechanism), point in contact_points(body)
-        ret += num_states(contact_model(point))
+        num_states_per_environment_element += num_states(contact_model(point))
     end
-    ret
+    num_states_per_environment_element * length(mechanism.environment)
 end
 
 """

@@ -43,7 +43,7 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
     bias_accelerations_wrt_world::BodyDict{M, CacheElement{SpatialAcceleration{C}}}
     inertias::BodyDict{M, CacheElement{SpatialInertia{C}}}
     crb_inertias::BodyDict{M, CacheElement{SpatialInertia{C}}}
-    contact_states::BodyDict{M, Vector{DefaultSoftContactState{X}}} # TODO: consider moving to separate type
+    contact_states::BodyDict{M, Vector{Vector{DefaultSoftContactState{X}}}} # TODO: consider moving to separate type
 
     function (::Type{MechanismState{X, M, C}}){X<:Number, M<:Number, C<:Number}(mechanism::Mechanism{M})
         nb = num_bodies(mechanism)
@@ -80,14 +80,17 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         bias_accelerations_wrt_world = BodyDict(b => CacheElement{SpatialAcceleration{C}}() for b in bodies(mechanism))
         inertias = BodyDict(b => CacheElement{SpatialInertia{C}}() for b in bodies(mechanism))
         crb_inertias = BodyDict(b => CacheElement{SpatialInertia{C}}() for b in bodies(mechanism))
-        contact_states = BodyDict(b => Vector{DefaultSoftContactState{C}}() for b in bodies(mechanism))
+        contact_states = BodyDict{M, Vector{Vector{DefaultSoftContactState{C}}}}(b => Vector{Vector{DefaultSoftContactState{C}}}() for b in bodies(mechanism))
         startind = 1
         for body in bodies(mechanism), point in contact_points(body)
             model = contact_model(point)
             n = num_states(model)
-            s_part = view(s, startind : startind + n - 1)
-            push!(contact_states[body], SoftContactState(model, s_part, root_frame(mechanism)))
-            startind += n
+            push!(contact_states[body], collect(begin
+                s_part = view(s, startind : startind + n - 1)
+                contact_state = SoftContactState(model, s_part, root_frame(mechanism))
+                startind += n
+                contact_state
+            end for j = 1 : length(mechanism.environment)))
         end
 
         # Set root-body related cache elements once and for all.
@@ -191,9 +194,11 @@ $(SIGNATURES)
 Reset all contact state variables.
 """
 function reset_contact_state!(state::MechanismState)
-    for states in values(state.contact_states)
-        for state in states
-            reset!(state)
+    for states_for_body in values(state.contact_states)
+        for states_for_point in states_for_body
+            for contact_state in states_for_point
+                reset!(contact_state)
+            end
         end
     end
 end

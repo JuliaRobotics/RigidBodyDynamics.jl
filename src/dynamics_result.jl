@@ -24,7 +24,7 @@ type DynamicsResult{M<:Number, T<:Number}
     totalwrenches::BodyDict{M, Wrench{T}}
     accelerations::BodyDict{M, SpatialAcceleration{T}}
     jointwrenches::BodyDict{M, Wrench{T}} # TODO: index by joint tree index?
-    contact_state_derivatives::BodyDict{M, Vector{DefaultSoftContactStateDeriv{T}}}
+    contact_state_derivatives::BodyDict{M, Vector{Vector{DefaultSoftContactStateDeriv{T}}}}
 
     # see solve_dynamics! for meaning of the following variables:
     L::Matrix{T} # lower triangular
@@ -52,17 +52,17 @@ type DynamicsResult{M<:Number, T<:Number}
         totalwrenches = BodyDict(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
         accelerations = BodyDict(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
         jointwrenches = BodyDict(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-        contact_state_derivatives = BodyDict(b => Vector{DefaultSoftContactStateDeriv{T}}() for b in bodies(mechanism))
-        start = 1
-        for body in bodies(mechanism)
-            derivs = DefaultSoftContactStateDeriv{T}[]
-            for point in contact_points(body)
-                model = contact_model(point)
-                ṡ_part = view(ṡ, start : start + num_states(model) - 1)
-                push!(derivs, SoftContactStateDeriv(model, ṡ_part, root_frame(mechanism)))
-                start += num_states(model)
-            end
-            contact_state_derivatives[body] = derivs
+        contact_state_derivs = BodyDict(b => Vector{Vector{DefaultSoftContactStateDeriv{T}}}() for b in bodies(mechanism))
+        startind = 1
+        for body in bodies(mechanism), point in contact_points(body)
+            model = contact_model(point)
+            n = num_states(model)
+            push!(contact_state_derivs[body], collect(begin
+                ṡ_part = view(ṡ, startind : startind + n - 1)
+                contact_state_deriv = SoftContactStateDeriv(model, ṡ_part, root_frame(mechanism))
+                startind += n
+                contact_state_deriv
+            end for j = 1 : length(mechanism.environment)))
         end
 
         L = Matrix{T}(nv, nv)
@@ -71,7 +71,7 @@ type DynamicsResult{M<:Number, T<:Number}
         Y = Matrix{T}(nconstraints, nv)
 
         new{M, T}(mechanism, massmatrix, dynamicsbias, constraintjacobian, constraintbias,
-            v̇, λ, ṡ, contactwrenches, totalwrenches, accelerations, jointwrenches, contact_state_derivatives,
+            v̇, λ, ṡ, contactwrenches, totalwrenches, accelerations, jointwrenches, contact_state_derivs,
             L, A, z, Y)
     end
 end

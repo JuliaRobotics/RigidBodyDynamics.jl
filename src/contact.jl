@@ -244,5 +244,6 @@ type ContactEnvironment{T}
 end
 
 Base.push!(environment::ContactEnvironment, halfspace::HalfSpace3D) = push!(environment.halfspaces, halfspace)
+Base.length(environment::ContactEnvironment) = length(environment.halfspaces)
 
 end
