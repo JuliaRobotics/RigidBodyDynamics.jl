@@ -144,12 +144,8 @@ immutable UnsafeFastDict{I, K, V} <: Associative{K, V}
         new{I, K, V}(keys, values)
     end
 end
-function UnsafeFastDict(kv, indexfun)
-    T = Core.Inference.return_type(first, Tuple{typeof(kv)})
-    K = T.parameters[1]
-    V = T.parameters[2]
-    UnsafeFastDict{indexfun, K, V}(kv)
-end
+UnsafeFastDict{K, V}(kv, ::Type{Pair{K, V}}, indexfun) = UnsafeFastDict{indexfun, K, V}(kv)
+UnsafeFastDict(kv, indexfun) = UnsafeFastDict(kv, Core.Inference.return_type(first, Tuple{typeof(kv)}), indexfun)
 
 # Iteration
 Base.start(d::UnsafeFastDict) = 1
