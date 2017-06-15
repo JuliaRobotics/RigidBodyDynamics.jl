@@ -101,7 +101,7 @@ macro rtti_dispatch(typeTuple, signature)
     :($(esc(ret)))
 end
 
-@static if VERSION >= v"0.6-"
+@static if VERSION >= v"0.6.0-dev.2068"
     @compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
 else
     @compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
