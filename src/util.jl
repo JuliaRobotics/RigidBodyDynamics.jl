@@ -1,3 +1,5 @@
+include("type_sorted_collection.jl")
+
 immutable ConstVector{T} <: AbstractVector{T}
     val::T
     length::Int64
