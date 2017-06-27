@@ -153,7 +153,7 @@ immutable UnsafeFastDict{I, K, V} <: Associative{K, V}
     function UnsafeFastDict{I}(kv) where {I}
         T = Core.Inference.return_type(first, Tuple{typeof(kv)})
         K = Core.Inference.return_type(first, Tuple{T})
-        V = Core.Inference.return_type(first, Tuple{T})
+        V = Core.Inference.return_type(last, Tuple{T})
         UnsafeFastDict{I, K, V}(kv)
     end
 end
