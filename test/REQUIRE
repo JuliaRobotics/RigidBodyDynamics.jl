@@ -1,4 +1,4 @@
-ForwardDiff 0.3.1
+ForwardDiff 0.4.0
 BenchmarkTools 0.0.5
 SymPy 0.5.1
 NBInclude 1.1.0
