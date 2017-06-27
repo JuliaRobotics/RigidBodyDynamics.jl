@@ -99,7 +99,7 @@ after the joint to the frame before the joint for joint configuration vector ``q
 """
 function joint_transform(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    _joint_transform(joint.jointType, frame_after(joint), frame_before(joint), q)
+    joint_transform(joint.jointType, frame_after(joint), frame_before(joint), q)
 end
 
 """
@@ -114,7 +114,7 @@ the frame after the joint, which is attached to the joint's successor.
 """
 function motion_subspace(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    _motion_subspace(joint.jointType, frame_after(joint), frame_before(joint), q)
+    motion_subspace(joint.jointType, frame_after(joint), frame_before(joint), q)
 end
 
 """
@@ -134,7 +134,7 @@ The constraint wrench subspace is orthogonal to the motion subspace.
 function constraint_wrench_subspace(joint::Joint, jointTransform::Transform3D)
     @framecheck jointTransform.from frame_after(joint)
     @framecheck jointTransform.to frame_before(joint)
-    _constraint_wrench_subspace(joint.jointType, jointTransform)
+    constraint_wrench_subspace(joint.jointType, jointTransform)
 end
 
 """
@@ -147,7 +147,7 @@ in configuration ``q`` and at velocity ``v``, when the joint acceleration
 function bias_acceleration(joint::Joint, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    _bias_acceleration(joint.jointType, frame_after(joint), frame_before(joint), q, v)
+    bias_acceleration(joint.jointType, frame_after(joint), frame_before(joint), q, v)
 end
 
 """
@@ -156,7 +156,7 @@ $(SIGNATURES)
 Whether the joint's motion subspace and constraint wrench subspace depend on
 ``q``.
 """
-has_fixed_subspaces(joint::Joint) = _has_fixed_subspaces(joint.jointType)
+has_fixed_subspaces(joint::Joint) = has_fixed_subspaces(joint.jointType)
 
 """
 $(SIGNATURES)
@@ -172,7 +172,7 @@ function configuration_derivative_to_velocity!(joint::Joint, v::AbstractVector, 
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q̇)
-    _configuration_derivative_to_velocity!(joint.jointType, v, q, q̇)
+    configuration_derivative_to_velocity!(joint.jointType, v, q, q̇)
 end
 
 """
@@ -189,7 +189,7 @@ function velocity_to_configuration_derivative!(joint::Joint, q̇::AbstractVector
     @boundscheck check_num_positions(joint, q̇)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    _velocity_to_configuration_derivative!(joint.jointType, q̇, q, v)
+    velocity_to_configuration_derivative!(joint.jointType, q̇, q, v)
 end
 
 """
@@ -200,7 +200,7 @@ transform.
 """
 function zero_configuration!(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    _zero_configuration!(joint.jointType, q)
+    zero_configuration!(joint.jointType, q)
 end
 
 """
@@ -211,7 +211,7 @@ joint type.
 """
 function rand_configuration!(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    _rand_configuration!(joint.jointType, q)
+    rand_configuration!(joint.jointType, q)
 end
 
 """
@@ -225,7 +225,7 @@ Note that this is the same as `Twist(motion_subspace(joint, q), v)`.
 function joint_twist(joint::Joint, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    _joint_twist(joint.jointType, frame_after(joint), frame_before(joint), q, v)
+    joint_twist(joint.jointType, frame_after(joint), frame_before(joint), q, v)
 end
 
 """
@@ -238,7 +238,7 @@ function joint_torque!(joint::Joint, τ::AbstractVector, q::AbstractVector, join
     @boundscheck check_num_velocities(joint, τ)
     @boundscheck check_num_positions(joint, q)
     @framecheck(joint_wrench.frame, frame_after(joint))
-    _joint_torque!(joint.jointType, τ, q, joint_wrench)
+    joint_torque!(joint.jointType, τ, q, joint_wrench)
 end
 
 """
@@ -266,7 +266,7 @@ function local_coordinates!(joint::Joint,
     @boundscheck check_num_positions(joint, q0)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    _local_coordinates!(joint.jointType, ϕ, ϕ̇, q0, q, v)
+    local_coordinates!(joint.jointType, ϕ, ϕ̇, q0, q, v)
 end
 
 """
@@ -282,5 +282,5 @@ function global_coordinates!(joint::Joint, q::AbstractVector, q0::AbstractVector
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q0)
     @boundscheck check_num_velocities(joint, ϕ)
-    _global_coordinates!(joint.jointType, q, q0, ϕ)
+    global_coordinates!(joint.jointType, q, q0, ϕ)
 end
