@@ -48,4 +48,22 @@ import RigidBodyDynamics: hat, rotation_vector_rate, colwise
         show(DevNull, d)
         @test all(keys(d) .== 1 : 3)
     end
+
+    @testset "TypeSortedCollection" begin
+        x = Pair[3. => 1; 4 => 2; 5 => 3]
+        sorted = RigidBodyDynamics.TypeSortedCollection{last}(x)
+        index = RigidBodyDynamics.indexfun(sorted)
+        @test index == last
+        @test length(sorted) == length(x)
+
+        f(x::Pair{Int64, Int64}) = 3 * first(x)
+        f(x::Pair{Float64, Int64}) = round(Int64, first(x) / 2)
+        results = Vector{Int64}(length(sorted))
+
+        map!(f, results, sorted)
+
+        for element in x
+            @test results[index(element)] == f(element)
+        end
+    end
 end
