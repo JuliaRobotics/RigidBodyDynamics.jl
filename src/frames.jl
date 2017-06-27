@@ -83,7 +83,7 @@ end
 @inline Transform3D{A}(from::CartesianFrame3D, to::CartesianFrame3D, mat::A) = Transform3D{A}(from, to, mat)
 
 Base.eltype{A}(::Type{Transform3D{A}}) = eltype(A)
-@compat const Transform3DS{T} = Transform3D{SMatrix{4, 4, T, 16}}
+const Transform3DS{T} = Transform3D{SMatrix{4, 4, T, 16}}
 
 @inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3}, trans::SVector{3})
     T = promote_type(eltype(typeof(rot)), eltype(typeof(trans)))

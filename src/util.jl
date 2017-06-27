@@ -4,7 +4,7 @@ immutable ConstVector{T} <: AbstractVector{T}
 end
 Base.size(A::ConstVector) = (A.length, )
 Base.getindex{T}(A::ConstVector{T}, i::Int) = (@boundscheck checkbounds(A, i); A.val)
-@compat Base.IndexStyle{T}(::Type{ConstVector{T}}) = IndexLinear()
+Base.IndexStyle{T}(::Type{ConstVector{T}}) = IndexLinear()
 
 # associative type that signifies an empty dictionary and does not allocate memory
 immutable NullDict{K, V} <: Associative{K, V}
@@ -14,7 +14,7 @@ Base.haskey(::NullDict, k) = false
 
 # type of a view of a vector
 # TODO: a bit too specific
-@compat const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true}
+const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true}
 
 
 """
@@ -35,7 +35,7 @@ end
 @inline Base.getindex(v::UnsafeVectorView, idx) = unsafe_load(v.ptr, idx + v.offset)
 @inline Base.setindex!(v::UnsafeVectorView, value, idx) = unsafe_store!(v.ptr, value, idx + v.offset)
 @inline Base.length(v::UnsafeVectorView) = v.len
-@compat Base.IndexStyle{V <: UnsafeVectorView}(::Type{V}) = IndexLinear()
+Base.IndexStyle{V <: UnsafeVectorView}(::Type{V}) = IndexLinear()
 
 """
 UnsafeVectorView only works for isbits types. For other types, we're already
@@ -101,14 +101,9 @@ macro rtti_dispatch(typeTuple, signature)
     :($(esc(ret)))
 end
 
-@static if VERSION >= v"0.6.0-dev.2068"
-    @compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
-else
-    @compat const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Colon,UnitRange{Int64}},true}
-end
+const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
 
-
-@compat const RotMatrix3{T} = RotMatrix{3, T, 9}
+const RotMatrix3{T} = RotMatrix{3, T, 9}
 
 # TODO: use fusing broadcast instead of these functions in 0.6, where they don't allocate.
 function sub!(out, a, b)

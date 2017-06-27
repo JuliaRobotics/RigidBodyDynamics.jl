@@ -1,7 +1,5 @@
 module Graphs
 
-using Compat
-
 export
     DirectedGraph,
     SpanningTree,
@@ -65,7 +63,7 @@ for typename in (:Edge, :Vertex)
     end
 end
 
-@compat abstract type AbstractGraph{V, E} end
+abstract type AbstractGraph{V, E} end
 num_vertices(g::AbstractGraph) = length(vertices(g))
 num_edges(g::AbstractGraph) = length(edges(g))
 out_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (target(e, g) for e in out_edges(vertex, g))

@@ -7,10 +7,8 @@ using StaticArrays
 using Rotations
 using LightXML
 using DocStringExtensions
-using Compat
 import Base: *, +, /, -, \
-import Compat.Iterators: filter
-import Compat.Iterators: flatten
+import Base.Iterators: filter, flatten
 
 export
     # types

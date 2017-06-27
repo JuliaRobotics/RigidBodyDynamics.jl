@@ -572,7 +572,7 @@ and the application point should be expressed in the same frame.
 Wrench(application_point::Point3D, force::FreeVector3D) = Wrench(application_point × force, force)
 
 # WrenchSubspace is the return type of e.g. constraint_wrench_subspace(::Joint, ...)
-@compat const WrenchSubspace{T} = WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
+const WrenchSubspace{T} = WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
 function WrenchSubspace(frame::CartesianFrame3D, angular, linear)
     WrenchMatrix(frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end
@@ -584,7 +584,7 @@ function GeometricJacobian{A<:AbstractMatrix}(body::CartesianFrame3D, base::Cart
 end
 
 # MotionSubspace is the return type of motion_subspace(::Joint, ...)
-@compat const MotionSubspace{T} = GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
+const MotionSubspace{T} = GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
 function MotionSubspace(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular, linear)
     GeometricJacobian(body, base, frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end
