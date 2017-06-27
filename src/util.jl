@@ -126,7 +126,8 @@ immutable UnsafeFastDict{I, K, V} <: Associative{K, V}
     keys::Vector{K}
     values::Vector{V}
 
-    function (::Type{UnsafeFastDict{I, K, V}}){I, K, V}(kv)
+    # specify index function, key type, and value type
+    function UnsafeFastDict{I, K, V}(kv) where {I, K, V}
         keys = K[]
         values = V[]
         for (k, v) in kv
@@ -138,11 +139,24 @@ immutable UnsafeFastDict{I, K, V} <: Associative{K, V}
             keys[index] = k
             values[index] = v
         end
-        new{I, K, V}(keys, values)
+        new(keys, values)
+    end
+
+    # infer value type
+    function UnsafeFastDict{I, K}(kv) where {I, K}
+        T = Core.Inference.return_type(first, Tuple{typeof(kv)})
+        V = Core.Inference.return_type(last, Tuple{T})
+        UnsafeFastDict{I, K, V}(kv)
+    end
+
+    # infer key type and value type
+    function UnsafeFastDict{I}(kv) where {I}
+        T = Core.Inference.return_type(first, Tuple{typeof(kv)})
+        K = Core.Inference.return_type(first, Tuple{T})
+        V = Core.Inference.return_type(first, Tuple{T})
+        UnsafeFastDict{I, K, V}(kv)
     end
 end
-UnsafeFastDict{K, V}(kv, ::Type{Pair{K, V}}, indexfun) = UnsafeFastDict{indexfun, K, V}(kv)
-UnsafeFastDict(kv, indexfun) = UnsafeFastDict(kv, Core.Inference.return_type(first, Tuple{typeof(kv)}), indexfun)
 
 # Iteration
 Base.start(d::UnsafeFastDict) = 1
