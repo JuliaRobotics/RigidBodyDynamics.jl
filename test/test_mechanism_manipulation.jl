@@ -124,7 +124,7 @@ end
             # create random floating mechanism
             jointTypes = [[Prismatic{Float64} for i = 1 : 10]; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
             shuffle!(jointTypes)
-            mechanism1 = rand_floating_tree_mechanism(Float64, jointTypes)
+            mechanism1 = rand_floating_tree_mechanism(Float64, jointTypes...)
 
             # random state
             x1 = MechanismState(Float64, mechanism1)
