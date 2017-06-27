@@ -9,7 +9,8 @@ function create_floating_atlas()
     urdf = RigidBodyDynamics.cached_download(url, "atlas.urdf")
     atlas = parse_urdf(ScalarType, urdf)
     for joint in out_joints(root_body(atlas), atlas)
-        joint.jointType = QuaternionFloating{ScalarType}()
+        floatingjoint = Joint(joint.name, frame_before(joint), frame_after(joint), QuaternionFloating{ScalarType}())
+        replace_joint!(atlas, joint, floatingjoint)
     end
     atlas
 end

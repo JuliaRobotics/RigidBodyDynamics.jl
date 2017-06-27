@@ -149,6 +149,17 @@ function remove_joint!(mechanism::Mechanism, joint::Joint, spanning_tree_next_ed
     istreejoint && rebuild_spanning_tree!(mechanism, spanning_tree_next_edge)
 end
 
+function replace_joint!(mechanism::Mechanism, oldjoint::Joint, newjoint::Joint)
+    @assert frame_before(newjoint) == frame_before(oldjoint)
+    @assert frame_after(newjoint) == frame_after(oldjoint)
+    if oldjoint ∈ tree_joints(mechanism)
+        replace_edge!(mechanism.tree, oldjoint, newjoint)
+    else
+        replace_edge!(mechanism.graph, oldjoint, newjoint)
+    end
+    nothing
+end
+
 Base.@deprecate(
 reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
     parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D,

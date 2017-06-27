@@ -96,6 +96,7 @@ export
     attach!,
     reattach!, # deprecated
     remove_joint!,
+    replace_joint!,
     maximal_coordinates,
     submechanism,
     remove_fixed_joints!, # deprecated
