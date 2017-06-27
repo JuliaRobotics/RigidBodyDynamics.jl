@@ -56,7 +56,7 @@ $(SIGNATURES)
 
 Return the `RigidBody`s that are part of the `Mechanism` as an iterable collection.
 """
-bodies{T}(mechanism::Mechanism{T}) = vertices(mechanism.graph)
+bodies(mechanism::Mechanism) = vertices(mechanism.graph)
 
 """
 $(SIGNATURES)
