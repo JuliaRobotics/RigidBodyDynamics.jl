@@ -77,7 +77,7 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         bias_accelerations_wrt_world = BodyDict{M}(b => CacheElement{SpatialAcceleration{C}}() for b in bodies(mechanism))
         inertias = BodyDict{M}(b => CacheElement{SpatialInertia{C}}() for b in bodies(mechanism))
         crb_inertias = BodyDict{M}(b => CacheElement{SpatialInertia{C}}() for b in bodies(mechanism))
-        contact_states = BodyDict{M}(b => Vector{Vector{DefaultSoftContactState{C}}}() for b in bodies(mechanism))
+        contact_states = BodyDict{M, Vector{Vector{DefaultSoftContactState{C}}}}(b => Vector{Vector{DefaultSoftContactState{C}}}() for b in bodies(mechanism))
         startind = 1
         for body in bodies(mechanism), point in contact_points(body)
             model = contact_model(point)
