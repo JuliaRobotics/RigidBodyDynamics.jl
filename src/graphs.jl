@@ -336,7 +336,7 @@ function path{V, E}(src::V, target::V, tree::SpanningTree{V, E})
         end
     end
     reverse!(lca_to_target)
-    directed_edges = collect(e => :up for e in source_to_lca)
+    directed_edges = collect(Pair{E, Symbol}, e => :up for e in source_to_lca)
     append!(directed_edges, e => :down for e in lca_to_target)
     TreePath(src, target, directed_edges)
 end
