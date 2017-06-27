@@ -10,12 +10,12 @@ end
 
 mutable struct TypeSortedCollection{Indexfun, D<:Tuple{Vararg{Vector{T} where T}}}
     data::D
-end
 
-function TypeSortedCollection(indexfun, x)
-    dict = sort_by_type(x)
-    data = tuple(values(dict)...)
-    TypeSortedCollection{indexfun, typeof(data)}(data)
+    function TypeSortedCollection{Indexfun}(x) where {Indexfun}
+        dict = sort_by_type(x)
+        data = tuple(values(dict)...)
+        new{Indexfun, typeof(data)}(data)
+    end
 end
 
 Base.length(x::TypeSortedCollection) = sum(length, x.data)

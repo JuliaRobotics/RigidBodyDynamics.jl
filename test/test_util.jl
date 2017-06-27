@@ -51,7 +51,7 @@ import RigidBodyDynamics: hat, rotation_vector_rate, colwise
 
     @testset "TypeSortedCollection" begin
         x = Pair[3. => 1; 4 => 2; 5 => 3]
-        sorted = RigidBodyDynamics.TypeSortedCollection(last, x)
+        sorted = RigidBodyDynamics.TypeSortedCollection{last}(x)
         index = RigidBodyDynamics.indexfun(sorted)
         @test index == last
         @test length(sorted) == length(x)
