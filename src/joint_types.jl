@@ -1,7 +1,7 @@
 # TODO: put in separate module
 
 abstract type JointType{T<:Number} end
-Base.eltype{T}(::Union{JointType{T}, Type{JointType{T}}}) = T
+Base.eltype{T}(::Type{JointType{T}}) = T
 
 # Default implementations
 flip_direction{T}(jt::JointType{T}) = deepcopy(jt)
