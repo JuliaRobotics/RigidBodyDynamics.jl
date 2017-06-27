@@ -2,7 +2,6 @@ module Contact
 
 using RigidBodyDynamics # TODO: modularize more
 using StaticArrays
-using Compat
 
 import RigidBodyDynamics: VectorSegment
 
@@ -205,9 +204,9 @@ function dynamics!(ẋ::ViscoelasticCoulombStateDeriv, model::ViscoelasticCoulom
     ẋ.deriv.v .= (-(k * x + ftangential) / b).v
 end
 
-@compat const DefaultContactPoint{T} = ContactPoint{T,SoftContactModel{HuntCrossleyModel{T},ViscoelasticCoulombModel{T}}}
-@compat const DefaultSoftContactState{T} = SoftContactState{Void, ViscoelasticCoulombState{VectorSegment{T}}}
-@compat const DefaultSoftContactStateDeriv{T} = SoftContactStateDeriv{Void, ViscoelasticCoulombStateDeriv{VectorSegment{T}}}
+const DefaultContactPoint{T} = ContactPoint{T,SoftContactModel{HuntCrossleyModel{T},ViscoelasticCoulombModel{T}}}
+const DefaultSoftContactState{T} = SoftContactState{Void, ViscoelasticCoulombState{VectorSegment{T}}}
+const DefaultSoftContactStateDeriv{T} = SoftContactStateDeriv{Void, ViscoelasticCoulombStateDeriv{VectorSegment{T}}}
 
 
 # Contact detection

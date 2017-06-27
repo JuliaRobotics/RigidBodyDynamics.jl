@@ -1,7 +1,7 @@
-@compat const BodyDict{T, V} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}, V}
+const BodyDict{T, V} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}, V}
 BodyDict(kv) = UnsafeFastDict(kv, Graphs.vertex_index) # TODO: handle this in UnsafeFastDict
 
-@compat const JointDict{T, V} = UnsafeFastDict{Graphs.edge_index, Joint{T}, V}
+const JointDict{T, V} = UnsafeFastDict{Graphs.edge_index, Joint{T}, V}
 JointDict(kv) = UnsafeFastDict(kv, Graphs.edge_index) # TODO: handle this in UnsafeFastDict
 
 """

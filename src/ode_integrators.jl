@@ -3,7 +3,6 @@ module OdeIntegrators
 using RigidBodyDynamics
 using StaticArrays
 using DocStringExtensions
-using Compat
 
 export runge_kutta_4,
     MuntheKaasIntegrator,
@@ -63,7 +62,7 @@ visualizing, etc.). Subtypes must implement:
 * `initialize(sink, state)`: called with the initial state when integration begins.
 * `process(sink, t, state)`: called at every integration time step with the current state and time.
 """
-@compat abstract type OdeResultsSink end
+abstract type OdeResultsSink end
 initialize(::OdeResultsSink, state) = error("concrete subtypes must implement")
 process(::OdeResultsSink, t, state) = error("concrete subtypes must implement")
 
