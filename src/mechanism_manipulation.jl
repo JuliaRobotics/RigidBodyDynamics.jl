@@ -269,34 +269,36 @@ $(SIGNATURES)
 Create a random tree `Mechanism` with the given joint types. Each new body is
 attached to a parent selected using the `parentselector` function.
 """
-function rand_tree_mechanism{T}(::Type{T}, parentselector::Function, jointTypes...)
+function rand_tree_mechanism(::Type{T}, parentselector::Function, jointtypes::Vararg{Type{<:JointType{T}}}) where {T}
     parentbody = RigidBody{T}("world")
     mechanism = Mechanism(parentbody)
-    for i = 1 : length(jointTypes)
-        @assert jointTypes[i] <: JointType{T}
-        joint = Joint("joint$i", rand(jointTypes[i]))
-        jointToParentBody = rand(Transform3DS{T}, frame_before(joint), default_frame(parentbody))
+    for (i, jointtype) in enumerate(jointtypes)
+        joint = Joint("joint$i", rand(jointtype))
+        joint_to_parent_body = rand(Transform3DS{T}, frame_before(joint), default_frame(parentbody))
         body = RigidBody(rand(SpatialInertia{T}, CartesianFrame3D("body$i")))
         body_to_joint = eye(Transform3DS{T}, default_frame(body), frame_after(joint))
-        attach!(mechanism, parentbody, joint, jointToParentBody, body, body_to_joint)
+        attach!(mechanism, parentbody, joint, joint_to_parent_body, body, body_to_joint)
         parentbody = parentselector(mechanism)
     end
     return mechanism
 end
+rand_tree_mechanism(parentselector::Function, jointtypes::Vararg{Type{<:JointType{T}}}) where {T} = rand_tree_mechanism(T, parentselector, jointtypes...)
 
 """
 $(SIGNATURES)
 
 Create a random chain `Mechanism` with the given joint types.
 """
-rand_chain_mechanism{T}(t::Type{T}, jointTypes...) = rand_tree_mechanism(t, mechanism::Mechanism -> last(bodies(mechanism)), jointTypes...)
+rand_chain_mechanism(::Type{T}, jointtypes::Vararg{Type{<:JointType{T}}}) where {T} = rand_tree_mechanism(T, mechanism::Mechanism -> last(bodies(mechanism)), jointtypes...)
+rand_chain_mechanism(jointtypes::Vararg{Type{<:JointType{T}}}) where {T} = rand_chain_mechanism(T, jointtypes...)
 
 """
 $(SIGNATURES)
 
 Create a random tree `Mechanism`.
 """
-rand_tree_mechanism{T}(t::Type{T}, jointTypes...) = rand_tree_mechanism(t, mechanism::Mechanism -> rand(bodies(mechanism)), jointTypes...)
+rand_tree_mechanism(::Type{T}, jointtypes::Vararg{Type{<:JointType{T}}}) where {T} = rand_tree_mechanism(T, mechanism::Mechanism -> rand(bodies(mechanism)), jointtypes...)
+rand_tree_mechanism(jointtypes::Vararg{Type{<:JointType{T}}}) where {T} = rand_tree_mechanism(T, jointtypes...)
 
 """
 $(SIGNATURES)
@@ -304,10 +306,11 @@ $(SIGNATURES)
 Create a random tree `Mechanism`, with a quaternion floating
 joint as the first joint (between the root body and the first non-root body).
 """
-function rand_floating_tree_mechanism{T}(t::Type{T}, nonFloatingJointTypes...)
+function rand_floating_tree_mechanism(::Type{T}, nonfloatingjointtypes::Vararg{Type{<:JointType{T}}}) where {T}
     parentselector = (mechanism::Mechanism) -> begin
         only_root = length(bodies(mechanism)) == 1
         only_root ? root_body(mechanism) : rand(collect(non_root_bodies(mechanism)))
     end
-    rand_tree_mechanism(t, parentselector, [QuaternionFloating{T}; nonFloatingJointTypes...]...)
+    rand_tree_mechanism(parentselector, QuaternionFloating{T}, nonfloatingjointtypes...)
 end
+rand_floating_tree_mechanism(nonfloatingjointtypes::Vararg{Type{<:JointType{T}}}) where {T} = rand_floating_tree_mechanism(T, nonfloatingjointtypes...)
