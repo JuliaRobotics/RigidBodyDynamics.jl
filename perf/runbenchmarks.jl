@@ -36,7 +36,7 @@ function create_benchmark_suite()
         inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalwrenches),
         setup = begin
             v̇ = rand(num_velocities($mechanism))
-            externalwrenches = RigidBodyDynamics.BodyDict(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
+            externalwrenches = RigidBodyDynamics.BodyDict{ScalarType}(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
             rand!($state)
         end
     )
@@ -44,7 +44,7 @@ function create_benchmark_suite()
         setup = begin
             rand!($state)
             τ = rand(num_velocities($mechanism))
-            externalwrenches = RigidBodyDynamics.BodyDict(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
+            externalwrenches = RigidBodyDynamics.BodyDict{ScalarType}(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
         end
     )
     suite["momentum_matrix"] = @benchmarkable(momentum_matrix!($mat, $state), setup = rand!($state))

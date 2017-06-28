@@ -1,8 +1,5 @@
-const BodyDict{T, V} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}, V}
-BodyDict(kv) = UnsafeFastDict(kv, Graphs.vertex_index) # TODO: handle this in UnsafeFastDict
-
-const JointDict{T, V} = UnsafeFastDict{Graphs.edge_index, Joint{T}, V}
-JointDict(kv) = UnsafeFastDict(kv, Graphs.edge_index) # TODO: handle this in UnsafeFastDict
+const BodyDict{T} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}}
+const JointDict{T} = UnsafeFastDict{Graphs.edge_index, Joint{T}}
 
 """
 $(TYPEDEF)
@@ -68,18 +65,18 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         end for joint in tree_joints(mechanism))
 
         # joint-specific
-        joint_transforms = JointDict(j => CacheElement{Transform3DS{C}}() for j in tree_joints(mechanism))
-        joint_twists = JointDict(j => CacheElement{Twist{C}}() for j in tree_joints(mechanism))
-        joint_bias_accelerations = JointDict(j => CacheElement{SpatialAcceleration{C}}() for j in tree_joints(mechanism))
-        motion_subspaces = JointDict(j => CacheElement{MotionSubspace{C}}() for j in tree_joints(mechanism))
-        motion_subspaces_in_world = JointDict(j => CacheElement{MotionSubspace{C}}() for j in tree_joints(mechanism))
+        joint_transforms = JointDict{M}(j => CacheElement{Transform3DS{C}}() for j in tree_joints(mechanism))
+        joint_twists = JointDict{M}(j => CacheElement{Twist{C}}() for j in tree_joints(mechanism))
+        joint_bias_accelerations = JointDict{M}(j => CacheElement{SpatialAcceleration{C}}() for j in tree_joints(mechanism))
+        motion_subspaces = JointDict{M}(j => CacheElement{MotionSubspace{C}}() for j in tree_joints(mechanism))
+        motion_subspaces_in_world = JointDict{M}(j => CacheElement{MotionSubspace{C}}() for j in tree_joints(mechanism))
 
         # body-specific
-        transforms_to_world = BodyDict(b => CacheElement{Transform3DS{C}}() for b in bodies(mechanism))
-        twists_wrt_world = BodyDict(b => CacheElement{Twist{C}}() for b in bodies(mechanism))
-        bias_accelerations_wrt_world = BodyDict(b => CacheElement{SpatialAcceleration{C}}() for b in bodies(mechanism))
-        inertias = BodyDict(b => CacheElement{SpatialInertia{C}}() for b in bodies(mechanism))
-        crb_inertias = BodyDict(b => CacheElement{SpatialInertia{C}}() for b in bodies(mechanism))
+        transforms_to_world = BodyDict{M}(b => CacheElement{Transform3DS{C}}() for b in bodies(mechanism))
+        twists_wrt_world = BodyDict{M}(b => CacheElement{Twist{C}}() for b in bodies(mechanism))
+        bias_accelerations_wrt_world = BodyDict{M}(b => CacheElement{SpatialAcceleration{C}}() for b in bodies(mechanism))
+        inertias = BodyDict{M}(b => CacheElement{SpatialInertia{C}}() for b in bodies(mechanism))
+        crb_inertias = BodyDict{M}(b => CacheElement{SpatialInertia{C}}() for b in bodies(mechanism))
         contact_states = BodyDict{M, Vector{Vector{DefaultSoftContactState{C}}}}(b => Vector{Vector{DefaultSoftContactState{C}}}() for b in bodies(mechanism))
         startind = 1
         for body in bodies(mechanism), point in contact_points(body)
