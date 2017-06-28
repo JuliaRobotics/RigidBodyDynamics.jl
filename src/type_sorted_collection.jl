@@ -8,33 +8,32 @@ function sort_by_type(A)
     ret
 end
 
-mutable struct TypeSortedCollection{Indexfun, D<:Tuple{Vararg{Vector{T} where T}}}
+struct TypeSortedCollection{I, D<:Tuple{Vararg{Vector{T} where T}}}
+    indexfun::I
     data::D
 
-    function TypeSortedCollection{Indexfun}(x) where {Indexfun}
+    function TypeSortedCollection(indexfun::I, x) where {I}
         dict = sort_by_type(x)
         data = tuple(values(dict)...)
-        new{Indexfun, typeof(data)}(data)
+        new{I, typeof(data)}(indexfun, data)
     end
 end
 
 Base.length(x::TypeSortedCollection) = sum(length, x.data)
-indexfun(x::TypeSortedCollection{I}) where {I} = I
+indexfun(x::TypeSortedCollection) = x.indexfun
 
-@generated function Base.map!(f, dest::AbstractVector, tv::TypeSortedCollection{Indexfun, D}) where {Indexfun, D}
-    n = nfields(D)
-    expr = :()
-    for i = 1 : n
-        expr = quote
-            $expr
+@generated function Base.map!(f, dest::AbstractVector, tv::TypeSortedCollection{I, D}, As...) where {I, D}
+    expr = Expr(:block)
+    push!(expr.args, :(Base.@_inline_meta))
+    for i = 1 : nfields(D)
+        push!(expr.args, quote
             vec = tv.data[$i]
             for element in vec
-                dest[Indexfun(element)] = f(element)
+                index = tv.indexfun(element)
+                dest[index] = f(element, getindex.(As, index)...)
             end
-        end
+        end)
     end
-    quote
-        $expr
-        return nothing
-    end
+    push!(expr.args, :(return nothing))
+    expr
 end
