@@ -28,27 +28,28 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
     # joint-specific
     qs::JointDict{M, VectorSegment{X}}
     vs::JointDict{M, VectorSegment{X}}
-    joint_transforms::JointDict{M, CacheElement{Transform3DS{C}}}
-    joint_twists::JointDict{M, CacheElement{Twist{C}}}
-    joint_bias_accelerations::JointDict{M, CacheElement{SpatialAcceleration{C}}}
-    motion_subspaces::JointDict{M, CacheElement{MotionSubspace{C}}}
-    motion_subspaces_in_world::JointDict{M, CacheElement{MotionSubspace{C}}} # TODO: should this be here?
+    joint_transforms::CacheElement{JointDict{M, Transform3DS{C}}}
+    joint_twists::CacheElement{JointDict{M, Twist{C}}}
+    joint_bias_accelerations::CacheElement{JointDict{M, SpatialAcceleration{C}}}
+    motion_subspaces::CacheElement{JointDict{M, MotionSubspace{C}}}
+    motion_subspaces_in_world::CacheElement{JointDict{M, MotionSubspace{C}}} # TODO: should this be here?
 
     # body-specific
-    transforms_to_world::BodyDict{M, CacheElement{Transform3DS{C}}}
-    twists_wrt_world::BodyDict{M, CacheElement{Twist{C}}}
-    bias_accelerations_wrt_world::BodyDict{M, CacheElement{SpatialAcceleration{C}}}
-    inertias::BodyDict{M, CacheElement{SpatialInertia{C}}}
-    crb_inertias::BodyDict{M, CacheElement{SpatialInertia{C}}}
+    transforms_to_world::CacheElement{BodyDict{M, Transform3DS{C}}} # TODO: rename: transforms_to_root
+    twists_wrt_world::CacheElement{BodyDict{M, Twist{C}}}
+    bias_accelerations_wrt_world::CacheElement{BodyDict{M, SpatialAcceleration{C}}}
+    inertias::CacheElement{BodyDict{M, SpatialInertia{C}}}
+    crb_inertias::CacheElement{BodyDict{M, SpatialInertia{C}}}
     contact_states::BodyDict{M, Vector{Vector{DefaultSoftContactState{X}}}} # TODO: consider moving to separate type
 
-    function (::Type{MechanismState{X, M, C}}){X<:Number, M<:Number, C<:Number}(mechanism::Mechanism{M})
-        nb = num_bodies(mechanism)
+    function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
+        C = promote_type(X, M)
 
         q = Vector{X}(num_positions(mechanism))
         v = zeros(X, num_velocities(mechanism))
         s = zeros(X, num_additional_states(mechanism))
 
+        # TODO: function for this:
         qstart = 1
         qs = JointDict{M, VectorSegment{X}}(joint => begin
             qjoint = view(q, qstart : qstart + num_positions(joint) - 1)
@@ -65,18 +66,18 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         end for joint in tree_joints(mechanism))
 
         # joint-specific
-        joint_transforms = JointDict{M}(j => CacheElement{Transform3DS{C}}() for j in tree_joints(mechanism))
-        joint_twists = JointDict{M}(j => CacheElement{Twist{C}}() for j in tree_joints(mechanism))
-        joint_bias_accelerations = JointDict{M}(j => CacheElement{SpatialAcceleration{C}}() for j in tree_joints(mechanism))
-        motion_subspaces = JointDict{M}(j => CacheElement{MotionSubspace{C}}() for j in tree_joints(mechanism))
-        motion_subspaces_in_world = JointDict{M}(j => CacheElement{MotionSubspace{C}}() for j in tree_joints(mechanism))
+        joint_transforms = CacheElement(JointDict{M, Transform3DS{C}}(tree_joints(mechanism)))
+        joint_twists = CacheElement(JointDict{M, Twist{C}}(tree_joints(mechanism)))
+        joint_bias_accelerations = CacheElement(JointDict{M, SpatialAcceleration{C}}(tree_joints(mechanism)))
+        motion_subspaces = CacheElement(JointDict{M, MotionSubspace{C}}(tree_joints(mechanism)))
+        motion_subspaces_in_world = CacheElement(JointDict{M, MotionSubspace{C}}(tree_joints(mechanism)))
 
         # body-specific
-        transforms_to_world = BodyDict{M}(b => CacheElement{Transform3DS{C}}() for b in bodies(mechanism))
-        twists_wrt_world = BodyDict{M}(b => CacheElement{Twist{C}}() for b in bodies(mechanism))
-        bias_accelerations_wrt_world = BodyDict{M}(b => CacheElement{SpatialAcceleration{C}}() for b in bodies(mechanism))
-        inertias = BodyDict{M}(b => CacheElement{SpatialInertia{C}}() for b in bodies(mechanism))
-        crb_inertias = BodyDict{M}(b => CacheElement{SpatialInertia{C}}() for b in bodies(mechanism))
+        transforms_to_world = CacheElement(BodyDict{M, Transform3DS{C}}(bodies(mechanism)))
+        twists_wrt_world = CacheElement(BodyDict{M, Twist{C}}(bodies(mechanism)))
+        bias_accelerations_wrt_world = CacheElement(BodyDict{M, SpatialAcceleration{C}}(bodies(mechanism)))
+        inertias = CacheElement(BodyDict{M, SpatialInertia{C}}(bodies(mechanism)))
+        crb_inertias = CacheElement(BodyDict{M, SpatialInertia{C}}(bodies(mechanism)))
         contact_states = BodyDict{M, Vector{Vector{DefaultSoftContactState{C}}}}(b => Vector{Vector{DefaultSoftContactState{C}}}() for b in bodies(mechanism))
         startind = 1
         for body in bodies(mechanism), point in contact_points(body)
@@ -90,13 +91,6 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
             end for j = 1 : length(mechanism.environment)))
         end
 
-        # Set root-body related cache elements once and for all.
-        root = root_body(mechanism)
-        rootframe = root_frame(mechanism)
-        update!(transforms_to_world[root], eye(Transform3DS{C}, rootframe))
-        update!(twists_wrt_world[root], zero(Twist{C}, rootframe, rootframe, rootframe))
-        update!(bias_accelerations_wrt_world[root], zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe))
-
         m = mechanism
         constraint_jacobian_structure = [(j, path(m, predecessor(j, m), successor(j, m))) for j in non_tree_joints(m)]
 
@@ -107,7 +101,8 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
             contact_states)
     end
 end
-MechanismState{X, M}(::Type{X}, mechanism::Mechanism{M}) = MechanismState{X, M, promote_type(X, M)}(mechanism)
+
+Base.@deprecate MechanismState{X, M}(::Type{X}, mechanism::Mechanism{M}) MechanismState{X}(mechanism)
 
 Base.show{X, M, C}(io::IO, ::MechanismState{X, M, C}) = print(io, "MechanismState{$X, $M, $C}(…)")
 
@@ -165,24 +160,17 @@ $(SIGNATURES)
 Invalidate all cache variables.
 """
 function setdirty!(state::MechanismState)
-    mechanism = state.mechanism
-    for joint in tree_joints(mechanism)
-        setdirty!(state.joint_transforms[joint])
-        setdirty!(state.joint_twists[joint])
-        setdirty!(state.joint_bias_accelerations[joint])
-        setdirty!(state.motion_subspaces[joint])
-        setdirty!(state.motion_subspaces_in_world[joint])
-    end
+    setdirty!(state.joint_transforms)
+    setdirty!(state.joint_twists)
+    setdirty!(state.joint_bias_accelerations)
+    setdirty!(state.motion_subspaces)
+    setdirty!(state.motion_subspaces_in_world)
 
-    for body in bodies(mechanism)
-        if !isroot(body, mechanism)
-            setdirty!(state.transforms_to_world[body])
-            setdirty!(state.twists_wrt_world[body])
-            setdirty!(state.bias_accelerations_wrt_world[body])
-            setdirty!(state.inertias[body])
-            setdirty!(state.crb_inertias[body])
-        end
-    end
+    setdirty!(state.transforms_to_world)
+    setdirty!(state.twists_wrt_world)
+    setdirty!(state.bias_accelerations_wrt_world)
+    setdirty!(state.inertias)
+    setdirty!(state.crb_inertias)
 end
 
 """
@@ -417,15 +405,142 @@ end
 configuration_range(state::MechanismState, joint::Joint) = first(parentindexes(configuration(state, joint)))
 velocity_range(state::MechanismState, joint::Joint) = first(parentindexes(velocity(state, joint)))
 
+function update_joint_transforms!(state::MechanismState)
+    f! = (results, joints, qs) -> map!(joint_transform, values(results), joints, qs)
+    update!(state.joint_transforms, f!, keys(state.qs), values(state.qs))
+end
+
+function update_joint_twists!(state::MechanismState)
+    f! = (results, joints, qs, vs) -> map!(joint_twist, values(results), joints, qs, vs)
+    update!(state.joint_twists, f!, keys(state.qs), values(state.qs), values(state.vs))
+end
+
+function update_joint_bias_accelerations!(state::MechanismState)
+    f! = (results, joints, qs, vs) -> map!(bias_acceleration, values(results), joints, qs, vs)
+    update!(state.joint_bias_accelerations, f!, keys(state.qs), values(state.qs), values(state.vs))
+end
+
+function update_motion_subspaces!(state::MechanismState)
+    f! = (results, joints, qs) -> map!(motion_subspace, values(results), joints, qs)
+    update!(state.motion_subspaces, f!, keys(state.qs), values(state.qs))
+end
+
+function update_motion_subspaces_in_world!(state::MechanismState) # TODO: make more efficient
+    update_transforms_to_root!(state)
+    update_motion_subspaces!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            parentframe = default_frame(parentbody)
+            motionsubspace = change_base(motion_subspace(state, joint), parentframe)
+            results[joint] = transform(motionsubspace, transform_to_root(state, body))
+        end
+    end
+    update!(state.motion_subspaces_in_world, f!, state)
+end
+
+function update_transforms_to_root!(state::MechanismState)
+    update_joint_transforms!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        results[root_body(mechanism)] = eye(Transform3DS{cache_eltype(state)}, root_frame(mechanism))
+        for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            parent_to_root = results[parentbody]
+            before_joint_to_parent = frame_definition(parentbody, frame_before(joint)) # FIXME: slow!
+            results[body] = parent_to_root * before_joint_to_parent * transform(state, joint)
+        end
+    end
+    update!(state.transforms_to_world, f!, state)
+end
+
+function update_twists_wrt_world!(state::MechanismState)
+    update_joint_twists!(state)
+    update_transforms_to_root!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        rootframe = root_frame(mechanism)
+        results[root_body(mechanism)] = zero(Twist{cache_eltype(state)}, rootframe, rootframe, rootframe)
+        for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            parenttwist = results[parentbody]
+            parentframe = default_frame(parentbody)
+            jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
+            results[body] = parenttwist + transform(jointtwist, transform_to_root(state, body))
+        end
+    end
+    update!(state.twists_wrt_world, f!, state)
+end
+
+function update_bias_accelerations_wrt_world!(state::MechanismState) # TODO: make more efficient
+    update_twists_wrt_world!(state)
+    update_joint_bias_accelerations!(state)
+    update_transforms_to_root!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        rootframe = root_frame(mechanism)
+        results[root_body(mechanism)] = zero(SpatialAcceleration{cache_eltype(state)}, rootframe, rootframe, rootframe)
+        for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            parentbias = results[parentbody]
+            parentframe = default_frame(parentbody)
+            jointbias = change_base(bias_acceleration(state, joint), parentframe) # to make frames line up
+
+             # TODO: awkward way of doing this:
+            toroot = transform_to_root(state, body)
+            twistwrtworld = transform(twist_wrt_world(state, body), inv(toroot))
+            jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
+
+            jointbias = transform(jointbias, toroot, twistwrtworld, jointtwist)
+            results[body] = parentbias + jointbias
+        end
+    end
+    update!(state.bias_accelerations_wrt_world, f!, state)
+end
+
+function update_spatial_inertias!(state::MechanismState)
+    update_transforms_to_root!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        results[root_body(mechanism)] = zero(SpatialInertia{cache_eltype(state)}, root_frame(mechanism))
+        for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
+            results[body] = transform(spatial_inertia(body), transform_to_root(state, body))
+        end
+    end
+    update!(state.inertias, f!, state)
+end
+
+function update_crb_inertias!(state::MechanismState)
+    update_spatial_inertias!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        for body in bodies(mechanism)
+            results[body] = spatial_inertia(state, body)
+        end
+        joints = tree_joints(mechanism)
+        for i = length(joints) : -1 : 1
+            joint = joints[i]
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            results[parentbody] += results[body]
+        end
+    end
+    update!(state.crb_inertias, f!, state)
+end
+
 """
 $(SIGNATURES)
 
 Return the joint transform for the given joint, i.e. the transform from
 `frame_after(joint)` to `frame_before(joint)`.
 """
-function transform(state::MechanismState, joint::Joint)
-    @cache_element_get!(state.joint_transforms[joint], joint_transform(joint, state.qs[joint]))
-end
+transform(state::MechanismState, joint::Joint) = update_joint_transforms!(state)[joint]
 
 """
 $(SIGNATURES)
@@ -434,9 +549,7 @@ Return the joint twist for the given joint, i.e. the twist of
 `frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
 root frame of the mechanism.
 """
-function twist(state::MechanismState, joint::Joint)
-    @cache_element_get!(state.joint_twists[joint], joint_twist(joint, state.qs[joint], state.vs[joint]))
-end
+twist(state::MechanismState, joint::Joint) = update_joint_twists!(state)[joint]
 
 """
 $(SIGNATURES)
@@ -445,18 +558,14 @@ Return the bias acceleration across the given joint, i.e. the spatial accelerati
 of `frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
 root frame of the mechanism when all joint accelerations are zero.
 """
-function bias_acceleration(state::MechanismState, joint::Joint)
-    @cache_element_get!(state.joint_bias_accelerations[joint], bias_acceleration(joint, state.qs[joint], state.vs[joint]))
-end
+bias_acceleration(state::MechanismState, joint::Joint) = update_joint_bias_accelerations!(state)[joint]
 
 """
 $(SIGNATURES)
 
 Return the motion subspace of the given joint expressed in `frame_after(joint)`.
 """
-function motion_subspace(state::MechanismState, joint::Joint)
-    @cache_element_get!(state.motion_subspaces[joint], motion_subspace(joint, state.qs[joint]))
-end
+motion_subspace(state::MechanismState, joint::Joint) = update_motion_subspaces!(state)[joint]
 
 """
 $(SIGNATURES)
@@ -464,15 +573,7 @@ $(SIGNATURES)
 Return the motion subspace of the given joint expressed in the root frame of
 the mechanism.
 """
-function motion_subspace_in_world(state::MechanismState, joint::Joint)
-    @cache_element_get!(state.motion_subspaces_in_world[joint], begin
-        body = successor(joint, state.mechanism)
-        parentbody = predecessor(joint, state.mechanism)
-        parentframe = default_frame(parentbody)
-        motionsubspace = change_base(motion_subspace(state, joint), parentframe)
-        transform(motionsubspace, transform_to_root(state, body))
-    end)
-end
+motion_subspace_in_world(state::MechanismState, joint::Joint) = update_motion_subspaces_in_world!(state)[joint]
 
 """
 $(SIGNATURES)
@@ -480,15 +581,7 @@ $(SIGNATURES)
 Return the transform from `default_frame(body)` to the root frame of the
 mechanism.
 """
-function transform_to_root(state::MechanismState, body::RigidBody)
-    @cache_element_get!(state.transforms_to_world[body], begin
-        joint = joint_to_parent(body, state.mechanism)
-        parentbody = predecessor(joint, state.mechanism)
-        parent_to_root = transform_to_root(state, parentbody)
-        before_joint_to_parent = frame_definition(parentbody, frame_before(joint)) # FIXME: slow!
-        parent_to_root * before_joint_to_parent * transform(state, joint)
-    end)
-end
+transform_to_root(state::MechanismState, body::RigidBody) = update_transforms_to_root!(state)[body]
 
 """
 $(SIGNATURES)
@@ -496,16 +589,7 @@ $(SIGNATURES)
 Return the twist of `default_frame(body)` with respect to the root frame of the
 mechanism, expressed in the root frame.
 """
-function twist_wrt_world(state::MechanismState, body::RigidBody)
-    @cache_element_get!(state.twists_wrt_world[body], begin
-        joint = joint_to_parent(body, state.mechanism)
-        parentbody = predecessor(joint, state.mechanism)
-        parenttwist = twist_wrt_world(state, parentbody)
-        parentframe = default_frame(parentbody)
-        jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
-        parenttwist + transform(jointtwist, transform_to_root(state, body))
-    end)
-end
+twist_wrt_world(state::MechanismState, body::RigidBody) = update_twists_wrt_world!(state)[body]
 
 """
 $(SIGNATURES)
@@ -515,23 +599,7 @@ i.e. the spatial acceleration of `default_frame(body)` with respect to the
 root frame of the mechanism, expressed in the root frame, when all joint
 accelerations are zero.
 """
-function bias_acceleration(state::MechanismState, body::RigidBody)
-    @cache_element_get!(state.bias_accelerations_wrt_world[body], begin
-        joint = joint_to_parent(body, state.mechanism)
-        parentbody = predecessor(joint, state.mechanism)
-        parentbias = bias_acceleration(state, parentbody)
-        parentframe = default_frame(parentbody)
-        jointbias = change_base(bias_acceleration(state, joint), parentframe) # to make frames line up
-
-         # TODO: awkward way of doing this:
-        toroot = transform_to_root(state, body)
-        twistwrtworld = transform(twist_wrt_world(state, body), inv(toroot))
-        jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
-
-        jointbias = transform(jointbias, toroot, twistwrtworld, jointtwist)
-        parentbias + jointbias
-    end)
-end
+bias_acceleration(state::MechanismState, body::RigidBody) = update_bias_accelerations_wrt_world!(state)[body]
 
 """
 $(SIGNATURES)
@@ -539,11 +607,7 @@ $(SIGNATURES)
 Return the spatial inertia of `body` expressed in the root frame of the
 mechanism.
 """
-function spatial_inertia(state::MechanismState, body::RigidBody)
-    @cache_element_get!(state.inertias[body], begin
-        transform(spatial_inertia(body), transform_to_root(state, body))
-    end)
-end
+spatial_inertia(state::MechanismState, body::RigidBody) = update_spatial_inertias!(state)[body]
 
 """
 $(SIGNATURES)
@@ -551,16 +615,7 @@ $(SIGNATURES)
 Return the composite rigid body inertia `body` expressed in the root frame of the
 mechanism.
 """
-function crb_inertia(state::MechanismState, body::RigidBody)
-    @cache_element_get!(state.crb_inertias[body], begin
-        ret = spatial_inertia(state, body)
-        for joint in joints_to_children(body, state.mechanism)
-            child = successor(joint, state.mechanism)
-            ret += crb_inertia(state, child)
-        end
-        ret
-    end)
-end
+crb_inertia(state::MechanismState, body::RigidBody) = update_crb_inertias!(state)[body]
 
 contact_states(state::MechanismState, body::RigidBody) = state.contact_states[body]
 
