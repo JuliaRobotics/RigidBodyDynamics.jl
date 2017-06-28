@@ -27,6 +27,7 @@ export
     remove_edge!,
     rewire!,
     flip_direction!,
+    replace_edge!,
     root,
     edge_to_parent,
     edges_to_children,
@@ -168,6 +169,20 @@ function flip_direction!{V, E}(edge::E, g::DirectedGraph{V, E})
     rewire!(g, edge, target(edge, g), source(edge, g))
 end
 
+function replace_edge!{V, E}(g::DirectedGraph{V, E}, old_edge::E, new_edge::E)
+    src = source(old_edge, g)
+    dest = target(old_edge, g)
+    index = edge_index(old_edge)
+    edge_index!(new_edge, index)
+    g.edges[index] = new_edge
+    out_edge_index = findfirst(out_edges(src, g), old_edge)
+    out_edges(src, g)[out_edge_index] = new_edge
+    in_edge_index = findfirst(in_edges(dest, g), old_edge)
+    in_edges(dest, g)[in_edge_index] = new_edge
+    edge_index!(old_edge, -1)
+    g
+end
+
 type SpanningTree{V, E} <: AbstractGraph{V, E}
     graph::DirectedGraph{V, E}
     root::V
@@ -249,6 +264,18 @@ function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E
     push!(out_edges(source, tree), edge)
     resize!(tree.edge_tree_indices, max(edge_index(edge), length(tree.edge_tree_indices)))
     tree.edge_tree_indices[edge_index(edge)] = num_edges(tree)
+    tree
+end
+
+function replace_edge!{V, E}(tree::SpanningTree{V, E}, old_edge::E, new_edge::E)
+    @assert old_edge ∈ edges(tree)
+    src = source(old_edge, tree)
+    dest = target(old_edge, tree)
+    tree.edges[tree_index(old_edge, tree)] = new_edge
+    tree.inedges[vertex_index(dest)] = new_edge
+    out_edge_index = findfirst(out_edges(src, tree), old_edge)
+    out_edges(src, tree)[out_edge_index] = new_edge
+    replace_edge!(tree.graph, old_edge, new_edge)
     tree
 end
 

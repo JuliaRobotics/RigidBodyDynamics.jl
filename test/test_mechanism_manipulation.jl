@@ -91,6 +91,22 @@ end
         @test isapprox(M_no_fixed_joints, M, atol = 1e-12)
     end
 
+    @testset "replace joint" begin
+        jointtypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]]
+        shuffle!(jointtypes)
+        mechanism = rand_tree_mechanism(Float64, jointtypes...)
+
+        for m in [mechanism; maximal_coordinates(mechanism)]
+            for i = 1 : 10
+                oldjoint = rand(joints(mechanism))
+                newjoint = Joint("new", frame_before(oldjoint), frame_after(oldjoint), Fixed{Float64}())
+                replace_joint!(mechanism, oldjoint, newjoint)
+                @test newjoint ∈ joints(mechanism)
+                @test oldjoint ∉ joints(mechanism)
+            end
+        end
+    end
+
     @testset "submechanism" begin
         for testnum = 1 : 100
             jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]

@@ -145,6 +145,35 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
         @test data(edge) == -olddata
     end
 
+    @testset "replace_edge!" begin
+        graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
+        for i = 1 : 100
+            add_vertex!(graph, Vertex(i))
+        end
+        for i = 1 : num_vertices(graph) - 1
+            add_edge!(graph, rand(vertices(graph)), rand(vertices(graph)), Edge(Float64(i)))
+        end
+        original = deepcopy(graph)
+
+        for i = 1 : 10
+            old_edge = rand(edges(graph))
+            src = source(old_edge, graph)
+            dest = target(old_edge, graph)
+            new_edge = Edge(NaN)
+            replace_edge!(graph, old_edge, new_edge)
+
+            @test edge_index(old_edge) == -1
+            @test all(data.(vertices(graph)) .== data.(vertices(original)))
+            @test new_edge ∈ in_edges(dest, graph)
+            @test old_edge ∉ in_edges(dest, graph)
+            @test new_edge ∈ out_edges(src, graph)
+            @test old_edge ∉ out_edges(src, graph)
+            @test source(new_edge, graph) == src
+            @test target(new_edge, graph) == dest
+            @test isnan(data(new_edge))
+        end
+    end
+
     @testset "SpanningTree" begin
         rootdata = 0
 
@@ -234,6 +263,26 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
                     @test tree_index(v, tree) > tree_index(lca, tree)
                 end
             end
+        end
+
+        for i = 1 : 10
+            old_edge = rand(edges(tree))
+            src = source(old_edge, tree)
+            dest = target(old_edge, tree)
+            d = Int32(-10 * i)
+            new_edge = Edge(d)
+            replace_edge!(tree, old_edge, new_edge)
+
+            @test edge_index(old_edge) == -1
+            @test new_edge ∈ in_edges(dest, tree)
+            @test old_edge ∉ in_edges(dest, tree)
+            @test new_edge ∈ out_edges(src, tree)
+            @test old_edge ∉ out_edges(src, tree)
+            @test source(new_edge, tree) == src
+            @test target(new_edge, tree) == dest
+            @test data(new_edge) == d
+            @test edge_to_parent(dest, tree) == new_edge
+            @test new_edge ∈ edges_to_children(src, tree)
         end
     end
 end
