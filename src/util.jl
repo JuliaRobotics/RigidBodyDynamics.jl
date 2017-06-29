@@ -156,6 +156,20 @@ immutable UnsafeFastDict{I, K, V} <: Associative{K, V}
         V = Core.Inference.return_type(last, Tuple{T})
         UnsafeFastDict{I, K, V}(kv)
     end
+
+    # specify all types, but leave values uninitialized
+    function UnsafeFastDict{I, K, V}(keys::AbstractVector{K}) where {I, K, V}
+        sortedkeys = K[]
+        for k in keys
+            index = I(k)
+            if index > length(sortedkeys)
+                resize!(sortedkeys, index)
+            end
+            sortedkeys[index] = k
+        end
+        values = Vector{V}(length(sortedkeys))
+        new(sortedkeys, values)
+    end
 end
 
 # Iteration

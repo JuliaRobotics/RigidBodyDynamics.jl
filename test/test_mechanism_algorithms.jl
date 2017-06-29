@@ -1,6 +1,6 @@
 # @testset "mechanism algorithms" begin
     mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...)
-    x = MechanismState(Float64, mechanism)
+    x = MechanismState{Float64}(mechanism)
     rand!(x)
 
     @testset "show" begin
@@ -154,7 +154,7 @@
                 q̇ = configuration_derivative(x)
                 q_autodiff = create_autodiff(q, q̇)
                 v_autodiff = create_autodiff(v, v̇)
-                x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
+                x_autodiff = MechanismState{eltype(q_autodiff)}(mechanism)
                 set_configuration!(x_autodiff, q_autodiff)
                 set_velocity!(x_autodiff, v_autodiff)
                 twist_autodiff = relative_twist(x_autodiff, body, base)
@@ -233,7 +233,7 @@
 
         q = configuration(x)
         kinetic_energy_fun = v -> begin
-            local x = MechanismState(eltype(v), mechanism)
+            local x = MechanismState{eltype(v)}(mechanism)
             set_configuration!(x, q)
             set_velocity!(x, v)
             kinetic_energy(x)
@@ -265,11 +265,11 @@
 
     @testset "inverse dynamics / Coriolis term" begin
         mechanism = rand_tree_mechanism(Float64, [[Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # skew symmetry property tested later on doesn't hold when q̇ ≠ v
-        x = MechanismState(Float64, mechanism)
+        x = MechanismState{Float64}(mechanism)
         rand!(x)
 
         function q_to_M(q)
-            local x = MechanismState(eltype(q), mechanism)
+            local x = MechanismState{eltype(q)}(mechanism)
             set_configuration!(x, q)
             zero_velocity!(x)
             vec(mass_matrix(x))
@@ -284,7 +284,7 @@
         q = configuration(x)
         v̇ = zeros(num_velocities(mechanism))
         function v_to_c(v)
-            local x = MechanismState(eltype(v), mechanism)
+            local x = MechanismState{eltype(v)}(mechanism)
             set_configuration!(x, q)
             set_velocity!(x, v)
             inverse_dynamics(x, v̇)
@@ -299,14 +299,14 @@
 
     @testset "inverse dynamics / gravity term" begin
         mechanism = rand_tree_mechanism(Float64, [[Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
-        x = MechanismState(Float64, mechanism)
+        x = MechanismState{Float64}(mechanism)
         rand!(x)
         v̇ = zeros(num_velocities(mechanism))
         zero_velocity!(x)
         g = inverse_dynamics(x, v̇)
 
         function q_to_potential(q)
-            x = MechanismState(eltype(q), mechanism)
+            x = MechanismState{eltype(q)}(mechanism)
             set_configuration!(x, q)
             zero_velocity!(x)
             return [gravitational_potential_energy(x)]
@@ -319,7 +319,7 @@
 
     @testset "momentum matrix" begin
         mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
-        x = MechanismState(Float64, mechanism)
+        x = MechanismState{Float64}(mechanism)
         rand_configuration!(x)
         rand_velocity!(x)
         q = configuration(x)
@@ -333,7 +333,7 @@
         # rate of change of momentum computed using autodiff:
         q_autodiff = create_autodiff(q, q̇)
         v_autodiff = create_autodiff(v, v̇)
-        x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
+        x_autodiff = MechanismState{eltype(q_autodiff)}(mechanism)
         set_configuration!(x_autodiff, q_autodiff)
         set_velocity!(x_autodiff, v_autodiff)
         A_autodiff = Array(momentum_matrix(x_autodiff))
@@ -348,7 +348,7 @@
 
     @testset "inverse dynamics / external wrenches" begin
         mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
-        x = MechanismState(Float64, mechanism)
+        x = MechanismState{Float64}(mechanism)
         rand_configuration!(x)
         rand_velocity!(x)
 
@@ -369,7 +369,7 @@
 
     @testset "dynamics / inverse dynamics" begin
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
-        x = MechanismState(Float64, mechanism)
+        x = MechanismState{Float64}(mechanism)
         rand!(x)
         externalTorques = rand(num_velocities(mechanism))
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
@@ -382,7 +382,7 @@
 
     @testset "dynamics ode method" begin
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
-        x = MechanismState(Float64, mechanism)
+        x = MechanismState{Float64}(mechanism)
         rand!(x)
         torques = rand(num_velocities(mechanism))
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
@@ -399,7 +399,7 @@
 
     @testset "power flow" begin
         mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
-        x = MechanismState(Float64, mechanism)
+        x = MechanismState{Float64}(mechanism)
         rand_configuration!(x)
         rand_velocity!(x)
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
@@ -415,7 +415,7 @@
 
         q_autodiff = create_autodiff(q, q̇)
         v_autodiff = create_autodiff(v, v̇)
-        x_autodiff = MechanismState(eltype(q_autodiff), mechanism)
+        x_autodiff = MechanismState{eltype(q_autodiff)}(mechanism)
         set_configuration!(x_autodiff, q_autodiff)
         set_velocity!(x_autodiff, v_autodiff)
         energy_autodiff = gravitational_potential_energy(x_autodiff) + kinetic_energy(x_autodiff)
@@ -425,7 +425,7 @@
 
     @testset "local / global coordinates" begin
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
-        state = MechanismState(Float64, mechanism)
+        state = MechanismState{Float64}(mechanism)
         rand!(state)
         for joint in joints(mechanism)
             # back and forth between local and global
