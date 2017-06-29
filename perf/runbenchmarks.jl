@@ -31,39 +31,65 @@ function create_benchmark_suite()
     nvpath = num_velocities(p)
     jac = GeometricJacobian(default_frame(lhand), default_frame(rfoot), root_frame(mechanism), Matrix{ScalarType}(3, nvpath), Matrix{ScalarType}(3, nvpath))
 
+    suite["mass_matrix"] = @benchmarkable(begin
+        setdirty!($state)
+        mass_matrix!($(result.massmatrix), $state)
+    end, setup = rand!($state))
 
-    suite["mass_matrix"] = @benchmarkable mass_matrix!($(result.massmatrix), $state) setup = rand!($state)
-    suite["inverse_dynamics"] = @benchmarkable(
-        inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalwrenches),
-        setup = begin
-            v̇ = rand(num_velocities($mechanism))
-            externalwrenches = RigidBodyDynamics.BodyDict{ScalarType}(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
-            rand!($state)
-        end
-    )
-    suite["dynamics"] = @benchmarkable(dynamics!($result, $state, τ, externalwrenches),
-        setup = begin
-            rand!($state)
-            τ = rand(num_velocities($mechanism))
-            externalwrenches = RigidBodyDynamics.BodyDict{ScalarType}(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
-        end
-    )
-    suite["momentum_matrix"] = @benchmarkable(momentum_matrix!($mat, $state), setup = rand!($state))
-    suite["geometric_jacobian"] = @benchmarkable(geometric_jacobian!($jac, $state, $p), setup = rand!($state))
-    suite["momentum"] = @benchmarkable(momentum($state), setup = rand!($state))
-    suite["momentum_rate_bias"] = @benchmarkable(momentum_rate_bias($state), setup = rand!($state))
-    suite["kinetic_energy"] = @benchmarkable(kinetic_energy($state), setup = rand!($state))
-    suite["gravitational_potential_energy"] = @benchmarkable(gravitational_potential_energy($state), setup = rand!($state))
+    suite["inverse_dynamics"] = @benchmarkable(begin
+        setdirty!($state)
+        inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalwrenches)
+    end, setup = begin
+        v̇ = rand(num_velocities($mechanism))
+        externalwrenches = RigidBodyDynamics.BodyDict{ScalarType}(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
+        rand!($state)
+    end)
+
+    suite["dynamics"] = @benchmarkable(begin
+        setdirty!($state)
+        dynamics!($result, $state, τ, externalwrenches)
+    end, setup = begin
+        rand!($state)
+        τ = rand(num_velocities($mechanism))
+        externalwrenches = RigidBodyDynamics.BodyDict{ScalarType}(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
+    end)
+
+    suite["momentum_matrix"] = @benchmarkable(begin
+        setdirty!($state)
+        momentum_matrix!($mat, $state)
+    end, setup = rand!($state))
+
+    suite["geometric_jacobian"] = @benchmarkable(begin
+        setdirty!($state)
+        geometric_jacobian!($jac, $state, $p)
+    end, setup = rand!($state))
+
+    suite["momentum"] = @benchmarkable(begin
+        setdirty!($state)
+        momentum($state)
+    end, setup = rand!($state))
+
+    suite["momentum_rate_bias"] = @benchmarkable(begin
+        setdirty!($state)
+        momentum_rate_bias($state)
+    end, setup = rand!($state))
+
+    suite["kinetic_energy"] = @benchmarkable(begin
+        setdirty!($state)
+        kinetic_energy($state)
+    end, setup = rand!($state))
+
+    suite["gravitational_potential_energy"] = @benchmarkable(begin
+        setdirty!($state)
+        gravitational_potential_energy($state)
+    end, setup = rand!($state))
+
     suite
 end
 
 function runbenchmarks()
     suite = create_benchmark_suite()
     tune!(suite)
-    for benchmark in values(suite)
-        benchmark.params.evals = 1 # IMPORTANT: otherwise we're testing caching
-    end
-
     Profile.clear_malloc_data()
     results = run(suite, verbose = true)
     for result in results
