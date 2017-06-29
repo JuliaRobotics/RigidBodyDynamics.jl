@@ -14,8 +14,9 @@ Type parameters:
 * `M`: the scalar type of the `Mechanism`
 * `C`: the scalar type of the cache variables (`== promote_type(X, M)`)
 """
-immutable MechanismState{X<:Number, M<:Number, C<:Number}
+immutable MechanismState{X<:Number, M<:Number, C<:Number, TSJ}
     mechanism::Mechanism{M}
+    type_sorted_tree_joints::TSJ
     constraint_jacobian_structure::Vector{Tuple{GenericJoint{M}, TreePath{RigidBody{M}, GenericJoint{M}}}}
 
     # configurations, velocities
@@ -44,6 +45,8 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
 
     function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
         C = promote_type(X, M)
+
+        type_sorted_tree_joints = TypeSortedCollection(Graphs.edge_index, typedjoint.(tree_joints(mechanism)))
 
         q = Vector{X}(num_positions(mechanism))
         v = zeros(X, num_velocities(mechanism))
@@ -94,7 +97,8 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number}
         m = mechanism
         constraint_jacobian_structure = [(j, path(m, predecessor(j, m), successor(j, m))) for j in non_tree_joints(m)]
 
-        new{X, M, C}(mechanism, constraint_jacobian_structure,
+        TSJ = typeof(type_sorted_tree_joints)
+        new{X, M, C, TSJ}(mechanism, type_sorted_tree_joints, constraint_jacobian_structure,
             q, v, s, qs, vs,
             joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world,
             transforms_to_world, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
@@ -199,6 +203,7 @@ configuration vector would be set to identity. The contract is that each of the
 joint transforms should be an identity transform.
 """
 function zero_configuration!(state::MechanismState)
+    map!
     for joint in tree_joints(state.mechanism)
         zero_configuration!(joint, configuration(state, joint))
     end
@@ -407,22 +412,22 @@ velocity_range(state::MechanismState, joint::Joint) = first(parentindexes(veloci
 
 function update_joint_transforms!(state::MechanismState)
     f! = (results, joints, qs) -> map!(joint_transform, values(results), joints, qs)
-    update!(state.joint_transforms, f!, keys(state.qs), values(state.qs))
+    update!(state.joint_transforms, f!, state.type_sorted_tree_joints, values(state.qs))
 end
 
 function update_joint_twists!(state::MechanismState)
     f! = (results, joints, qs, vs) -> map!(joint_twist, values(results), joints, qs, vs)
-    update!(state.joint_twists, f!, keys(state.qs), values(state.qs), values(state.vs))
+    update!(state.joint_twists, f!, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
 function update_joint_bias_accelerations!(state::MechanismState)
     f! = (results, joints, qs, vs) -> map!(bias_acceleration, values(results), joints, qs, vs)
-    update!(state.joint_bias_accelerations, f!, keys(state.qs), values(state.qs), values(state.vs))
+    update!(state.joint_bias_accelerations, f!, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
 function update_motion_subspaces!(state::MechanismState)
     f! = (results, joints, qs) -> map!(motion_subspace, values(results), joints, qs)
-    update!(state.motion_subspaces, f!, keys(state.qs), values(state.qs))
+    update!(state.motion_subspaces, f!, state.type_sorted_tree_joints, values(state.qs))
 end
 
 function update_motion_subspaces_in_world!(state::MechanismState) # TODO: make more efficient
