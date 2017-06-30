@@ -621,12 +621,28 @@ momentum_rate_bias(state::MechanismState, body::RigidBody) = newton_euler(state,
 kinetic_energy(state::MechanismState, body::RigidBody) = kinetic_energy(spatial_inertia(state, body), twist_wrt_world(state, body))
 
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
-    for joint in tree_joints(state.mechanism)
-        q = configuration(state, joint)
-        v = velocity(state, joint)
-        q̇ = fastview(out, configuration_range(state, joint))
-        velocity_to_configuration_derivative!(joint, q̇, q, v)
+    # TODO: do this without a generated function
+    _configuration_derivative!(out, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
+end
+
+@generated function _configuration_derivative!(q̇s, joints::TypeSortedCollection{I, D}, qs, vs) where {I, D}
+    expr = Expr(:block)
+    push!(expr.args, :(Base.@_inline_meta))
+    for i = 1 : nfields(D)
+        push!(expr.args, quote
+            vec = joints.data[$i]
+            for joint in vec
+                index = joints.indexfun(joint)
+                qjoint = qs[index]
+                vjoint = vs[index]
+                qrange = first(parentindexes(qjoint))
+                q̇joint = fastview(q̇s, qrange)
+                velocity_to_configuration_derivative!(joint, q̇joint, qjoint, vjoint)
+            end
+        end)
     end
+    push!(expr.args, :(return nothing))
+    expr
 end
 
 function configuration_derivative{X}(state::MechanismState{X})
@@ -745,17 +761,31 @@ Compute local coordinates ``\phi`` centered around (global) configuration vector
 ``q_0``, as well as their time derivatives ``\\dot{\\phi}``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function local_coordinates!(state::MechanismState, ϕ::StridedVector, ϕd::StridedVector, q0::StridedVector)
-    mechanism = state.mechanism
-    for joint in tree_joints(mechanism)
-        qrange = configuration_range(state, joint)
-        vrange = velocity_range(state, joint)
-        ϕjoint = fastview(ϕ, vrange)
-        ϕdjoint = fastview(ϕd, vrange)
-        q0joint = fastview(q0, qrange)
-        qjoint = configuration(state, joint)
-        vjoint = velocity(state, joint)
-        local_coordinates!(joint, ϕjoint, ϕdjoint, q0joint, qjoint, vjoint)
+    # TODO: do this without a generated function
+    _local_coordinates!(ϕ, ϕd, state.type_sorted_tree_joints, q0, values(state.qs), values(state.vs))
+end
+
+@generated function _local_coordinates!(ϕ, ϕd, joints::TypeSortedCollection{I, D}, q0, qs, vs) where {I, D}
+    expr = Expr(:block)
+    push!(expr.args, :(Base.@_inline_meta))
+    for i = 1 : nfields(D)
+        push!(expr.args, quote
+            vec = joints.data[$i]
+            for joint in vec
+                index = joints.indexfun(joint)
+                qjoint = qs[index]
+                vjoint = vs[index]
+                qrange = first(parentindexes(qjoint))
+                vrange = first(parentindexes(vjoint))
+                ϕjoint = fastview(ϕ, vrange)
+                ϕdjoint = fastview(ϕd, vrange)
+                q0joint = fastview(q0, qrange)
+                local_coordinates!(joint, ϕjoint, ϕdjoint, q0joint, qjoint, vjoint)
+            end
+        end)
     end
+    push!(expr.args, :(return nothing))
+    expr
 end
 
 """
@@ -765,11 +795,28 @@ Convert local coordinates ``\phi`` centered around ``q_0`` to (global)
 configuration vector ``q``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function global_coordinates!(state::MechanismState, q0::StridedVector, ϕ::StridedVector)
-    mechanism = state.mechanism
-    for joint in tree_joints(mechanism)
-        q0joint = fastview(q0, configuration_range(state, joint))
-        ϕjoint = fastview(ϕ, velocity_range(state, joint))
-        qjoint = configuration(state, joint)
-        global_coordinates!(joint, qjoint, q0joint, ϕjoint)
+    # TODO: do this without a generated function
+    _global_coordinates!(values(state.qs), values(state.vs), state.type_sorted_tree_joints, q0, ϕ)
+end
+
+@generated function _global_coordinates!(qs, vs, joints::TypeSortedCollection{I, D}, q0, ϕ) where {I, D}
+    expr = Expr(:block)
+    push!(expr.args, :(Base.@_inline_meta))
+    for i = 1 : nfields(D)
+        push!(expr.args, quote
+            vec = joints.data[$i]
+            for joint in vec
+                index = joints.indexfun(joint)
+                qjoint = qs[index]
+                vjoint = vs[index]
+                qrange = first(parentindexes(qjoint))
+                vrange = first(parentindexes(vjoint))
+                q0joint = fastview(q0, qrange)
+                ϕjoint = fastview(ϕ, vrange)
+                global_coordinates!(joint, qjoint, q0joint, ϕjoint)
+            end
+        end)
     end
+    push!(expr.args, :(return nothing))
+    expr
 end
