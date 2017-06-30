@@ -12,5 +12,5 @@ end
         f!(element.data, args...)
         element.dirty = false
     end
-    element.data
+    nothing
 end

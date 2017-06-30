@@ -552,8 +552,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         range = rowstart : nextrowstart - 1
 
         # Constraint wrench subspace.
-        jointtransform = relative_transform(state, frame_after(nontreejoint), frame_before(nontreejoint)) # TODO: expensive
-        T = constraint_wrench_subspace(nontreejoint, jointtransform)
+        T = constraint_wrench_subspace(state, nontreejoint)
         T = transform(T, transform_to_root(state, T.frame)) # TODO: expensive
 
         # Jacobian rows.
@@ -565,7 +564,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         end
 
         # Constraint bias.
-        has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.")
+        has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
         kjoint = fastview(constraintbias, range)
         pred = predecessor(nontreejoint, mechanism)
         succ = successor(nontreejoint, mechanism)
