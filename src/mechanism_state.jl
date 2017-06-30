@@ -56,7 +56,7 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number, TSJ}
         qstart = 1
         qs = JointDict{M, VectorSegment{X}}(joint => begin
             qjoint = view(q, qstart : qstart + num_positions(joint) - 1)
-            zero_configuration!(joint, qjoint)
+            zero_configuration!(qjoint, joint)
             qstart += num_positions(joint)
             qjoint
         end for joint in tree_joints(mechanism))
@@ -195,10 +195,7 @@ configuration vector would be set to identity. The contract is that each of the
 joint transforms should be an identity transform.
 """
 function zero_configuration!(state::MechanismState)
-    map!
-    for joint in tree_joints(state.mechanism)
-        zero_configuration!(joint, configuration(state, joint))
-    end
+    map_in_place!(zero_configuration!, values(state.qs), state.type_sorted_tree_joints)
     reset_contact_state!(state)
     setdirty!(state)
 end
@@ -209,8 +206,7 @@ $(SIGNATURES)
 Zero the velocity vector ``v``. Invalidates cache variables.
 """
 function zero_velocity!(state::MechanismState)
-    X = eltype(state.v)
-    fill!(state.v,  zero(X))
+    state.v[:] = 0
     reset_contact_state!(state)
     setdirty!(state)
 end
@@ -233,9 +229,7 @@ the particular joint types present in the associated `Mechanism`. The resulting
 Invalidates cache variables.
 """
 function rand_configuration!(state::MechanismState)
-    for joint in tree_joints(state.mechanism)
-        rand_configuration!(joint, configuration(state, joint))
-    end
+    map_in_place!(rand_configuration!, values(state.qs), state.type_sorted_tree_joints)
     reset_contact_state!(state)
     setdirty!(state)
 end

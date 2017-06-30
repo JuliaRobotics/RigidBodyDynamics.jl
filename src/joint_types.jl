@@ -121,14 +121,14 @@ function velocity_to_configuration_derivative!(jt::QuaternionFloating, q̇::Abst
     nothing
 end
 
-function zero_configuration!(jt::QuaternionFloating, q::AbstractVector)
+function zero_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
     rotation!(jt, q, eye(Quat{T}))
     translation!(jt, q, zeros(SVector{3, T}))
     nothing
 end
 
-function rand_configuration!(jt::QuaternionFloating, q::AbstractVector)
+function rand_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
     rotation!(jt, q, rand(Quat{T}))
     translation!(jt, q, randn(SVector{3, T}))
@@ -200,12 +200,12 @@ abstract type OneDegreeOfFreedomFixedAxis{T<:Number} <: JointType{T} end
 num_positions(::OneDegreeOfFreedomFixedAxis) = 1
 num_velocities(::OneDegreeOfFreedomFixedAxis) = 1
 
-function zero_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
+function zero_configuration!(q::AbstractVector, ::OneDegreeOfFreedomFixedAxis)
     fill!(q, zero(eltype(q)))
     nothing
 end
 
-function rand_configuration!(::OneDegreeOfFreedomFixedAxis, q::AbstractVector)
+function rand_configuration!(q::AbstractVector, ::OneDegreeOfFreedomFixedAxis)
     randn!(q)
     nothing
  end
@@ -389,8 +389,8 @@ function constraint_wrench_subspace{T<:Number, A<:AbstractMatrix}(jt::Fixed{T}, 
     WrenchSubspace(jointTransform.from, angular, linear)
 end
 
-zero_configuration!(::Fixed, q::AbstractVector) = nothing
-rand_configuration!(::Fixed, q::AbstractVector) = nothing
+zero_configuration!(q::AbstractVector, ::Fixed) = nothing
+rand_configuration!(q::AbstractVector, ::Fixed) = nothing
 
 function bias_acceleration{T<:Number, X<:Number}(
         jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector{X}, v::AbstractVector{X})

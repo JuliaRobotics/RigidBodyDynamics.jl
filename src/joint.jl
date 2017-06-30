@@ -226,9 +226,9 @@ $(SIGNATURES)
 Set ``q`` to the 'zero' configuration, corresponding to an identity joint
 transform.
 """
-function zero_configuration!(joint::Joint, q::AbstractVector)
+function zero_configuration!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
-    zero_configuration!(joint.jointType, q)
+    zero_configuration!(q, joint.jointType)
 end
 
 """
@@ -237,9 +237,9 @@ $(SIGNATURES)
 Set ``q`` to a random configuration. The distribution used depends on the
 joint type.
 """
-function rand_configuration!(joint::Joint, q::AbstractVector)
+function rand_configuration!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
-    rand_configuration!(joint.jointType, q)
+    rand_configuration!(q, joint.jointType)
 end
 
 """

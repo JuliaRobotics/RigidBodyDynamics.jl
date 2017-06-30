@@ -434,7 +434,7 @@
             q0 = Vector{Float64}(num_positions(joint))
             q = configuration(state, joint)
             v = velocity(state, joint)
-            rand_configuration!(joint, q0)
+            rand_configuration!(q0, joint)
             local_coordinates!(joint, ϕ, ϕ̇, q0, q, v)
             q_back = Vector{Float64}(num_positions(joint))
             global_coordinates!(joint, q_back, q0, ϕ)
