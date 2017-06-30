@@ -449,9 +449,9 @@ function joint_wrenches_and_torques!{T, X, M}(
             # TODO: consider also doing this for the root:
             net_wrenches_in_joint_wrenches_out[parentbody] += jointwrench # action = -reaction
         end
-        jointwrench = transform(jointwrench, inv(transform_to_root(state, body))) # TODO: stay in world frame?
         @inbounds τjoint = fastview(torquesout, velocity_range(state, joint))
-        joint_torque!(joint, τjoint, configuration(state, joint), jointwrench)
+        S = motion_subspace_in_world(state, joint)
+        torque!(τjoint, S, jointwrench)
     end
 end
 
