@@ -132,14 +132,6 @@ for stateful contact models).
 """
 num_additional_states(state::MechanismState) = length(state.s)
 
-
-"""
-$(SIGNATURES)
-
-Return the `Joint`s that are not part of the underlying `Mechanism`'s spanning tree as an iterable collection.
-"""
-non_tree_joints(state::MechanismState) = state.nontreejoints
-
 state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
 mechanism_eltype{X, M, C}(state::MechanismState{X, M, C}) = M
 cache_eltype{X, M, C}(state::MechanismState{X, M, C}) = C
