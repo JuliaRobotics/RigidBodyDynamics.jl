@@ -1,3 +1,16 @@
+# The constructor setup for Joint may look strange. The constructors are
+# designed so that e.g. a call to Joint("bla", QuaternionFloating{Float64}())
+# returns a Joint{T, JointType{T}}, not a JointType{T, QuaternionFloating{T}}.
+#
+# This was done because we want a collection of joints with different joint
+# types to be storable in a type-homogeneous container. If that were not the
+# case, then e.g. iterating over the collection and calling frame_after on each
+# joint would not be type-stable.
+#
+# If JointType-dependent functions need to be called in a type-stable fashion,
+# a joint with a concrete joint type may be constructed from a
+# Joint{T, JointType{T}}.
+
 """
 $(TYPEDEF)
 
@@ -31,12 +44,27 @@ type Joint{T<:Number, JT<:JointType{T}}
     jointType::JT
     id::Int64
 
-    function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JT) where {T<:Number, JT<:JointType{T}}
-        new{T, JT}(name, frameBefore, frameAfter, jointType, -1)
+    function Joint{T, JT}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T}) where {T, JT<:JointType{T}}
+        new{T, JointType{T}}(name, frameBefore, frameAfter, jointType, -1)
+    end
+
+    function Joint(other::Joint{T}) where T
+        JT = typeof(other.jointType)
+        new{T, JT}(other.name, other.frameBefore, other.frameAfter, other.jointType, other.id)
     end
 end
 
-Joint(name::String, jointType::JointType) = Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jointType)
+const GenericJoint{T} = Joint{T, JointType{T}}
+
+function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jtype::JointType{T}) where T
+    GenericJoint{T}(name, frameBefore, frameAfter, jtype)
+end
+
+function Joint(name::String, jtype::JointType)
+    Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jtype)
+end
+
+typedjoint(joint::Joint) = Joint(joint)
 
 frame_before(joint::Joint) = joint.frameBefore
 frame_after(joint::Joint) = joint.frameAfter

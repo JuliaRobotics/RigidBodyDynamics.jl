@@ -1,5 +1,5 @@
 const BodyDict{T} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}}
-const JointDict{T} = UnsafeFastDict{Graphs.edge_index, Joint{T}}
+const JointDict{T} = UnsafeFastDict{Graphs.edge_index, GenericJoint{T}}
 
 """
 $(TYPEDEF)
@@ -16,7 +16,7 @@ Type parameters:
 """
 immutable MechanismState{X<:Number, M<:Number, C<:Number}
     mechanism::Mechanism{M}
-    constraint_jacobian_structure::Vector{Tuple{Joint{M}, TreePath{RigidBody{M}, Joint{M}}}}
+    constraint_jacobian_structure::Vector{Tuple{GenericJoint{M}, TreePath{RigidBody{M}, GenericJoint{M}}}}
 
     # configurations, velocities
     q::Vector{X}
@@ -297,7 +297,7 @@ additional_state(state::MechanismState) = state.s
 state_vector(state::MechanismState) = [configuration(state); velocity(state); additional_state(state)]
 
 for fun in (:num_velocities, :num_positions)
-    @eval function $fun{T}(path::TreePath{RigidBody{T}, Joint{T}})
+    @eval function $fun{T}(path::TreePath{RigidBody{T}, GenericJoint{T}})
         mapreduce(it -> $fun(first(it)), +, 0, path)
     end
 end
@@ -321,7 +321,7 @@ $(SIGNATURES)
 Return the part of the `Mechanism`'s configuration vector ``q`` associated with
 the joints along `path`.
 """
-function configuration{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
+function configuration{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}})
     set_path_vector!(Vector{X}(num_positions(path)), state, path, configuration)
 end
 
@@ -331,7 +331,7 @@ $(SIGNATURES)
 Return the part of the `Mechanism`'s velocity vector ``v`` associated with
 the joints along `path`.
 """
-function velocity{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
+function velocity{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}})
     set_path_vector!(Vector{X}(num_velocities(path)), state, path, velocity)
 end
 

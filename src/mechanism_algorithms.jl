@@ -142,7 +142,7 @@ The Jacobian is computed in the `Mechanism`'s root frame.
 
 See [`geometric_jacobian!(out, state, path)`](@ref).
 """
-function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
+function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}})
     nv = num_velocities(path)
     angular = Matrix{C}(3, nv)
     linear = Matrix{C}(3, nv)
