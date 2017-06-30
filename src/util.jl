@@ -85,24 +85,6 @@ function cached_download(url::String, localFileName::String, cacheDir::String = 
     fullCachePath
 end
 
-macro rtti_dispatch(typeTuple, signature)
-    @assert signature.head == :call
-    @assert length(signature.args) > 1
-    @assert typeTuple.head == :tuple
-
-    f = signature.args[1]
-    args = signature.args[2 : end]
-    dispatchArg = args[1]
-    otherArgs = args[2 : end]
-    types = typeTuple.args
-
-    ret = :(error("type not recognized"))
-    for T in reverse(types)
-        ret = Expr(:if, :(isa($dispatchArg, $T)), :(return $(f)($(dispatchArg)::$T, $(otherArgs...))), ret)
-    end
-    :($(esc(ret)))
-end
-
 const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
 
 const RotMatrix3{T} = RotMatrix{3, T, 9}
