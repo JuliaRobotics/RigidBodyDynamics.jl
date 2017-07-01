@@ -142,7 +142,7 @@ The Jacobian is computed in the `Mechanism`'s root frame.
 
 See [`geometric_jacobian!(out, state, path)`](@ref).
 """
-function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}})
+function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}})
     nv = num_velocities(path)
     angular = Matrix{C}(3, nv)
     linear = Matrix{C}(3, nv)
@@ -449,9 +449,9 @@ function joint_wrenches_and_torques!{T, X, M}(
             # TODO: consider also doing this for the root:
             net_wrenches_in_joint_wrenches_out[parentbody] += jointwrench # action = -reaction
         end
-        jointwrench = transform(jointwrench, inv(transform_to_root(state, body))) # TODO: stay in world frame?
         @inbounds τjoint = fastview(torquesout, velocity_range(state, joint))
-        joint_torque!(joint, τjoint, configuration(state, joint), jointwrench)
+        S = motion_subspace_in_world(state, joint)
+        torque!(τjoint, S, jointwrench)
     end
 end
 
@@ -552,8 +552,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         range = rowstart : nextrowstart - 1
 
         # Constraint wrench subspace.
-        jointtransform = relative_transform(state, frame_after(nontreejoint), frame_before(nontreejoint)) # TODO: expensive
-        T = constraint_wrench_subspace(nontreejoint, jointtransform)
+        T = constraint_wrench_subspace(state, nontreejoint)
         T = transform(T, transform_to_root(state, T.frame)) # TODO: expensive
 
         # Jacobian rows.
@@ -565,7 +564,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         end
 
         # Constraint bias.
-        has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.")
+        has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
         kjoint = fastview(constraintbias, range)
         pred = predecessor(nontreejoint, mechanism)
         succ = successor(nontreejoint, mechanism)

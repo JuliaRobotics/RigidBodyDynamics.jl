@@ -741,10 +741,12 @@ function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
     Wrench(frame, angular, linear)
 end
 
+torque!(τ::AbstractVector, jac::GeometricJacobian, wrench::Wrench) = At_mul_B!(τ, jac, wrench)
+
 function torque(jac::GeometricJacobian, wrench::Wrench)
-    ret = Vector{promote_type(eltype(jac), eltype(wrench))}(num_cols(jac))
-    At_mul_B!(ret, jac, wrench)
-    ret
+    τ = Vector{promote_type(eltype(jac), eltype(wrench))}(num_cols(jac))
+    torque!(τ, jac, wrench)
+    τ
 end
 
 for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAcceleration}), :GeometricJacobian => :(Union{Momentum, Wrench}))

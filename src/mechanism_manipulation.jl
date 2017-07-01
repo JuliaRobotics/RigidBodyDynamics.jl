@@ -18,7 +18,7 @@ If `successor` is not yet a part of the `Mechanism`, it will be added to the
 `Mechanism`, effectively creating a loop constraint that will be enforced
 using Lagrange multipliers (as opposed to using recursive algorithms).
 """
-function attach!{T}(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::Joint{T}, jointToPredecessor::Transform3D,
+function attach!{T}(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::GenericJoint{T}, jointToPredecessor::Transform3D,
         successor::RigidBody{T}, successorToJoint::Transform3D = eye(Transform3DS{T}, default_frame(successor), frame_after(joint)))
     @assert jointToPredecessor.from == frame_before(joint)
     @assert successorToJoint.to == frame_after(joint)
@@ -38,7 +38,7 @@ function attach!{T}(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::J
     mechanism
 end
 
-function _copyjoint!{T}(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::Joint{T}, bodymap::Dict{RigidBody{T}, RigidBody{T}}, jointmap::Dict{Joint{T}, Joint{T}})
+function _copyjoint!{T}(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::GenericJoint{T}, bodymap::Dict{RigidBody{T}, RigidBody{T}}, jointmap::Dict{GenericJoint{T}, GenericJoint{T}})
     srcpredecessor = source(srcjoint, src.graph)
     srcsuccessor = target(srcjoint, src.graph)
 
@@ -70,7 +70,7 @@ function attach!{T}(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmech
     @assert mechanism != childmechanism # infinite loop otherwise
 
     bodymap = Dict{RigidBody{T}, RigidBody{T}}()
-    jointmap = Dict{Joint{T}, Joint{T}}()
+    jointmap = Dict{GenericJoint{T}, GenericJoint{T}}()
 
     # Define where child root body is located w.r.t parent body and add frames that were attached to childroot to parentbody.
     childroot = root_body(childmechanism)
@@ -104,7 +104,7 @@ function submechanism{T}(mechanism::Mechanism{T}, submechanismroot::RigidBody{T}
     # FIXME: test with cycles
 
     bodymap = Dict{RigidBody{T}, RigidBody{T}}()
-    jointmap = Dict{Joint{T}, Joint{T}}()
+    jointmap = Dict{GenericJoint{T}, GenericJoint{T}}()
 
     # Create Mechanism
     root = bodymap[submechanismroot] = deepcopy(submechanismroot)
@@ -249,14 +249,14 @@ function maximal_coordinates(mechanism::Mechanism)
 
     # Body and joint mapping.
     bodymap = Dict{RigidBody{T}, RigidBody{T}}()
-    jointmap = Dict{Joint{T}, Joint{T}}()
+    jointmap = Dict{GenericJoint{T}, GenericJoint{T}}()
 
     # Copy root.
     root = bodymap[root_body(mechanism)] = deepcopy(root_body(mechanism))
     ret = Mechanism(root, gravity = mechanism.gravitationalAcceleration.v)
 
     # Copy non-root bodies and attach them to the root with a floating joint.
-    newfloatingjoints = Dict{RigidBody{T}, Joint{T}}()
+    newfloatingjoints = Dict{RigidBody{T}, GenericJoint{T}}()
     for srcbody in non_root_bodies(mechanism)
         framebefore = default_frame(root)
         frameafter = default_frame(srcbody)

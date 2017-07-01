@@ -6,13 +6,13 @@ A `Mechanism` represents an interconnection of rigid bodies and joints.
 state-dependent information.
 """
 type Mechanism{T<:Number}
-    graph::DirectedGraph{RigidBody{T}, Joint{T}}
-    tree::SpanningTree{RigidBody{T}, Joint{T}}
+    graph::DirectedGraph{RigidBody{T}, GenericJoint{T}}
+    tree::SpanningTree{RigidBody{T}, GenericJoint{T}}
     environment::ContactEnvironment{T}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
     function (::Type{Mechanism{T}}){T<:Number}(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
-        graph = DirectedGraph{RigidBody{T}, Joint{T}}()
+        graph = DirectedGraph{RigidBody{T}, GenericJoint{T}}()
         add_vertex!(graph, rootBody)
         tree = SpanningTree(graph, rootBody)
         gravitationalAcceleration = FreeVector3D(default_frame(rootBody), gravity)
@@ -56,7 +56,7 @@ $(SIGNATURES)
 
 Return the `RigidBody`s that are part of the `Mechanism` as an iterable collection.
 """
-bodies{T}(mechanism::Mechanism{T}) = vertices(mechanism.graph)
+bodies(mechanism::Mechanism) = vertices(mechanism.graph)
 
 """
 $(SIGNATURES)
