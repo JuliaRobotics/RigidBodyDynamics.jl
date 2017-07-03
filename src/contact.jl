@@ -53,17 +53,17 @@ export DefaultContactPoint,
 # * `dynamics!(state_deriv, model, state, ftangential)`: sets state_deriv given the current state and the tangential force force
 
 ## SoftContactModel and related types.
-immutable SoftContactModel{N, F}
+struct SoftContactModel{N, F}
     normal::N
     friction::F
 end
 
-immutable SoftContactState{N, F}
+struct SoftContactState{N, F}
     normal::N
     friction::F
 end
 
-immutable SoftContactStateDeriv{N, F}
+struct SoftContactStateDeriv{N, F}
     normal::N
     friction::F
 end
@@ -93,7 +93,7 @@ reset!(state::SoftContactState) = (reset!(normal_force_state(state)); reset!(fri
 zero!(deriv::SoftContactStateDeriv) = (zero!(friction_state_deriv(deriv)); zero!(friction_state_deriv(deriv)))
 
 ## ContactPoint
-type ContactPoint{T, M <: SoftContactModel}
+mutable struct ContactPoint{T, M <: SoftContactModel}
     location::Point3D{SVector{3, T}}
     model::M
 end
@@ -123,7 +123,7 @@ zero!(::Void) = nothing
 
 
 ## Normal contact models
-immutable HuntCrossleyModel{T}
+struct HuntCrossleyModel{T}
     # (2) in Marhefka, Orin, "A Compliant Contact Model with Nonlinear Damping for Simulation of Robotic Systems"
     k::T
     λ::T
@@ -148,18 +148,18 @@ dynamics!(ẋ::Void, model::HuntCrossleyModel, state::Void, fnormal::Number) = n
 
 
 # Friction models
-immutable ViscoelasticCoulombModel{T}
+struct ViscoelasticCoulombModel{T}
     # See section 11.8 of Featherstone, "Rigid Body Dynamics Algorithms", 2008
     μ::T
     k::T
     b::T
 end
 
-type ViscoelasticCoulombState{V}
+mutable struct ViscoelasticCoulombState{V}
     tangential_displacement::FreeVector3D{V} # Use a 3-vector; technically only need one state for each tangential direction, but this is easier to work with.
 end
 
-type ViscoelasticCoulombStateDeriv{V}
+mutable struct ViscoelasticCoulombStateDeriv{V}
     deriv::FreeVector3D{V}
 end
 
@@ -212,7 +212,7 @@ const DefaultSoftContactStateDeriv{T} = SoftContactStateDeriv{Void, Viscoelastic
 # Contact detection
 # TODO: should probably move this somewhere else
 
-type HalfSpace3D{T}
+mutable struct HalfSpace3D{T}
     point::Point3D{SVector{3, T}}
     outward_normal::FreeVector3D{SVector{3, T}}
 
@@ -237,7 +237,7 @@ detect_contact(halfspace::HalfSpace3D, p::Point3D) = separation(halfspace, p), h
 
 
 # ContactEnvironment
-type ContactEnvironment{T}
+mutable struct ContactEnvironment{T}
     halfspaces::Vector{HalfSpace3D{T}}
     (::Type{ContactEnvironment{T}}){T}() = new{T}(HalfSpace3D{T}[])
 end

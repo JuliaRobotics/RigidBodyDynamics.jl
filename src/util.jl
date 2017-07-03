@@ -1,6 +1,6 @@
 include("type_sorted_collection.jl")
 
-immutable ConstVector{T} <: AbstractVector{T}
+struct ConstVector{T} <: AbstractVector{T}
     val::T
     length::Int64
 end
@@ -9,7 +9,7 @@ Base.getindex{T}(A::ConstVector{T}, i::Int) = (@boundscheck checkbounds(A, i); A
 Base.IndexStyle{T}(::Type{ConstVector{T}}) = IndexLinear()
 
 # associative type that signifies an empty dictionary and does not allocate memory
-immutable NullDict{K, V} <: Associative{K, V}
+struct NullDict{K, V} <: Associative{K, V}
 end
 Base.haskey(::NullDict, k) = false
 
@@ -26,7 +26,7 @@ and does no bounds checking. Use it with caution.
 
 Originally from https://github.com/mlubin/ReverseDiffSparse.jl/commit/8e3ade867581aad6ade7c898ada2ed58e0ad42bb.
 """
-immutable UnsafeVectorView{T} <: AbstractVector{T}
+struct UnsafeVectorView{T} <: AbstractVector{T}
     offset::Int
     len::Int
     ptr::Ptr{T}
@@ -104,7 +104,7 @@ end
     end
 end
 
-immutable UnsafeFastDict{I, K, V} <: Associative{K, V}
+struct UnsafeFastDict{I, K, V} <: Associative{K, V}
     keys::Vector{K}
     values::Vector{V}
 

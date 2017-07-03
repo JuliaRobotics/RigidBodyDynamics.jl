@@ -7,7 +7,7 @@ A `RigidBody` has inertia (represented as a [`SpatialInertia`](@ref)),
 unless it represents a root (world) body. A `RigidBody` additionally stores
 a list of definitions of coordinate systems that are rigidly attached to it.
 """
-type RigidBody{T<:Number}
+mutable struct RigidBody{T<:Number}
     name::String
     inertia::Nullable{SpatialInertia{T}}
     frameDefinitions::Vector{Transform3DS{T}}

@@ -22,7 +22,7 @@ of point ``x`` expressed in frame ``i``.
 ``J`` is the mass moment of inertia, ``m`` is the total mass, and ``c`` is the
 'cross part', center of mass position scaled by ``m``.
 """
-immutable SpatialInertia{T<:Number}
+struct SpatialInertia{T<:Number}
     frame::CartesianFrame3D
     moment::SMatrix{3, 3, T, 9}
     crossPart::SVector{3, T} # mass times center of mass
@@ -30,7 +30,7 @@ immutable SpatialInertia{T<:Number}
 end
 
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
-    @eval immutable $MotionSpaceElement{T<:Number}
+    @eval struct $MotionSpaceElement{T<:Number}
         # describes motion of body w.r.t. base, expressed in frame
         body::CartesianFrame3D
         base::CartesianFrame3D
@@ -81,7 +81,7 @@ See [`Twist`](@ref).
 SpatialAcceleration
 
 for ForceSpaceElement in (:Momentum, :Wrench)
-    @eval immutable $ForceSpaceElement{T<:Number}
+    @eval struct $ForceSpaceElement{T<:Number}
         frame::CartesianFrame3D
         angular::SVector{3, T}
         linear::SVector{3, T}
@@ -136,7 +136,7 @@ $(TYPEDEF)
 A geometric Jacobian (also known as basic, or spatial Jacobian) maps a vector
 of joint velocities to a twist.
 """
-immutable GeometricJacobian{A<:AbstractMatrix}
+struct GeometricJacobian{A<:AbstractMatrix}
     body::CartesianFrame3D
     base::CartesianFrame3D
     frame::CartesianFrame3D
@@ -152,7 +152,7 @@ immutable GeometricJacobian{A<:AbstractMatrix}
 end
 
 for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
-    @eval immutable $ForceSpaceMatrix{A<:AbstractMatrix}
+    @eval struct $ForceSpaceMatrix{A<:AbstractMatrix}
         frame::CartesianFrame3D
         angular::A
         linear::A

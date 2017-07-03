@@ -20,7 +20,7 @@ $(TYPEDEF)
 
 A [Butcher tableau](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Explicit_Runge.E2.80.93Kutta_methods).
 """
-immutable ButcherTableau{N, T<:Number, L}
+struct ButcherTableau{N, T<:Number, L}
     a::SMatrix{N, N, T, L}
     b::SVector{N, T}
     c::SVector{N, T}
@@ -72,7 +72,7 @@ $(TYPEDEF)
 An `OdeResultsSink` that stores the state at each integration time step in a
 ring buffer.
 """
-type RingBufferStorage{T} <: OdeResultsSink
+mutable struct RingBufferStorage{T} <: OdeResultsSink
     ts::Vector{T}
     qs::Vector{Vector{T}}
     vs::Vector{Vector{T}}
@@ -111,7 +111,7 @@ $(TYPEDEF)
 An `OdeResultsSink` that stores the state at each integration time step in
 `Vectors` that may expand.
 """
-type ExpandingStorage{T} <: OdeResultsSink
+mutable struct ExpandingStorage{T} <: OdeResultsSink
     ts::Vector{T}
     qs::Vector{Vector{T}}
     vs::Vector{Vector{T}}
@@ -135,7 +135,7 @@ function process{T}(storage::ExpandingStorage{T}, t::T, state)
     nothing
 end
 
-type MuntheKaasStageCache{N, T<:Number}
+mutable struct MuntheKaasStageCache{N, T<:Number}
     q0::Vector{T} # global coordinates
     vs::SVector{N, Vector{T}} # velocity vector for each stage
     vds::SVector{N, Vector{T}} # time derivatives of vs
@@ -200,7 +200,7 @@ From [Iserles et al., 'Lie-group methods' (2000)](https://hal.archives-ouvertes.
 
 Another useful reference is [Park and Chung, 'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005)](http://www.ent.mrt.ac.lk/iml/paperbase/TRO%20Collection/TRO/2005/october/7.pdf).
 """
-immutable MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}
+struct MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}
     dynamics!::F # dynamics!(vd, sd, t, state), sets vd (time derivative of v) and sd (time derivative of s) given time t and state
     tableau::ButcherTableau{N, T, L}
     sink::S

@@ -1,4 +1,4 @@
-type CacheElement{T}
+mutable struct CacheElement{T}
     data::T
     dirty::Bool
     CacheElement(data::T) where {T} = new{T}(data, true)

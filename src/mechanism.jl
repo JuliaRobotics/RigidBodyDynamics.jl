@@ -5,7 +5,7 @@ A `Mechanism` represents an interconnection of rigid bodies and joints.
 `Mechanism`s store the joint layout and inertia parameters, but no
 state-dependent information.
 """
-type Mechanism{T<:Number}
+mutable struct Mechanism{T<:Number}
     graph::DirectedGraph{RigidBody{T}, GenericJoint{T}}
     tree::SpanningTree{RigidBody{T}, GenericJoint{T}}
     environment::ContactEnvironment{T}

@@ -39,7 +39,7 @@ The 6-dimensional velocity vector of a `QuaternionFloating` joint is the twist
 of the frame after the joint with respect to the frame before it, expressed in
 the frame after the joint.
 """
-immutable QuaternionFloating{T} <: JointType{T}
+struct QuaternionFloating{T} <: JointType{T}
 end
 
 Base.show(io::IO, jt::QuaternionFloating) = print(io, "Quaternion floating joint")
@@ -233,7 +233,7 @@ $(TYPEDEF)
 
 A `Prismatic` joint type allows translation along a fixed axis.
 """
-immutable Prismatic{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
+struct Prismatic{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
     rotationFromZAligned::RotMatrix{3, T}
 
@@ -296,7 +296,7 @@ $(TYPEDEF)
 
 A `Revolute` joint type allows rotation about a fixed axis.
 """
-immutable Revolute{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
+struct Revolute{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
     rotationFromZAligned::RotMatrix{3, T}
 
@@ -358,7 +358,7 @@ $(TYPEDEF)
 The `Fixed` joint type is a degenerate joint type, in the sense that it allows
 no motion between its predecessor and successor rigid bodies.
 """
-immutable Fixed{T<:Number} <: JointType{T}
+struct Fixed{T<:Number} <: JointType{T}
 end
 Base.show(io::IO, jt::Fixed) = print(io, "Fixed joint")
 Random.rand{T}(::Type{Fixed{T}}) = Fixed{T}()

@@ -51,7 +51,7 @@ for typename in (:Edge, :Vertex)
     getid = Symbol(lowercase(string(typename)) * "_index")
     setid = Symbol(lowercase(string(typename)) * "_index!")
     @eval begin
-        type $typename{T}
+        mutable struct $typename{T}
             data::T
             id::Int64
 
@@ -71,7 +71,7 @@ out_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (target(e, g) for e in 
 in_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (source(e, g) for e in in_edges(vertex, g))
 
 
-type DirectedGraph{V, E} <: AbstractGraph{V, E}
+mutable struct DirectedGraph{V, E} <: AbstractGraph{V, E}
     vertices::Vector{V}
     edges::Vector{E}
     sources::Vector{V}
@@ -183,7 +183,7 @@ function replace_edge!{V, E}(g::DirectedGraph{V, E}, old_edge::E, new_edge::E)
     g
 end
 
-type SpanningTree{V, E} <: AbstractGraph{V, E}
+mutable struct SpanningTree{V, E} <: AbstractGraph{V, E}
     graph::DirectedGraph{V, E}
     root::V
     edges::Vector{E}
@@ -319,7 +319,7 @@ end
 
 
 # Path
-immutable TreePath{V, E}
+struct TreePath{V, E}
     source::V
     target::V
     directed_edges::Vector{Pair{E, Symbol}} # Symbol: :up if going from source to LCA, :down if going from LCA to target

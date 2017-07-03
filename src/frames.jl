@@ -17,7 +17,7 @@ A `CartesianFrame3D` identifies a three-dimensional Cartesian coordinate system.
 `CartesianFrame3D`s are typically used to annotate the frame in which certain
 quantities are expressed.
 """
-immutable CartesianFrame3D
+struct CartesianFrame3D
     id::Int64
 
     function CartesianFrame3D(name::String)
@@ -69,7 +69,7 @@ $(TYPEDEF)
 A homogeneous transformation matrix representing the transformation from one
 three-dimensional Cartesian coordinate system to another.
 """
-immutable Transform3D{A<:AbstractMatrix}
+struct Transform3D{A<:AbstractMatrix}
     from::CartesianFrame3D
     to::CartesianFrame3D
     mat::A
@@ -162,7 +162,7 @@ end
 for VectorType in (:FreeVector3D, :Point3D)
     @eval begin
         # TODO: consider storing as a homogeneous vector
-        immutable $VectorType{V<:AbstractVector}
+        struct $VectorType{V<:AbstractVector}
             frame::CartesianFrame3D
             v::V
 
