@@ -79,8 +79,8 @@ function motion_subspace(jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::QuaternionFloating{T}, jointTransform::Transform3D{X}) where {T<:Number, X<:Number}
-    S = promote_type(T, X)
+function constraint_wrench_subspace(jt::QuaternionFloating{T}, jointTransform::Transform3D{A}) where {T<:Number, A}
+    S = promote_type(T, eltype(A))
     WrenchSubspace(jointTransform.from, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
@@ -269,8 +269,8 @@ function motion_subspace(jt::Prismatic{T}, frameAfter::CartesianFrame3D, frameBe
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::Prismatic{T}, jointTransform::Transform3D{X}) where {T<:Number, X<:Number}
-    S = promote_type(T, X)
+function constraint_wrench_subspace(jt::Prismatic{T}, jointTransform::Transform3D{A}) where {T<:Number, A}
+    S = promote_type(T, eltype(A))
     R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
     Rcols12 = R[:, SVector(1, 2)]
     angular = hcat(R, zeros(SMatrix{3, 2, S}))
@@ -329,8 +329,8 @@ function motion_subspace(jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBef
     MotionSubspace(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::Revolute{T}, jointTransform::Transform3D{X}) where {T<:Number, X<:Number}
-    S = promote_type(T, X)
+function constraint_wrench_subspace(jt::Revolute{T}, jointTransform::Transform3D{A}) where {T<:Number, A}
+    S = promote_type(T, eltype(A))
     R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
     Rcols12 = R[:, SVector(1, 2)]
     angular = hcat(Rcols12, zeros(SMatrix{3, 3, S}))
@@ -376,8 +376,8 @@ function motion_subspace(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore
     MotionSubspace(frameAfter, frameBefore, frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
-function constraint_wrench_subspace(jt::Fixed{T}, jointTransform::Transform3D{X}) where {T<:Number, X<:Number}
-    S = promote_type(T, X)
+function constraint_wrench_subspace(jt::Fixed{T}, jointTransform::Transform3D{A}) where {T<:Number, A}
+    S = promote_type(T, eltype(A))
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
     WrenchSubspace(jointTransform.from, angular, linear)

@@ -111,9 +111,9 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
     end
 end
 
-Base.@deprecate MechanismState{X, M}(::Type{X}, mechanism::Mechanism{M}) MechanismState{X}(mechanism)
+Base.@deprecate MechanismState(::Type{X}, mechanism::Mechanism{M}) where {X, M} MechanismState{X}(mechanism)
 
-Base.show{X, M, C}(io::IO, ::MechanismState{X, M, C}) = print(io, "MechanismState{$X, $M, $C, …}(…)")
+Base.show(io::IO, ::MechanismState{X, M, C}) where {X, M, C} = print(io, "MechanismState{$X, $M, $C, …}(…)")
 
 """
 $(SIGNATURES)

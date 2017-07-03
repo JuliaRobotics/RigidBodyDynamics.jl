@@ -242,7 +242,7 @@ detect_contact(halfspace::HalfSpace3D, p::Point3D) = separation(halfspace, p), h
 # ContactEnvironment
 mutable struct ContactEnvironment{T}
     halfspaces::Vector{HalfSpace3D{T}}
-    (::Type{ContactEnvironment{T}}){T}() = new{T}(HalfSpace3D{T}[])
+    ContactEnvironment{T}() where {T} = new{T}(HalfSpace3D{T}[])
 end
 
 Base.push!(environment::ContactEnvironment, halfspace::HalfSpace3D) = push!(environment.halfspaces, halfspace)
