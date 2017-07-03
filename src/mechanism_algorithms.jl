@@ -4,7 +4,7 @@ $(SIGNATURES)
 Return the mass of a subtree of a `Mechanism`, rooted at `base` (including
 the mass of `base`).
 """
-function subtree_mass{T}(base::RigidBody{T}, mechanism::Mechanism{T})
+function subtree_mass(base::RigidBody{T}, mechanism::Mechanism{T}) where {T}
     result = isroot(base, mechanism) ? zero(T) : spatial_inertia(base).mass
     for joint in joints_to_children(base, mechanism)
         result += subtree_mass(successor(joint, mechanism), mechanism)
@@ -142,7 +142,7 @@ The Jacobian is computed in the `Mechanism`'s root frame.
 
 See [`geometric_jacobian!(out, state, path)`](@ref).
 """
-function geometric_jacobian{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}})
+function geometric_jacobian(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}}) where {X, M, C}
     nv = num_velocities(path)
     angular = Matrix{C}(3, nv)
     linear = Matrix{C}(3, nv)
@@ -200,7 +200,7 @@ Return the gravitational potential energy in the given state, computed as the
 negation of the dot product of the gravitational force and the center
 of mass expressed in the `Mechanism`'s root frame.
 """
-function gravitational_potential_energy{X, M, C}(state::MechanismState{X, M, C})
+function gravitational_potential_energy(state::MechanismState{X, M, C}) where {X, M, C}
     gravitationalforce = mass(state.mechanism) * state.mechanism.gravitationalAcceleration
     -dot(gravitationalforce, FreeVector3D(center_of_mass(state)))
  end
@@ -252,7 +252,7 @@ The `out` argument must be an ``n_v \\times n_v`` lower triangular
 `Symmetric` matrix, where ``n_v`` is the dimension of the `Mechanism`'s joint
 velocity vector ``v``.
 """
-function mass_matrix!{X, M, C}(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C})
+function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C}) where {X, M, C}
     @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
     @boundscheck out.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
     fill!(out.data, zero(C))
@@ -290,7 +290,7 @@ $(SIGNATURES)
 
 $mass_matrix_doc
 """
-function mass_matrix{X, M, C}(state::MechanismState{X, M, C})
+function mass_matrix(state::MechanismState{X, M, C}) where {X, M, C}
     nv = num_velocities(state)
     ret = Symmetric(Matrix{C}(nv, nv), :L)
     mass_matrix!(ret, state)
@@ -385,7 +385,7 @@ function momentum_matrix(state::MechanismState)
     ret
 end
 
-function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M})
+function bias_accelerations!(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M}) where {T, X, M}
     mechanism = state.mechanism
     gravitybias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
     for joint in tree_joints(mechanism)
@@ -395,8 +395,8 @@ function bias_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcce
     nothing
 end
 
-function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialAcceleration{T}},
-        state::MechanismState{X, M}, v̇::StridedVector)
+function spatial_accelerations!(out::Associative{RigidBody{M}, SpatialAcceleration{T}},
+        state::MechanismState{X, M}, v̇::StridedVector) where {T, X, M}
     mechanism = state.mechanism
 
     # TODO: consider merging back into one loop
@@ -419,10 +419,10 @@ function spatial_accelerations!{T, X, M}(out::Associative{RigidBody{M}, SpatialA
     nothing
 end
 
-function newton_euler!{T, X, M, W}(
+function newton_euler!(
         out::Associative{RigidBody{M}, Wrench{T}}, state::MechanismState{X, M},
         accelerations::Associative{RigidBody{M}, SpatialAcceleration{T}},
-        externalwrenches::Associative{RigidBody{M}, Wrench{W}})
+        externalwrenches::Associative{RigidBody{M}, Wrench{W}}) where {T, X, M, W}
     mechanism = state.mechanism
     for joint in tree_joints(mechanism)
         body = successor(joint, mechanism)
@@ -432,10 +432,10 @@ function newton_euler!{T, X, M, W}(
 end
 
 
-function joint_wrenches_and_torques!{T, X, M}(
+function joint_wrenches_and_torques!(
         torquesout::StridedVector{T},
         net_wrenches_in_joint_wrenches_out::Associative{RigidBody{M}, Wrench{T}},
-        state::MechanismState{X, M})
+        state::MechanismState{X, M}) where {T, X, M}
     # Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
     @boundscheck length(torquesout) == num_velocities(state) || error("length of torque vector is wrong")
     mechanism = state.mechanism
@@ -475,12 +475,12 @@ wrenches that act on the `Mechanism`'s bodies.
 
 $noalloc_doc
 """
-function dynamics_bias!{T, X, M, W}(
+function dynamics_bias!(
         torques::AbstractVector{T},
         biasaccelerations::Associative{RigidBody{M}, SpatialAcceleration{T}},
         wrenches::Associative{RigidBody{M}, Wrench{T}},
         state::MechanismState{X, M},
-        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}()) where {T, X, M, W}
     bias_accelerations!(biasaccelerations, state)
     newton_euler!(wrenches, state, biasaccelerations, externalwrenches)
     joint_wrenches_and_torques!(torques, wrenches, state)
@@ -510,13 +510,13 @@ $inverse_dynamics_doc
 
 $noalloc_doc
 """
-function inverse_dynamics!{T, X, M, V, W}(
+function inverse_dynamics!(
         torquesout::AbstractVector{T},
         jointwrenchesout::Associative{RigidBody{M}, Wrench{T}},
         accelerations::Associative{RigidBody{M}, SpatialAcceleration{T}},
         state::MechanismState{X, M},
         v̇::AbstractVector{V},
-        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}()) where {T, X, M, V, W}
     length(tree_joints(state.mechanism)) == length(joints(state.mechanism)) || error("This method can currently only handle tree Mechanisms.")
     spatial_accelerations!(accelerations, state, v̇)
     newton_euler!(jointwrenchesout, state, accelerations, externalwrenches)
@@ -528,10 +528,10 @@ $(SIGNATURES)
 
 $inverse_dynamics_doc
 """
-function inverse_dynamics{X, M, V, W}(
+function inverse_dynamics(
         state::MechanismState{X, M},
         v̇::AbstractVector{V},
-        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}())
+        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}()) where {X, M, V, W}
     T = promote_type(X, M, V, W)
     mechanism = state.mechanism
     torques = Vector{T}(num_velocities(state))
@@ -574,7 +574,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
     end
 end
 
-function contact_dynamics!{X, M, C, T}(result::DynamicsResult{T, M}, state::MechanismState{X, M, C})
+function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M, C}) where {X, M, C, T}
     mechanism = state.mechanism
     root = root_body(mechanism)
     frame = default_frame(root)
@@ -638,7 +638,7 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
     nothing
 end
 
-function dynamics_solve!{S<:Number, T<:LinAlg.BlasReal}(result::DynamicsResult{T, S}, τ::AbstractVector{T})
+function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) where {S<:Number, T<:LinAlg.BlasReal}
     # optimized version for BLAS floats
     M = result.massmatrix
     c = result.dynamicsbias
@@ -736,9 +736,9 @@ given joint configuration vector ``q``, joint velocity vector ``v``, and
 The `externalwrenches` argument can be used to specify additional
 wrenches that act on the `Mechanism`'s bodies.
 """
-function dynamics!{T, X, M, Tau, W}(result::DynamicsResult{T, M}, state::MechanismState{X, M},
+function dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M},
         torques::AbstractVector{Tau} = ConstVector(zero(T), num_velocities(state)),
-        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}()) where {T, X, M, Tau, W}
     contact_dynamics!(result, state)
     for body in bodies(state.mechanism)
         contactwrench = result.contactwrenches[body]
@@ -765,10 +765,10 @@ v
 ```
 and returns a `Vector` ``\\dot{x}``.
 """
-function dynamics!{T, X, M, Tau, W}(ẋ::StridedVector{X},
+function dynamics!(ẋ::StridedVector{X},
         result::DynamicsResult{T, M}, state::MechanismState{X, M}, stateVec::AbstractVector{X},
         torques::AbstractVector{Tau} = ConstVector(zero(T), num_velocities(state)),
-        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
+        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}()) where {T, X, M, Tau, W}
     set!(state, stateVec)
     nq = num_positions(state)
     nv = num_velocities(state)

@@ -15,21 +15,20 @@ mutable struct RigidBody{T<:Number}
     id::Int64
 
     # inertia undefined; can be used for the root of a kinematic tree
-    function (::Type{RigidBody{T}}){T<:Number}(name::String)
+    function RigidBody{T}(name::String) where {T<:Number}
         frame = CartesianFrame3D(name)
         new{T}(name, Nullable{SpatialInertia{T}}(), [eye(Transform3DS{T}, frame)], DefaultContactPoint{T}[], -1)
     end
 
     # other bodies
-    function (::Type{RigidBody{T}}){T<:Number}(name::String, inertia::SpatialInertia{T})
+    function RigidBody(name::String, inertia::SpatialInertia{T}) where {T}
         new{T}(name, Nullable(inertia), [eye(Transform3DS{T}, inertia.frame)], DefaultContactPoint{T}[], -1)
     end
 end
 
-Base.eltype{T}(::Type{RigidBody{T}}) = T
-Base.eltype{T}(body::RigidBody{T}) = eltype(typeof(body))
-RigidBody{T}(name::String, inertia::SpatialInertia{T}) = RigidBody{T}(name, inertia)
-RigidBody{T}(inertia::SpatialInertia{T}) = RigidBody{T}(name(inertia.frame), inertia)
+Base.eltype(::Type{RigidBody{T}}) where {T} = T
+Base.eltype(body::RigidBody) = eltype(typeof(body))
+RigidBody(inertia::SpatialInertia) = RigidBody(name(inertia.frame), inertia)
 name(b::RigidBody) = b.name
 Base.show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(name(b))\"")
 Base.showcompact(io::IO, b::RigidBody) = print(io, "$(name(b))")
@@ -123,7 +122,7 @@ Add a new frame definition to `body`, represented by a homogeneous transform
 from the `CartesianFrame3D` to be added to any other frame that is already
 attached to `body`.
 """
-function add_frame!{T}(body::RigidBody{T}, transform::Transform3D)
+function add_frame!(body::RigidBody, transform::Transform3D)
     # note: overwrites any existing frame definition
     # transform.to needs to be among (transform.from for transform in frame_definitions(body))
     definitions = body.frameDefinitions
@@ -159,7 +158,7 @@ $(SIGNATURES)
 
 Add a new contact point to the rigid body
 """
-function add_contact_point!{T}(body::RigidBody{T}, point::DefaultContactPoint{T})
+function add_contact_point!(body::RigidBody{T}, point::DefaultContactPoint{T}) where {T}
     loc = location(point)
     tf = fixed_transform(body, loc.frame, default_frame(body))
     point.location = tf * loc

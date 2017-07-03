@@ -74,13 +74,11 @@ struct Transform3D{A<:AbstractMatrix}
     to::CartesianFrame3D
     mat::A
 
-    function (::Type{Transform3D{A}}){A<:AbstractArray}(from::CartesianFrame3D, to::CartesianFrame3D, mat::A)
+    function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, mat::A) where {A}
         @boundscheck size(mat) == (4, 4) || throw(DimensionMismatch())
         new{A}(from, to, mat)
     end
 end
-
-@inline Transform3D{A}(from::CartesianFrame3D, to::CartesianFrame3D, mat::A) = Transform3D{A}(from, to, mat)
 
 Base.eltype{A}(::Type{Transform3D{A}}) = eltype(A)
 const Transform3DS{T} = Transform3D{SMatrix{4, 4, T, 16}}
@@ -94,7 +92,7 @@ const Transform3DS{T} = Transform3D{SMatrix{4, 4, T, 16}}
    Transform3D(from, to, mat)
 end
 
-@inline function Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3, T})
+@inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3, T}) where {T}
     @inbounds mat = @SMatrix [rot[1] rot[4] rot[7] zero(T);
                               rot[2] rot[5] rot[8] zero(T);
                               rot[3] rot[6] rot[9] zero(T);
@@ -102,7 +100,7 @@ end
    Transform3D(from, to, mat)
 end
 
-@inline function Transform3D{T}(from::CartesianFrame3D, to::CartesianFrame3D, trans::SVector{3, T})
+@inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, trans::SVector{3, T}) where {T}
     @inbounds mat = @SMatrix [one(T) zero(T) zero(T) trans[1];
                               zero(T) one(T) zero(T) trans[2];
                               zero(T) zero(T) one(T) trans[3];
@@ -110,8 +108,8 @@ end
     Transform3D(from, to, mat)
 end
 
-@inline Base.convert{A}(::Type{Transform3D{A}}, t::Transform3D{A}) = t
-@inline Base.convert{A}(::Type{Transform3D{A}}, t::Transform3D) = Transform3D(t.from, t.to, convert(A, t.mat))
+@inline Base.convert(::Type{Transform3D{A}}, t::Transform3D{A}) where {A} = t
+@inline Base.convert(::Type{Transform3D{A}}, t::Transform3D) where{A} = Transform3D(t.from, t.to, convert(A, t.mat))
 
 @inline rotation(t::Transform3D) = @inbounds return RotMatrix(t.mat[1], t.mat[2], t.mat[3], t.mat[5], t.mat[6], t.mat[7], t.mat[9], t.mat[10], t.mat[11])
 @inline translation(t::Transform3D) = @inbounds return SVector(t.mat[13], t.mat[14], t.mat[15])
@@ -135,15 +133,17 @@ end
     Transform3D(t.to, t.from, rotinv, -(rotinv * translation(t)))
 end
 
-@inline Base.eye{A<:StaticArray}(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D) = Transform3D(from, to, eye(A))
-@inline function Base.eye{A<:AbstractMatrix}(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D)
+@inline function Base.eye(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D) where {A<:StaticArray}
+    Transform3D(from, to, eye(A))
+end
+@inline function Base.eye(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D) where {A<:AbstractMatrix}
     T = eltype(A)
     convert(Transform3D{A}, eye(Transform3DS{T}, from, to))
 end
 @inline Base.eye(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = eye(Transform3DS{Float64}, from, to)
-@inline Base.eye{T<:Transform3D}(::Type{T}, frame::CartesianFrame3D) = eye(T, frame, frame)
+@inline Base.eye(::Type{T}, frame::CartesianFrame3D) where {T<:Transform3D} = eye(T, frame, frame)
 
-function Random.rand{A}(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D)
+function Random.rand(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D) where {A}
     T = eltype(A)
     rot = rand(RotMatrix3{T})
     trans = rand(SVector{3, T})
@@ -166,27 +166,26 @@ for VectorType in (:FreeVector3D, :Point3D)
             frame::CartesianFrame3D
             v::V
 
-            function (::Type{$VectorType{V}}){V}(frame::CartesianFrame3D, v::V)
+            function $VectorType(frame::CartesianFrame3D, v::V) where {V}
                 @boundscheck length(v) == 3 || throw(DimensionMismatch())
                 new{V}(frame, v)
             end
         end
 
-        $VectorType{V}(frame::CartesianFrame3D, v::V) = $VectorType{V}(frame, v)
-        $VectorType{T<:Number}(::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, zeros(SVector{3, T}))
+        $VectorType(::Type{T}, frame::CartesianFrame3D) where {T<:Number} = $VectorType(frame, zeros(SVector{3, T}))
         $VectorType(frame::CartesianFrame3D, x::Number, y::Number, z::Number) = $VectorType(frame, SVector(x, y, z))
 
-        Base.convert{V}(::Type{$VectorType{V}}, p::$VectorType{V}) = p
-        Base.convert{V}(::Type{$VectorType{V}}, p::$VectorType) = $VectorType(p.frame, convert(V, p.v))
+        Base.convert(::Type{$VectorType{V}}, p::$VectorType{V}) where {V} = p
+        Base.convert(::Type{$VectorType{V}}, p::$VectorType) where {V} = $VectorType(p.frame, convert(V, p.v))
 
         Base.zero(p::$VectorType) = $VectorType(p.frame, zero(p.v))
 
-        (/){S<:Number}(p::$VectorType, s::S) = $VectorType(p.frame, p.v / s)
-        (*){S<:Number}(p::$VectorType, s::S) = $VectorType(p.frame, p.v * s)
-        (*){S<:Number}(s::S, p::$VectorType) = $VectorType(p.frame, s * p.v)
+        (/)(p::$VectorType, s::S) where {S<:Number} = $VectorType(p.frame, p.v / s)
+        (*)(p::$VectorType, s::S) where {S<:Number} = $VectorType(p.frame, p.v * s)
+        (*)(s::S, p::$VectorType) where {S<:Number} = $VectorType(p.frame, s * p.v)
         (-)(p::$VectorType) = $VectorType(p.frame, -p.v)
 
-        Random.rand{T}(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) = $VectorType(frame, rand(SVector{3, T}))
+        Random.rand(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) where {T} = $VectorType(frame, rand(SVector{3, T}))
         Base.show(io::IO, p::$VectorType) = print(io, "$($(string(VectorType))) in \"$(name(p.frame))\": $(p.v)")
         Base.isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
 
@@ -205,8 +204,8 @@ for VectorType in (:FreeVector3D, :Point3D)
         """
         invtransform(x::$VectorType, t::Transform3D) = t \ x
 
-        Base.eltype{V}(::Type{$VectorType{V}}) = eltype(V)
-        StaticArrays.similar_type{V, T}(x::Type{$VectorType{V}}, ::Type{T}) = $VectorType{SVector{3, T}}
+        Base.eltype(::Type{$VectorType{V}}) where {V} = eltype(V)
+        StaticArrays.similar_type(x::Type{$VectorType{V}}, ::Type{T}) where {V, T} = $VectorType{SVector{3, T}}
     end
 end
 

@@ -1,5 +1,5 @@
 julia 0.6-rc3
-StaticArrays 0.2.1
+StaticArrays 0.5.1
 Rotations 0.3.4
 LightXML 0.4.0
 DocStringExtensions 0.3.1

@@ -69,7 +69,7 @@
             q̇Joint = q̇[configuration_range(x, joint)]
             vJoint = velocity(x, joint)
             vJointFromq̇ = similar(vJoint)
-            configuration_derivative_to_velocity!(joint, vJointFromq̇, qJoint, q̇Joint)
+            configuration_derivative_to_velocity!(vJointFromq̇, joint, qJoint, q̇Joint)
             @test isapprox(vJoint, vJointFromq̇; atol = 1e-12)
         end
     end
@@ -79,7 +79,7 @@
             qjoint = configuration(x, joint)
             wrench = rand(Wrench{Float64}, frame_after(joint))
             τ = Vector{Float64}(num_velocities(joint))
-            joint_torque!(joint, τ, qjoint, wrench)
+            joint_torque!(τ, joint, qjoint, wrench)
             S = motion_subspace(joint, qjoint)
             # @test isapprox(τ, torque(S, wrench)) # TODO: https://github.com/JuliaLang/julia/issues/20034
         end
@@ -435,14 +435,14 @@
             q = configuration(state, joint)
             v = velocity(state, joint)
             rand_configuration!(q0, joint)
-            local_coordinates!(joint, ϕ, ϕ̇, q0, q, v)
+            local_coordinates!(ϕ, ϕ̇, joint, q0, q, v)
             q_back = Vector{Float64}(num_positions(joint))
-            global_coordinates!(joint, q_back, q0, ϕ)
+            global_coordinates!(q_back, joint, q0, ϕ)
             @test isapprox(q, q_back)
 
             # compare ϕ̇ to autodiff
             q̇ = Vector{Float64}(num_positions(joint))
-            velocity_to_configuration_derivative!(joint, q̇, q, v)
+            velocity_to_configuration_derivative!(q̇, joint, q, v)
             v̇ = rand(num_velocities(joint))
             q_autodiff = create_autodiff(q, q̇)
             v_autodiff = create_autodiff(v, v̇)
@@ -450,14 +450,14 @@
             T = eltype(q_autodiff)
             ϕ_autodiff = Vector{T}(length(ϕ))
             ϕ̇_autodiff = Vector{T}(length(ϕ̇))
-            local_coordinates!(joint, ϕ_autodiff, ϕ̇_autodiff, q0_autodiff, q_autodiff, v_autodiff)
+            local_coordinates!(ϕ_autodiff, ϕ̇_autodiff, joint, q0_autodiff, q_autodiff, v_autodiff)
             ϕ̇_from_autodiff = [ForwardDiff.partials(x)[1] for x in ϕ_autodiff]
             @test isapprox(ϕ̇, ϕ̇_from_autodiff)
 
             # local coordinates should be zero when q = q0
             # Definition 2.9 in Duindam, "Port-Based Modeling and Control for Efficient Bipedal Walking Robots"
             copy!(q, q0)
-            local_coordinates!(joint, ϕ, ϕ̇, q0, q, v)
+            local_coordinates!(ϕ, ϕ̇, joint, q0, q, v)
             @test isapprox(ϕ, zeros(num_velocities(joint)); atol = 1e-6) # FIXME: tolerance is way too high
         end
     end

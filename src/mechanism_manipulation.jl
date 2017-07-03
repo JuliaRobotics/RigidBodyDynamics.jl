@@ -18,8 +18,9 @@ If `successor` is not yet a part of the `Mechanism`, it will be added to the
 `Mechanism`, effectively creating a loop constraint that will be enforced
 using Lagrange multipliers (as opposed to using recursive algorithms).
 """
-function attach!{T}(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::GenericJoint{T}, jointToPredecessor::Transform3D,
-        successor::RigidBody{T}, successorToJoint::Transform3D = eye(Transform3DS{T}, default_frame(successor), frame_after(joint)))
+function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::GenericJoint{T},
+        jointToPredecessor::Transform3D, successor::RigidBody{T},
+        successorToJoint::Transform3D = eye(Transform3DS{T}, default_frame(successor), frame_after(joint))) where {T}
     @assert jointToPredecessor.from == frame_before(joint)
     @assert successorToJoint.to == frame_after(joint)
 
@@ -38,7 +39,8 @@ function attach!{T}(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::G
     mechanism
 end
 
-function _copyjoint!{T}(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::GenericJoint{T}, bodymap::Dict{RigidBody{T}, RigidBody{T}}, jointmap::Dict{GenericJoint{T}, GenericJoint{T}})
+function _copyjoint!(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::GenericJoint{T},
+        bodymap::Dict{RigidBody{T}, RigidBody{T}}, jointmap::Dict{GenericJoint{T}, GenericJoint{T}}) where {T}
     srcpredecessor = source(srcjoint, src.graph)
     srcsuccessor = target(srcjoint, src.graph)
 
@@ -63,8 +65,8 @@ belongs to `mechanism`).
 
 Note: gravitational acceleration for childmechanism is ignored.
 """
-function attach!{T}(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechanism::Mechanism{T},
-        childroot_to_parent::Transform3D = eye(Transform3DS{T}, default_frame(root_body(childmechanism)), default_frame(parentbody)))
+function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechanism::Mechanism{T},
+        childroot_to_parent::Transform3D = eye(Transform3DS{T}, default_frame(root_body(childmechanism)), default_frame(parentbody))) where {T}
     # FIXME: test with cycles
 
     @assert mechanism != childmechanism # infinite loop otherwise
@@ -100,7 +102,7 @@ bodies and joints of the submechanism.
 Any non-tree joint in `mechanism` will appear in the returned `Mechanism` if and
 only if both its successor and its predecessor are part of the subtree.
 """
-function submechanism{T}(mechanism::Mechanism{T}, submechanismroot::RigidBody{T})
+function submechanism(mechanism::Mechanism{T}, submechanismroot::RigidBody{T}) where {T}
     # FIXME: test with cycles
 
     bodymap = Dict{RigidBody{T}, RigidBody{T}}()
@@ -108,7 +110,7 @@ function submechanism{T}(mechanism::Mechanism{T}, submechanismroot::RigidBody{T}
 
     # Create Mechanism
     root = bodymap[submechanismroot] = deepcopy(submechanismroot)
-    ret = Mechanism{T}(root; gravity = mechanism.gravitationalAcceleration.v)
+    ret = Mechanism(root; gravity = mechanism.gravitationalAcceleration.v)
 
     # Add tree joints, preserving order in input mechanism.
     for joint in tree_joints(mechanism) # assumes toposort
@@ -159,17 +161,6 @@ function replace_joint!(mechanism::Mechanism, oldjoint::Joint, newjoint::Joint)
     end
     nothing
 end
-
-Base.@deprecate(
-reattach!{T}(mechanism::Mechanism{T}, oldSubtreeRootBody::RigidBody{T},
-    parentBody::RigidBody{T}, joint::Joint, jointToParent::Transform3D,
-    newSubtreeRootBody::RigidBody{T}, newSubTreeRootBodyToJoint::Transform3D = eye(Transform3DS{T}, default_frame(newSubtreeRootBody), frame_after(joint))),
-    begin
-        attach!(mechanism, parentBody, joint, jointToParent, newSubtreeRootBody, newSubTreeRootBodyToJoint)
-        remove_joint!(mechanism, joint_to_parent(oldSubtreeRootBody, mechanism))
-    end)
-
-Base.@deprecate remove_fixed_joints!(mechanism::Mechanism) remove_fixed_tree_joints!(mechanism)
 
 """
 $(SIGNATURES)

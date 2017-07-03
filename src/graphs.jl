@@ -55,9 +55,8 @@ for typename in (:Edge, :Vertex)
             data::T
             id::Int64
 
-            (::Type{$typename{T}}){T}(data::T) = new{T}(data, -1)
+            $typename(data::T) where {T} = new{T}(data, -1)
         end
-        $typename{T}(data::T) = $typename{T}(data)
         data(x::$typename) = x.data
         $getid(x::$typename) = x.id
         $setid(x::$typename, index::Int64) = (x.id = index)
@@ -67,8 +66,8 @@ end
 abstract type AbstractGraph{V, E} end
 num_vertices(g::AbstractGraph) = length(vertices(g))
 num_edges(g::AbstractGraph) = length(edges(g))
-out_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (target(e, g) for e in out_edges(vertex, g))
-in_neighbors{V, E}(vertex::V, g::AbstractGraph{V, E}) = (source(e, g) for e in in_edges(vertex, g))
+out_neighbors(vertex::V, g::AbstractGraph{V, E}) where {V, E} = (target(e, g) for e in out_edges(vertex, g))
+in_neighbors(vertex::V, g::AbstractGraph{V, E}) where {V, E} = (source(e, g) for e in in_edges(vertex, g))
 
 
 mutable struct DirectedGraph{V, E} <: AbstractGraph{V, E}
@@ -79,20 +78,20 @@ mutable struct DirectedGraph{V, E} <: AbstractGraph{V, E}
     inedges::Vector{Vector{E}}
     outedges::Vector{Vector{E}}
 
-    (::Type{DirectedGraph{V, E}}){V, E}() = new{V, E}(V[], E[], V[], V[], Set{E}[], Set{E}[])
+    DirectedGraph{V, E}() where {V, E} = new{V, E}(V[], E[], V[], V[], Set{E}[], Set{E}[])
 end
 
 # AbstractGraph interface
 vertices(g::DirectedGraph) = g.vertices
 edges(g::DirectedGraph) = g.edges
-source{V, E}(edge::E, g::DirectedGraph{V, E}) = g.sources[edge_index(edge)]
-target{V, E}(edge::E, g::DirectedGraph{V, E}) = g.targets[edge_index(edge)]
-in_edges{V, E}(vertex::V, g::DirectedGraph{V, E}) = g.inedges[vertex_index(vertex)]
-out_edges{V, E}(vertex::V, g::DirectedGraph{V, E}) = g.outedges[vertex_index(vertex)]
+source(edge::E, g::DirectedGraph{V, E}) where {V, E} = g.sources[edge_index(edge)]
+target(edge::E, g::DirectedGraph{V, E}) where {V, E} = g.targets[edge_index(edge)]
+in_edges(vertex::V, g::DirectedGraph{V, E}) where {V, E} = g.inedges[vertex_index(vertex)]
+out_edges(vertex::V, g::DirectedGraph{V, E}) where {V, E} = g.outedges[vertex_index(vertex)]
 
-Base.show{V, E}(io::IO, ::DirectedGraph{V, E}) = print(io, "DirectedGraph{$V, $E}(…)")
+Base.show(io::IO, ::DirectedGraph{V, E}) where {V, E} = print(io, "DirectedGraph{$V, $E}(…)")
 
-function add_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
+function add_vertex!(g::DirectedGraph{V, E}, vertex::V) where {V, E}
     @assert vertex ∉ vertices(g)
 
     vertex_index!(vertex, num_vertices(g) + 1)
@@ -102,7 +101,7 @@ function add_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
     g
 end
 
-function add_edge!{V, E}(g::DirectedGraph{V, E}, source::V, target::V, edge::E)
+function add_edge!(g::DirectedGraph{V, E}, source::V, target::V, edge::E) where {V, E}
     @assert edge ∉ edges(g)
     source ∈ vertices(g) || add_vertex!(g, source)
     target ∈ vertices(g) || add_vertex!(g, target)
@@ -116,7 +115,7 @@ function add_edge!{V, E}(g::DirectedGraph{V, E}, source::V, target::V, edge::E)
     g
 end
 
-function remove_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
+function remove_vertex!(g::DirectedGraph{V, E}, vertex::V) where {V, E}
     disconnected = isempty(in_edges(vertex, g)) && isempty(out_edges(vertex, g))
     disconnected || error("Vertex must be disconnected from the rest of the graph before it can be removed.")
     index = vertex_index(vertex)
@@ -130,7 +129,7 @@ function remove_vertex!{V, E}(g::DirectedGraph{V, E}, vertex::V)
     g
 end
 
-function remove_edge!{V, E}(g::DirectedGraph{V, E}, edge::E)
+function remove_edge!(g::DirectedGraph{V, E}, edge::E) where {V, E}
     target_inedges = in_edges(target(edge, g), g)
     deleteat!(target_inedges, findfirst(target_inedges, edge))
     source_outedges = out_edges(source(edge, g), g)
@@ -146,7 +145,7 @@ function remove_edge!{V, E}(g::DirectedGraph{V, E}, edge::E)
     g
 end
 
-function rewire!{V, E}(g::DirectedGraph{V, E}, edge::E, newsource::V, newtarget::V)
+function rewire!(g::DirectedGraph{V, E}, edge::E, newsource::V, newtarget::V) where {V, E}
     oldsource = source(edge, g)
     oldtarget = target(edge, g)
 
@@ -164,12 +163,12 @@ function rewire!{V, E}(g::DirectedGraph{V, E}, edge::E, newsource::V, newtarget:
     g
 end
 
-function flip_direction!{V, E}(edge::E, g::DirectedGraph{V, E})
+function flip_direction!(edge::E, g::DirectedGraph{V, E}) where {V, E}
     flip_direction!(edge)
     rewire!(g, edge, target(edge, g), source(edge, g))
 end
 
-function replace_edge!{V, E}(g::DirectedGraph{V, E}, old_edge::E, new_edge::E)
+function replace_edge!(g::DirectedGraph{V, E}, old_edge::E, new_edge::E) where {V, E}
     src = source(old_edge, g)
     dest = target(old_edge, g)
     index = edge_index(old_edge)
@@ -195,18 +194,18 @@ end
 # AbstractGraph interface
 vertices(tree::SpanningTree) = vertices(tree.graph)
 edges(tree::SpanningTree) = tree.edges
-source{V, E}(edge::E, tree::SpanningTree{V, E}) = source(edge, tree.graph) # note: doesn't check that edge is in spanning tree!
-target{V, E}(edge::E, tree::SpanningTree{V, E}) = target(edge, tree.graph) # note: doesn't check that edge is in spanning tree!
-in_edges{V, E}(vertex::V, tree::SpanningTree{V, E}) = (tree.inedges[vertex_index(vertex)],)
-out_edges{V, E}(vertex::V, tree::SpanningTree{V, E}) = tree.outedges[vertex_index(vertex)]
+source(edge::E, tree::SpanningTree{V, E}) where {V, E} = source(edge, tree.graph) # note: doesn't check that edge is in spanning tree!
+target(edge::E, tree::SpanningTree{V, E}) where {V, E} = target(edge, tree.graph) # note: doesn't check that edge is in spanning tree!
+in_edges(vertex::V, tree::SpanningTree{V, E}) where {V, E} = (tree.inedges[vertex_index(vertex)],)
+out_edges(vertex::V, tree::SpanningTree{V, E}) where {V, E} = tree.outedges[vertex_index(vertex)]
 
 root(tree::SpanningTree) = tree.root
-edge_to_parent{V, E}(vertex::V, tree::SpanningTree{V, E}) = tree.inedges[vertex_index(vertex)]
-edges_to_children{V, E}(vertex::V, tree::SpanningTree{V, E}) = out_edges(vertex, tree)
-tree_index{V, E}(edge::E, tree::SpanningTree{V, E}) = tree.edge_tree_indices[edge_index(edge)]
-tree_index{V, E}(vertex::V, tree::SpanningTree{V, E}) = vertex == root(tree) ? 1 : tree_index(edge_to_parent(vertex, tree), tree) + 1
+edge_to_parent(vertex::V, tree::SpanningTree{V, E}) where {V, E} = tree.inedges[vertex_index(vertex)]
+edges_to_children(vertex::V, tree::SpanningTree{V, E}) where {V, E} = out_edges(vertex, tree)
+tree_index(edge::E, tree::SpanningTree{V, E}) where {V, E} = tree.edge_tree_indices[edge_index(edge)]
+tree_index(vertex::V, tree::SpanningTree{V, E}) where {V, E} = vertex == root(tree) ? 1 : tree_index(edge_to_parent(vertex, tree), tree) + 1
 
-function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, edges::AbstractVector{E})
+function SpanningTree(g::DirectedGraph{V, E}, root::V, edges::AbstractVector{E}) where {V, E}
     n = num_vertices(g)
     length(edges) == n - 1 || error("Expected n - 1 edges.")
     inedges = Vector{E}(n)
@@ -227,7 +226,7 @@ function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, edges::AbstractVect
     SpanningTree(g, root, edges, inedges, outedges, edge_tree_indices)
 end
 
-function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = first #= breadth first =#)
+function SpanningTree(g::DirectedGraph{V, E}, root::V, next_edge = first #= breadth first =#) where {V, E}
     treevertices = [root]
     edges = E[]
     frontier = E[]
@@ -254,7 +253,7 @@ function SpanningTree{V, E}(g::DirectedGraph{V, E}, root::V, next_edge = first #
 end
 
 # adds an edge and vertex to both the tree and the underlying graph
-function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E)
+function add_edge!(tree::SpanningTree{V, E}, source::V, target::V, edge::E) where {V, E}
     @assert target ∉ vertices(tree)
     add_edge!(tree.graph, source, target, edge)
 
@@ -267,7 +266,7 @@ function add_edge!{V, E}(tree::SpanningTree{V, E}, source::V, target::V, edge::E
     tree
 end
 
-function replace_edge!{V, E}(tree::SpanningTree{V, E}, old_edge::E, new_edge::E)
+function replace_edge!(tree::SpanningTree{V, E}, old_edge::E, new_edge::E) where {V, E}
     @assert old_edge ∈ edges(tree)
     src = source(old_edge, tree)
     dest = target(old_edge, tree)
@@ -297,7 +296,7 @@ function Base.show(io::IO, tree::SpanningTree, vertex = root(tree), level::Int64
     end
 end
 
-function ancestors{V, E}(vertex::V, tree::SpanningTree{V, E})
+function ancestors(vertex::V, tree::SpanningTree{V, E}) where {V, E}
     ret = [vertex]
     while vertex != root(tree)
         vertex = source(edge_to_parent(vertex, tree), tree)
@@ -306,7 +305,7 @@ function ancestors{V, E}(vertex::V, tree::SpanningTree{V, E})
     ret
 end
 
-function lowest_common_ancestor{V, E}(v1::V, v2::V, tree::SpanningTree{V, E})
+function lowest_common_ancestor(v1::V, v2::V, tree::SpanningTree{V, E}) where {V, E}
     while v1 != v2
         if tree_index(v1, tree) > tree_index(v2, tree)
             v1 = source(edge_to_parent(v1, tree), tree)
@@ -346,7 +345,7 @@ function Base.show(io::IO, path::TreePath)
     end
 end
 
-function path{V, E}(src::V, target::V, tree::SpanningTree{V, E})
+function path(src::V, target::V, tree::SpanningTree{V, E}) where {V, E}
     source_to_lca = E[]
     lca_to_target = E[]
     source_current = src

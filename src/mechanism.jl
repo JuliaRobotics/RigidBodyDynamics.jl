@@ -11,7 +11,7 @@ mutable struct Mechanism{T<:Number}
     environment::ContactEnvironment{T}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
-    function (::Type{Mechanism{T}}){T<:Number}(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81)))
+    function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81))) where {T<:Number}
         graph = DirectedGraph{RigidBody{T}, GenericJoint{T}}()
         add_vertex!(graph, rootBody)
         tree = SpanningTree(graph, rootBody)
@@ -27,8 +27,7 @@ $(SIGNATURES)
 Create a new `Mechanism` containing only a root body, to which other bodies can
 be attached with joints.
 """
-Mechanism{T}(rootBody::RigidBody{T}; kwargs...) = Mechanism{T}(rootBody; kwargs...)
-Base.eltype{T}(::Mechanism{T}) = T
+Base.eltype(::Type{Mechanism{T}}) where {T} = T
 
 """
 $(SIGNATURES)
@@ -100,8 +99,8 @@ function Base.show(io::IO, mechanism::Mechanism)
     end
 end
 Base.@deprecate isroot{T}(mechanism::Mechanism{T}, b::RigidBody{T}) isroot(b, mechanism)
-isroot{T}(b::RigidBody{T}, mechanism::Mechanism{T}) = b == root_body(mechanism)
-non_root_bodies{T}(mechanism::Mechanism{T}) = (body for body in bodies(mechanism) if !isroot(body, mechanism))
+isroot(b::RigidBody{T}, mechanism::Mechanism{T}) where {T} = b == root_body(mechanism)
+non_root_bodies(mechanism::Mechanism) = (body for body in bodies(mechanism) if !isroot(body, mechanism))
 num_bodies(mechanism::Mechanism) = num_vertices(mechanism.graph)
 
 """
@@ -226,13 +225,11 @@ Return the joint that is part of the mechanism's kinematic tree and has
 """
 joint_to_parent(body::RigidBody, mechanism::Mechanism) = edge_to_parent(body, mechanism.tree)
 
-
-Base.@deprecate add_body_fixed_frame!{T}(mechanism::Mechanism{T}, body::RigidBody{T}, transform::Transform3D) add_frame!(body, transform)
-function add_body_fixed_frame!{T}(mechanism::Mechanism{T}, transform::Transform3D)
+function add_body_fixed_frame!(mechanism::Mechanism{T}, transform::Transform3D) where {T}
     add_frame!(body_fixed_frame_to_body(mechanism, transform.to), transform)
 end
 
-function canonicalize_frame_definitions!{T}(mechanism::Mechanism{T}, body::RigidBody{T})
+function canonicalize_frame_definitions!(mechanism::Mechanism{T}, body::RigidBody{T}) where {T}
     if !isroot(body, mechanism)
         joint = joint_to_parent(body, mechanism)
         change_default_frame!(body, frame_after(joint))

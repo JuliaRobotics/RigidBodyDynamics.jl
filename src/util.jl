@@ -1,203 +1,10 @@
-include("type_sorted_collection.jl")
-
-struct ConstVector{T} <: AbstractVector{T}
-    val::T
-    length::Int64
-end
-Base.size(A::ConstVector) = (A.length, )
-Base.getindex{T}(A::ConstVector{T}, i::Int) = (@boundscheck checkbounds(A, i); A.val)
-Base.IndexStyle{T}(::Type{ConstVector{T}}) = IndexLinear()
-
-# associative type that signifies an empty dictionary and does not allocate memory
-struct NullDict{K, V} <: Associative{K, V}
-end
-Base.haskey(::NullDict, k) = false
-
-
-# type of a view of a vector
-# TODO: a bit too specific
-const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true}
-
-
-"""
-Views in Julia still allocate some memory (since they need to keep
-a reference to the original array). This type allocates no memory
-and does no bounds checking. Use it with caution.
-
-Originally from https://github.com/mlubin/ReverseDiffSparse.jl/commit/8e3ade867581aad6ade7c898ada2ed58e0ad42bb.
-"""
-struct UnsafeVectorView{T} <: AbstractVector{T}
-    offset::Int
-    len::Int
-    ptr::Ptr{T}
+## RotMatrix3
+@static if !isdefined(Rotations, :RotMatrix3)
+    const RotMatrix3{T} = RotMatrix{3, T, 9}
 end
 
-@inline UnsafeVectorView(parent::Union{Vector, Base.FastContiguousSubArray}, range::UnitRange) = UnsafeVectorView(start(range) - 1, length(range), pointer(parent))
-@inline Base.size(v::UnsafeVectorView) = (v.len,)
-@inline Base.getindex(v::UnsafeVectorView, idx) = unsafe_load(v.ptr, idx + v.offset)
-@inline Base.setindex!(v::UnsafeVectorView, value, idx) = unsafe_store!(v.ptr, value, idx + v.offset)
-@inline Base.length(v::UnsafeVectorView) = v.len
-Base.IndexStyle{V <: UnsafeVectorView}(::Type{V}) = IndexLinear()
 
-"""
-UnsafeVectorView only works for isbits types. For other types, we're already
-allocating lots of memory elsewhere, so creating a new SubArray is fine.
-This function looks type-unstable, but the isbits(T) test can be evaluated
-by the compiler, so the result is actually type-stable.
-
-From https://github.com/rdeits/NNLS.jl/blob/0a9bf56774595b5735bc738723bd3cb94138c5bd/src/NNLS.jl#L218.
-"""
-@inline function fastview{T}(parent::Union{Vector{T}, Base.FastContiguousSubArray{T}}, range::UnitRange)
-    if isbits(T)
-        UnsafeVectorView(parent, range)
-    else
-        view(parent, range)
-    end
-end
-
-@inline smatrix3x6view(mat::StaticMatrix) = _smatrix3x6view(Size(mat), mat)
-
-@generated function _smatrix3x6view{S}(::Size{S}, mat::StaticMatrix)
-    Snew = (S[1], 6)
-    S[1] == 3 || error()
-    (0 <= S[2] <= Snew[2]) || error()
-    fillercols = Snew[2] - S[2]
-    fillerlength = S[1] * fillercols
-    T = eltype(mat)
-    exprs = vcat([:(mat[$i]) for i = 1 : prod(S)], [:(zero($T)) for i = 1 : fillerlength])
-    colrange =
-    return quote
-        Base.@_inline_meta
-        @inbounds return view(similar_type(mat, Size($Snew))(tuple($(exprs...))), :, 1 : $S[2])
-    end
-end
-
-const module_tempdir = joinpath(Base.tempdir(), string(module_name(current_module())))
-
-function cached_download(url::String, localFileName::String, cacheDir::String = joinpath(module_tempdir, string(hash(url))))
-    if !ispath(cacheDir)
-        mkpath(cacheDir)
-    end
-    fullCachePath = joinpath(cacheDir, localFileName)
-    if !isfile(fullCachePath)
-        download(url, fullCachePath)
-    end
-    fullCachePath
-end
-
-const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
-
-const RotMatrix3{T} = RotMatrix{3, T, 9}
-
-# TODO: use fusing broadcast instead of these functions in 0.6, where they don't allocate.
-function sub!(out, a, b)
-    @boundscheck length(out) == length(a) || error("size mismatch")
-    @boundscheck length(out) == length(b) || error("size mismatch")
-    @simd for i in eachindex(out)
-        @inbounds out[i] = a[i] - b[i]
-    end
-end
-@inline function scaleadd!(a::AbstractVector, b::AbstractVector, c::Number)
-    @boundscheck length(a) == length(b) || error("size mismatch")
-    @simd for i in eachindex(a)
-        @inbounds a[i] += b[i] * c
-    end
-end
-
-struct UnsafeFastDict{I, K, V} <: Associative{K, V}
-    keys::Vector{K}
-    values::Vector{V}
-
-    # specify index function, key type, and value type
-    function UnsafeFastDict{I, K, V}(kv) where {I, K, V}
-        keys = K[]
-        values = V[]
-        for (k, v) in kv
-            index = I(k)
-            if index > length(keys)
-                resize!(keys, index)
-                resize!(values, index)
-            end
-            keys[index] = k
-            values[index] = v
-        end
-        new(keys, values)
-    end
-
-    # infer value type
-    function UnsafeFastDict{I, K}(kv) where {I, K}
-        T = Core.Inference.return_type(first, Tuple{typeof(kv)})
-        V = Core.Inference.return_type(last, Tuple{T})
-        UnsafeFastDict{I, K, V}(kv)
-    end
-
-    # infer key type and value type
-    function UnsafeFastDict{I}(kv) where {I}
-        T = Core.Inference.return_type(first, Tuple{typeof(kv)})
-        K = Core.Inference.return_type(first, Tuple{T})
-        V = Core.Inference.return_type(last, Tuple{T})
-        UnsafeFastDict{I, K, V}(kv)
-    end
-
-    # specify all types, but leave values uninitialized
-    function UnsafeFastDict{I, K, V}(keys::AbstractVector{K}) where {I, K, V}
-        sortedkeys = K[]
-        for k in keys
-            index = I(k)
-            if index > length(sortedkeys)
-                resize!(sortedkeys, index)
-            end
-            sortedkeys[index] = k
-        end
-        values = Vector{V}(length(sortedkeys))
-        new(sortedkeys, values)
-    end
-end
-
-# Iteration
-Base.start(d::UnsafeFastDict) = 1
-Base.done(d::UnsafeFastDict, state) = state > length(d)
-Base.next(d::UnsafeFastDict, state) = (d.keys[state] => d.values[state], state + 1)
-
-# Associative
-Base.length(d::UnsafeFastDict) = length(d.values)
-Base.haskey{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = (1 <= I(key) <= length(d)) && (@inbounds return d.keys[I(key)] === key)
-Base.getindex{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = get(d, key)
-Base.setindex!{I, K, V}(d::UnsafeFastDict{I, K, V}, value::V, key::K) = (@boundscheck haskey(d, key) || throw(KeyError(key)); d.values[I(key)] = value)
-Base.get{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = (@boundscheck haskey(d, key) || throw(KeyError(key)); d.values[I(key)])
-Base.keys(d::UnsafeFastDict) = d.keys
-Base.values(d::UnsafeFastDict) = d.values
-
-
-
-#=
-Geometry utilities
-=#
-@inline function vector_to_skew_symmetric{T}(v::SVector{3, T})
-    @SMatrix [zero(T) -v[3] v[2];
-              v[3] zero(T) -v[1];
-              -v[2] v[1] zero(T)]
-end
-
-const hat = vector_to_skew_symmetric
-
-@inline function vector_to_skew_symmetric_squared(a::SVector{3})
-    aSq1 = a[1] * a[1]
-    aSq2 = a[2] * a[2]
-    aSq3 = a[3] * a[3]
-    b11 = -aSq2 - aSq3
-    b12 = a[1] * a[2]
-    b13 = a[1] * a[3]
-    b22 = -aSq1 - aSq3
-    b23 = a[2] * a[3]
-    b33 = -aSq1 - aSq2
-    @SMatrix [b11 b12 b13;
-              b12 b22 b23;
-              b13 b23 b33]
-end
-
-const hat_squared = vector_to_skew_symmetric_squared
-
+## Colwise
 # TODO: replace with future mapslices specialization, see https://github.com/JuliaArrays/StaticArrays.jl/pull/99
 """
     colwise(f, vec, mat)
@@ -233,6 +40,137 @@ Return a matrix `A` such that `A[:, i] == f(mat[:, i], vec)`.
     end
 end
 
+
+## findunique
+function findunique(f, A)
+    results = find(f, A)
+    length(results) == 0 && error("No results found.")
+    length(results) > 1 && error("Multiple results found:\n$(A[results])")
+    A[first(results)]
+end
+
+
+# Cached download
+const module_tempdir = joinpath(Base.tempdir(), string(module_name(current_module())))
+
+function cached_download(url::String, localFileName::String, cacheDir::String = joinpath(module_tempdir, string(hash(url))))
+    if !ispath(cacheDir)
+        mkpath(cacheDir)
+    end
+    fullCachePath = joinpath(cacheDir, localFileName)
+    if !isfile(fullCachePath)
+        download(url, fullCachePath)
+    end
+    fullCachePath
+end
+
+
+## VectorSegment: type of a view of a vector
+const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # TODO: a bit too specific
+
+
+## Views
+@inline smatrix3x6view(mat::StaticMatrix) = _smatrix3x6view(Size(mat), mat)
+
+@generated function _smatrix3x6view(::Size{S}, mat::StaticMatrix) where {S}
+    Snew = (S[1], 6)
+    S[1] == 3 || error()
+    (0 <= S[2] <= Snew[2]) || error()
+    fillercols = Snew[2] - S[2]
+    fillerlength = S[1] * fillercols
+    T = eltype(mat)
+    exprs = vcat([:(mat[$i]) for i = 1 : prod(S)], [:(zero($T)) for i = 1 : fillerlength])
+    colrange =
+    return quote
+        Base.@_inline_meta
+        @inbounds return view(similar_type(mat, Size($Snew))(tuple($(exprs...))), :, 1 : $S[2])
+    end
+end
+
+const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
+
+# Some operators involving a view of an SMatrix.
+# TODO: make more efficient and less specific, or remove once StaticArrays does this.
+function *(A::StaticMatrix, B::ContiguousSMatrixColumnView)
+    data = A * parent(B)
+    view(data, :, B.indexes[2])
+end
+
+function +(A::ContiguousSMatrixColumnView{S1, S2, T, L}, B::ContiguousSMatrixColumnView{S1, S2, T, L}) where {S1, S2, T, L}
+    @boundscheck size(A) == size(B) || error("size mismatch")
+    data = parent(A) + parent(B)
+    view(data, :, A.indexes[2])
+end
+
+function -(A::ContiguousSMatrixColumnView{S1, S2, T, L}, B::ContiguousSMatrixColumnView{S1, S2, T, L}) where {S1, S2, T, L}
+    @boundscheck size(A) == size(B) || error("size mismatch")
+    data = parent(A) - parent(B)
+    view(data, :, A.indexes[2])
+end
+
+function -(A::ContiguousSMatrixColumnView)
+    data = -parent(A)
+    view(data, :, A.indexes[2])
+end
+
+function *(s::Number, A::ContiguousSMatrixColumnView)
+    data = s * parent(A)
+    view(data, :, A.indexes[2])
+end
+
+# FIXME: hack to get around ambiguities
+_mul(a, b) = a * b
+
+# TODO: too specific
+function _mul(
+        A::ContiguousSMatrixColumnView{S1, S2, TA, L},
+        b::Union{StridedVector{Tb}, UnsafeVectorView{Tb}}) where {S1, S2, TA, L, Tb}
+    @boundscheck size(A, 2) == size(b, 1) || error("size mismatch")
+    ret = zeros(SVector{S1, promote_type(TA, Tb)})
+    for i = 1 : size(A, 2)
+        @inbounds bi = b[i]
+        Acol = SVector{S1, TA}(view(A, :, i))
+        ret = ret + Acol * bi
+    end
+    ret
+end
+
+@inline function colwise(f, A::ContiguousSMatrixColumnView, x::StaticVector)
+    typeof(A)(colwise(f, parent(A), x), A.indexes, A.offset1, A.stride1)
+end
+
+@inline function colwise(f, x::StaticVector, A::ContiguousSMatrixColumnView)
+    typeof(A)(colwise(f, x, parent(A)), A.indexes, A.offset1, A.stride1)
+end
+
+
+## Geometry utilities
+@inline function vector_to_skew_symmetric{T}(v::SVector{3, T})
+    @SMatrix [zero(T) -v[3] v[2];
+              v[3] zero(T) -v[1];
+              -v[2] v[1] zero(T)]
+end
+
+const hat = vector_to_skew_symmetric
+
+@inline function vector_to_skew_symmetric_squared(a::SVector{3})
+    aSq1 = a[1] * a[1]
+    aSq2 = a[2] * a[2]
+    aSq3 = a[3] * a[3]
+    b11 = -aSq2 - aSq3
+    b12 = a[1] * a[2]
+    b13 = a[1] * a[3]
+    b22 = -aSq1 - aSq3
+    b23 = a[2] * a[3]
+    b33 = -aSq1 - aSq2
+    @SMatrix [b11 b12 b13;
+              b12 b22 b23;
+              b13 b23 b33]
+end
+
+const hat_squared = vector_to_skew_symmetric_squared
+
+
 # The 'Bortz equation'.
 # Bortz, John E. "A new mathematical formulation for strapdown inertial navigation."
 # IEEE transactions on aerospace and electronic systems 1 (1971): 61-66.
@@ -242,7 +180,7 @@ end
 # ̂(dexp(ϕ(t)) * ϕ̇(t)) = d/dt(exp(ϕ(t))) * exp(ϕ(t))⁻¹  (hat form of angular velocity in world frame)
 #                      = ̂(exp(ϕ(t)) ω)      (with ω angular velocity in body frame)
 # ϕ̇(t) = dexp⁻¹(ϕ(t)) * exp(ϕ(t)) * ω
-function rotation_vector_rate{T}(rotation_vector::AbstractVector{T}, angular_velocity_in_body::AbstractVector{T})
+function rotation_vector_rate(rotation_vector::AbstractVector{T}, angular_velocity_in_body::AbstractVector{T}) where {T}
     ϕ = rotation_vector
     ω = angular_velocity_in_body
     @boundscheck length(ϕ) == 3 || error("ϕ has wrong length")
@@ -259,7 +197,7 @@ function angle_difference(a, b)
     mod2pi(b - a + pi) - π
 end
 
-function transform_spatial_motion{R <: Rotation{3}}(angular::SVector{3}, linear::SVector{3}, rot::R, trans::SVector{3})
+function transform_spatial_motion(angular::SVector{3}, linear::SVector{3}, rot::R, trans::SVector{3}) where {R <: Rotation{3}}
     angular = rot * angular
     linear = rot * linear + cross(trans, angular)
     angular, linear
@@ -297,11 +235,4 @@ function angular_velocity_in_body(quat::Quat, quat_derivative::AbstractVector)
      -q.y -q.z  q.w  q.x;
      -q.z  q.y -q.x  q.w]
     2 * (MInv * quat_derivative)
-end
-
-function findunique(f, A)
-    results = find(f, A)
-    length(results) == 0 && error("No results found.")
-    length(results) > 1 && error("Multiple results found:\n$(A[results])")
-    A[first(results)]
 end
