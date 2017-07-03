@@ -21,7 +21,7 @@ function create_benchmark_suite()
     remove_fixed_tree_joints!(mechanism)
 
     state = MechanismState{ScalarType}(mechanism)
-    result = DynamicsResult(ScalarType, mechanism)
+    result = DynamicsResult{ScalarType}(mechanism)
     nv = num_velocities(state)
     mat = MomentumMatrix(root_frame(mechanism), Matrix{ScalarType}(3, nv), Matrix{ScalarType}(3, nv))
     torques = Vector{ScalarType}(num_velocities(mechanism))

@@ -37,7 +37,7 @@ See also:
 * Definition 2.9 in Duindam, "Port-Based Modeling and Control for Efficient Bipedal Walking Robots", 2006.
 * Section 4.4 of Featherstone, "Rigid Body Dynamics Algorithms", 2008.
 """
-type Joint{T<:Number, JT<:JointType{T}}
+mutable struct Joint{T<:Number, JT<:JointType{T}}
     name::String
     frameBefore::CartesianFrame3D
     frameAfter::CartesianFrame3D
@@ -196,11 +196,11 @@ Note that this mapping is linear.
 
 See also [`velocity_to_configuration_derivative!`](@ref), the inverse mapping.
 """
-function configuration_derivative_to_velocity!(joint::Joint, v::AbstractVector, q::AbstractVector, q̇::AbstractVector)
+function configuration_derivative_to_velocity!(v::AbstractVector, joint::Joint, q::AbstractVector, q̇::AbstractVector)
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q̇)
-    configuration_derivative_to_velocity!(joint.jointType, v, q, q̇)
+    configuration_derivative_to_velocity!(v, joint.jointType, q, q̇)
 end
 
 """
@@ -213,11 +213,11 @@ Note that this mapping is linear.
 
 See also [`configuration_derivative_to_velocity!`](@ref), the inverse mapping.
 """
-function velocity_to_configuration_derivative!(joint::Joint, q̇::AbstractVector, q::AbstractVector, v::AbstractVector)
+function velocity_to_configuration_derivative!(q̇::AbstractVector, joint::Joint, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_positions(joint, q̇)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    velocity_to_configuration_derivative!(joint.jointType, q̇, q, v)
+    velocity_to_configuration_derivative!(q̇, joint.jointType, q, v)
 end
 
 """
@@ -262,11 +262,11 @@ $(SIGNATURES)
 Given the wrench exerted across the joint on the joint's successor, compute the
 vector of joint torques ``\\tau`` (in place), in configuration `q`.
 """
-function joint_torque!(joint::Joint, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench)
+function joint_torque!(τ::AbstractVector, joint::Joint, q::AbstractVector, joint_wrench::Wrench)
     @boundscheck check_num_velocities(joint, τ)
     @boundscheck check_num_positions(joint, q)
     @framecheck(joint_wrench.frame, frame_after(joint))
-    joint_torque!(joint.jointType, τ, q, joint_wrench)
+    joint_torque!(τ, joint.jointType, q, joint_wrench)
 end
 
 """
@@ -286,15 +286,14 @@ exponential coordinates could be used as the local coordinate vector ``\\phi``.
 
 See also [`global_coordinates!`](@ref).
 """
-function local_coordinates!(joint::Joint,
-        ϕ::AbstractVector, ϕ̇::AbstractVector,
-        q0::AbstractVector, q::AbstractVector, v::AbstractVector)
+function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
+        joint::Joint, q0::AbstractVector, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_velocities(joint, ϕ)
     @boundscheck check_num_velocities(joint, ϕ̇)
     @boundscheck check_num_positions(joint, q0)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    local_coordinates!(joint.jointType, ϕ, ϕ̇, q0, q, v)
+    local_coordinates!(ϕ, ϕ̇, joint.jointType, q0, q, v)
 end
 
 """
@@ -306,9 +305,9 @@ around ``q_0``.
 
 See also [`local_coordinates!`](@ref).
 """
-function global_coordinates!(joint::Joint, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector)
+function global_coordinates!(q::AbstractVector, joint::Joint, q0::AbstractVector, ϕ::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q0)
     @boundscheck check_num_velocities(joint, ϕ)
-    global_coordinates!(joint.jointType, q, q0, ϕ)
+    global_coordinates!(q, joint.jointType, q0, ϕ)
 end

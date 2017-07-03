@@ -3,7 +3,7 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
 @testset "graphs" begin
     @testset "disconnected" begin
         graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
-        verts = [Vertex{Int64}(rand(Int64)) for i = 1 : 10]
+        verts = [Vertex(rand(Int64)) for i = 1 : 10]
         for v in verts
             add_vertex!(graph, v)
         end

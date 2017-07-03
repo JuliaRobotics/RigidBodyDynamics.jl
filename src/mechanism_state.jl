@@ -14,7 +14,7 @@ Type parameters:
 * `M`: the scalar type of the `Mechanism`
 * `C`: the scalar type of the cache variables (`== promote_type(X, M)`)
 """
-immutable MechanismState{X<:Number, M<:Number, C<:Number, T, N}
+struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
     mechanism::Mechanism{M}
     type_sorted_tree_joints::T
     type_sorted_non_tree_joints::N
@@ -111,9 +111,9 @@ immutable MechanismState{X<:Number, M<:Number, C<:Number, T, N}
     end
 end
 
-Base.@deprecate MechanismState{X, M}(::Type{X}, mechanism::Mechanism{M}) MechanismState{X}(mechanism)
+Base.@deprecate MechanismState(::Type{X}, mechanism::Mechanism{M}) where {X, M} MechanismState{X}(mechanism)
 
-Base.show{X, M, C}(io::IO, ::MechanismState{X, M, C}) = print(io, "MechanismState{$X, $M, $C}(…)")
+Base.show(io::IO, ::MechanismState{X, M, C}) where {X, M, C} = print(io, "MechanismState{$X, $M, $C, …}(…)")
 
 """
 $(SIGNATURES)
@@ -137,9 +137,9 @@ for stateful contact models).
 """
 num_additional_states(state::MechanismState) = length(state.s)
 
-state_vector_eltype{X, M, C}(state::MechanismState{X, M, C}) = X
-mechanism_eltype{X, M, C}(state::MechanismState{X, M, C}) = M
-cache_eltype{X, M, C}(state::MechanismState{X, M, C}) = C
+state_vector_eltype(state::MechanismState{X, M, C}) where {X, M, C} = X
+mechanism_eltype(state::MechanismState{X, M, C}) where {X, M, C} = M
+cache_eltype(state::MechanismState{X, M, C}) where {X, M, C} = C
 
 """
 $(SIGNATURES)
@@ -269,7 +269,6 @@ is responsible for calling [`setdirty!`](@ref) after modifying this vector to
 ensure that dependent cache variables are invalidated.
 """
 configuration(state::MechanismState) = state.q
-Base.@deprecate configuration_vector(state::MechanismState) configuration(state)
 
 """
 $(SIGNATURES)
@@ -281,7 +280,6 @@ The user is responsible for calling [`setdirty!`](@ref) after modifying this
 vector to ensure that dependent cache variables are invalidated.
 """
 velocity(state::MechanismState) = state.v
-Base.@deprecate velocity_vector(state::MechanismState) velocity(state)
 
 """
 $(SIGNATURES)
@@ -692,7 +690,7 @@ end
                 vjoint = vs[index]
                 qrange = first(parentindexes(qjoint))
                 q̇joint = fastview(q̇s, qrange)
-                velocity_to_configuration_derivative!(joint, q̇joint, qjoint, vjoint)
+                velocity_to_configuration_derivative!(q̇joint, joint, qjoint, vjoint)
             end
         end)
     end
@@ -815,7 +813,7 @@ $(SIGNATURES)
 Compute local coordinates ``\phi`` centered around (global) configuration vector
 ``q_0``, as well as their time derivatives ``\\dot{\\phi}``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
-function local_coordinates!(state::MechanismState, ϕ::StridedVector, ϕd::StridedVector, q0::StridedVector)
+function local_coordinates!(ϕ::StridedVector, ϕd::StridedVector, state::MechanismState, q0::StridedVector)
     # TODO: do this without a generated function
     _local_coordinates!(ϕ, ϕd, state.type_sorted_tree_joints, q0, values(state.qs), values(state.vs))
 end
@@ -835,7 +833,7 @@ end
                 ϕjoint = fastview(ϕ, vrange)
                 ϕdjoint = fastview(ϕd, vrange)
                 q0joint = fastview(q0, qrange)
-                local_coordinates!(joint, ϕjoint, ϕdjoint, q0joint, qjoint, vjoint)
+                local_coordinates!(ϕjoint, ϕdjoint, joint, q0joint, qjoint, vjoint)
             end
         end)
     end
@@ -868,7 +866,7 @@ end
                 vrange = first(parentindexes(vjoint))
                 q0joint = fastview(q0, qrange)
                 ϕjoint = fastview(ϕ, vrange)
-                global_coordinates!(joint, qjoint, q0joint, ϕjoint)
+                global_coordinates!(qjoint, joint, q0joint, ϕjoint)
             end
         end)
     end

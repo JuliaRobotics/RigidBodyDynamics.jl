@@ -1,17 +1,17 @@
-function parse_scalar{T}(::Type{T}, e::XMLElement, name::String)
+function parse_scalar(::Type{T}, e::XMLElement, name::String) where {T}
     T(parse(attribute(e, name)))
 end
 
-function parse_scalar{T}(::Type{T}, e::XMLElement, name::String, default::String)
+function parse_scalar(::Type{T}, e::XMLElement, name::String, default::String) where {T}
     T(parse(e == nothing ? default : attribute(e, name)))
 end
 
-function parse_vector{T}(::Type{T}, e::Union{XMLElement, Void}, name::String, default::String)
+function parse_vector(::Type{T}, e::Union{XMLElement, Void}, name::String, default::String) where {T}
     usedefault = e == nothing || attribute(e, name) == nothing # TODO: better handling of required attributes
     [T(parse(str)) for str in split(usedefault ? default : attribute(e, name))]
 end
 
-function parse_inertia{T}(::Type{T}, xmlInertia::XMLElement)
+function parse_inertia(::Type{T}, xmlInertia::XMLElement) where {T}
     ixx = parse_scalar(T, xmlInertia, "ixx", "0")
     ixy = parse_scalar(T, xmlInertia, "ixy", "0")
     ixz = parse_scalar(T, xmlInertia, "ixz", "0")
@@ -21,20 +21,20 @@ function parse_inertia{T}(::Type{T}, xmlInertia::XMLElement)
     @SMatrix [ixx ixy ixz; ixy iyy iyz; ixz iyz izz]
 end
 
-function parse_pose{T}(::Type{T}, xml_pose::Void)
+function parse_pose(::Type{T}, xml_pose::Void) where {T}
     rot = eye(RotMatrix{3, T})
     trans = zero(SVector{3, T})
     rot, trans
 end
 
-function parse_pose{T}(::Type{T}, xml_pose::XMLElement)
+function parse_pose(::Type{T}, xml_pose::XMLElement) where {T}
     rpy = RotXYZ(parse_vector(T, xml_pose, "rpy", "0 0 0")...)
     rot = RotMatrix(rpy)
     trans = SVector{3}(parse_vector(T, xml_pose, "xyz", "0 0 0"))
     rot, trans
 end
 
-function parse_joint{T}(::Type{T}, xml_joint::XMLElement)
+function parse_joint(::Type{T}, xml_joint::XMLElement) where {T}
     name = attribute(xml_joint, "name")
     jointType = attribute(xml_joint, "type")
     if jointType == "revolute" || jointType == "continuous" # TODO: handle joint limits for revolute
@@ -52,7 +52,7 @@ function parse_joint{T}(::Type{T}, xml_joint::XMLElement)
     end
 end
 
-function parse_inertia{T}(::Type{T}, xml_inertial::XMLElement, frame::CartesianFrame3D)
+function parse_inertia(::Type{T}, xml_inertial::XMLElement, frame::CartesianFrame3D) where {T}
     urdf_frame = CartesianFrame3D("inertia urdf helper")
     moment = parse_inertia(T, find_element(xml_inertial, "inertia"))
     com = zeros(SVector{3, T})
@@ -62,14 +62,14 @@ function parse_inertia{T}(::Type{T}, xml_inertial::XMLElement, frame::CartesianF
     transform(inertia, Transform3D(urdf_frame, frame, pose...))
 end
 
-function parse_body{T}(::Type{T}, xml_link::XMLElement, frame::CartesianFrame3D = CartesianFrame3D(attribute(xml_link, "name")))
+function parse_body(::Type{T}, xml_link::XMLElement, frame::CartesianFrame3D = CartesianFrame3D(attribute(xml_link, "name"))) where {T}
     xml_inertial = find_element(xml_link, "inertial")
     inertia = xml_inertial == nothing ? zero(SpatialInertia{T}, frame) : parse_inertia(T, xml_inertial, frame)
     linkname = attribute(xml_link, "name") # TODO: make sure link name is unique
     RigidBody(linkname, inertia)
 end
 
-function parse_root_link{T}(mechanism::Mechanism{T}, xml_link::XMLElement)
+function parse_root_link(mechanism::Mechanism{T}, xml_link::XMLElement) where {T}
     parent = root_body(mechanism)
     body = parse_body(T, xml_link)
     joint = Joint("$(name(body))_to_world", Fixed{T}())
@@ -77,7 +77,7 @@ function parse_root_link{T}(mechanism::Mechanism{T}, xml_link::XMLElement)
     attach!(mechanism, parent, joint, joint_to_parent, body)
 end
 
-function parse_joint_and_link{T}(mechanism::Mechanism{T}, xml_parent::XMLElement, xml_child::XMLElement, xml_joint::XMLElement)
+function parse_joint_and_link(mechanism::Mechanism{T}, xml_parent::XMLElement, xml_child::XMLElement, xml_joint::XMLElement) where {T}
     parentname = attribute(xml_parent, "name")
     candidate_parents = collect(filter(b -> RigidBodyDynamics.name(b) == parentname, bodies(mechanism)))
     length(candidate_parents) == 1 || error("Duplicate name: $(parentname)")
@@ -94,7 +94,7 @@ $(SIGNATURES)
 
 Create a `Mechanism` by parsing a [URDF](http://wiki.ros.org/urdf) file.
 """
-function parse_urdf{T}(scalartype::Type{T}, filename)
+function parse_urdf(scalartype::Type{T}, filename) where {T}
     xdoc = parse_file(filename)
     xroot = LightXML.root(xdoc)
     @assert LightXML.name(xroot) == "robot"

@@ -5,10 +5,10 @@ Stores variables related to the dynamics of a `Mechanism`, e.g. the
 `Mechanism`'s mass matrix and joint acceleration vector.
 
 Type parameters:
-* `M`: the scalar type of the `Mechanism`.
 * `T`: the scalar type of the dynamics-related variables.
+* `M`: the scalar type of the `Mechanism`.
 """
-type DynamicsResult{M<:Number, T<:Number}
+mutable struct DynamicsResult{T<:Number, M<:Number}
     mechanism::Mechanism{M}
 
     massmatrix::Symmetric{T, Matrix{T}}
@@ -32,7 +32,7 @@ type DynamicsResult{M<:Number, T<:Number}
     z::Vector{T}
     Y::Matrix{T}
 
-    function (::Type{DynamicsResult{M, T}}){M<:Number, T<:Number}(mechanism::Mechanism{M})
+    function DynamicsResult{T}(mechanism::Mechanism{M}) where {T<:Number, M<:Number}
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
 
@@ -70,13 +70,13 @@ type DynamicsResult{M<:Number, T<:Number}
         z = Vector{T}(nv)
         Y = Matrix{T}(nconstraints, nv)
 
-        new{M, T}(mechanism, massmatrix, dynamicsbias, constraintjacobian, constraintbias,
+        new{T, M}(mechanism, massmatrix, dynamicsbias, constraintjacobian, constraintbias,
             v̇, λ, ṡ, contactwrenches, totalwrenches, accelerations, jointwrenches, contact_state_derivs,
             L, A, z, Y)
     end
 end
 
-DynamicsResult{M, T}(::Type{T}, mechanism::Mechanism{M}) = DynamicsResult{M, T}(mechanism)
+Base.@deprecate DynamicsResult(::Type{T}, mechanism::Mechanism{M}) where {T, M} DynamicsResult{T}(mechanism)
 
 contact_state_derivatives(result::DynamicsResult, body::RigidBody) = result.contact_state_derivatives[body]
 contact_wrench(result::DynamicsResult, body::RigidBody) = result.contactwrenches[body]

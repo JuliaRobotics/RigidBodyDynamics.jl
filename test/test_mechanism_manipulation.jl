@@ -187,9 +187,9 @@ end
             floating_joint_twist_to_velocity!(newfloatingjoint, velocity(x2, newfloatingjoint), newfloatingjointTwist)
 
             # do dynamics
-            result1 = DynamicsResult(Float64, mechanism1)
+            result1 = DynamicsResult{Float64}(mechanism1)
             dynamics!(result1, x1)
-            result2 = DynamicsResult(Float64, mechanism2)
+            result2 = DynamicsResult{Float64}(mechanism2)
             dynamics!(result2, x2)
 
             # make sure that joint accelerations for non-floating joints are the same
@@ -236,10 +236,10 @@ end
         setdirty!(mcState)
 
         # do dynamics
-        treeDynamicsResult = DynamicsResult(Float64, treeMechanism);
+        treeDynamicsResult = DynamicsResult{Float64}(treeMechanism);
         dynamics!(treeDynamicsResult, treeState)
 
-        mcDynamicsResult = DynamicsResult(Float64, mcMechanism);
+        mcDynamicsResult = DynamicsResult{Float64}(mcMechanism);
         dynamics!(mcDynamicsResult, mcState)
 
         # compare spatial accelerations of bodies
@@ -261,10 +261,10 @@ end
         configuration(stateDual)[:] = configuration(stateFloat64)
         velocity(stateDual)[:] = velocity(stateFloat64)
 
-        dynamicsResultFloat64 = DynamicsResult(Float64, mechanism)
+        dynamicsResultFloat64 = DynamicsResult{Float64}(mechanism)
         dynamics!(dynamicsResultFloat64, stateFloat64)
 
-        dynamicsResultDual = DynamicsResult(NullDual, mechanism)
+        dynamicsResultDual = DynamicsResult{NullDual}(mechanism)
         dynamics!(dynamicsResultDual, stateDual)
 
         @test isapprox(dynamicsResultFloat64.v̇, dynamicsResultDual.v̇; atol = 1e-3)

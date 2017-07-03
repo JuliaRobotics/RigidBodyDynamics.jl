@@ -22,7 +22,7 @@ of point ``x`` expressed in frame ``i``.
 ``J`` is the mass moment of inertia, ``m`` is the total mass, and ``c`` is the
 'cross part', center of mass position scaled by ``m``.
 """
-immutable SpatialInertia{T<:Number}
+struct SpatialInertia{T<:Number}
     frame::CartesianFrame3D
     moment::SMatrix{3, 3, T, 9}
     crossPart::SVector{3, T} # mass times center of mass
@@ -30,7 +30,7 @@ immutable SpatialInertia{T<:Number}
 end
 
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
-    @eval immutable $MotionSpaceElement{T<:Number}
+    @eval struct $MotionSpaceElement{T<:Number}
         # describes motion of body w.r.t. base, expressed in frame
         body::CartesianFrame3D
         base::CartesianFrame3D
@@ -81,7 +81,7 @@ See [`Twist`](@ref).
 SpatialAcceleration
 
 for ForceSpaceElement in (:Momentum, :Wrench)
-    @eval immutable $ForceSpaceElement{T<:Number}
+    @eval struct $ForceSpaceElement{T<:Number}
         frame::CartesianFrame3D
         angular::SVector{3, T}
         linear::SVector{3, T}
@@ -136,14 +136,14 @@ $(TYPEDEF)
 A geometric Jacobian (also known as basic, or spatial Jacobian) maps a vector
 of joint velocities to a twist.
 """
-immutable GeometricJacobian{A<:AbstractMatrix}
+struct GeometricJacobian{A<:AbstractMatrix}
     body::CartesianFrame3D
     base::CartesianFrame3D
     frame::CartesianFrame3D
     angular::A
     linear::A
 
-    function (::Type{GeometricJacobian{A}}){A<:AbstractMatrix}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A)
+    function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
         @boundscheck size(angular, 1) == 3 || error("size mismatch")
         @boundscheck size(linear, 1) == 3 || error("size mismatch")
         @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
@@ -152,15 +152,15 @@ immutable GeometricJacobian{A<:AbstractMatrix}
 end
 
 for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
-    @eval immutable $ForceSpaceMatrix{A<:AbstractMatrix}
+    @eval struct $ForceSpaceMatrix{A<:AbstractMatrix}
         frame::CartesianFrame3D
         angular::A
         linear::A
 
-        function (::Type{$ForceSpaceMatrix{A}}){A<:AbstractMatrix}(frame::CartesianFrame3D, angular::A, linear::A)
-            @assert size(angular, 1) == 3
-            @assert size(linear, 1) == 3
-            @assert size(angular, 2) == size(linear, 2)
+        function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
+            @boundscheck size(angular, 1) == 3 || error("size mismatch")
+            @boundscheck size(linear, 1) == 3 || error("size mismatch")
+            @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
             new{A}(frame, angular, linear)
         end
     end
@@ -179,20 +179,20 @@ expressed in a centroidal frame.
 MomentumMatrix
 
 # SpatialInertia-specific functions
-Base.eltype{T<:Number}(::Type{SpatialInertia{T}}) = T
-@inline Base.convert{T<:Number}(::Type{SpatialInertia{T}}, inertia::SpatialInertia{T}) = inertia
-@inline function Base.convert{T<:Number}(::Type{SpatialInertia{T}}, inertia::SpatialInertia)
+Base.eltype(::Type{SpatialInertia{T}}) where {T} = T
+@inline Base.convert(::SpatialInertia{T}, inertia::SpatialInertia{T}) where {T<:Number} = inertia
+@inline function Base.convert(::Type{SpatialInertia{T}}, inertia::SpatialInertia) where {T<:Number}
     SpatialInertia(inertia.frame, convert(SMatrix{3, 3, T}, inertia.moment), convert(SVector{3, T}, inertia.crossPart), convert(T, inertia.mass))
 end
-function Base.convert{T}(::Type{SMatrix{6, 6, T}}, inertia::SpatialInertia)
+function Base.convert(::Type{SMatrix{6, 6, T}}, inertia::SpatialInertia) where {T}
     J = inertia.moment
     C = hat(inertia.crossPart)
     m = inertia.mass
     [J  C; C' m * eye(SMatrix{3, 3, T})]
 end
-Base.convert{T<:Matrix}(::Type{T}, inertia::SpatialInertia) = convert(T, convert(SMatrix{6, 6, eltype(T)}, inertia))
+Base.convert(::Type{T}, inertia::SpatialInertia) where {T<:Matrix} = convert(T, convert(SMatrix{6, 6, eltype(T)}, inertia))
 
-Base.Array{T}(inertia::SpatialInertia{T}) = convert(Matrix{T}, inertia)
+Base.Array(inertia::SpatialInertia{T}) where {T} = convert(Matrix{T}, inertia)
 
 """
 $(SIGNATURES)
@@ -208,14 +208,14 @@ function Base.show(io::IO, inertia::SpatialInertia)
     print(io, "moment of inertia:\n$(inertia.moment)")
 end
 
-Base.zero{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) = SpatialInertia(frame, zeros(SMatrix{3, 3, T}), zeros(SVector{3, T}), zero(T))
+Base.zero(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) where {T} = SpatialInertia(frame, zeros(SMatrix{3, 3, T}), zeros(SVector{3, T}), zero(T))
 Base.zero(inertia::SpatialInertia) = zero(typeof(inertia), inertia.frame)
 
 function Base.isapprox(x::SpatialInertia, y::SpatialInertia; atol = 1e-12)
     x.frame == y.frame && isapprox(x.moment, y.moment; atol = atol) && isapprox(x.crossPart, y.crossPart; atol = atol) && isapprox(x.mass, y.mass; atol = atol)
 end
 
-function (+){T}(inertia1::SpatialInertia{T}, inertia2::SpatialInertia{T})
+function (+)(inertia1::SpatialInertia, inertia2::SpatialInertia)
     @framecheck(inertia1.frame, inertia2.frame)
     moment = inertia1.moment + inertia2.moment
     crossPart = inertia1.crossPart + inertia2.crossPart
@@ -255,7 +255,7 @@ function transform(inertia::SpatialInertia, t::Transform3D)
     end
 end
 
-function Random.rand{T}(::Type{SpatialInertia{T}}, frame::CartesianFrame3D)
+function Random.rand(::Type{<:SpatialInertia{T}}, frame::CartesianFrame3D) where {T}
     # Try to generate a random but physical moment of inertia
     # by constructing it from its eigendecomposition
     Q = rand(RotMatrix3{T}).mat
@@ -288,12 +288,14 @@ end
 # MotionSpaceElement-specific
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     @eval begin
-        Base.convert{T<:Number}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement{T}) = m
-        Base.convert{T<:Number}(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement) = $MotionSpaceElement(m.body, m.base, m.frame, convert(SVector{3, T}, m.angular), convert(SVector{3, T}, m.linear))
-        Base.convert{T}(::Type{Vector{T}}, m::$MotionSpaceElement{T}) = [m.angular...; m.linear...]
-        Base.Array{T}(m::$MotionSpaceElement{T}) = convert(Vector{T}, m)
-        Base.eltype{T}(::Type{$MotionSpaceElement{T}}) = T
-        StaticArrays.similar_type{T1, T2}(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) = $MotionSpaceElement{T2}
+        Base.convert(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement{T}) where {T<:Number} = m
+        function Base.convert(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement) where {T<:Number}
+            $MotionSpaceElement(m.body, m.base, m.frame, convert(SVector{3, T}, m.angular), convert(SVector{3, T}, m.linear))
+        end
+        Base.convert(::Type{Vector{T}}, m::$MotionSpaceElement{T}) where {T} = [m.angular...; m.linear...]
+        Base.Array(m::$MotionSpaceElement{T}) where {T} = convert(Vector{T}, m)
+        Base.eltype(::Type{$MotionSpaceElement{T}}) where {T} = T
+        StaticArrays.similar_type(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) where {T1, T2} = $MotionSpaceElement{T2} # FIXME: lose this
 
         function Base.show(io::IO, m::$MotionSpaceElement)
             print(io, "$($(string(MotionSpaceElement))) of \"$(name(m.body))\" w.r.t \"$(name(m.base))\" in \"$(name(m.frame))\":\nangular: $(m.angular), linear: $(m.linear)")
@@ -322,13 +324,13 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
 
         change_base(m::$MotionSpaceElement, base::CartesianFrame3D) = $MotionSpaceElement(m.body, base, m.frame, m.angular, m.linear)
 
-        function Base.zero{T}(::Type{$MotionSpaceElement{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
+        function Base.zero(::Type{$MotionSpaceElement{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) where {T}
             $MotionSpaceElement(body, base, frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
         end
 
         Base.zero(m::$MotionSpaceElement) = zero(typeof(m), m.body, m.base, m.frame)
 
-        function Random.rand{T}(::Type{$MotionSpaceElement{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D)
+        function Random.rand(::Type{$MotionSpaceElement{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) where {T}
             $MotionSpaceElement(body, base, frame, rand(SVector{3, T}), rand(SVector{3, T}))
         end
     end
@@ -503,8 +505,6 @@ end
 # ForceSpaceElement-specific
 for ForceSpaceElement in (:Momentum, :Wrench)
     @eval begin
-        Base.convert{T<:Number}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) = f
-
         """
         $(SIGNATURES)
 
@@ -516,20 +516,28 @@ for ForceSpaceElement in (:Momentum, :Wrench)
             $ForceSpaceElement(angular.frame, angular.v, linear.v)
         end
 
-        function Base.convert{T<:Number}(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement)
+        Base.convert(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) where {T<:Number} = f
+
+        function Base.convert(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement) where {T<:Number}
             $ForceSpaceElement(f.frame, convert(SVector{3, T}, f.angular), convert(SVector{3, T}, f.linear))
         end
 
-        Base.eltype{T}(::Type{$ForceSpaceElement{T}}) = T
-        StaticArrays.similar_type{T1, T2}(::Type{$ForceSpaceElement{T1}}, ::Type{T2}) = $ForceSpaceElement{T2}
+        Base.eltype(::Type{$ForceSpaceElement{T}}) where {T} = T
+        StaticArrays.similar_type(::Type{$ForceSpaceElement{T1}}, ::Type{T2}) where {T1, T2} = $ForceSpaceElement{T2} # FIXME: lose this
 
         function Base.show(io::IO, f::$ForceSpaceElement)
             print(io, "$($(string(ForceSpaceElement))) expressed in \"$(name(f.frame))\":\nangular: $(f.angular), linear: $(f.linear)")
         end
 
-        Base.zero{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
+        function Base.zero(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) where {T}
+            $ForceSpaceElement(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
+        end
+
         Base.zero(f::$ForceSpaceElement) = zero(typeof(f), f.frame)
-        Random.rand{T}(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) = $ForceSpaceElement(frame, rand(SVector{3, T}), rand(SVector{3, T}))
+
+        function Random.rand(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) where {T}
+            $ForceSpaceElement(frame, rand(SVector{3, T}), rand(SVector{3, T}))
+        end
 
         """
         $(SIGNATURES)
@@ -577,22 +585,19 @@ function WrenchSubspace(frame::CartesianFrame3D, angular, linear)
     WrenchMatrix(frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end
 
-
-# GeometricJacobian-specific functions
-function GeometricJacobian{A<:AbstractMatrix}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A)
-    GeometricJacobian{A}(body, base, frame, angular, linear)
-end
-
 # MotionSubspace is the return type of motion_subspace(::Joint, ...)
 const MotionSubspace{T} = GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
 function MotionSubspace(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular, linear)
     GeometricJacobian(body, base, frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end
 
-Base.convert{A}(::Type{GeometricJacobian{A}}, jac::GeometricJacobian{A}) = jac
-Base.convert{A}(::Type{GeometricJacobian{A}}, jac::GeometricJacobian) = GeometricJacobian(jac.body, jac.base, jac.frame, convert(A, jac.angular), convert(A, jac.linear))
+# GeometricJacobian-specific functions
+Base.convert(::Type{GeometricJacobian{A}}, jac::GeometricJacobian{A}) where {A} = jac
+function Base.convert(::Type{GeometricJacobian{A}}, jac::GeometricJacobian) where {A}
+    GeometricJacobian(jac.body, jac.base, jac.frame, convert(A, jac.angular), convert(A, jac.linear))
+end
 Base.Array(jac::GeometricJacobian) = [Array(jac.angular); Array(jac.linear)]
-Base.eltype{A}(::Type{GeometricJacobian{A}}) = eltype(A)
+Base.eltype(::Type{GeometricJacobian{A}}) where {A} = eltype(A)
 
 """
 $(SIGNATURES)
@@ -627,15 +632,13 @@ end
 # Force space matrix-specific functions
 for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
     @eval begin
-        function $ForceSpaceMatrix{A<:AbstractMatrix}(frame::CartesianFrame3D, angular::A, linear::A)
-            $ForceSpaceMatrix{A}(frame, angular, linear)
+        Base.convert(::Type{$ForceSpaceMatrix{A}}, mat::$ForceSpaceMatrix{A}) where {A} = mat
+        function Base.convert(::Type{$ForceSpaceMatrix{A}}, mat::$ForceSpaceMatrix) where {A}
+            $ForceSpaceMatrix(mat.frame, convert(A, mat.angular), convert(A, mat.linear))
         end
-
-        Base.convert{A}(::Type{$ForceSpaceMatrix{A}}, mat::$ForceSpaceMatrix{A}) = mat
-        Base.convert{A}(::Type{$ForceSpaceMatrix{A}}, mat::$ForceSpaceMatrix) = $ForceSpaceMatrix(mat.frame, convert(A, mat.angular), convert(A, mat.linear))
         Base.Array(mat::$ForceSpaceMatrix) = [Array(mat.angular); Array(mat.linear)]
 
-        Base.eltype{A}(::Type{$ForceSpaceMatrix{A}}) = eltype(A)
+        Base.eltype(::Type{$ForceSpaceMatrix{A}}) where {A} = eltype(A)
         num_cols(mat::$ForceSpaceMatrix) = size(mat.angular, 2)
         angular_part(mat::$ForceSpaceMatrix) = mat.angular
         linear_part(mat::$ForceSpaceMatrix) = mat.linear

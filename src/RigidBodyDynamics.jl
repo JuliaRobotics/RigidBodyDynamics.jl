@@ -149,8 +149,8 @@ export
 const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
 
 include("graphs.jl")
+include("custom_collections.jl")
 include("util.jl")
-include("third_party_addendum.jl")
 include("cache_element.jl")
 
 include("frames.jl")
