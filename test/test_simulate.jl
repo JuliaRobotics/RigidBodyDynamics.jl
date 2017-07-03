@@ -12,7 +12,7 @@
         @test isapprox(total_energy_after, total_energy_before, atol = 1e-3)
 
         total_energy_before = gravitational_potential_energy(x) + kinetic_energy(x)
-        result = DynamicsResult(Float64, acrobot)
+        result = DynamicsResult{Float64}(acrobot)
 
         # use RingBufferStorage
         using RigidBodyDynamics.OdeIntegrators

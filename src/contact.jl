@@ -222,7 +222,10 @@ mutable struct HalfSpace3D{T}
     end
 end
 
-HalfSpace3D{T}(point::Point3D{SVector{3, T}}, outward_normal::FreeVector3D{SVector{3, T}}) = HalfSpace3D{T}(point, outward_normal)
+function HalfSpace3D(point::Point3D{SVector{3, T}}, outward_normal::FreeVector3D{SVector{3, T}}) where {T}
+    HalfSpace3D{T}(point, outward_normal)
+end
+
 frame(halfspace::HalfSpace3D) = halfspace.point.frame
 
 function HalfSpace3D(point::Point3D, outward_normal::FreeVector3D)
@@ -230,7 +233,7 @@ function HalfSpace3D(point::Point3D, outward_normal::FreeVector3D)
     HalfSpace3D(convert(Point3D{SVector{3, T}}, point), convert(FreeVector3D{SVector{3, T}}, outward_normal))
 end
 
-Base.eltype{T}(::Type{HalfSpace3D{T}}) = T
+Base.eltype(::Type{HalfSpace3D{T}}) where {T} = T
 separation(halfspace::HalfSpace3D, p::Point3D) = dot(p - halfspace.point, halfspace.outward_normal)
 point_inside(halfspace::HalfSpace3D, p::Point3D) = separation(halfspace, p) <= 0
 detect_contact(halfspace::HalfSpace3D, p::Point3D) = separation(halfspace, p), halfspace.outward_normal

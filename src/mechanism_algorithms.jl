@@ -574,7 +574,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
     end
 end
 
-function contact_dynamics!{X, M, C, T}(result::DynamicsResult{M, T}, state::MechanismState{X, M, C})
+function contact_dynamics!{X, M, C, T}(result::DynamicsResult{T, M}, state::MechanismState{X, M, C})
     mechanism = state.mechanism
     root = root_body(mechanism)
     frame = default_frame(root)
@@ -638,7 +638,7 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
     nothing
 end
 
-function dynamics_solve!{S<:Number, T<:LinAlg.BlasReal}(result::DynamicsResult{S, T}, τ::AbstractVector{T})
+function dynamics_solve!{S<:Number, T<:LinAlg.BlasReal}(result::DynamicsResult{T, S}, τ::AbstractVector{T})
     # optimized version for BLAS floats
     M = result.massmatrix
     c = result.dynamicsbias
@@ -736,7 +736,7 @@ given joint configuration vector ``q``, joint velocity vector ``v``, and
 The `externalwrenches` argument can be used to specify additional
 wrenches that act on the `Mechanism`'s bodies.
 """
-function dynamics!{T, X, M, Tau, W}(result::DynamicsResult{T}, state::MechanismState{X, M},
+function dynamics!{T, X, M, Tau, W}(result::DynamicsResult{T, M}, state::MechanismState{X, M},
         torques::AbstractVector{Tau} = ConstVector(zero(T), num_velocities(state)),
         externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
     contact_dynamics!(result, state)
@@ -766,7 +766,7 @@ v
 and returns a `Vector` ``\\dot{x}``.
 """
 function dynamics!{T, X, M, Tau, W}(ẋ::StridedVector{X},
-        result::DynamicsResult{T}, state::MechanismState{X, M}, stateVec::AbstractVector{X},
+        result::DynamicsResult{T, M}, state::MechanismState{X, M}, stateVec::AbstractVector{X},
         torques::AbstractVector{Tau} = ConstVector(zero(T), num_velocities(state)),
         externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}())
     set!(state, stateVec)

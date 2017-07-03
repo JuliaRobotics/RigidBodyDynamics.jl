@@ -374,7 +374,7 @@
         externalTorques = rand(num_velocities(mechanism))
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
 
-        result = DynamicsResult(Float64, mechanism)
+        result = DynamicsResult{Float64}(mechanism)
         dynamics!(result, x, externalTorques, externalwrenches)
         τ = inverse_dynamics(x, result.v̇, externalwrenches) - externalTorques
         @test isapprox(τ, zeros(num_velocities(mechanism)); atol = 1e-10)
@@ -387,11 +387,11 @@
         torques = rand(num_velocities(mechanism))
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
 
-        result1 = DynamicsResult(Float64, mechanism)
+        result1 = DynamicsResult{Float64}(mechanism)
         ẋ = Vector{Float64}(length(state_vector(x)))
         dynamics!(ẋ, result1, x, state_vector(x), torques, externalwrenches)
 
-        result2 = DynamicsResult(Float64, mechanism)
+        result2 = DynamicsResult{Float64}(mechanism)
         dynamics!(result2, x, torques, externalwrenches)
 
         @test isapprox([configuration_derivative(x); result2.v̇], ẋ)
@@ -404,7 +404,7 @@
         rand_velocity!(x)
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
         τ = rand(num_velocities(mechanism))
-        result = DynamicsResult(Float64, mechanism)
+        result = DynamicsResult{Float64}(mechanism)
         dynamics!(result, x, τ, externalwrenches)
 
         q = configuration(x)
