@@ -119,7 +119,7 @@ function Base.show(io::IO, t::Transform3D)
     angleAxis = AngleAxis(rotation(t))
     angle = rotation_angle(angleAxis)
     axis = rotation_axis(angleAxis)
-    println(io, "rotation: $(angle) rad about $(axis), translation: $(translation(t))") # TODO: use fixed Quaternions.jl version once it's updated
+    print(io, "rotation: $(angle) rad about $(axis), translation: $(translation(t))") # TODO: use fixed Quaternions.jl version once it's updated
 end
 
 @inline function *(t1::Transform3D, t2::Transform3D)
