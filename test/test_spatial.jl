@@ -3,7 +3,7 @@ function Ad(H::Transform3D)
     [[rotation(H) zeros(SMatrix{3, 3, eltype(H)})]; [pHat * rotation(H) rotation(H)]]
 end
 
-# @testset "spatial" begin
+@testset "spatial" begin
     f1 = CartesianFrame3D("1")
     f2 = CartesianFrame3D("2")
     f3 = CartesianFrame3D("3")
@@ -210,4 +210,4 @@ end
             @test isapprox(ξ̇, ξ̇_from_autodiff)
         end
     end
-# end
+end

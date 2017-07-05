@@ -1,4 +1,4 @@
-# @testset "mechanism algorithms" begin
+@testset "mechanism algorithms" begin
     mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...)
     x = MechanismState{Float64}(mechanism)
     rand!(x)
@@ -461,4 +461,4 @@
             @test isapprox(ϕ, zeros(num_velocities(joint)); atol = 1e-6) # FIXME: tolerance is way too high
         end
     end
-# end
+end

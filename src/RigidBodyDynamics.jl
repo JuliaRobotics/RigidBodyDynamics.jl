@@ -165,7 +165,7 @@ include("rigid_body.jl")
 
 using .Graphs
 include("mechanism.jl")
-include("mechanism_manipulation.jl")
+include("mechanism_modification.jl")
 include("mechanism_state.jl")
 include("dynamics_result.jl")
 include("mechanism_algorithms.jl")

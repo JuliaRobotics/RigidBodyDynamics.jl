@@ -18,7 +18,7 @@ parse_urdf
 ```@autodocs
 Modules = [RigidBodyDynamics]
 Order   = [:function]
-Pages   = ["mechanism_manipulation.jl"]
+Pages   = ["mechanism_modification.jl"]
 ```
 
 ## Basic functionality
