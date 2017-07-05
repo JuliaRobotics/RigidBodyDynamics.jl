@@ -24,7 +24,7 @@ include("test_contact.jl")
 include("test_double_pendulum.jl")
 include("test_mechanism_algorithms.jl")
 include("test_simulate.jl")
-include("test_mechanism_manipulation.jl")
+include("test_mechanism_modification.jl")
 
 # notebooks
 @testset "example notebooks" begin
