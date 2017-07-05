@@ -47,8 +47,6 @@ To check out the master branch and work on the bleeding edge, additionally run
 Pkg.checkout("RigidBodyDynamics")
 ```
 
-RigidBodyDynamics currently only supports version 0.5 of Julia.
-
 ## About
 This library was inspired by [IHMCRoboticsToolkit](https://bitbucket.org/ihmcrobotics/ihmc-open-robotics-software) and by [Drake](http://drake.mit.edu).
 
