@@ -1,11 +1,6 @@
 const BodyDict{T} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}}
 const JointDict{T} = UnsafeFastDict{Graphs.edge_index, GenericJoint{T}}
 
-
-abstract type CacheSafety end
-struct CacheSafe <: CacheSafety end
-struct CacheUnsafe <: CacheSafety end
-
 """
 $(TYPEDEF)
 
@@ -43,7 +38,7 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
     constraint_wrench_subspaces::CacheElement{JointDict{M, WrenchSubspace{C}}}
 
     # body-specific
-    transforms_to_world::CacheElement{BodyDict{M, Transform3DS{C}}} # TODO: rename: transforms_to_root
+    transforms_to_root::CacheElement{BodyDict{M, Transform3DS{C}}}
     twists_wrt_world::CacheElement{BodyDict{M, Twist{C}}}
     bias_accelerations_wrt_world::CacheElement{BodyDict{M, SpatialAcceleration{C}}}
     inertias::CacheElement{BodyDict{M, SpatialInertia{C}}}
@@ -85,7 +80,7 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
         constraint_wrench_subspaces = CacheElement(JointDict{M, WrenchSubspace{C}}(non_tree_joints(mechanism)))
 
         # body-specific
-        transforms_to_world = CacheElement(BodyDict{M, Transform3DS{C}}(bodies(mechanism)))
+        transforms_to_root = CacheElement(BodyDict{M, Transform3DS{C}}(bodies(mechanism)))
         twists_wrt_world = CacheElement(BodyDict{M, Twist{C}}(bodies(mechanism)))
         bias_accelerations_wrt_world = CacheElement(BodyDict{M, SpatialAcceleration{C}}(bodies(mechanism)))
         inertias = CacheElement(BodyDict{M, SpatialInertia{C}}(bodies(mechanism)))
@@ -111,7 +106,7 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
         new{X, M, C, Tree, NonTree}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, constraint_jacobian_structure,
             q, v, s, qs, vs,
             joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world, constraint_wrench_subspaces,
-            transforms_to_world, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
+            transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
     end
 end
@@ -172,7 +167,7 @@ function setdirty!(state::MechanismState)
     setdirty!(state.motion_subspaces)
     setdirty!(state.motion_subspaces_in_world)
     setdirty!(state.constraint_wrench_subspaces)
-    setdirty!(state.transforms_to_world)
+    setdirty!(state.transforms_to_root)
     setdirty!(state.twists_wrt_world)
     setdirty!(state.bias_accelerations_wrt_world)
     setdirty!(state.inertias)
@@ -404,6 +399,161 @@ end
 configuration_range(state::MechanismState, joint::Joint) = first(parentindexes(configuration(state, joint)))
 velocity_range(state::MechanismState, joint::Joint) = first(parentindexes(velocity(state, joint)))
 
+
+## Accessor functions for cached variables
+abstract type CacheSafety end
+struct CacheSafe <: CacheSafety end
+struct CacheUnsafe <: CacheSafety end
+
+const joint_state_cache_accessors = Symbol[]
+macro joint_state_cache_accessor(fun, updatefun, field)
+    push!(joint_state_cache_accessors, fun)
+    quote
+        # Cache-safe accessor function (calls the update function first)
+        Core.@__doc__ function $(fun)(state::MechanismState, joint::Joint, cache_safety::RigidBodyDynamics.CacheSafe = RigidBodyDynamics.CacheSafe())
+            $(updatefun)(state)
+            $(fun)(state, joint, RigidBodyDynamics.CacheUnsafe())
+        end
+
+        # Cache-unsafe version
+        $(fun)(state::MechanismState, joint::Joint, cache_safety::RigidBodyDynamics.CacheUnsafe) = state.$(field).data[joint]
+    end |> esc
+end
+
+"""
+$(SIGNATURES)
+
+Return the joint transform for the given joint, i.e. the transform from
+`frame_after(joint)` to `frame_before(joint)`.
+"""
+@joint_state_cache_accessor(joint_transform, update_transforms!, joint_transforms)
+
+"""
+$(SIGNATURES)
+Return the joint twist for the given joint, i.e. the twist of
+`frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
+root frame of the mechanism.
+"""
+@joint_state_cache_accessor(twist, update_joint_twists!, joint_twists)
+
+"""
+$(SIGNATURES)
+
+Return the bias acceleration across the given joint, i.e. the spatial acceleration
+of `frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
+root frame of the mechanism when all joint accelerations are zero.
+"""
+@joint_state_cache_accessor(bias_acceleration, update_joint_bias_accelerations!, joint_bias_accelerations)
+
+"""
+$(SIGNATURES)
+
+Return the motion subspace of the given joint expressed in `frame_after(joint)`.
+"""
+@joint_state_cache_accessor(motion_subspace, update_motion_subspaces!, motion_subspaces)
+
+"""
+$(SIGNATURES)
+
+Return the motion subspace of the given joint expressed in the root frame of
+the mechanism.
+"""
+@joint_state_cache_accessor(motion_subspace_in_world, update_motion_subspaces_in_world!, motion_subspaces_in_world)
+
+"""
+$(SIGNATURES)
+
+Return the constraint wrench subspace of the given joint expressed in the frame after the joint.
+"""
+@joint_state_cache_accessor(constraint_wrench_subspace, update_constraint_wrench_subspaces!, constraint_wrench_subspaces)
+
+Base.@deprecate transform(state::MechanismState, joint::Joint) joint_transform(state, joint)
+
+const body_state_cache_accessors = Symbol[]
+macro body_state_cache_accessor(fun, updatefun, field)
+    push!(body_state_cache_accessors, fun)
+    quote
+        # Cache-safe accessor function (calls the update function first)
+        Core.@__doc__ function $(fun)(state::MechanismState, body::RigidBody, cache_safety::RigidBodyDynamics.CacheSafe = RigidBodyDynamics.CacheSafe())
+            $(updatefun)(state)
+            $(fun)(state, body, RigidBodyDynamics.CacheUnsafe())
+        end
+
+        # Cache-unsafe version
+        $(fun)(state::MechanismState, body::RigidBody, cache_safety::RigidBodyDynamics.CacheUnsafe) = state.$(field).data[body]
+    end |> esc
+end
+
+"""
+$(SIGNATURES)
+
+Return the transform from `default_frame(body)` to the root frame of the
+mechanism.
+"""
+@body_state_cache_accessor(transform_to_root, update_transforms!, transforms_to_root)
+
+"""
+$(SIGNATURES)
+
+Return the twist of `default_frame(body)` with respect to the root frame of the
+mechanism, expressed in the root frame.
+"""
+@body_state_cache_accessor(twist_wrt_world, update_twists_wrt_world!, twists_wrt_world)
+
+"""
+$(SIGNATURES)
+
+Return the bias acceleration of the given body with respect to the world,
+i.e. the spatial acceleration of `default_frame(body)` with respect to the
+root frame of the mechanism, expressed in the root frame, when all joint
+accelerations are zero.
+"""
+@body_state_cache_accessor(bias_acceleration, update_bias_accelerations_wrt_world!, bias_accelerations_wrt_world)
+
+"""
+$(SIGNATURES)
+
+Return the spatial inertia of `body` expressed in the root frame of the
+mechanism.
+"""
+@body_state_cache_accessor(spatial_inertia, update_spatial_inertias!, inertias)
+
+"""
+$(SIGNATURES)
+
+Return the composite rigid body inertia `body` expressed in the root frame of the
+mechanism.
+"""
+@body_state_cache_accessor(crb_inertia, update_crb_inertias!, crb_inertias)
+
+"""
+$(SIGNATURES)
+
+Replace calls to `MechanismState` cache variable accessor functions with 'cache-unsafe' versions
+that do not check whether the cache is up to date and are hence faster.
+
+By calling this macro, the user essentially provides the guarantee that the relevant cache variables
+have already been updated.
+"""
+macro nocachecheck(ex)
+    # Add `CacheUnsafe()` as the last argument to a call if the function being called is in `funcs`
+    # and the number of arguments is `num_args`
+    make_cache_unsafe = (x, num_args, funcs) -> begin
+        if x isa Expr && x.head == :call && length(x.args) == num_args + 1 && x.args[1] ∈ funcs
+            push!(x.args, :(RigidBodyDynamics.CacheUnsafe()))
+        end
+        x
+    end
+
+    # search and replace
+    postwalk(ex) do x
+        x = make_cache_unsafe(x, 2, joint_state_cache_accessors)
+        x = make_cache_unsafe(x, 2, body_state_cache_accessors)
+    end |> esc
+end
+
+
+# Cache variable update functions
 function update_transforms!(state::MechanismState)
     update_tree_joint_transforms! = (results, joints, qs) -> map!(joint_transform, values(results), joints, qs)
     update!(state.joint_transforms, update_tree_joint_transforms!, state.type_sorted_tree_joints, values(state.qs))
@@ -412,22 +562,22 @@ function update_transforms!(state::MechanismState)
     update_transforms_to_root! = (results, state) -> begin
         mechanism = state.mechanism
         results[root_body(mechanism)] = eye(Transform3DS{cache_eltype(state)}, root_frame(mechanism))
-        for joint in tree_joints(mechanism)
+        @nocachecheck for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             parentbody = predecessor(joint, mechanism)
             parent_to_root = results[parentbody]
             before_joint_to_parent = frame_definition(parentbody, frame_before(joint)) # FIXME: slow!
-            results[body] = parent_to_root * before_joint_to_parent * state.joint_transforms.data[joint]
+            results[body] = parent_to_root * before_joint_to_parent * joint_transform(state, joint)
         end
     end
-    update!(state.transforms_to_world, update_transforms_to_root!, state)
+    update!(state.transforms_to_root, update_transforms_to_root!, state)
 
     update_non_tree_joint_transforms! = (results, state) -> begin
-        for (joint, _) in state.constraint_jacobian_structure
+        @nocachecheck for (joint, _) in state.constraint_jacobian_structure
             pred = predecessor(joint, state.mechanism)
             succ = successor(joint, state.mechanism)
-            before_to_root = state.transforms_to_world.data[pred] * frame_definition(pred, frame_before(joint))
-            after_to_root = state.transforms_to_world.data[succ] * frame_definition(succ, frame_after(joint))
+            before_to_root = transform_to_root(state, pred) * frame_definition(pred, frame_before(joint))
+            after_to_root = transform_to_root(state, succ) * frame_definition(succ, frame_after(joint))
             results[joint] = inv(before_to_root) * after_to_root
         end
     end
@@ -460,7 +610,7 @@ function update_motion_subspaces_in_world!(state::MechanismState) # TODO: make m
     update_motion_subspaces!(state)
     f! = (results, state) -> begin
         mechanism = state.mechanism
-        for joint in tree_joints(mechanism)
+        @nocachecheck for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             parentbody = predecessor(joint, mechanism)
             parentframe = default_frame(parentbody)
@@ -478,10 +628,10 @@ function update_twists_wrt_world!(state::MechanismState)
         mechanism = state.mechanism
         rootframe = root_frame(mechanism)
         results[root_body(mechanism)] = zero(Twist{cache_eltype(state)}, rootframe, rootframe, rootframe)
-        for joint in tree_joints(mechanism)
+        @nocachecheck for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             parentbody = predecessor(joint, mechanism)
-            parenttwist = results[parentbody]
+            parenttwist = twist_wrt_world(state, parentbody)
             parentframe = default_frame(parentbody)
             jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
             results[body] = parenttwist + transform(jointtwist, transform_to_root(state, body))
@@ -498,7 +648,7 @@ function update_bias_accelerations_wrt_world!(state::MechanismState) # TODO: mak
         mechanism = state.mechanism
         rootframe = root_frame(mechanism)
         results[root_body(mechanism)] = zero(SpatialAcceleration{cache_eltype(state)}, rootframe, rootframe, rootframe)
-        for joint in tree_joints(mechanism)
+        @nocachecheck for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             parentbody = predecessor(joint, mechanism)
             parentbias = results[parentbody]
@@ -522,7 +672,7 @@ function update_spatial_inertias!(state::MechanismState)
     f! = (results, state) -> begin
         mechanism = state.mechanism
         results[root_body(mechanism)] = zero(SpatialInertia{cache_eltype(state)}, root_frame(mechanism))
-        for joint in tree_joints(mechanism)
+        @nocachecheck for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             results[body] = transform(spatial_inertia(body), transform_to_root(state, body))
         end
@@ -534,7 +684,7 @@ function update_crb_inertias!(state::MechanismState)
     update_spatial_inertias!(state)
     f! = (results, state) -> begin
         mechanism = state.mechanism
-        for body in bodies(mechanism)
+        @nocachecheck for body in bodies(mechanism)
             results[body] = spatial_inertia(state, body)
         end
         joints = tree_joints(mechanism)
@@ -547,137 +697,6 @@ function update_crb_inertias!(state::MechanismState)
     end
     update!(state.crb_inertias, f!, state)
 end
-
-"""
-$(SIGNATURES)
-
-Return the joint transform for the given joint, i.e. the transform from
-`frame_after(joint)` to `frame_before(joint)`.
-"""
-function transform(state::MechanismState, joint::Joint, ::CacheSafe = CacheSafe())
-    update_transforms!(state)
-    transform(state, joint, CacheUnsafe())
-end
-
-"""
-$(SIGNATURES)
-
-Return the joint twist for the given joint, i.e. the twist of
-`frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
-root frame of the mechanism.
-"""
-function twist(state::MechanismState, joint::Joint, ::CacheSafe = CacheSafe())
-    update_joint_twists!(state)
-    twist(state, joint, CacheUnsafe())
-end
-
-"""
-$(SIGNATURES)
-
-Return the bias acceleration across the given joint, i.e. the spatial acceleration
-of `frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
-root frame of the mechanism when all joint accelerations are zero.
-"""
-function bias_acceleration(state::MechanismState, joint::Joint, ::CacheSafe = CacheSafe())
-    update_joint_bias_accelerations!(state)
-    bias_acceleration(state, joint, CacheUnsafe())
-end
-
-"""
-$(SIGNATURES)
-
-Return the motion subspace of the given joint expressed in `frame_after(joint)`.
-"""
-function motion_subspace(state::MechanismState, joint::Joint, ::CacheSafe = CacheSafe())
-    update_motion_subspaces!(state)
-    motion_subspace(state, joint, CacheUnsafe())
-end
-
-"""
-$(SIGNATURES)
-
-Return the motion subspace of the given joint expressed in the root frame of
-the mechanism.
-"""
-function motion_subspace_in_world(state::MechanismState, joint::Joint, ::CacheSafe = CacheSafe())
-    update_motion_subspaces_in_world!(state)
-    motion_subspace_in_world(state, joint, CacheUnsafe())
-end
-
-function constraint_wrench_subspace(state::MechanismState, joint::Joint, ::CacheSafe = CacheSafe())
-    update_constraint_wrench_subspaces!(state)
-    constraint_wrench_subspace(state, joint, CacheUnsafe())
-end
-
-"""
-$(SIGNATURES)
-
-Return the transform from `default_frame(body)` to the root frame of the
-mechanism.
-"""
-function transform_to_root(state::MechanismState, body::RigidBody, ::CacheSafe = CacheSafe())
-    update_transforms!(state)
-    transform_to_root(state, body, CacheUnsafe())
-end
-
-"""
-$(SIGNATURES)
-
-Return the twist of `default_frame(body)` with respect to the root frame of the
-mechanism, expressed in the root frame.
-"""
-function twist_wrt_world(state::MechanismState, body::RigidBody, ::CacheSafe = CacheSafe())
-    update_twists_wrt_world!(state)
-    twist_wrt_world(state, body, CacheUnsafe())
-end
-
-"""
-$(SIGNATURES)
-
-Return the bias acceleration of the given body with respect to the world,
-i.e. the spatial acceleration of `default_frame(body)` with respect to the
-root frame of the mechanism, expressed in the root frame, when all joint
-accelerations are zero.
-"""
-function bias_acceleration(state::MechanismState, body::RigidBody, ::CacheSafe = CacheSafe())
-    update_bias_accelerations_wrt_world!(state)
-    bias_acceleration(state, body, CacheUnsafe())
-end
-
-"""
-$(SIGNATURES)
-
-Return the spatial inertia of `body` expressed in the root frame of the
-mechanism.
-"""
-function spatial_inertia(state::MechanismState, body::RigidBody, ::CacheSafe = CacheSafe())
-    update_spatial_inertias!(state)
-    spatial_inertia(state, body, CacheUnsafe())
-end
-
-"""
-$(SIGNATURES)
-
-Return the composite rigid body inertia `body` expressed in the root frame of the
-mechanism.
-"""
-function crb_inertia(state::MechanismState, body::RigidBody, ::CacheSafe = CacheSafe())
-    update_crb_inertias!(state)
-    crb_inertia(state, body, CacheUnsafe())
-end
-
-# Cache-unsafe accessor functions
-@inline transform(state::MechanismState, joint::Joint, ::CacheUnsafe) = state.joint_transforms.data[joint]
-@inline twist(state::MechanismState, joint::Joint, ::CacheUnsafe) = state.joint_twists.data[joint]
-@inline bias_acceleration(state::MechanismState, joint::Joint, ::CacheUnsafe) = state.joint_bias_accelerations.data[joint]
-@inline motion_subspace(state::MechanismState, joint::Joint, ::CacheUnsafe) = state.motion_subspaces.data[joint]
-@inline motion_subspace_in_world(state::MechanismState, joint::Joint, ::CacheUnsafe) = state.motion_subspaces_in_world.data[joint]
-@inline constraint_wrench_subspace(state::MechanismState, joint::Joint, ::CacheUnsafe) = state.constraint_wrench_subspaces.data[joint]
-@inline transform_to_root(state::MechanismState, body::RigidBody, ::CacheUnsafe) = state.transforms_to_world.data[body]
-@inline twist_wrt_world(state::MechanismState, body::RigidBody, ::CacheUnsafe) = state.twists_wrt_world.data[body]
-@inline bias_acceleration(state::MechanismState, body::RigidBody, ::CacheUnsafe) = state.bias_accelerations_wrt_world.data[body]
-@inline spatial_inertia(state::MechanismState, body::RigidBody, ::CacheUnsafe) = state.inertias.data[body]
-@inline crb_inertia(state::MechanismState, body::RigidBody, ::CacheUnsafe) = state.crb_inertias.data[body]
 
 contact_states(state::MechanismState, body::RigidBody) = state.contact_states[body]
 
