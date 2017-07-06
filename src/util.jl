@@ -143,6 +143,10 @@ end
     typeof(A)(colwise(f, x, parent(A)), A.indexes, A.offset1, A.stride1)
 end
 
+## postwalk: these three lines from https://github.com/MikeInnes/MacroTools.jl/blob/master/LICENSE.md
+walk(x, inner, outer) = outer(x)
+walk(x::Expr, inner, outer) = outer(Expr(x.head, map(inner, x.args)...))
+postwalk(f, x) = walk(x, x -> postwalk(f, x), f)
 
 ## Geometry utilities
 @inline function vector_to_skew_symmetric{T}(v::SVector{3, T})

@@ -1,11 +1,6 @@
 const BodyDict{T} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}}
 const JointDict{T} = UnsafeFastDict{Graphs.edge_index, GenericJoint{T}}
 
-
-abstract type CacheSafety end
-struct CacheSafe <: CacheSafety end
-struct CacheUnsafe <: CacheSafety end
-
 """
 $(TYPEDEF)
 
@@ -404,160 +399,24 @@ end
 configuration_range(state::MechanismState, joint::Joint) = first(parentindexes(configuration(state, joint)))
 velocity_range(state::MechanismState, joint::Joint) = first(parentindexes(velocity(state, joint)))
 
-function update_transforms!(state::MechanismState)
-    update_tree_joint_transforms! = (results, joints, qs) -> map!(joint_transform, values(results), joints, qs)
-    update!(state.joint_transforms, update_tree_joint_transforms!, state.type_sorted_tree_joints, values(state.qs))
-    setdirty!(state.joint_transforms) # hack: we're not done yet
 
-    update_transforms_to_root! = (results, state) -> begin
-        mechanism = state.mechanism
-        results[root_body(mechanism)] = eye(Transform3DS{cache_eltype(state)}, root_frame(mechanism))
-        for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            parentbody = predecessor(joint, mechanism)
-            parent_to_root = results[parentbody]
-            before_joint_to_parent = frame_definition(parentbody, frame_before(joint)) # FIXME: slow!
-            results[body] = parent_to_root * before_joint_to_parent * state.joint_transforms.data[joint]
-        end
-    end
-    update!(state.transforms_to_root, update_transforms_to_root!, state)
+## Accessor functions for cached variables
+abstract type CacheSafety end
+struct CacheSafe <: CacheSafety end
+struct CacheUnsafe <: CacheSafety end
 
-    update_non_tree_joint_transforms! = (results, state) -> begin
-        for (joint, _) in state.constraint_jacobian_structure
-            pred = predecessor(joint, state.mechanism)
-            succ = successor(joint, state.mechanism)
-            before_to_root = state.transforms_to_root.data[pred] * frame_definition(pred, frame_before(joint))
-            after_to_root = state.transforms_to_root.data[succ] * frame_definition(succ, frame_after(joint))
-            results[joint] = inv(before_to_root) * after_to_root
-        end
-    end
-    update!(state.joint_transforms, update_non_tree_joint_transforms!, state)
-end
-
-function update_joint_twists!(state::MechanismState)
-    f! = (results, joints, qs, vs) -> map!(joint_twist, values(results), joints, qs, vs)
-    update!(state.joint_twists, f!, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
-end
-
-function update_joint_bias_accelerations!(state::MechanismState)
-    f! = (results, joints, qs, vs) -> map!(bias_acceleration, values(results), joints, qs, vs)
-    update!(state.joint_bias_accelerations, f!, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
-end
-
-function update_motion_subspaces!(state::MechanismState)
-    f! = (results, joints, qs) -> map!(motion_subspace, values(results), joints, qs)
-    update!(state.motion_subspaces, f!, state.type_sorted_tree_joints, values(state.qs))
-end
-
-function update_constraint_wrench_subspaces!(state::MechanismState)
-    update_transforms!(state)
-    f! = (results, joints, transforms) -> map!(constraint_wrench_subspace, values(results), joints, transforms)
-    update!(state.constraint_wrench_subspaces, f!, state.type_sorted_non_tree_joints, values(state.joint_transforms.data))
-end
-
-function update_motion_subspaces_in_world!(state::MechanismState) # TODO: make more efficient
-    update_transforms!(state)
-    update_motion_subspaces!(state)
-    f! = (results, state) -> begin
-        mechanism = state.mechanism
-        for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            parentbody = predecessor(joint, mechanism)
-            parentframe = default_frame(parentbody)
-            motionsubspace = change_base(motion_subspace(state, joint), parentframe)
-            results[joint] = transform(motionsubspace, transform_to_root(state, body))
-        end
-    end
-    update!(state.motion_subspaces_in_world, f!, state)
-end
-
-function update_twists_wrt_world!(state::MechanismState)
-    update_transforms!(state)
-    update_joint_twists!(state)
-    f! = (results, state) -> begin
-        mechanism = state.mechanism
-        rootframe = root_frame(mechanism)
-        results[root_body(mechanism)] = zero(Twist{cache_eltype(state)}, rootframe, rootframe, rootframe)
-        for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            parentbody = predecessor(joint, mechanism)
-            parenttwist = results[parentbody]
-            parentframe = default_frame(parentbody)
-            jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
-            results[body] = parenttwist + transform(jointtwist, transform_to_root(state, body))
-        end
-    end
-    update!(state.twists_wrt_world, f!, state)
-end
-
-function update_bias_accelerations_wrt_world!(state::MechanismState) # TODO: make more efficient
-    update_transforms!(state)
-    update_twists_wrt_world!(state)
-    update_joint_bias_accelerations!(state)
-    f! = (results, state) -> begin
-        mechanism = state.mechanism
-        rootframe = root_frame(mechanism)
-        results[root_body(mechanism)] = zero(SpatialAcceleration{cache_eltype(state)}, rootframe, rootframe, rootframe)
-        for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            parentbody = predecessor(joint, mechanism)
-            parentbias = results[parentbody]
-            parentframe = default_frame(parentbody)
-            jointbias = change_base(bias_acceleration(state, joint), parentframe) # to make frames line up
-
-             # TODO: awkward way of doing this:
-            toroot = transform_to_root(state, body)
-            twistwrtworld = transform(twist_wrt_world(state, body), inv(toroot))
-            jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
-
-            jointbias = transform(jointbias, toroot, twistwrtworld, jointtwist)
-            results[body] = parentbias + jointbias
-        end
-    end
-    update!(state.bias_accelerations_wrt_world, f!, state)
-end
-
-function update_spatial_inertias!(state::MechanismState)
-    update_transforms!(state)
-    f! = (results, state) -> begin
-        mechanism = state.mechanism
-        results[root_body(mechanism)] = zero(SpatialInertia{cache_eltype(state)}, root_frame(mechanism))
-        for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            results[body] = transform(spatial_inertia(body), transform_to_root(state, body))
-        end
-    end
-    update!(state.inertias, f!, state)
-end
-
-function update_crb_inertias!(state::MechanismState)
-    update_spatial_inertias!(state)
-    f! = (results, state) -> begin
-        mechanism = state.mechanism
-        for body in bodies(mechanism)
-            results[body] = spatial_inertia(state, body)
-        end
-        joints = tree_joints(mechanism)
-        for i = length(joints) : -1 : 1
-            joint = joints[i]
-            body = successor(joint, mechanism)
-            parentbody = predecessor(joint, mechanism)
-            results[parentbody] += results[body]
-        end
-    end
-    update!(state.crb_inertias, f!, state)
-end
-
+const joint_state_cache_accessors = Symbol[]
 macro joint_state_cache_accessor(fun, updatefun, field)
+    push!(joint_state_cache_accessors, fun)
     quote
-        # Cache-safe accessor function
-        Core.@__doc__ function $(fun)(state::MechanismState, joint::Joint, cache_safety::CacheSafe = CacheSafe())
+        # Cache-safe accessor function (calls the update function first)
+        Core.@__doc__ function $(fun)(state::MechanismState, joint::Joint, cache_safety::RigidBodyDynamics.CacheSafe = RigidBodyDynamics.CacheSafe())
             $(updatefun)(state)
-            state.$field.data[joint]
+            $(fun)(state, joint, RigidBodyDynamics.CacheUnsafe())
         end
 
         # Cache-unsafe version
-        $(fun)(state::MechanismState, joint::Joint, cache_safety::CacheUnsafe) = state.$(field).data[joint]
+        $(fun)(state::MechanismState, joint::Joint, cache_safety::RigidBodyDynamics.CacheUnsafe) = state.$(field).data[joint]
     end |> esc
 end
 
@@ -567,7 +426,7 @@ $(SIGNATURES)
 Return the joint transform for the given joint, i.e. the transform from
 `frame_after(joint)` to `frame_before(joint)`.
 """
-@joint_state_cache_accessor(transform, update_transforms!, joint_transforms)
+@joint_state_cache_accessor(joint_transform, update_transforms!, joint_transforms)
 
 """
 $(SIGNATURES)
@@ -604,21 +463,24 @@ the mechanism.
 """
 $(SIGNATURES)
 
-Return the constraint wrench subspace of the given joint expressed in the root frame of
-the mechanism.
+Return the constraint wrench subspace of the given joint expressed in the frame after the joint.
 """
 @joint_state_cache_accessor(constraint_wrench_subspace, update_constraint_wrench_subspaces!, constraint_wrench_subspaces)
 
+Base.@deprecate transform(state::MechanismState, joint::Joint) joint_transform(state, joint)
+
+const body_state_cache_accessors = Symbol[]
 macro body_state_cache_accessor(fun, updatefun, field)
+    push!(body_state_cache_accessors, fun)
     quote
-        # Cache-safe accessor function
-        Core.@__doc__ function $(fun)(state::MechanismState, body::RigidBody, cache_safety::CacheSafe = CacheSafe())
+        # Cache-safe accessor function (calls the update function first)
+        Core.@__doc__ function $(fun)(state::MechanismState, body::RigidBody, cache_safety::RigidBodyDynamics.CacheSafe = RigidBodyDynamics.CacheSafe())
             $(updatefun)(state)
-            state.$field.data[body]
+            $(fun)(state, body, RigidBodyDynamics.CacheUnsafe())
         end
 
         # Cache-unsafe version
-        $(fun)(state::MechanismState, body::RigidBody, cache_safety::CacheUnsafe) = state.$(field).data[body]
+        $(fun)(state::MechanismState, body::RigidBody, cache_safety::RigidBodyDynamics.CacheUnsafe) = state.$(field).data[body]
     end |> esc
 end
 
@@ -663,6 +525,178 @@ Return the composite rigid body inertia `body` expressed in the root frame of th
 mechanism.
 """
 @body_state_cache_accessor(crb_inertia, update_crb_inertias!, crb_inertias)
+
+"""
+$(SIGNATURES)
+
+Replace calls to `MechanismState` cache variable accessor functions with 'cache-unsafe' versions
+that do not check whether the cache is up to date and are hence faster.
+
+By calling this macro, the user essentially provides the guarantee that the relevant cache variables
+have already been updated.
+"""
+macro nocachecheck(ex)
+    # Add `CacheUnsafe()` as the last argument to a call if the function being called is in `funcs`
+    # and the number of arguments is `num_args`
+    make_cache_unsafe = (x, num_args, funcs) -> begin
+        if x isa Expr && x.head == :call && length(x.args) == num_args + 1 && x.args[1] ∈ funcs
+            push!(x.args, :(RigidBodyDynamics.CacheUnsafe()))
+        end
+        x
+    end
+
+    # search and replace
+    postwalk(ex) do x
+        x = make_cache_unsafe(x, 2, joint_state_cache_accessors)
+        x = make_cache_unsafe(x, 2, body_state_cache_accessors)
+    end |> esc
+end
+
+
+# Cache variable update functions
+function update_transforms!(state::MechanismState)
+    update_tree_joint_transforms! = (results, joints, qs) -> map!(joint_transform, values(results), joints, qs)
+    update!(state.joint_transforms, update_tree_joint_transforms!, state.type_sorted_tree_joints, values(state.qs))
+    setdirty!(state.joint_transforms) # hack: we're not done yet
+
+    update_transforms_to_root! = (results, state) -> begin
+        mechanism = state.mechanism
+        results[root_body(mechanism)] = eye(Transform3DS{cache_eltype(state)}, root_frame(mechanism))
+        @nocachecheck for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            parent_to_root = results[parentbody]
+            before_joint_to_parent = frame_definition(parentbody, frame_before(joint)) # FIXME: slow!
+            results[body] = parent_to_root * before_joint_to_parent * joint_transform(state, joint)
+        end
+    end
+    update!(state.transforms_to_root, update_transforms_to_root!, state)
+
+    update_non_tree_joint_transforms! = (results, state) -> begin
+        @nocachecheck for (joint, _) in state.constraint_jacobian_structure
+            pred = predecessor(joint, state.mechanism)
+            succ = successor(joint, state.mechanism)
+            before_to_root = transform_to_root(state, pred) * frame_definition(pred, frame_before(joint))
+            after_to_root = transform_to_root(state, succ) * frame_definition(succ, frame_after(joint))
+            results[joint] = inv(before_to_root) * after_to_root
+        end
+    end
+    update!(state.joint_transforms, update_non_tree_joint_transforms!, state)
+end
+
+function update_joint_twists!(state::MechanismState)
+    f! = (results, joints, qs, vs) -> map!(joint_twist, values(results), joints, qs, vs)
+    update!(state.joint_twists, f!, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
+end
+
+function update_joint_bias_accelerations!(state::MechanismState)
+    f! = (results, joints, qs, vs) -> map!(bias_acceleration, values(results), joints, qs, vs)
+    update!(state.joint_bias_accelerations, f!, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
+end
+
+function update_motion_subspaces!(state::MechanismState)
+    f! = (results, joints, qs) -> map!(motion_subspace, values(results), joints, qs)
+    update!(state.motion_subspaces, f!, state.type_sorted_tree_joints, values(state.qs))
+end
+
+function update_constraint_wrench_subspaces!(state::MechanismState)
+    update_transforms!(state)
+    f! = (results, joints, transforms) -> map!(constraint_wrench_subspace, values(results), joints, transforms)
+    update!(state.constraint_wrench_subspaces, f!, state.type_sorted_non_tree_joints, values(state.joint_transforms.data))
+end
+
+function update_motion_subspaces_in_world!(state::MechanismState) # TODO: make more efficient
+    update_transforms!(state)
+    update_motion_subspaces!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        @nocachecheck for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            parentframe = default_frame(parentbody)
+            motionsubspace = change_base(motion_subspace(state, joint), parentframe)
+            results[joint] = transform(motionsubspace, transform_to_root(state, body))
+        end
+    end
+    update!(state.motion_subspaces_in_world, f!, state)
+end
+
+function update_twists_wrt_world!(state::MechanismState)
+    update_transforms!(state)
+    update_joint_twists!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        rootframe = root_frame(mechanism)
+        results[root_body(mechanism)] = zero(Twist{cache_eltype(state)}, rootframe, rootframe, rootframe)
+        @nocachecheck for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            parenttwist = twist_wrt_world(state, parentbody)
+            parentframe = default_frame(parentbody)
+            jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
+            results[body] = parenttwist + transform(jointtwist, transform_to_root(state, body))
+        end
+    end
+    update!(state.twists_wrt_world, f!, state)
+end
+
+function update_bias_accelerations_wrt_world!(state::MechanismState) # TODO: make more efficient
+    update_transforms!(state)
+    update_twists_wrt_world!(state)
+    update_joint_bias_accelerations!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        rootframe = root_frame(mechanism)
+        results[root_body(mechanism)] = zero(SpatialAcceleration{cache_eltype(state)}, rootframe, rootframe, rootframe)
+        @nocachecheck for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            parentbias = results[parentbody]
+            parentframe = default_frame(parentbody)
+            jointbias = change_base(bias_acceleration(state, joint), parentframe) # to make frames line up
+
+             # TODO: awkward way of doing this:
+            toroot = transform_to_root(state, body)
+            twistwrtworld = transform(twist_wrt_world(state, body), inv(toroot))
+            jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
+
+            jointbias = transform(jointbias, toroot, twistwrtworld, jointtwist)
+            results[body] = parentbias + jointbias
+        end
+    end
+    update!(state.bias_accelerations_wrt_world, f!, state)
+end
+
+function update_spatial_inertias!(state::MechanismState)
+    update_transforms!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        results[root_body(mechanism)] = zero(SpatialInertia{cache_eltype(state)}, root_frame(mechanism))
+        @nocachecheck for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
+            results[body] = transform(spatial_inertia(body), transform_to_root(state, body))
+        end
+    end
+    update!(state.inertias, f!, state)
+end
+
+function update_crb_inertias!(state::MechanismState)
+    update_spatial_inertias!(state)
+    f! = (results, state) -> begin
+        mechanism = state.mechanism
+        @nocachecheck for body in bodies(mechanism)
+            results[body] = spatial_inertia(state, body)
+        end
+        joints = tree_joints(mechanism)
+        for i = length(joints) : -1 : 1
+            joint = joints[i]
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            results[parentbody] += results[body]
+        end
+    end
+    update!(state.crb_inertias, f!, state)
+end
 
 contact_states(state::MechanismState, body::RigidBody) = state.contact_states[body]
 
