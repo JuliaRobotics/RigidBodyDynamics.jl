@@ -1,7 +1,6 @@
 const BodyDict{T} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}}
 const JointDict{T} = UnsafeFastDict{Graphs.edge_index, GenericJoint{T}}
 
-
 abstract type CacheSafety end
 struct CacheSafe <: CacheSafety end
 struct CacheUnsafe <: CacheSafety end
@@ -25,14 +24,13 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
     type_sorted_non_tree_joints::N
     constraint_jacobian_structure::Vector{Tuple{GenericJoint{M}, TreePath{RigidBody{M}, GenericJoint{M}}}}
 
-    # configurations, velocities
-    q::Vector{X}
-    v::Vector{X}
-
-    # additional state
-    s::Vector{X}
+    q::Vector{X} # configuration
+    v::Vector{X} # velocity
+    s::Vector{X} # additional state
 
     # joint-specific
+    qranges::JointDict{M, UnitRange{Int}}
+    vranges::JointDict{M, UnitRange{Int}}
     qs::JointDict{M, VectorSegment{X}}
     vs::JointDict{M, VectorSegment{X}}
     joint_transforms::CacheElement{JointDict{M, Transform3DS{C}}}
@@ -60,23 +58,12 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
         v = zeros(X, num_velocities(mechanism))
         s = zeros(X, num_additional_states(mechanism))
 
-        # TODO: function for this:
-        qstart = 1
-        qs = JointDict{M, VectorSegment{X}}(joint => begin
-            qjoint = view(q, qstart : qstart + num_positions(joint) - 1)
-            zero_configuration!(qjoint, joint)
-            qstart += num_positions(joint)
-            qjoint
-        end for joint in tree_joints(mechanism))
-
-        vstart = 1
-        vs = JointDict{M, VectorSegment{X}}(joint => begin
-            vjoint = view(v, vstart : vstart + num_velocities(joint) - 1)
-            vstart += num_velocities(joint)
-            vjoint
-        end for joint in tree_joints(mechanism))
-
         # joint-specific
+        qstart, vstart = 1, 1
+        qranges = JointDict{M, UnitRange{Int}}(j => qstart : (qstart += num_positions(j)) - 1 for j in tree_joints(mechanism))
+        vranges = JointDict{M, UnitRange{Int}}(j => vstart : (vstart += num_velocities(j)) - 1 for j in tree_joints(mechanism))
+        qs = JointDict{M, VectorSegment{X}}(j => view(q, qranges[j]) for j in tree_joints(mechanism))
+        vs = JointDict{M, VectorSegment{X}}(j => view(v, vranges[j]) for j in tree_joints(mechanism))
         joint_transforms = CacheElement(JointDict{M, Transform3DS{C}}(joints(mechanism)))
         joint_twists = CacheElement(JointDict{M, Twist{C}}(tree_joints(mechanism)))
         joint_bias_accelerations = CacheElement(JointDict{M, SpatialAcceleration{C}}(tree_joints(mechanism)))
@@ -96,10 +83,8 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
             model = contact_model(point)
             n = num_states(model)
             push!(contact_states[body], collect(begin
-                s_part = view(s, startind : startind + n - 1)
-                contact_state = SoftContactState(model, s_part, root_frame(mechanism))
-                startind += n
-                contact_state
+                s_part = view(s, startind : (startind += n) - 1)
+                SoftContactState(model, s_part, root_frame(mechanism))
             end for j = 1 : length(mechanism.environment)))
         end
 
@@ -108,11 +93,13 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
 
         Tree = typeof(type_sorted_tree_joints)
         NonTree = typeof(type_sorted_non_tree_joints)
-        new{X, M, C, Tree, NonTree}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, constraint_jacobian_structure,
-            q, v, s, qs, vs,
+        ret = new{X, M, C, Tree, NonTree}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, constraint_jacobian_structure,
+            q, v, s, qranges, vranges, qs, vs,
             joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world, constraint_wrench_subspaces,
             transforms_to_world, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
+        zero!(ret)
+        ret
     end
 end
 
@@ -401,8 +388,8 @@ function set!(state::MechanismState, x::AbstractVector)
 end
 
 
-configuration_range(state::MechanismState, joint::Joint) = first(parentindexes(configuration(state, joint)))
-velocity_range(state::MechanismState, joint::Joint) = first(parentindexes(velocity(state, joint)))
+configuration_range(state::MechanismState, joint::Joint) = state.qranges[joint]
+velocity_range(state::MechanismState, joint::Joint) = state.vranges[joint]
 
 function update_transforms!(state::MechanismState)
     update_tree_joint_transforms! = (results, joints, qs) -> map!(joint_transform, values(results), joints, qs)
@@ -693,10 +680,10 @@ kinetic_energy(state::MechanismState, body::RigidBody) = kinetic_energy(spatial_
 
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
     # TODO: do this without a generated function
-    _configuration_derivative!(out, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
+    _configuration_derivative!(out, state.type_sorted_tree_joints, values(state.qs), values(state.vs), values(state.qranges))
 end
 
-@generated function _configuration_derivative!(q̇s, joints::TypeSortedCollection{I, D}, qs, vs) where {I, D}
+@generated function _configuration_derivative!(q̇s, joints::TypeSortedCollection{I, D}, qs, vs, qranges) where {I, D}
     expr = Expr(:block)
     push!(expr.args, :(Base.@_inline_meta))
     for i = 1 : nfields(D)
@@ -706,8 +693,7 @@ end
                 index = joints.indexfun(joint)
                 qjoint = qs[index]
                 vjoint = vs[index]
-                qrange = first(parentindexes(qjoint))
-                q̇joint = fastview(q̇s, qrange)
+                q̇joint = fastview(q̇s, qranges[index])
                 velocity_to_configuration_derivative!(q̇joint, joint, qjoint, vjoint)
             end
         end)
@@ -833,10 +819,10 @@ Compute local coordinates ``\phi`` centered around (global) configuration vector
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function local_coordinates!(ϕ::StridedVector, ϕd::StridedVector, state::MechanismState, q0::StridedVector)
     # TODO: do this without a generated function
-    _local_coordinates!(ϕ, ϕd, state.type_sorted_tree_joints, q0, values(state.qs), values(state.vs))
+    _local_coordinates!(ϕ, ϕd, state.type_sorted_tree_joints, q0, values(state.qs), values(state.vs), values(state.qranges), values(state.vranges))
 end
 
-@generated function _local_coordinates!(ϕ, ϕd, joints::TypeSortedCollection{I, D}, q0, qs, vs) where {I, D}
+@generated function _local_coordinates!(ϕ, ϕd, joints::TypeSortedCollection{I, D}, q0, qs, vs, qranges, vranges) where {I, D}
     expr = Expr(:block)
     push!(expr.args, :(Base.@_inline_meta))
     for i = 1 : nfields(D)
@@ -846,8 +832,8 @@ end
                 index = joints.indexfun(joint)
                 qjoint = qs[index]
                 vjoint = vs[index]
-                qrange = first(parentindexes(qjoint))
-                vrange = first(parentindexes(vjoint))
+                qrange = qranges[index]
+                vrange = vranges[index]
                 ϕjoint = fastview(ϕ, vrange)
                 ϕdjoint = fastview(ϕd, vrange)
                 q0joint = fastview(q0, qrange)
