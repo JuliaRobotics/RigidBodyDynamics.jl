@@ -416,7 +416,7 @@ macro joint_state_cache_accessor(fun, updatefun, field)
         end
 
         # Cache-unsafe version
-        $(fun)(state::MechanismState, joint::Joint, cache_safety::RigidBodyDynamics.CacheUnsafe) = state.$(field).data[joint]
+        @inline $(fun)(state::MechanismState, joint::Joint, cache_safety::RigidBodyDynamics.CacheUnsafe) = state.$(field).data[joint]
     end |> esc
 end
 
