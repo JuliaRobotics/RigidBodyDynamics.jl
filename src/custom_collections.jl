@@ -171,15 +171,18 @@ struct UnsafeFastDict{I, K, V} <: Associative{K, V}
 end
 
 # Iteration
-Base.start(d::UnsafeFastDict) = 1
-Base.done(d::UnsafeFastDict, state) = state > length(d)
-Base.next(d::UnsafeFastDict, state) = (d.keys[state] => d.values[state], state + 1)
+@inline Base.start(d::UnsafeFastDict) = 1
+@inline Base.done(d::UnsafeFastDict, state) = state > length(d)
+@inline Base.next(d::UnsafeFastDict, state) = (d.keys[state] => d.values[state], state + 1)
 
 # Associative
-Base.length(d::UnsafeFastDict) = length(d.values)
-Base.haskey{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = (1 <= I(key) <= length(d)) && (@inbounds return d.keys[I(key)] === key)
-Base.getindex{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = get(d, key)
-Base.setindex!{I, K, V}(d::UnsafeFastDict{I, K, V}, value::V, key::K) = (@boundscheck haskey(d, key) || throw(KeyError(key)); d.values[I(key)] = value)
-Base.get{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = (@boundscheck haskey(d, key) || throw(KeyError(key)); d.values[I(key)])
-Base.keys(d::UnsafeFastDict) = d.keys
-Base.values(d::UnsafeFastDict) = d.values
+@inline Base.length(d::UnsafeFastDict) = length(d.values)
+@inline Base.haskey{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = (1 <= I(key) <= length(d)) && (@inbounds return d.keys[I(key)] === key)
+@inline Base.getindex{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = get(d, key)
+@inline Base.get{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = (@boundscheck haskey(d, key) || throw(KeyError(key)); d.values[I(key)])
+@inline Base.keys(d::UnsafeFastDict) = d.keys
+@inline Base.values(d::UnsafeFastDict) = d.values
+@inline function Base.setindex!{I, K, V}(d::UnsafeFastDict{I, K, V}, value::V, key::K)
+    @boundscheck haskey(d, key) || throw(KeyError(key))
+    d.values[I(key)] = value
+end
