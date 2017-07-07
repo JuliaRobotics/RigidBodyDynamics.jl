@@ -55,23 +55,10 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
         v = zeros(X, num_velocities(mechanism))
         s = zeros(X, num_additional_states(mechanism))
 
-        # TODO: function for this:
-        qstart = 1
-        qs = JointDict{M, VectorSegment{X}}(joint => begin
-            qjoint = view(q, qstart : qstart + num_positions(joint) - 1)
-            zero_configuration!(qjoint, joint)
-            qstart += num_positions(joint)
-            qjoint
-        end for joint in tree_joints(mechanism))
-
-        vstart = 1
-        vs = JointDict{M, VectorSegment{X}}(joint => begin
-            vjoint = view(v, vstart : vstart + num_velocities(joint) - 1)
-            vstart += num_velocities(joint)
-            vjoint
-        end for joint in tree_joints(mechanism))
-
         # joint-specific
+        qstart, vstart = 1, 1
+        qs = JointDict{M, VectorSegment{X}}(j => view(q, qstart : (qstart += num_positions(j)) - 1) for j in tree_joints(mechanism))
+        vs = JointDict{M, VectorSegment{X}}(j => view(v, vstart : (vstart += num_velocities(j)) - 1) for j in tree_joints(mechanism))
         joint_transforms = CacheElement(JointDict{M, Transform3DS{C}}(joints(mechanism)))
         joint_twists = CacheElement(JointDict{M, Twist{C}}(tree_joints(mechanism)))
         joint_bias_accelerations = CacheElement(JointDict{M, SpatialAcceleration{C}}(tree_joints(mechanism)))
@@ -103,11 +90,13 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
 
         Tree = typeof(type_sorted_tree_joints)
         NonTree = typeof(type_sorted_non_tree_joints)
-        new{X, M, C, Tree, NonTree}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, constraint_jacobian_structure,
+        state = new{X, M, C, Tree, NonTree}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, constraint_jacobian_structure,
             q, v, s, qs, vs,
             joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world, constraint_wrench_subspaces,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
+        zero!(state)
+        state
     end
 end
 
