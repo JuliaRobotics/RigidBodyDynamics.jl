@@ -47,12 +47,13 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
     function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
         C = promote_type(X, M)
 
-        type_sorted_joints = TypeSortedCollection(typedjoint.(joints(mechanism)), Graphs.edge_index) # TODO: really only needed to get type
+        typedjoints = Dict(zip(joints(mechanism), typedjoint.(joints(mechanism))))
+        type_sorted_joints = TypeSortedCollection(collect(values(typedjoints)), Graphs.edge_index) # TODO: really only needed to get type
         JointCollection = typeof(type_sorted_joints)
-        type_sorted_tree_joints = JointCollection(typedjoint.(tree_joints(mechanism)), Graphs.edge_index)
-        type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)), Graphs.edge_index)
+        type_sorted_tree_joints = JointCollection(getindex.(typedjoints, tree_joints(mechanism)), Graphs.edge_index)
+        type_sorted_non_tree_joints = JointCollection(getindex.(typedjoints, non_tree_joints(mechanism)), Graphs.edge_index)
         ancestor_joints(joint) = first.((path(mechanism, successor(joint, mechanism), root_body(mechanism)).directed_edges))
-        type_sorted_ancestor_joints = JointDict{M, JointCollection}(j => JointCollection(typedjoint.(ancestor_joints(j)), Graphs.edge_index) for j in tree_joints(mechanism))
+        type_sorted_ancestor_joints = JointDict{M, JointCollection}(j => JointCollection(getindex.(typedjoints, ancestor_joints(j)), Graphs.edge_index) for j in tree_joints(mechanism))
 
         q = Vector{X}(num_positions(mechanism))
         v = zeros(X, num_velocities(mechanism))
