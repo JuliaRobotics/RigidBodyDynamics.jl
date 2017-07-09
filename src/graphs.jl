@@ -84,8 +84,8 @@ end
 # AbstractGraph interface
 vertices(g::DirectedGraph) = g.vertices
 edges(g::DirectedGraph) = g.edges
-source(edge::E, g::DirectedGraph{V, E}) where {V, E} = g.sources[edge_index(edge)]
-target(edge::E, g::DirectedGraph{V, E}) where {V, E} = g.targets[edge_index(edge)]
+source(edge, g::DirectedGraph{V, E}) where {V, E} = g.sources[edge_index(edge)]
+target(edge, g::DirectedGraph{V, E}) where {V, E} = g.targets[edge_index(edge)]
 in_edges(vertex::V, g::DirectedGraph{V, E}) where {V, E} = g.inedges[vertex_index(vertex)]
 out_edges(vertex::V, g::DirectedGraph{V, E}) where {V, E} = g.outedges[vertex_index(vertex)]
 
@@ -194,15 +194,15 @@ end
 # AbstractGraph interface
 vertices(tree::SpanningTree) = vertices(tree.graph)
 edges(tree::SpanningTree) = tree.edges
-source(edge::E, tree::SpanningTree{V, E}) where {V, E} = source(edge, tree.graph) # note: doesn't check that edge is in spanning tree!
-target(edge::E, tree::SpanningTree{V, E}) where {V, E} = target(edge, tree.graph) # note: doesn't check that edge is in spanning tree!
+source(edge, tree::SpanningTree{V, E}) where {V, E} = source(edge, tree.graph) # note: doesn't check that edge is in spanning tree!
+target(edge, tree::SpanningTree{V, E}) where {V, E} = target(edge, tree.graph) # note: doesn't check that edge is in spanning tree!
 in_edges(vertex::V, tree::SpanningTree{V, E}) where {V, E} = (tree.inedges[vertex_index(vertex)],)
 out_edges(vertex::V, tree::SpanningTree{V, E}) where {V, E} = tree.outedges[vertex_index(vertex)]
 
 root(tree::SpanningTree) = tree.root
 edge_to_parent(vertex::V, tree::SpanningTree{V, E}) where {V, E} = tree.inedges[vertex_index(vertex)]
 edges_to_children(vertex::V, tree::SpanningTree{V, E}) where {V, E} = out_edges(vertex, tree)
-tree_index(edge::E, tree::SpanningTree{V, E}) where {V, E} = tree.edge_tree_indices[edge_index(edge)]
+tree_index(edge, tree::SpanningTree{V, E}) where {V, E} = tree.edge_tree_indices[edge_index(edge)]
 tree_index(vertex::V, tree::SpanningTree{V, E}) where {V, E} = vertex == root(tree) ? 1 : tree_index(edge_to_parent(vertex, tree), tree) + 1
 
 function SpanningTree(g::DirectedGraph{V, E}, root::V, edges::AbstractVector{E}) where {V, E}
