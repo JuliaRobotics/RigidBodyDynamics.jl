@@ -81,7 +81,6 @@ export
     num_cols,
     joint_transform,
     motion_subspace,
-    motion_subspace_in_world,
     constraint_wrench_subspace,
     has_fixed_subspaces,
     bias_acceleration,

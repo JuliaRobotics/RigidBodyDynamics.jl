@@ -32,8 +32,6 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
     joint_transforms::CacheElement{JointDict{M, Transform3DS{C}}}
     joint_twists::CacheElement{JointDict{M, Twist{C}}}
     joint_bias_accelerations::CacheElement{JointDict{M, SpatialAcceleration{C}}}
-    motion_subspaces::CacheElement{JointDict{M, MotionSubspace{C}}}
-    motion_subspaces_in_world::CacheElement{JointDict{M, MotionSubspace{C}}} # TODO: should this be here?
 
     # body-specific
     transforms_to_root::CacheElement{BodyDict{M, Transform3DS{C}}}
@@ -65,8 +63,6 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
         joint_transforms = CacheElement(JointDict{M, Transform3DS{C}}(joints(mechanism)))
         joint_twists = CacheElement(JointDict{M, Twist{C}}(tree_joints(mechanism)))
         joint_bias_accelerations = CacheElement(JointDict{M, SpatialAcceleration{C}}(tree_joints(mechanism)))
-        motion_subspaces = CacheElement(JointDict{M, MotionSubspace{C}}(tree_joints(mechanism)))
-        motion_subspaces_in_world = CacheElement(JointDict{M, MotionSubspace{C}}(tree_joints(mechanism)))
 
         # body-specific
         transforms_to_root = CacheElement(BodyDict{M, Transform3DS{C}}(bodies(mechanism)))
@@ -92,7 +88,7 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
 
         state = new{X, M, C, JointCollection}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, type_sorted_ancestor_joints,
             constraint_jacobian_structure, q, v, s, qs, vs, joint_poses,
-            joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world,
+            joint_transforms, joint_twists, joint_bias_accelerations,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
         zero!(state)
@@ -153,8 +149,6 @@ function setdirty!(state::MechanismState)
     setdirty!(state.joint_transforms)
     setdirty!(state.joint_twists)
     setdirty!(state.joint_bias_accelerations)
-    setdirty!(state.motion_subspaces)
-    setdirty!(state.motion_subspaces_in_world)
     setdirty!(state.transforms_to_root)
     setdirty!(state.twists_wrt_world)
     setdirty!(state.bias_accelerations_wrt_world)
@@ -400,21 +394,6 @@ root frame of the mechanism when all joint accelerations are zero.
 """
 @joint_state_cache_accessor(bias_acceleration, update_joint_bias_accelerations!, joint_bias_accelerations)
 
-"""
-$(SIGNATURES)
-
-Return the motion subspace of the given joint expressed in `frame_after(joint)`.
-"""
-@joint_state_cache_accessor(motion_subspace, update_motion_subspaces!, motion_subspaces)
-
-"""
-$(SIGNATURES)
-
-Return the motion subspace of the given joint expressed in the root frame of
-the mechanism.
-"""
-@joint_state_cache_accessor(motion_subspace_in_world, update_motion_subspaces_in_world!, motion_subspaces_in_world)
-
 Base.@deprecate transform(state::MechanismState, joint::Joint) joint_transform(state, joint)
 
 const body_state_cache_accessors = Symbol[]
@@ -540,27 +519,6 @@ end
 function update_joint_bias_accelerations!(state::MechanismState)
     f! = (results, joints, qs, vs) -> map!(bias_acceleration, values(results), joints, qs, vs)
     update!(state.joint_bias_accelerations, f!, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
-end
-
-function update_motion_subspaces!(state::MechanismState)
-    f! = (results, joints, qs) -> map!(motion_subspace, values(results), joints, qs)
-    update!(state.motion_subspaces, f!, state.type_sorted_tree_joints, values(state.qs))
-end
-
-function update_motion_subspaces_in_world!(state::MechanismState) # TODO: make more efficient
-    update_transforms!(state)
-    update_motion_subspaces!(state)
-    f! = (results, state) -> begin
-        mechanism = state.mechanism
-        @nocachecheck for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            parentbody = predecessor(joint, mechanism)
-            parentframe = default_frame(parentbody)
-            motionsubspace = change_base(motion_subspace(state, joint), parentframe)
-            results[joint] = transform(motionsubspace, transform_to_root(state, body))
-        end
-    end
-    update!(state.motion_subspaces_in_world, f!, state)
 end
 
 function update_twists_wrt_world!(state::MechanismState)

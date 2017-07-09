@@ -178,7 +178,8 @@
         for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             parentBody = predecessor(joint, mechanism)
-            @test isapprox(relative_twist(x, body, parentBody), Twist(motion_subspace_in_world(x, joint), velocity(x, joint)); atol = 1e-12)
+            J = RigidBodyDynamics.change_base(transform(motion_subspace(joint, configuration(x, joint)), transform_to_root(x, body)), default_frame(parentBody))
+            @test isapprox(relative_twist(x, body, parentBody), Twist(J, velocity(x, joint)); atol = 1e-8)
         end
     end
 
@@ -205,7 +206,8 @@
         for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             Ajoint = Amat[:, velocity_range(x, joint)]
-            @test isapprox(Array(crb_inertia(x, body) * motion_subspace_in_world(x, joint)), Ajoint; atol = 1e-12)
+            J = transform(motion_subspace(joint, configuration(x, joint)), transform_to_root(x, body))
+            @test isapprox(Array(crb_inertia(x, body) * J), Ajoint; atol = 1e-12)
         end
 
         v = velocity(x)

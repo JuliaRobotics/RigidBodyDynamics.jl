@@ -12,10 +12,18 @@ Return a matrix `A` such that `A[:, i] == f(vec, mat[:, i])`.
 """
 @generated function colwise(f, vec::StaticVector, mat::StaticArray)
     length(vec) == size(mat, 1) || throw(DimensionMismatch())
-    exprs = [:(f(vec, mat[:, $j])) for j = 1:size(mat, 2)]
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $(Expr(:call, hcat, exprs...))
+    if size(mat, 2) == 0
+        T = similar_type(mat, promote_type(eltype(vec), eltype(mat)))
+        quote
+            $(Expr(:meta, :inline))
+            zeros($T)
+        end
+    else
+        exprs = [:(f(vec, mat[:, $j])) for j = 1 : size(mat, 2)]
+        quote
+            $(Expr(:meta, :inline))
+            @inbounds return $(Expr(:call, hcat, exprs...))
+        end
     end
 end
 
@@ -33,10 +41,18 @@ Return a matrix `A` such that `A[:, i] == f(mat[:, i], vec)`.
 """
 @generated function colwise(f, mat::StaticArray, vec::StaticVector)
     length(vec) == size(mat, 1) || throw(DimensionMismatch())
-    exprs = [:(f(mat[:, $j], vec)) for j = 1:size(mat, 2)]
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $(Expr(:call, hcat, exprs...))
+    if size(mat, 2) == 0
+        T = similar_type(mat, promote_type(eltype(vec), eltype(mat)))
+        quote
+            $(Expr(:meta, :inline))
+            zeros($T)
+        end
+    else
+        exprs = [:(f(mat[:, $j], vec)) for j = 1 : size(mat, 2)]
+        quote
+            $(Expr(:meta, :inline))
+            @inbounds return $(Expr(:call, hcat, exprs...))
+        end
     end
 end
 

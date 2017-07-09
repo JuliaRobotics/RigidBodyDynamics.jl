@@ -168,32 +168,6 @@ function gravitational_potential_energy(state::MechanismState{X, M, C}) where {X
     -dot(gravitationalforce, FreeVector3D(center_of_mass(state)))
  end
 
- function force_space_matrix_transpose_mul_jacobian!(out::Matrix, rowstart::Int64, colstart::Int64,
-        mat::Union{MomentumMatrix, WrenchMatrix}, jac::GeometricJacobian, sign::Int64)
-     @framecheck(jac.frame, mat.frame)
-     n = num_cols(mat)
-     m = num_cols(jac)
-     @boundscheck (rowstart > 0 && rowstart + n - 1 <= size(out, 1)) || error("size mismatch")
-     @boundscheck (colstart > 0 && colstart + m - 1 <= size(out, 2)) || error("size mismatch")
-
-     # more efficient version of
-     # view(out, rowstart : rowstart + n - 1, colstart : colstart + n - 1)[:] = mat.angular' * jac.angular + mat.linear' * jac.linear
-
-     @inbounds begin
-         for col = 1 : m
-             outcol = colstart + col - 1
-             for row = 1 : n
-                 outrow = rowstart + row - 1
-                 out[outrow, outcol] = zero(eltype(out))
-                 for i = 1 : 3
-                     out[outrow, outcol] += flipsign(mat.angular[i, row] * jac.angular[i, col], sign)
-                     out[outrow, outcol] += flipsign(mat.linear[i, row] * jac.linear[i, col], sign)
-                 end
-             end
-         end
-     end
- end
-
 const mass_matrix_doc = """Compute the joint-space mass matrix
 (also known as the inertia matrix) of the `Mechanism` in the given state, i.e.,
 the matrix ``M(q)`` in the unconstrained joint-space equations of motion
@@ -218,37 +192,28 @@ velocity vector ``v``.
 function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C}) where {X, M, C}
     @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
     @boundscheck out.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
-    update_motion_subspaces_in_world!(state)
+    fill!(out.data, 0)
+    update_transforms!(state)
     update_crb_inertias!(state)
-    @nocachecheck begin
-        fill!(out.data, zero(C))
-        mechanism = state.mechanism
-        for jointi in tree_joints(mechanism)
-            # Hii
-            irange = velocity_range(state, jointi)
-            if length(irange) > 0
-                bodyi = successor(jointi, mechanism)
-                Si = motion_subspace_in_world(state, jointi)
-                Ii = crb_inertia(state, bodyi)
-                F = Ii * Si
-                istart = first(irange)
-                force_space_matrix_transpose_mul_jacobian!(out.data, istart, istart, F, Si, 1)
-
-                # Hji, Hij
-                body = predecessor(jointi, mechanism)
-                while (!isroot(body, mechanism))
-                    jointj = joint_to_parent(body, mechanism)
-                    jrange = velocity_range(state, jointj)
-                    if length(jrange) > 0
-                        Sj = motion_subspace_in_world(state, jointj)
-                        jstart = first(jrange)
-                        force_space_matrix_transpose_mul_jacobian!(out.data, istart, jstart, F, Sj, 1)
-                    end
-                    body = predecessor(jointj, mechanism)
-                end
-            end
+    joints = state.type_sorted_tree_joints
+    foreach(joints) do jointi
+        irange = velocity_range(state, jointi)
+        bodyi = successor(jointi, state.mechanism)
+        Si = motion_subspace(jointi, state.qs[jointi])
+        @nocachecheck Si = transform(Si, transform_to_root(state, bodyi))
+        @nocachecheck Ici = crb_inertia(state, bodyi)
+        F = Ici * Si
+        ancestor_joints = state.type_sorted_ancestor_joints[jointi]
+        foreach(ancestor_joints) do jointj
+            jrange = velocity_range(state, jointj)
+            bodyj = successor(jointj, state.mechanism)
+            Sj = motion_subspace(jointj, state.qs[jointj])
+            @nocachecheck Sj = transform(Sj, transform_to_root(state, bodyj))
+            block = F.angular' * Sj.angular + F.linear' * Sj.linear
+            copy!(out.data, CartesianRange((irange, jrange)), block, CartesianRange(indices(block)))
         end
     end
+    out
 end
 
 """
