@@ -2,7 +2,21 @@ using BenchmarkTools
 using RigidBodyDynamics
 import RigidBodyDynamics: @nocachecheck, update_transforms!, update_crb_inertias!, cache_eltype, Graphs
 
-mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 30]]...)
+function create_atlas(ScalarType, floating = false)
+    url = "https://raw.githubusercontent.com/RobotLocomotion/drake/6e3ca768cbaabf15d0f2bed0fb5bd703fa022aa5/drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"
+    urdf = RigidBodyDynamics.cached_download(url, "atlas.urdf")
+    atlas = parse_urdf(ScalarType, urdf)
+    if floating
+        for joint in out_joints(root_body(atlas), atlas)
+            floatingjoint = Joint(joint.name, frame_before(joint), frame_after(joint), QuaternionFloating{ScalarType}())
+            replace_joint!(atlas, joint, floatingjoint)
+        end
+    end
+    atlas
+end
+
+mechanism = create_atlas(Float64, true)
+remove_fixed_tree_joints!(mechanism)
 x = MechanismState{Float64}(mechanism)
 rand!(x)
 
