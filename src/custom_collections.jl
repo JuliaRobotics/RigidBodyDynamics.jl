@@ -39,8 +39,7 @@ indexfun(x::TypeSortedCollection) = x.indexfun
     expr
 end
 
-# like map!, but f! takes the destination element as the first argument and modifies it
-@generated function map_in_place!(f!, dest::AbstractVector, tsc::TypeSortedCollection{I, D}, As...) where {I, D}
+@generated function Base.foreach(f, tsc::TypeSortedCollection{I, D}, As...) where {I, D}
     expr = Expr(:block)
     push!(expr.args, :(Base.@_inline_meta))
     for i = 1 : nfields(D)
@@ -48,7 +47,7 @@ end
             vec = tsc.data[$i]
             for element in vec
                 index = tsc.indexfun(element)
-                f!(dest[index], element, getindex.(As, index)...)
+                f(element, getindex.(As, index)...)
             end
         end)
     end

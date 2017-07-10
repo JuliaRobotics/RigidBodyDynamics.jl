@@ -188,7 +188,7 @@ configuration vector would be set to identity. The contract is that each of the
 joint transforms should be an identity transform.
 """
 function zero_configuration!(state::MechanismState)
-    map_in_place!(zero_configuration!, values(state.qs), state.type_sorted_tree_joints)
+    foreach((joint, q) -> zero_configuration!(q, joint), state.type_sorted_tree_joints, values(state.qs))
     reset_contact_state!(state)
     setdirty!(state)
 end
@@ -222,7 +222,7 @@ the particular joint types present in the associated `Mechanism`. The resulting
 Invalidates cache variables.
 """
 function rand_configuration!(state::MechanismState)
-    map_in_place!(rand_configuration!, values(state.qs), state.type_sorted_tree_joints)
+    foreach((joint, q) -> rand_configuration!(q, joint), state.type_sorted_tree_joints, values(state.qs))
     reset_contact_state!(state)
     setdirty!(state)
 end
