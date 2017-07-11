@@ -46,8 +46,8 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
     function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
         C = promote_type(X, M)
 
-        type_sorted_tree_joints = TypeSortedCollection(Graphs.edge_index, typedjoint.(tree_joints(mechanism)))
-        type_sorted_non_tree_joints = TypeSortedCollection(Graphs.edge_index, typedjoint.(non_tree_joints(mechanism)))
+        type_sorted_tree_joints = TypeSortedCollection(typedjoint.(tree_joints(mechanism)), Graphs.edge_index)
+        type_sorted_non_tree_joints = TypeSortedCollection(typedjoint.(non_tree_joints(mechanism)), Graphs.edge_index)
 
         q = Vector{X}(num_positions(mechanism))
         v = zeros(X, num_velocities(mechanism))
@@ -703,7 +703,7 @@ function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismSt
     _configuration_derivative!(out, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
-@generated function _configuration_derivative!(q̇s, joints::TypeSortedCollection{I, D}, qs, vs) where {I, D}
+@generated function _configuration_derivative!(q̇s, joints::TypeSortedCollection{D}, qs, vs) where {D}
     expr = Expr(:block)
     push!(expr.args, :(Base.@_inline_meta))
     for i = 1 : nfields(D)
@@ -843,7 +843,7 @@ function local_coordinates!(ϕ::StridedVector, ϕd::StridedVector, state::Mechan
     _local_coordinates!(ϕ, ϕd, state.type_sorted_tree_joints, q0, values(state.qs), values(state.vs))
 end
 
-@generated function _local_coordinates!(ϕ, ϕd, joints::TypeSortedCollection{I, D}, q0, qs, vs) where {I, D}
+@generated function _local_coordinates!(ϕ, ϕd, joints::TypeSortedCollection{D}, q0, qs, vs) where {D}
     expr = Expr(:block)
     push!(expr.args, :(Base.@_inline_meta))
     for i = 1 : nfields(D)
@@ -877,7 +877,7 @@ function global_coordinates!(state::MechanismState, q0::StridedVector, ϕ::Strid
     _global_coordinates!(values(state.qs), values(state.vs), state.type_sorted_tree_joints, q0, ϕ)
 end
 
-@generated function _global_coordinates!(qs, vs, joints::TypeSortedCollection{I, D}, q0, ϕ) where {I, D}
+@generated function _global_coordinates!(qs, vs, joints::TypeSortedCollection{D}, q0, ϕ) where {D}
     expr = Expr(:block)
     push!(expr.args, :(Base.@_inline_meta))
     for i = 1 : nfields(D)
