@@ -57,19 +57,31 @@ import RigidBodyDynamics: hat, rotation_vector_rate, colwise
 
     @testset "TypeSortedCollection" begin
         x = Pair[3. => 1; 4 => 2; 5 => 3]
-        sorted = RigidBodyDynamics.TypeSortedCollection(last, x)
-        index = RigidBodyDynamics.indexfun(sorted)
+        sortedx = RigidBodyDynamics.TypeSortedCollection(x, last)
+        index = RigidBodyDynamics.indexfun(sortedx)
         @test index == last
-        @test length(sorted) == length(x)
+        @test length(sortedx) == length(x)
 
         f(x::Pair{Int64, Int64}) = 3 * first(x)
         f(x::Pair{Float64, Int64}) = round(Int64, first(x) / 2)
-        results = Vector{Int64}(length(sorted))
 
-        map!(f, results, sorted)
-
-        for element in x
-            @test results[index(element)] == f(element)
+        maptest(f, results, index, x) = begin
+            for element in x
+                results[index(element)] != f(element) && return false
+            end
+            true
         end
+
+        results = Vector{Int64}(maximum(index.(x)))
+        map!(f, results, sortedx)
+        @test maptest(f, results, index, x)
+
+        y = Pair[1. => 4; 2. => 2; 3. => 3]
+        sortedy = typeof(sortedx)(y, index)
+        @test typeof(sortedy) == typeof(sortedx)
+
+        results = Vector{Int64}(maximum(index.(y)))
+        map!(f, results, sortedy)
+        @test maptest(f, results, index, y)
     end
 end

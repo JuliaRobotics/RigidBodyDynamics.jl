@@ -1,37 +1,50 @@
 ## TypeSortedCollection
-struct TypeSortedCollection{I, D<:Tuple{Vararg{Vector{T} where T}}}
-    indexfun::I
+const TupleOfVectors = Tuple{Vararg{Vector{T} where T}}
+struct TypeSortedCollection{D<:TupleOfVectors, I}
     data::D
+    indexfun::I
 
-    function TypeSortedCollection(indexfun::I, x) where {I}
-        dict = sort_by_type(x)
-        data = tuple(values(dict)...)
-        new{I, typeof(data)}(indexfun, data)
+    function TypeSortedCollection(A, indexfun::I) where {I}
+        types = unique(typeof.(A))
+        D = Tuple{[Vector{T} for T in types]...}
+        TypeSortedCollection{D, I}(A, indexfun)
+    end
+
+    function TypeSortedCollection{D}(indexfun::I) where {D<:TupleOfVectors, I}
+        eltypes = eltype.([D.parameters...])
+        data = tuple((T[] for T in eltypes)...)
+        new{D, I}(data, indexfun)
+    end
+
+    function TypeSortedCollection{D, I}(A, indexfun::I) where {D<:TupleOfVectors, I}
+        append!(TypeSortedCollection{D}(indexfun), A)
     end
 end
 
-function sort_by_type(A)
-    ret = Dict()
+function Base.append!(dest::TypeSortedCollection, A)
+    data = dest.data
+    type_to_index = Dict(T => i for (i, T) in enumerate(eltype.(data)))
     for x in A
         T = typeof(x)
-        vector = get!(Vector{T}, ret, T)
-        push!(vector, x)
+        push!(data[type_to_index[T]], x)
     end
-    ret
+    dest
 end
 
 Base.length(x::TypeSortedCollection) = sum(length, x.data)
 indexfun(x::TypeSortedCollection) = x.indexfun
 
-@generated function Base.map!(f, dest::AbstractVector, tsc::TypeSortedCollection{I, D}, As...) where {I, D}
+@generated function Base.map!(f, dest::AbstractVector, tsc::TypeSortedCollection{D}, As...) where {D}
     expr = Expr(:block)
     push!(expr.args, :(Base.@_inline_meta))
     for i = 1 : nfields(D)
         push!(expr.args, quote
-            vec = tsc.data[$i]
-            for element in vec
-                index = tsc.indexfun(element)
-                dest[index] = f(element, getindex.(As, index)...)
+            let vec = tsc.data[$i]
+                for j in eachindex(vec)
+                    element = vec[j]
+                    index = tsc.indexfun(element)
+                    dest[index] = f(element, getindex.(As, index)...)
+                end
             end
         end)
     end
@@ -39,22 +52,24 @@ indexfun(x::TypeSortedCollection) = x.indexfun
     expr
 end
 
-@generated function Base.foreach(f, tsc::TypeSortedCollection{I, D}, As...) where {I, D}
+
+@generated function Base.foreach(f, tsc::TypeSortedCollection{D}, As...) where {D}
     expr = Expr(:block)
     push!(expr.args, :(Base.@_inline_meta))
     for i = 1 : nfields(D)
         push!(expr.args, quote
-            vec = tsc.data[$i]
-            for element in vec
-                index = tsc.indexfun(element)
-                f(element, getindex.(As, index)...)
+            let vec = tsc.data[$i]
+                for j in eachindex(vec)
+                    element = vec[j]
+                    index = tsc.indexfun(element)
+                    f(element, getindex.(As, index)...)
+                end
             end
         end)
     end
     push!(expr.args, :(return nothing))
     expr
 end
-
 
 ## ConstVector
 """
@@ -176,9 +191,9 @@ end
 
 # Associative
 @inline Base.length(d::UnsafeFastDict) = length(d.values)
-@inline Base.haskey{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = (1 <= I(key) <= length(d)) && (@inbounds return d.keys[I(key)] === key)
-@inline Base.getindex{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = get(d, key)
-@inline Base.get{I, K, V}(d::UnsafeFastDict{I, K, V}, key::K) = (@boundscheck haskey(d, key) || throw(KeyError(key)); d.values[I(key)])
+@inline Base.haskey{I, K, V}(d::UnsafeFastDict{I, K, V}, key) = (1 <= I(key) <= length(d)) && (@inbounds return d.keys[I(key)] === key)
+@inline Base.getindex{I, K, V}(d::UnsafeFastDict{I, K, V}, key) = get(d, key)
+@inline Base.get{I, K, V}(d::UnsafeFastDict{I, K, V}, key) = d.values[I(key)]
 @inline Base.keys(d::UnsafeFastDict) = d.keys
 @inline Base.values(d::UnsafeFastDict) = d.values
 @inline function Base.setindex!{I, K, V}(d::UnsafeFastDict{I, K, V}, value::V, key::K)
