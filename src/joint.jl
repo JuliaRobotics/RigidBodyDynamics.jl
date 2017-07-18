@@ -259,6 +259,19 @@ end
 """
 $(SIGNATURES)
 
+Return the spatial acceleration of `joint`'s  successor with respect to its predecessor,
+expressed in the frame after the joint.
+"""
+function joint_spatial_acceleration(joint::Joint, q::AbstractVector, v::AbstractVector, vd::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
+    @boundscheck check_num_velocities(joint, v)
+    @boundscheck check_num_velocities(joint, vd)
+    joint_spatial_acceleration(joint.jointType, frame_after(joint), frame_before(joint), q, v, vd)
+end
+
+"""
+$(SIGNATURES)
+
 Given the wrench exerted across the joint on the joint's successor, compute the
 vector of joint torques ``\\tau`` (in place), in configuration `q`.
 """
