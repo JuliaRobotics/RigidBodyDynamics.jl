@@ -34,7 +34,7 @@ end
 Base.length(x::TypeSortedCollection) = sum(length, x.data)
 indexfun(x::TypeSortedCollection) = x.indexfun
 
-@generated function Base.map!(f, dest::AbstractVector, tsc::TypeSortedCollection{D}, As...) where {D}
+@generated function Base.map!(f, dest::AbstractVector, tsc::TypeSortedCollection{D}, As::AbstractVector...) where {D}
     expr = Expr(:block)
     push!(expr.args, :(Base.@_inline_meta))
     for i = 1 : nfields(D)
@@ -52,8 +52,7 @@ indexfun(x::TypeSortedCollection) = x.indexfun
     expr
 end
 
-
-@generated function Base.foreach(f, tsc::TypeSortedCollection{D}, As...) where {D}
+@generated function Base.foreach(f, tsc::TypeSortedCollection{D}, As::AbstractVector...) where {D}
     expr = Expr(:block)
     push!(expr.args, :(Base.@_inline_meta))
     for i = 1 : nfields(D)
@@ -70,6 +69,33 @@ end
     push!(expr.args, :(return nothing))
     expr
 end
+
+# `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
+# heap-allocated variables. Hopefully this will not be necessary in a future version of Julia.
+for num_extra_args = 1 : 4
+    extra_arg_syms = [Symbol("arg", i) for i = 1 : num_extra_args]
+    @eval begin
+        @generated function foreach_with_extra_args(f, $(extra_arg_syms...), tsc::TypeSortedCollection{D}, As::AbstractVector...) where {D}
+            expr = Expr(:block)
+            extra_args = $extra_arg_syms
+            push!(expr.args, :(Base.@_inline_meta))
+            for i = 1 : nfields(D)
+                push!(expr.args, quote
+                    let vec = tsc.data[$i]
+                        for j in eachindex(vec)
+                            element = vec[j]
+                            index = tsc.indexfun(element)
+                            f($(extra_args...), element, getindex.(As, index)...)
+                        end
+                    end
+                end)
+            end
+            push!(expr.args, :(return nothing))
+            expr
+        end
+    end
+end
+
 
 ## ConstVector
 """
