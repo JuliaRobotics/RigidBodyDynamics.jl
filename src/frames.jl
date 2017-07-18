@@ -70,13 +70,13 @@ A homogeneous transformation matrix representing the transformation from one
 three-dimensional Cartesian coordinate system to another.
 """
 struct Transform3D{A<:AbstractMatrix}
+    mat::A
     from::CartesianFrame3D
     to::CartesianFrame3D
-    mat::A
 
     function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, mat::A) where {A}
         @boundscheck size(mat) == (4, 4) || throw(DimensionMismatch())
-        new{A}(from, to, mat)
+        new{A}(mat, from, to)
     end
 end
 
@@ -163,12 +163,12 @@ for VectorType in (:FreeVector3D, :Point3D)
     @eval begin
         # TODO: consider storing as a homogeneous vector
         struct $VectorType{V<:AbstractVector}
-            frame::CartesianFrame3D
             v::V
+            frame::CartesianFrame3D
 
             function $VectorType(frame::CartesianFrame3D, v::V) where {V}
                 @boundscheck length(v) == 3 || throw(DimensionMismatch())
-                new{V}(frame, v)
+                new{V}(v, frame)
             end
         end
 
