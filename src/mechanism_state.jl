@@ -702,28 +702,12 @@ momentum_rate_bias(state::MechanismState, body::RigidBody) = newton_euler(state,
 kinetic_energy(state::MechanismState, body::RigidBody) = kinetic_energy(spatial_inertia(state, body), twist_wrt_world(state, body))
 
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
-    # TODO: do this without a generated function
-    _configuration_derivative!(out, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
-end
-
-@generated function _configuration_derivative!(q̇s, joints::TypeSortedCollection{D}, qs, vs) where {D}
-    expr = Expr(:block)
-    push!(expr.args, :(Base.@_inline_meta))
-    for i = 1 : nfields(D)
-        push!(expr.args, quote
-            vec = joints.data[$i]
-            for joint in vec
-                index = joints.indexfun(joint)
-                qjoint = qs[index]
-                vjoint = vs[index]
-                qrange = first(parentindexes(qjoint))
-                q̇joint = fastview(q̇s, qrange)
-                velocity_to_configuration_derivative!(q̇joint, joint, qjoint, vjoint)
-            end
-        end)
+    # TODO: replace with plain foreach and closure once that doesn't allocate
+    joint_configuration_derivative! = (qd, joint, qjoint, vjoint) -> begin
+        qdjoint = fastview(qd, first(parentindexes(qjoint)))
+        velocity_to_configuration_derivative!(qdjoint, joint, qjoint, vjoint)
     end
-    push!(expr.args, :(return nothing))
-    expr
+    foreach_with_extra_args(joint_configuration_derivative!, out, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
 function configuration_derivative{X}(state::MechanismState{X})
@@ -842,31 +826,16 @@ Compute local coordinates ``\phi`` centered around (global) configuration vector
 ``q_0``, as well as their time derivatives ``\\dot{\\phi}``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function local_coordinates!(ϕ::StridedVector, ϕd::StridedVector, state::MechanismState, q0::StridedVector)
-    # TODO: do this without a generated function
-    _local_coordinates!(ϕ, ϕd, state.type_sorted_tree_joints, q0, values(state.qs), values(state.vs))
-end
-
-@generated function _local_coordinates!(ϕ, ϕd, joints::TypeSortedCollection{D}, q0, qs, vs) where {D}
-    expr = Expr(:block)
-    push!(expr.args, :(Base.@_inline_meta))
-    for i = 1 : nfields(D)
-        push!(expr.args, quote
-            vec = joints.data[$i]
-            for joint in vec
-                index = joints.indexfun(joint)
-                qjoint = qs[index]
-                vjoint = vs[index]
-                qrange = first(parentindexes(qjoint))
-                vrange = first(parentindexes(vjoint))
-                ϕjoint = fastview(ϕ, vrange)
-                ϕdjoint = fastview(ϕd, vrange)
-                q0joint = fastview(q0, qrange)
-                local_coordinates!(ϕjoint, ϕdjoint, joint, q0joint, qjoint, vjoint)
-            end
-        end)
+    # TODO: replace with plain foreach and closure once that doesn't allocate
+    joint_local_coordinates! = (ϕ, ϕd, q0, joint, qjoint, vjoint) -> begin
+        qrange = first(parentindexes(qjoint))
+        vrange = first(parentindexes(vjoint))
+        ϕjoint = fastview(ϕ, vrange)
+        ϕdjoint = fastview(ϕd, vrange)
+        q0joint = fastview(q0, qrange)
+        local_coordinates!(ϕjoint, ϕdjoint, joint, q0joint, qjoint, vjoint)
     end
-    push!(expr.args, :(return nothing))
-    expr
+    foreach_with_extra_args(joint_local_coordinates!, ϕ, ϕd, q0, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
 """
@@ -876,28 +845,13 @@ Convert local coordinates ``\phi`` centered around ``q_0`` to (global)
 configuration vector ``q``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function global_coordinates!(state::MechanismState, q0::StridedVector, ϕ::StridedVector)
-    # TODO: do this without a generated function
-    _global_coordinates!(values(state.qs), values(state.vs), state.type_sorted_tree_joints, q0, ϕ)
-end
-
-@generated function _global_coordinates!(qs, vs, joints::TypeSortedCollection{D}, q0, ϕ) where {D}
-    expr = Expr(:block)
-    push!(expr.args, :(Base.@_inline_meta))
-    for i = 1 : nfields(D)
-        push!(expr.args, quote
-            vec = joints.data[$i]
-            for joint in vec
-                index = joints.indexfun(joint)
-                qjoint = qs[index]
-                vjoint = vs[index]
-                qrange = first(parentindexes(qjoint))
-                vrange = first(parentindexes(vjoint))
-                q0joint = fastview(q0, qrange)
-                ϕjoint = fastview(ϕ, vrange)
-                global_coordinates!(qjoint, joint, q0joint, ϕjoint)
-            end
-        end)
+    # TODO: replace with plain foreach and closure once that doesn't allocate
+    joint_global_coordinates! = (q0, ϕ, joint, qjoint, vjoint) -> begin
+        qrange = first(parentindexes(qjoint))
+        vrange = first(parentindexes(vjoint))
+        q0joint = fastview(q0, qrange)
+        ϕjoint = fastview(ϕ, vrange)
+        global_coordinates!(qjoint, joint, q0joint, ϕjoint)
     end
-    push!(expr.args, :(return nothing))
-    expr
+    foreach_with_extra_args(joint_global_coordinates!, q0, ϕ, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end

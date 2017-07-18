@@ -83,5 +83,13 @@ import RigidBodyDynamics: hat, rotation_vector_rate, colwise
         results = Vector{Int64}(maximum(index.(y)))
         map!(f, results, sortedy)
         @test maptest(f, results, index, y)
+
+        foreach_extra_args_result = Dict{Int64, Int64}()
+        g(extra_arg::Int64, element::Pair) = (foreach_extra_args_result[last(element)] = round(Int64, extra_arg * first(element)))
+        extra_arg = 5
+        RigidBodyDynamics.foreach_with_extra_args(g, extra_arg, sortedx)
+        for element in x
+            @test foreach_extra_args_result[index(element)] == g(extra_arg, element)
+        end
     end
 end
