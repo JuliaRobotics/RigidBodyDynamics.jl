@@ -14,10 +14,11 @@ Type parameters:
 * `M`: the scalar type of the `Mechanism`
 * `C`: the scalar type of the cache variables (`== promote_type(X, M)`)
 """
-struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
+struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
     mechanism::Mechanism{M}
-    type_sorted_tree_joints::T
-    type_sorted_non_tree_joints::N
+    type_sorted_tree_joints::JointCollection
+    type_sorted_non_tree_joints::JointCollection
+    type_sorted_ancestor_joints::JointDict{M, JointCollection}
     constraint_jacobian_structure::Vector{Tuple{GenericJoint{M}, TreePath{RigidBody{M}, GenericJoint{M}}}}
 
     q::Vector{X} # configurations
@@ -46,8 +47,12 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
     function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
         C = promote_type(X, M)
 
-        type_sorted_tree_joints = TypeSortedCollection(typedjoint.(tree_joints(mechanism)), Graphs.edge_index)
-        type_sorted_non_tree_joints = TypeSortedCollection(typedjoint.(non_tree_joints(mechanism)), Graphs.edge_index)
+        type_sorted_joints = TypeSortedCollection(typedjoint.(joints(mechanism)), Graphs.edge_index) # TODO: really only needed to get type
+        JointCollection = typeof(type_sorted_joints)
+        type_sorted_tree_joints = JointCollection(typedjoint.(tree_joints(mechanism)), Graphs.edge_index)
+        type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)), Graphs.edge_index)
+        ancestor_joints(joint) = first.((path(mechanism, successor(joint, mechanism), root_body(mechanism)).directed_edges))
+        type_sorted_ancestor_joints = JointDict{M, JointCollection}(j => JointCollection(typedjoint.(ancestor_joints(j)), Graphs.edge_index) for j in tree_joints(mechanism))
 
         q = Vector{X}(num_positions(mechanism))
         v = zeros(X, num_velocities(mechanism))
@@ -87,10 +92,8 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, T, N}
         m = mechanism
         constraint_jacobian_structure = [(j, path(m, predecessor(j, m), successor(j, m))) for j in non_tree_joints(m)]
 
-        Tree = typeof(type_sorted_tree_joints)
-        NonTree = typeof(type_sorted_non_tree_joints)
-        state = new{X, M, C, Tree, NonTree}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, constraint_jacobian_structure,
-            q, v, s, qs, vs, joint_poses,
+        state = new{X, M, C, JointCollection}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, type_sorted_ancestor_joints,
+            constraint_jacobian_structure, q, v, s, qs, vs, joint_poses,
             joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world, constraint_wrench_subspaces,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
