@@ -145,10 +145,12 @@
     # end
 
     @testset "relative_acceleration" begin
+        result = DynamicsResult{Float64}(mechanism)
         for body in bodies(mechanism)
             for base in bodies(mechanism)
                 v̇ = rand(num_velocities(mechanism))
-                Ṫ = relative_acceleration(x, body, base, v̇)
+                spatial_accelerations!(result.accelerations, x, v̇)
+                Ṫ = relative_acceleration(result, body, base)
                 q = configuration(x)
                 v = velocity(x)
                 q̇ = configuration_derivative(x)
@@ -163,8 +165,8 @@
 
                 root = root_body(mechanism)
                 f = default_frame(body)
-                Ṫbody = transform(x, relative_acceleration(x, body, root, v̇), f)
-                Ṫbase = transform(x, relative_acceleration(x, base, root, v̇), f)
+                Ṫbody = transform(x, relative_acceleration(result, body, root), f)
+                Ṫbase = transform(x, relative_acceleration(result, base, root), f)
                 @test isapprox(transform(x, -Ṫbase + Ṫbody, Ṫ.frame), Ṫ; atol = 1e-12)
             end
         end

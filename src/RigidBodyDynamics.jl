@@ -130,6 +130,7 @@ export
     relative_acceleration,
     kinetic_energy,
     gravitational_potential_energy,
+    spatial_accelerations!,
     mass_matrix!,
     mass_matrix,
     momentum,

@@ -247,8 +247,5 @@ function gravitational_spatial_acceleration(mechanism::Mechanism)
     SpatialAcceleration(frame, frame, frame, zeros(SVector{3, eltype(mechanism)}), mechanism.gravitationalAcceleration.v)
 end
 
-tree_index(joint::Joint, mechanism::Mechanism) = Graphs.tree_index(joint, mechanism.tree)
-tree_index(body::RigidBody, mechanism::Mechanism) = Graphs.tree_index(body, mechanism.tree)
-
 findbody(mechanism::Mechanism, name::String) = findunique(b -> b.name == name, bodies(mechanism))
 findjoint(mechanism::Mechanism, name::String) = findunique(j -> j.name == name, joints(mechanism))
