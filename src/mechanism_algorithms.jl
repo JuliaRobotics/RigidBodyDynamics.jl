@@ -465,11 +465,10 @@ end
 
 function joint_wrenches_and_torques!(
         torquesout::StridedVector{T},
-        net_wrenches_in_joint_wrenches_out::Associative{RigidBody{M}, Wrench{T}},
+        net_wrenches_in_joint_wrenches_out::Associative{RigidBody{M}, Wrench{T}}, # TODO: consider having a separate Associative{Joint{M}, Wrench{T}} for joint wrenches
         state::MechanismState{X, M}) where {T, X, M}
     # Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
     @boundscheck length(torquesout) == num_velocities(state) || error("length of torque vector is wrong")
-    update_motion_subspaces_in_world!(state)
     @nocachecheck begin
         mechanism = state.mechanism
         joints = tree_joints(mechanism)
@@ -482,9 +481,14 @@ function joint_wrenches_and_torques!(
                 # TODO: consider also doing this for the root:
                 net_wrenches_in_joint_wrenches_out[parentbody] += jointwrench # action = -reaction
             end
-            @inbounds τjoint = fastview(torquesout, velocity_range(state, joint))
-            S = motion_subspace_in_world(state, joint)
-            torque!(τjoint, S, jointwrench)
+        end
+
+        foreach_with_extra_args(state, torquesout, net_wrenches_in_joint_wrenches_out, state.type_sorted_tree_joints) do state, τ, wrenches, joint # TODO: use closure once it doesn't allocate
+            body = successor(joint, state.mechanism)
+            @inbounds τjoint = fastview(τ, velocity_range(state, joint))
+            # TODO: awkward to transform back to body frame; consider switching to body-frame implementation
+            tf = inv(transform_to_root(state, body))
+            joint_torque!(τjoint, joint, configuration(state, joint), transform(wrenches[body], tf))
         end
     end
 end
