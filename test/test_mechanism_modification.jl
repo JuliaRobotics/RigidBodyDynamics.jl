@@ -186,11 +186,13 @@ end
             newfloatingjointTwist = Twist(body_to_joint.to, joint_to_world.from, newfloatingjointTwist.frame, newfloatingjointTwist.angular, newfloatingjointTwist.linear)
             floating_joint_twist_to_velocity!(newfloatingjoint, velocity(x2, newfloatingjoint), newfloatingjointTwist)
 
-            # do dynamics
+            # do dynamics and compute spatial accelerations
             result1 = DynamicsResult{Float64}(mechanism1)
             dynamics!(result1, x1)
+            spatial_accelerations!(result1, x1)
             result2 = DynamicsResult{Float64}(mechanism2)
             dynamics!(result2, x2)
+            spatial_accelerations!(result2, x2)
 
             # make sure that joint accelerations for non-floating joints are the same
             for (joint1, joint2) in jointmap
@@ -204,8 +206,8 @@ end
 
             # make sure that body spatial accelerations are the same
             for (body1, body2) in bodymap
-                accel1 = relative_acceleration(x1, body1, world, result1.v̇)
-                accel2 = relative_acceleration(x2, body2, bodymap[world], result2.v̇)
+                accel1 = relative_acceleration(result1, body1, world)
+                accel2 = relative_acceleration(result2, body2, bodymap[world])
                 @test isapprox(accel1.angular, accel2.angular)
                 @test isapprox(accel1.linear, accel2.linear)
             end
@@ -235,17 +237,19 @@ end
         end
         setdirty!(mcState)
 
-        # do dynamics
+        # do dynamics and compute spatial accelerations
         treeDynamicsResult = DynamicsResult{Float64}(treeMechanism);
         dynamics!(treeDynamicsResult, treeState)
+        spatial_accelerations!(treeDynamicsResult, treeState)
 
         mcDynamicsResult = DynamicsResult{Float64}(mcMechanism);
         dynamics!(mcDynamicsResult, mcState)
+        spatial_accelerations!(mcDynamicsResult, mcState)
 
         # compare spatial accelerations of bodies
         for (treebody, mcbody) in bodymap
-            treeAccel = relative_acceleration(treeState, treebody, root_body(treeMechanism), treeDynamicsResult.v̇)
-            mcAccel = relative_acceleration(mcState, mcbody, root_body(mcMechanism), mcDynamicsResult.v̇)
+            treeAccel = relative_acceleration(treeDynamicsResult, treebody, root_body(treeMechanism))
+            mcAccel = relative_acceleration(mcDynamicsResult, mcbody, root_body(mcMechanism))
             @test isapprox(treeAccel, mcAccel; atol = 1e-12)
         end
     end # maximal coordinates

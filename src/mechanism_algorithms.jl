@@ -161,49 +161,6 @@ end
 """
 $(SIGNATURES)
 
-Compute the spatial acceleration of `body` with respect to `base` for
-the given state and joint acceleration vector ``\\dot{v}``.
-"""
-function relative_acceleration(state::MechanismState, body::RigidBody, base::RigidBody, v̇::AbstractVector)
-    # This is kind of a strange algorithm due to the availability of bias accelerations w.r.t. world
-    # in MechanismState, while computation of the v̇-dependent terms follows the shortest path in the tree.
-    # TODO: consider doing everything in body frame
-
-    update_motion_subspaces_in_world!(state)
-    update_bias_accelerations_wrt_world!(state)
-    @nocachecheck begin
-        C = cache_eltype(state)
-        mechanism = state.mechanism
-
-        bodyframe = default_frame(body)
-        baseframe = default_frame(base)
-        rootframe = root_frame(mechanism)
-
-        bodyaccel = zero(SpatialAcceleration{C}, bodyframe, bodyframe, rootframe)
-        baseaccel = zero(SpatialAcceleration{C}, baseframe, baseframe, rootframe)
-
-        bias = -bias_acceleration(state, base) + bias_acceleration(state, body)
-        while body != base
-            do_body = tree_index(body, mechanism) > tree_index(base, mechanism)
-            joint = do_body ? joint_to_parent(body, mechanism) : joint_to_parent(base, mechanism)
-            S = motion_subspace_in_world(state, joint)
-                       v̇joint = fastview(v̇, velocity_range(state, joint))
-            jointaccel = SpatialAcceleration(S, v̇joint)
-            if do_body
-                bodyaccel = jointaccel + bodyaccel
-                body = predecessor(joint, mechanism)
-            else
-                baseaccel = jointaccel + baseaccel
-                base = predecessor(joint, mechanism)
-            end
-        end
-        (-baseaccel + bodyaccel) + bias
-    end
-end
-
-"""
-$(SIGNATURES)
-
 Return the gravitational potential energy in the given state, computed as the
 negation of the dot product of the gravitational force and the center
 of mass expressed in the `Mechanism`'s root frame.
@@ -448,6 +405,22 @@ function spatial_accelerations!(out::Associative{RigidBody{M}, SpatialAccelerati
         end
     end
     nothing
+end
+
+spatial_accelerations!(result::DynamicsResult, state::MechanismState) = spatial_accelerations!(result.accelerations, state, result.v̇)
+
+function relative_acceleration(accels::Associative{RigidBody{M}, SpatialAcceleration{T}}, body::RigidBody{M}, base::RigidBody{M}) where {T, M}
+    -accels[base] + accels[body]
+end
+
+# TODO: ensure that accelerations are up-to-date
+relative_acceleration(result::DynamicsResult, body::RigidBody, base::RigidBody) = relative_acceleration(result.accelerations, body, base)
+
+function relative_acceleration(state::MechanismState, body::RigidBody, base::RigidBody, vd::AbstractVector)
+    error("""`relative_acceleration(state, body, base, vd)` has been removed.
+    Use `spatial_accelerations!(result, state)` or `spatial_accelerations!(accels, state, vd)` to compute the
+    spatial accelerations of all bodies in one go, and then use `relative_acceleration(accels, body, base)` or
+    `relative_acceleration(result, body, base)`.""")
 end
 
 function newton_euler!(
