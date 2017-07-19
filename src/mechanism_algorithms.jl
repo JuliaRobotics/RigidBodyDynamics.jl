@@ -415,31 +415,39 @@ function bias_accelerations!(out::Associative{RigidBody{M}, SpatialAcceleration{
 end
 
 function spatial_accelerations!(out::Associative{RigidBody{M}, SpatialAcceleration{T}},
-        state::MechanismState{X, M}, v̇::StridedVector) where {T, X, M}
-    update_bias_accelerations_wrt_world!(state)
-    update_motion_subspaces_in_world!(state)
+        state::MechanismState{X, M}, vd::StridedVector) where {T, X, M}
+    update_twists_wrt_world!(state)
     @nocachecheck begin
         mechanism = state.mechanism
-
-        # TODO: consider merging back into one loop
-        # unbiased joint accelerations + gravity
         root = root_body(mechanism)
+        joints = state.type_sorted_tree_joints
+        qs = values(state.qs)
+        vs = values(state.vs)
+
+        # Compute joint accelerations
+        foreach_with_extra_args(state, out, vd, joints, qs, vs) do state, accels, vd, joint, qjoint, vjoint # TODO: use closure once it doesn't allocate
+            body = successor(joint, state.mechanism)
+            parentbody = predecessor(joint, state.mechanism)
+            vdjoint = fastview(vd, velocity_range(state, joint))
+            accels[body] = joint_spatial_acceleration(joint, qjoint, vjoint, vdjoint)
+        end
+
+        # Recursive propagation
         out[root] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
         for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
-            S = motion_subspace_in_world(state, joint)
-            v̇joint = fastview(v̇, velocity_range(state, joint))
-            jointaccel = SpatialAcceleration(S, v̇joint)
-            out[body] = out[predecessor(joint, mechanism)] + jointaccel
-        end
+            parentbody = predecessor(joint, mechanism)
+            parentframe = default_frame(parentbody)
 
-        # add bias acceleration - gravity
-        for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            out[body] += bias_acceleration(state, body)
+             # TODO: awkward way of doing this (consider switching to body frame implementation):
+            toroot = transform_to_root(state, body)
+            twistwrtworld = transform(twist_wrt_world(state, body), inv(toroot))
+            jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
+            jointaccel = change_base(out[body], parentframe) # to make frames line up
+            out[body] = out[parentbody] + transform(jointaccel, toroot, twistwrtworld, jointtwist)
         end
-        nothing
     end
+    nothing
 end
 
 function newton_euler!(

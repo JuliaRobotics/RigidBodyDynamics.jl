@@ -139,6 +139,14 @@ function joint_twist(jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, fr
     Twist(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
+function joint_spatial_acceleration(jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
+    S = promote_type(T, X, XD)
+    angular = convert(SVector{3, S}, angular_velocity(jt, vd))
+    linear = convert(SVector{3, S}, linear_velocity(jt, vd))
+    SpatialAcceleration(frameAfter, frameBefore, frameAfter, angular, linear)
+end
+
 function joint_torque!(τ::AbstractVector, jt::QuaternionFloating, q::AbstractVector, joint_wrench::Wrench)
     angular_velocity!(jt, τ, joint_wrench.angular)
     linear_velocity!(jt, τ, joint_wrench.linear)
@@ -261,6 +269,13 @@ function joint_twist(jt::Prismatic, frameAfter::CartesianFrame3D, frameBefore::C
     Twist(frameAfter, frameBefore, frameAfter, zeros(linear), linear)
 end
 
+function joint_spatial_acceleration(jt::Prismatic{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
+    S = promote_type(T, X, XD)
+    linear = convert(SVector{3, S}, jt.axis * vd[1])
+    SpatialAcceleration(frameAfter, frameBefore, frameAfter, zeros(linear), linear)
+end
+
 function motion_subspace(jt::Prismatic{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
         q::AbstractVector{X}) where {T<:Number, X<:Number}
     S = promote_type(T, X)
@@ -317,8 +332,15 @@ end
 
 function joint_twist(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
         q::AbstractVector, v::AbstractVector)
-    @inbounds angular_velocity = jt.axis * v[1]
-    Twist(frameAfter, frameBefore, frameAfter, angular_velocity, zeros(angular_velocity))
+    angular = jt.axis * v[1]
+    Twist(frameAfter, frameBefore, frameAfter, angular, zeros(angular))
+end
+
+function joint_spatial_acceleration(jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
+    S = promote_type(T, X, XD)
+    angular = convert(SVector{3, S}, jt.axis * vd[1])
+    SpatialAcceleration(frameAfter, frameBefore, frameAfter, angular, zeros(angular))
 end
 
 function motion_subspace(jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
@@ -368,6 +390,12 @@ function joint_twist(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::Ca
         q::AbstractVector{X}, v::AbstractVector{X}) where {T<:Number, X<:Number}
     S = promote_type(T, X)
     zero(Twist{S}, frameAfter, frameBefore, frameAfter)
+end
+
+function joint_spatial_acceleration(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
+    S = promote_type(T, X, XD)
+    zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
 end
 
 function motion_subspace(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
