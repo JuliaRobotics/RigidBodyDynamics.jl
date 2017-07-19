@@ -293,20 +293,18 @@ $noalloc_doc
 """
 function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformfun)
     @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
-    update_motion_subspaces_in_world!(state)
     update_crb_inertias!(state)
-    @nocachecheck begin
-        pos = 1
+    foreach_with_extra_args(out, state, state.type_sorted_tree_joints) do out, state, joint
         mechanism = state.mechanism
-        for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            part = transformfun(crb_inertia(state, body) * motion_subspace_in_world(state, joint))
-            @framecheck out.frame part.frame
-            n = 3 * num_cols(part)
-            copy!(out.angular, pos, part.angular, 1, n)
-            copy!(out.linear, pos, part.linear, 1, n)
-            pos += n
-        end
+        body = successor(joint, mechanism)
+        qjoint = configuration(state, joint)
+        @nocachecheck tf = transform_to_root(state, body)
+        @nocachecheck inertia = crb_inertia(state, body)
+        part = transformfun(inertia * transform(motion_subspace(joint, qjoint), tf)) # TODO: consider pure body frame implementation
+        @framecheck out.frame part.frame
+        vrange = velocity_range(state, joint)
+        copy!(out.angular, CartesianRange((1 : 3, vrange)), part.angular, CartesianRange(indices(part.angular)))
+        copy!(out.linear, CartesianRange((1 : 3, vrange)), part.linear, CartesianRange(indices(part.linear)))
     end
 end
 
