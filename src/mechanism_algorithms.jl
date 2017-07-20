@@ -55,17 +55,6 @@ Compute the center of mass of the whole `Mechanism` in the given state.
 """
 center_of_mass(state::MechanismState) = center_of_mass(state, bodies(state.mechanism))
 
-function _set_jacobian_part!(out::GeometricJacobian, part::GeometricJacobian, nextbaseframe::CartesianFrame3D, startind::Int64)
-    @framecheck part.frame out.frame
-    @framecheck part.base nextbaseframe
-    n = 3 * num_cols(part)
-    copy!(out.angular, startind, part.angular, 1, n)
-    copy!(out.linear, startind, part.linear, 1, n)
-    startind += n
-    nextbaseframe = part.body
-    startind, nextbaseframe
-end
-
 const geometric_jacobian_doc = """Compute a geometric Jacobian (also known as a
 basic, or spatial Jacobian) associated with the joints that form a path in the
 `Mechanism`'s spanning tree, in the given state.
@@ -89,21 +78,30 @@ subspaces of each of the joints to the frame in which `out` is expressed.
 $noalloc_doc
 """
 function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path::TreePath, transformfun)
-    update_motion_subspaces_in_world!(state)
-    @nocachecheck begin
-        @boundscheck num_velocities(path) == num_cols(out) || error("size mismatch")
-        mechanism = state.mechanism
-        nextbaseframe = out.base
-        startind = 1
-        lastjoint = last(path)
-        for joint in path
-            S = transformfun(motion_subspace_in_world(state, joint))
-            direction(joint, path) == :up && (S = -S)
-            startind, nextbaseframe = _set_jacobian_part!(out, S, nextbaseframe, startind)
-            joint == lastjoint && (@framecheck S.body out.body)
+    @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
+    update_transforms!(state)
+    out.angular[:] = 0
+    out.linear[:] = 0
+    foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints) do out, state, path, joint
+        vrange = velocity_range(state, joint)
+        if !isempty(vrange)
+            ind = edge_index(joint)
+            for j in path # TODO: not a nice way to do this
+                if edge_index(j) == ind
+                    mechanism = state.mechanism
+                    body = successor(joint, mechanism)
+                    qjoint = configuration(state, joint)
+                    @nocachecheck tf = transform_to_root(state, body)
+                    part = transformfun(transform(motion_subspace(joint, qjoint), tf))
+                    direction(joint, path) == :up && (part = -part)
+                    @framecheck out.frame part.frame
+                    copy!(out.angular, CartesianRange((1 : 3, vrange)), part.angular, CartesianRange(indices(part.angular)))
+                    copy!(out.linear, CartesianRange((1 : 3, vrange)), part.linear, CartesianRange(indices(part.linear)))
+                end
+            end
         end
-        out
     end
+    out
 end
 
 """
@@ -149,7 +147,7 @@ The Jacobian is computed in the `Mechanism`'s root frame.
 See [`geometric_jacobian!(out, state, path)`](@ref).
 """
 function geometric_jacobian(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}}) where {X, M, C}
-    nv = num_velocities(path)
+    nv = num_velocities(state)
     angular = Matrix{C}(3, nv)
     linear = Matrix{C}(3, nv)
     bodyframe = default_frame(target(path))
