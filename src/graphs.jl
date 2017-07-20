@@ -1,5 +1,8 @@
 module Graphs
 
+import Base.Iterators: flatten
+import RigidBodyDynamics: UnsafeFastDict
+
 export
     DirectedGraph,
     SpanningTree,
@@ -34,7 +37,8 @@ export
     tree_index,
     ancestors,
     lowest_common_ancestor,
-    path
+    path,
+    direction
 
 # Vertex interface
 vertex_index(::Any) = error("Vertex types must implement this method")
@@ -321,24 +325,27 @@ end
 struct TreePath{V, E}
     source::V
     target::V
-    directed_edges::Vector{Pair{E, Symbol}} # Symbol: :up if going from source to LCA, :down if going from LCA to target
+    edges::Vector{E} # in order
+    directions::UnsafeFastDict{edge_index, E, Symbol} # Symbol: :up if going from source to LCA, :down if going from LCA to target
 end
 
 source(path::TreePath) = path.source
 target(path::TreePath) = path.target
 
-Base.start(path::TreePath) = start(path.directed_edges)
-Base.next(path::TreePath, state) = next(path.directed_edges, state)
-Base.done(path::TreePath, state) = done(path.directed_edges, state)
-Base.eltype(path::TreePath) = eltype(path.directed_edges)
-Base.length(path::TreePath) = length(path.directed_edges)
-Base.size(path::TreePath) = size(path.directed_edges)
-Base.last(path::TreePath) = last(path.directed_edges)
+direction(edge, path::TreePath) = path.directions[edge]
+
+Base.start(path::TreePath) = start(path.edges)
+Base.next(path::TreePath, state) = next(path.edges, state)
+Base.done(path::TreePath, state) = done(path.edges, state)
+Base.eltype(path::TreePath) = eltype(path.edges)
+Base.length(path::TreePath) = length(path.edges)
+Base.size(path::TreePath) = size(path.edges)
+Base.last(path::TreePath) = last(path.edges)
 
 function Base.show(io::IO, path::TreePath)
     println(io, "Path from $(path.source) to $(path.target):")
-    for (edge, direction) in path
-        directionchar = ifelse(direction == :up, '↑', '↓')
+    for edge in path
+        directionchar = ifelse(direction(edge, path) == :up, '↑', '↓')
         print(io, "$directionchar ")
         showcompact(io, edge)
         println(io)
@@ -362,9 +369,10 @@ function path(src::V, target::V, tree::SpanningTree{V, E}) where {V, E}
         end
     end
     reverse!(lca_to_target)
-    directed_edges = collect(Pair{E, Symbol}, e => :up for e in source_to_lca)
-    append!(directed_edges, e => :down for e in lca_to_target)
-    TreePath(src, target, directed_edges)
+    
+    edges = collect(flatten((source_to_lca, lca_to_target)))
+    directions = UnsafeFastDict{edge_index}(flatten(((e => :up for e in source_to_lca), (e => :down for e in lca_to_target))))
+    TreePath(src, target, edges, directions)
 end
 
 end # module
