@@ -51,7 +51,7 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
         JointCollection = typeof(type_sorted_joints)
         type_sorted_tree_joints = JointCollection(typedjoint.(tree_joints(mechanism)), Graphs.edge_index)
         type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)), Graphs.edge_index)
-        ancestor_joints(joint) = first.((path(mechanism, successor(joint, mechanism), root_body(mechanism)).directed_edges))
+        ancestor_joints(joint) = path(mechanism, successor(joint, mechanism), root_body(mechanism)).edges
         type_sorted_ancestor_joints = JointDict{M, JointCollection}(j => JointCollection(typedjoint.(ancestor_joints(j)), Graphs.edge_index) for j in tree_joints(mechanism))
 
         q = Vector{X}(num_positions(mechanism))
@@ -282,8 +282,8 @@ additional_state(state::MechanismState) = state.s
 state_vector(state::MechanismState) = [configuration(state); velocity(state); additional_state(state)]
 
 for fun in (:num_velocities, :num_positions)
-    @eval function $fun{T}(path::TreePath{RigidBody{T}, GenericJoint{T}})
-        mapreduce(it -> $fun(first(it)), +, 0, path)
+    @eval function $fun(path::TreePath{RigidBody{T}, GenericJoint{T}} where {T})
+        mapreduce($fun, +, 0, path)
     end
 end
 
@@ -294,7 +294,7 @@ function set_path_vector!{X, M, C}(ret::AbstractVector, state::MechanismState{X,
         startind + n
     end
     startind = 1
-    for (joint, direction) in path
+    for joint in path
         startind = setvectorpart!(ret, fun(state, joint), startind)
     end
     ret
