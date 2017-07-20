@@ -295,16 +295,18 @@ function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformf
     @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
     update_crb_inertias!(state)
     foreach_with_extra_args(out, state, state.type_sorted_tree_joints) do out, state, joint
-        mechanism = state.mechanism
-        body = successor(joint, mechanism)
-        qjoint = configuration(state, joint)
-        @nocachecheck tf = transform_to_root(state, body)
-        @nocachecheck inertia = crb_inertia(state, body)
-        part = transformfun(inertia * transform(motion_subspace(joint, qjoint), tf)) # TODO: consider pure body frame implementation
-        @framecheck out.frame part.frame
         vrange = velocity_range(state, joint)
-        copy!(out.angular, CartesianRange((1 : 3, vrange)), part.angular, CartesianRange(indices(part.angular)))
-        copy!(out.linear, CartesianRange((1 : 3, vrange)), part.linear, CartesianRange(indices(part.linear)))
+        if !isempty(vrange)
+            mechanism = state.mechanism
+            body = successor(joint, mechanism)
+            qjoint = configuration(state, joint)
+            @nocachecheck tf = transform_to_root(state, body)
+            @nocachecheck inertia = crb_inertia(state, body)
+            part = transformfun(inertia * transform(motion_subspace(joint, qjoint), tf)) # TODO: consider pure body frame implementation
+            @framecheck out.frame part.frame
+            copy!(out.angular, CartesianRange((1 : 3, vrange)), part.angular, CartesianRange(indices(part.angular)))
+            copy!(out.linear, CartesianRange((1 : 3, vrange)), part.linear, CartesianRange(indices(part.linear)))
+        end
     end
 end
 
