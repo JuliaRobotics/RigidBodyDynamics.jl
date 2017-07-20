@@ -282,8 +282,8 @@ additional_state(state::MechanismState) = state.s
 state_vector(state::MechanismState) = [configuration(state); velocity(state); additional_state(state)]
 
 for fun in (:num_velocities, :num_positions)
-    @eval function $fun(path::TreePath{RigidBody{T}, GenericJoint{T}} where {T})
-        mapreduce($fun, +, 0, path)
+    @eval function $fun(p::TreePath{RigidBody{T}, GenericJoint{T}} where {T})
+        mapreduce($fun, +, 0, p)
     end
 end
 

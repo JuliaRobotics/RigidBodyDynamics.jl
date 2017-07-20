@@ -93,25 +93,27 @@
             delete!(bs, body)
             base = rand([bs...])
             p = RigidBodyDynamics.path(mechanism, base, body)
-            vpath = velocity(x, p)
+            v = velocity(x)
 
             J = geometric_jacobian(x, p)
             T = relative_twist(x, body, base)
-            @test isapprox(Twist(J, vpath), T; atol = 1e-12)
+            @test isapprox(Twist(J, v), T; atol = 1e-12)
 
             J1 = GeometricJacobian(J.body, J.base, J.frame, similar(J.angular), similar(J.linear))
             geometric_jacobian!(J1, x, p)
-            @test isapprox(Twist(J1, vpath), T; atol = 1e-12)
+            @test isapprox(Twist(J1, v), T; atol = 1e-12)
 
             H = rand(Transform3D, root_frame(mechanism), frame)
             J2 = GeometricJacobian(J.body, J.base, frame, similar(J.angular), similar(J.linear))
-            @test_throws ArgumentError geometric_jacobian!(J, x, p, H)
+            if num_velocities(p) > 0
+                @test_throws ArgumentError geometric_jacobian!(J, x, p, H)
+            end
             geometric_jacobian!(J2, x, p, H)
-            @test isapprox(Twist(J2, vpath), transform(T, H); atol = 1e-12)
+            @test isapprox(Twist(J2, v), transform(T, H); atol = 1e-12)
 
             J3 = GeometricJacobian(J.body, J.base, default_frame(body), similar(J.angular), similar(J.linear))
             geometric_jacobian!(J3, x, p)
-            @test isapprox(Twist(J3, vpath), transform(x, T, default_frame(body)); atol = 1e-12)
+            @test isapprox(Twist(J3, v), transform(x, T, default_frame(body)); atol = 1e-12)
         end
     end
 
@@ -120,8 +122,8 @@
             qjoint = configuration(x, joint)
             S = motion_subspace(joint, qjoint)
             jointTransform = joint_transform(joint, qjoint)
-            T = constraint_wrench_subspace(joint, jointTransform)::RigidBodyDynamics.WrenchSubspace{Float64} # TODO
-            # @test isapprox(T.angular' * S.angular + T.linear' * S.linear, zeros(6 - num_velocities(joint), num_velocities(joint)); atol = 1e-14) # TODO: https://github.com/JuliaLang/julia/issues/20034
+            T = constraint_wrench_subspace(joint, jointTransform)
+            @test isapprox(T.angular' * S.angular + T.linear' * S.linear, zeros(6 - num_velocities(joint), num_velocities(joint)); atol = 1e-14)
         end
     end
 
