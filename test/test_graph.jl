@@ -225,7 +225,7 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
                 src_ancestors = ancestors(src, tree)
                 dest_ancestors = ancestors(dest, tree)
                 lca = lowest_common_ancestor(src, dest, tree)
-                p = path(src, dest, tree)
+                p = TreePath(src, dest, tree)
 
                 show(DevNull, p)
                 @inferred collect(p)

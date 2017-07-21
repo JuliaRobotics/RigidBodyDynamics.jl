@@ -84,21 +84,16 @@ function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path
     out.linear[:] = 0
     foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints) do out, state, path, joint
         vrange = velocity_range(state, joint)
-        if !isempty(vrange)
-            ind = edge_index(joint)
-            for j in path # TODO: not a nice way to do this
-                if edge_index(j) == ind
-                    mechanism = state.mechanism
-                    body = successor(joint, mechanism)
-                    qjoint = configuration(state, joint)
-                    @nocachecheck tf = transform_to_root(state, body)
-                    part = transformfun(transform(motion_subspace(joint, qjoint), tf))
-                    direction(joint, path) == :up && (part = -part)
-                    @framecheck out.frame part.frame
-                    copy!(out.angular, CartesianRange((1 : 3, vrange)), part.angular, CartesianRange(indices(part.angular)))
-                    copy!(out.linear, CartesianRange((1 : 3, vrange)), part.linear, CartesianRange(indices(part.linear)))
-                end
-            end
+        if !isempty(vrange) && edge_index(joint) in path.indices
+            mechanism = state.mechanism
+            body = successor(joint, mechanism)
+            qjoint = configuration(state, joint)
+            @nocachecheck tf = transform_to_root(state, body)
+            part = transformfun(transform(motion_subspace(joint, qjoint), tf))
+            direction(joint, path) == :up && (part = -part)
+            @framecheck out.frame part.frame
+            copy!(out.angular, CartesianRange((1 : 3, vrange)), part.angular, CartesianRange(indices(part.angular)))
+            copy!(out.linear, CartesianRange((1 : 3, vrange)), part.linear, CartesianRange(indices(part.linear)))
         end
     end
     out

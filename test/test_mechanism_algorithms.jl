@@ -92,7 +92,7 @@
             body = rand([bs...])
             delete!(bs, body)
             base = rand([bs...])
-            p = RigidBodyDynamics.path(mechanism, base, body)
+            p = path(mechanism, base, body)
             v = velocity(x)
 
             J = geometric_jacobian(x, p)
