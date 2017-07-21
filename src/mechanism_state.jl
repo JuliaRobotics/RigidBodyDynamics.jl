@@ -287,39 +287,6 @@ for fun in (:num_velocities, :num_positions)
     end
 end
 
-function set_path_vector!{X, M, C}(ret::AbstractVector, state::MechanismState{X, M, C}, path::TreePath, fun)
-    setvectorpart! = (out, part, startind) -> begin
-        n = length(part)
-        n > 0 && copy!(out, startind, part, 1, n)
-        startind + n
-    end
-    startind = 1
-    for joint in path
-        startind = setvectorpart!(ret, fun(state, joint), startind)
-    end
-    ret
-end
-
-"""
-$(SIGNATURES)
-
-Return the part of the `Mechanism`'s configuration vector ``q`` associated with
-the joints along `path`.
-"""
-function configuration{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}})
-    set_path_vector!(Vector{X}(num_positions(path)), state, path, configuration)
-end
-
-"""
-$(SIGNATURES)
-
-Return the part of the `Mechanism`'s velocity vector ``v`` associated with
-the joints along `path`.
-"""
-function velocity{X, M, C}(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}})
-    set_path_vector!(Vector{X}(num_velocities(path)), state, path, velocity)
-end
-
 """
 $(SIGNATURES)
 

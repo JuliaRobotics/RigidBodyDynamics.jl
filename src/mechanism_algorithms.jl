@@ -80,20 +80,25 @@ $noalloc_doc
 function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path::TreePath, transformfun)
     @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
     update_transforms!(state)
-    out.angular[:] = 0
-    out.linear[:] = 0
-    foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints) do out, state, path, joint
+    mechanism = state.mechanism
+    foreach_with_extra_args(out, state, mechanism, path, state.type_sorted_tree_joints) do out, state, mechanism, path, joint # TODO: use closure once it doesn't allocate
         vrange = velocity_range(state, joint)
-        if !isempty(vrange) && edge_index(joint) in path.indices
-            mechanism = state.mechanism
+        if edge_index(joint) in path.indices
             body = successor(joint, mechanism)
             qjoint = configuration(state, joint)
             @nocachecheck tf = transform_to_root(state, body)
             part = transformfun(transform(motion_subspace(joint, qjoint), tf))
             direction(joint, path) == :up && (part = -part)
             @framecheck out.frame part.frame
-            copy!(out.angular, CartesianRange((1 : 3, vrange)), part.angular, CartesianRange(indices(part.angular)))
-            copy!(out.linear, CartesianRange((1 : 3, vrange)), part.linear, CartesianRange(indices(part.linear)))
+            outrange = CartesianRange((1 : 3, vrange))
+            @inbounds copy!(out.angular, outrange, part.angular, CartesianRange(indices(part.angular)))
+            @inbounds copy!(out.linear, outrange, part.linear, CartesianRange(indices(part.linear)))
+        else
+            # zero
+            @inbounds for j in vrange # TODO: use higher level abstraction once it's as fast
+                out.angular[1, j] = out.angular[2, j] = out.angular[3, j] = 0;
+                out.linear[1, j] = out.linear[2, j] = out.linear[3, j] = 0;
+            end
         end
     end
     out
