@@ -37,7 +37,7 @@ export
     tree_index,
     ancestors,
     lowest_common_ancestor,
-    path,
+    path, # deprecated
     direction
 
 # Vertex interface
@@ -321,12 +321,13 @@ function lowest_common_ancestor(v1::V, v2::V, tree::SpanningTree{V, E}) where {V
 end
 
 
-# Path
+# TreePath
 struct TreePath{V, E}
     source::V
     target::V
     edges::Vector{E} # in order
     directions::UnsafeFastDict{edge_index, E, Symbol} # Symbol: :up if going from source to LCA, :down if going from LCA to target
+    indices::IntSet
 end
 
 source(path::TreePath) = path.source
@@ -352,7 +353,7 @@ function Base.show(io::IO, path::TreePath)
     end
 end
 
-function path(src::V, target::V, tree::SpanningTree{V, E}) where {V, E}
+function TreePath(src::V, target::V, tree::SpanningTree{V, E}) where {V, E}
     source_to_lca = E[]
     lca_to_target = E[]
     source_current = src
@@ -369,10 +370,13 @@ function path(src::V, target::V, tree::SpanningTree{V, E}) where {V, E}
         end
     end
     reverse!(lca_to_target)
-    
+
     edges = collect(flatten((source_to_lca, lca_to_target)))
     directions = UnsafeFastDict{edge_index}(flatten(((e => :up for e in source_to_lca), (e => :down for e in lca_to_target))))
-    TreePath(src, target, edges, directions)
+    indices = IntSet(edge_index.(edges))
+    TreePath(src, target, edges, directions, indices)
 end
+
+Base.@deprecate path(src::V, target::V, tree::SpanningTree{V, E}) where {V, E} TreePath(src, target, tree)
 
 end # module
