@@ -77,7 +77,7 @@ $(SIGNATURES)
 Return the path from rigid body `from` to `to` along edges of the `Mechanism`'s
 kinematic tree.
 """
-RigidBodyDynamics.path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = Graphs.path(from, to, mechanism.tree)
+RigidBodyDynamics.path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = TreePath(from, to, mechanism.tree)
 
 function Base.show(io::IO, mechanism::Mechanism)
     println(io, "Spanning tree:")

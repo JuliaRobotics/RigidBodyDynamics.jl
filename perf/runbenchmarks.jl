@@ -28,8 +28,7 @@ function create_benchmark_suite()
     rfoot = findbody(mechanism, "r_foot")
     lhand = findbody(mechanism, "l_hand")
     p = path(mechanism, rfoot, lhand)
-    nvpath = num_velocities(p)
-    jac = GeometricJacobian(default_frame(lhand), default_frame(rfoot), root_frame(mechanism), Matrix{ScalarType}(3, nvpath), Matrix{ScalarType}(3, nvpath))
+    jac = GeometricJacobian(default_frame(lhand), default_frame(rfoot), root_frame(mechanism), Matrix{ScalarType}(3, nv), Matrix{ScalarType}(3, nv))
 
     suite["mass_matrix"] = @benchmarkable(begin
         setdirty!($state)
