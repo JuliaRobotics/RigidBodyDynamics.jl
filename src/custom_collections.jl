@@ -222,7 +222,4 @@ end
 @inline Base.get{I, K, V}(d::UnsafeFastDict{I, K, V}, key) = d.values[I(key)]
 @inline Base.keys(d::UnsafeFastDict) = d.keys
 @inline Base.values(d::UnsafeFastDict) = d.values
-@inline function Base.setindex!{I, K, V}(d::UnsafeFastDict{I, K, V}, value::V, key::K)
-    @boundscheck haskey(d, key) || throw(KeyError(key))
-    d.values[I(key)] = value
-end
+@inline Base.setindex!{I, K, V}(d::UnsafeFastDict{I, K, V}, value::V, key) = (d.values[I(key)] = value)
