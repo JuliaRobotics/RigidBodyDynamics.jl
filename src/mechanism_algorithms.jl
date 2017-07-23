@@ -93,8 +93,7 @@ function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path
             outrange = CartesianRange((1 : 3, vrange))
             @inbounds copy!(out.angular, outrange, part.angular, CartesianRange(indices(part.angular)))
             @inbounds copy!(out.linear, outrange, part.linear, CartesianRange(indices(part.linear)))
-        else
-            # zero
+        else # zero
             @inbounds for j in vrange # TODO: use higher level abstraction once it's as fast
                 out.angular[1, j] = out.angular[2, j] = out.angular[3, j] = 0;
                 out.linear[1, j] = out.linear[2, j] = out.linear[3, j] = 0;
@@ -552,41 +551,51 @@ function inverse_dynamics(
 end
 
 function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian::AbstractMatrix, constraintbias::AbstractVector)
-    # TODO: allocations
-    update_motion_subspaces_in_world!(state)
-    update_constraint_wrench_subspaces!(state)
+    # TODO: benchmark
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
-    @nocachecheck begin
-        mechanism = state.mechanism
-        rowstart = 1
-        constraintjacobian[:] = 0
-        for (nontreejoint, path) in state.constraint_jacobian_structure
-            nextrowstart = rowstart + num_constraints(nontreejoint)
-            range = rowstart : nextrowstart - 1
-            succ = successor(nontreejoint, mechanism)
-            pred = predecessor(nontreejoint, mechanism)
+    mechanism = state.mechanism
+    rowstart = 1
+    # note: order of rows of Jacobian and bias term is determined by iteration order of state.type_sorted_non_tree_joints
+    foreach_with_extra_args(constraintjacobian, constraintbias, state, mechanism, state.type_sorted_non_tree_joints) do constraintjacobian, constraintbias, state, mechanism, nontreejoint # TODO: use closure once it doesn't allocate
+        path = state.constraint_jacobian_structure[nontreejoint]
+        nextrowstart = rowstart + num_constraints(nontreejoint)
+        rowrange = rowstart : nextrowstart - 1
+        succ = successor(nontreejoint, mechanism)
+        pred = predecessor(nontreejoint, mechanism)
 
-            # Constraint wrench subspace.
-            T = constraint_wrench_subspace(state, nontreejoint)
-            T = transform(T, transform_to_root(state, succ) * frame_definition(succ, T.frame)) # TODO: somewhat expensive
+        # Constraint wrench subspace.
+        T = constraint_wrench_subspace(nontreejoint, joint_transform(state, nontreejoint))
+        T = transform(T, transform_to_root(state, succ) * frame_definition(succ, T.frame)) # TODO: somewhat expensive
 
-            # Jacobian rows.
-            for treejoint in path
-                J = motion_subspace_in_world(state, treejoint)
-                colstart = first(velocity_range(state, treejoint))
+        # Jacobian rows.
+        foreach_with_extra_args(constraintjacobian, state, path, state.type_sorted_tree_joints) do constraintjacobian, state, path, treejoint # TODO: use closure once it doesn't allocate
+            vrange = velocity_range(state, treejoint)
+            if edge_index(treejoint) in path.indices
+                qjoint = configuration(state, treejoint)
+                toroot = transform_to_root(state, successor(treejoint, mechanism))
+                J = transform(motion_subspace(treejoint, qjoint), toroot)
                 sign = ifelse(direction(treejoint, path) == :up, -1, 1)
-                force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, sign)
+                part = T.angular' * J.angular + T.linear' * J.linear # TODO: At_mul_B
+                direction(treejoint, path) == :up && (part = -part)
+                outrange = CartesianRange((rowrange, vrange))
+                @inbounds copy!(constraintjacobian, outrange, part, CartesianRange(indices(part)))
+            else # zero
+                @inbounds for col in vrange # TODO: use higher level abstraction once it's as fast
+                    for row in rowrange
+                        constraintjacobian[row, col] = 0
+                    end
+                end
             end
-
-            # Constraint bias.
-            has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
-            kjoint = fastview(constraintbias, range)
-            crossterm = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
-            biasaccel = crossterm + (bias_acceleration(state, succ) + -bias_acceleration(state, pred)) # 8.47 in Featherstone
-            At_mul_B!(kjoint, T, biasaccel)
-            rowstart = nextrowstart
         end
+
+        # Constraint bias.
+        has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
+        kjoint = fastview(constraintbias, rowrange)
+        @nocachecheck crossterm = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
+        @nocachecheck biasaccel = crossterm + (bias_acceleration(state, succ) + -bias_acceleration(state, pred)) # 8.47 in Featherstone
+        At_mul_B!(kjoint, T, biasaccel)
+        rowstart = nextrowstart
     end
 end
 

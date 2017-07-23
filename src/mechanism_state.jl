@@ -19,7 +19,7 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
     type_sorted_tree_joints::JointCollection
     type_sorted_non_tree_joints::JointCollection
     type_sorted_ancestor_joints::JointDict{M, JointCollection}
-    constraint_jacobian_structure::Vector{Tuple{GenericJoint{M}, TreePath{RigidBody{M}, GenericJoint{M}}}}
+    constraint_jacobian_structure::JointDict{M, TreePath{RigidBody{M}, GenericJoint{M}}}
 
     q::Vector{X} # configurations
     v::Vector{X} # velocities
@@ -34,7 +34,6 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
     joint_bias_accelerations::CacheElement{JointDict{M, SpatialAcceleration{C}}}
     motion_subspaces::CacheElement{JointDict{M, MotionSubspace{C}}}
     motion_subspaces_in_world::CacheElement{JointDict{M, MotionSubspace{C}}} # TODO: should this be here?
-    constraint_wrench_subspaces::CacheElement{JointDict{M, WrenchSubspace{C}}}
 
     # body-specific
     transforms_to_root::CacheElement{BodyDict{M, Transform3DS{C}}}
@@ -68,7 +67,6 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
         joint_bias_accelerations = CacheElement(JointDict{M, SpatialAcceleration{C}}(tree_joints(mechanism)))
         motion_subspaces = CacheElement(JointDict{M, MotionSubspace{C}}(tree_joints(mechanism)))
         motion_subspaces_in_world = CacheElement(JointDict{M, MotionSubspace{C}}(tree_joints(mechanism)))
-        constraint_wrench_subspaces = CacheElement(JointDict{M, WrenchSubspace{C}}(non_tree_joints(mechanism)))
 
         # body-specific
         transforms_to_root = CacheElement(BodyDict{M, Transform3DS{C}}(bodies(mechanism)))
@@ -90,11 +88,11 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
         end
 
         m = mechanism
-        constraint_jacobian_structure = [(j, path(m, predecessor(j, m), successor(j, m))) for j in non_tree_joints(m)]
+        constraint_jacobian_structure = JointDict{M, TreePath{RigidBody{M}, GenericJoint{M}}}(j => path(m, predecessor(j, m), successor(j, m)) for j in non_tree_joints(m))
 
         state = new{X, M, C, JointCollection}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, type_sorted_ancestor_joints,
             constraint_jacobian_structure, q, v, s, qs, vs, joint_poses,
-            joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world, constraint_wrench_subspaces,
+            joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, motion_subspaces_in_world,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
         zero!(state)
@@ -157,7 +155,6 @@ function setdirty!(state::MechanismState)
     setdirty!(state.joint_bias_accelerations)
     setdirty!(state.motion_subspaces)
     setdirty!(state.motion_subspaces_in_world)
-    setdirty!(state.constraint_wrench_subspaces)
     setdirty!(state.transforms_to_root)
     setdirty!(state.twists_wrt_world)
     setdirty!(state.bias_accelerations_wrt_world)
@@ -418,13 +415,6 @@ the mechanism.
 """
 @joint_state_cache_accessor(motion_subspace_in_world, update_motion_subspaces_in_world!, motion_subspaces_in_world)
 
-"""
-$(SIGNATURES)
-
-Return the constraint wrench subspace of the given joint expressed in the frame after the joint.
-"""
-@joint_state_cache_accessor(constraint_wrench_subspace, update_constraint_wrench_subspaces!, constraint_wrench_subspaces)
-
 Base.@deprecate transform(state::MechanismState, joint::Joint) joint_transform(state, joint)
 
 const body_state_cache_accessors = Symbol[]
@@ -531,7 +521,7 @@ function update_transforms!(state::MechanismState)
     update!(state.transforms_to_root, update_transforms_to_root!, state)
 
     update_non_tree_joint_transforms! = (results, state) -> begin
-        @nocachecheck for (joint, _) in state.constraint_jacobian_structure
+        @nocachecheck foreach_with_extra_args(results, state, state.type_sorted_non_tree_joints) do results, state, joint # TODO: use closure once it's fast
             pred = predecessor(joint, state.mechanism)
             succ = successor(joint, state.mechanism)
             before_to_root = transform_to_root(state, pred) * frame_definition(pred, frame_before(joint)) # TODO: slow!
@@ -555,12 +545,6 @@ end
 function update_motion_subspaces!(state::MechanismState)
     f! = (results, joints, qs) -> map!(motion_subspace, values(results), joints, qs)
     update!(state.motion_subspaces, f!, state.type_sorted_tree_joints, values(state.qs))
-end
-
-function update_constraint_wrench_subspaces!(state::MechanismState)
-    update_transforms!(state)
-    f! = (results, joints, transforms) -> map!(constraint_wrench_subspace, values(results), joints, transforms)
-    update!(state.constraint_wrench_subspaces, f!, state.type_sorted_non_tree_joints, values(state.joint_transforms.data))
 end
 
 function update_motion_subspaces_in_world!(state::MechanismState) # TODO: make more efficient
