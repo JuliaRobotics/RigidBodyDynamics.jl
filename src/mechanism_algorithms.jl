@@ -196,7 +196,7 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
     update_transforms!(state)
     update_crb_inertias!(state)
     joints = state.type_sorted_tree_joints
-    foreach(joints) do jointi
+    foreach_with_extra_args(out, state, joints) do out, state, jointi # TODO: use closure once it doesn't allocate
         irange = velocity_range(state, jointi)
         bodyi = successor(jointi, state.mechanism)
         Si = motion_subspace(jointi, state.qs[jointi])
@@ -204,7 +204,7 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
         @nocachecheck Ici = crb_inertia(state, bodyi)
         F = Ici * Si
         ancestor_joints = state.type_sorted_ancestor_joints[jointi]
-        foreach(ancestor_joints) do jointj
+        foreach_with_extra_args(out, state, irange, F, ancestor_joints) do out, state, irange, F, jointj # TODO: use closure once it doesn't allocate
             jrange = velocity_range(state, jointj)
             bodyj = successor(jointj, state.mechanism)
             Sj = motion_subspace(jointj, state.qs[jointj])

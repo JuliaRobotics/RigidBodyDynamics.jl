@@ -579,17 +579,6 @@ and the application point should be expressed in the same frame.
 """
 Wrench(application_point::Point3D, force::FreeVector3D) = Wrench(application_point × force, force)
 
-# WrenchSubspace is the return type of e.g. constraint_wrench_subspace(::Joint, ...)
-const WrenchSubspace{T} = WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
-function WrenchSubspace(frame::CartesianFrame3D, angular, linear)
-    WrenchMatrix(frame, smatrix3x6view(angular), smatrix3x6view(linear))
-end
-
-# MotionSubspace is the return type of motion_subspace(::Joint, ...)
-const MotionSubspace{T} = GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
-function MotionSubspace(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular, linear)
-    GeometricJacobian(body, base, frame, smatrix3x6view(angular), smatrix3x6view(linear))
-end
 
 # GeometricJacobian-specific functions
 Base.convert(::Type{GeometricJacobian{A}}, jac::GeometricJacobian{A}) where {A} = jac
@@ -683,8 +672,8 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     # GeometricJacobian * velocity vector --> Twist
     # GeometricJacobian * acceleration vector --> SpatialAcceleration
     @eval function $MotionSpaceElement(jac::GeometricJacobian, x::AbstractVector)
-        angular = convert(SVector{3}, _mul(jac.angular, x))
-        linear = convert(SVector{3}, _mul(jac.linear, x))
+        angular = convert(SVector{3}, jac.angular * x)
+        linear = convert(SVector{3}, jac.linear * x)
         $MotionSpaceElement(jac.body, jac.base, jac.frame, angular, linear)
     end
 end
@@ -694,8 +683,8 @@ for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :Mom
     # MomentumMatrix * acceleration vector --> Wrench
     # WrenchMatrix * dimensionless multipliers --> Wrench
     @eval function $ForceSpaceElement(mat::$ForceSpaceMatrix, x::AbstractVector)
-        angular = convert(SVector{3}, _mul(mat.angular, x))
-        linear = convert(SVector{3}, _mul(mat.linear, x))
+        angular = convert(SVector{3}, mat.angular * x)
+        linear = convert(SVector{3}, mat.linear * x)
         $ForceSpaceElement(mat.frame, angular, linear)
     end
 end
