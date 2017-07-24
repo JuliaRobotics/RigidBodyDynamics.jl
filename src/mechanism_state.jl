@@ -429,7 +429,22 @@ $(SIGNATURES)
 
 Return the constraint wrench subspace of the given joint expressed in the frame after the joint.
 """
-@joint_state_cache_accessor(constraint_wrench_subspace, update_constraint_wrench_subspaces!, constraint_wrench_subspaces)
+function constraint_wrench_subspace(state::MechanismState, joint::Joint, ::CacheSafe = RigidBodyDynamics.CacheSafe())
+    update_constraint_wrench_subspaces!(state)
+    constraint_wrench_subspace(state, joint, CacheUnsafe())
+end
+
+@inline function constraint_wrench_subspace(state::MechanismState, joint::GenericJoint{T}, ::CacheUnsafe) where {T}
+    state.constraint_wrench_subspaces.data[joint]
+end
+
+@inline function constraint_wrench_subspace(state::MechanismState{X, M, C}, joint::Joint{M, JT}, ::CacheUnsafe) where {X, M, C, JT}
+    T = state.constraint_wrench_subspaces.data[joint]
+    N = num_constraints(JT)
+    WrenchMatrix(T.frame, SMatrix{3, N, C}(T.angular), SMatrix{3, N, C}(T.linear))
+end
+
+push!(joint_state_cache_accessors, :constraint_wrench_subspace)
 
 Base.@deprecate transform(state::MechanismState, joint::Joint) joint_transform(state, joint)
 
@@ -600,7 +615,8 @@ function update_constraint_wrench_subspaces!(state::MechanismState)
             body = successor(joint, state.mechanism)
             @nocachecheck tf = joint_transform(state, joint)
             T = constraint_wrench_subspace(joint, tf)
-            @nocachecheck results[joint] = WrenchSubspace(transform(T, transform_to_root(state, body)))
+            toroot = transform_to_root(state, body) * frame_definition(body, T.frame) # TODO: somewhat expensive
+            @nocachecheck results[joint] = WrenchSubspace(transform(T, toroot))
         end
     end
     update!(state.constraint_wrench_subspaces, f!, state)

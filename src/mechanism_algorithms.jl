@@ -200,7 +200,7 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
             bodyj = successor(jointj, state.mechanism)
             @nocachecheck Sj = motion_subspace_in_world(state, jointj)
             block = F.angular' * Sj.angular + F.linear' * Sj.linear
-            set_matrix_block!(out, irange, jrange, block)
+            set_matrix_block!(out.data, irange, jrange, block)
         end
     end
     out
@@ -501,9 +501,10 @@ function inverse_dynamics(
 end
 
 function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian::AbstractMatrix, constraintbias::AbstractVector)
-    # TODO: benchmark
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
+    update_motion_subspaces_in_world!(state)
+    update_constraint_wrench_subspaces!(state)
     mechanism = state.mechanism
     rowstart = 1
     # note: order of rows of Jacobian and bias term is determined by iteration order of state.type_sorted_non_tree_joints
@@ -513,29 +514,18 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         rowrange = rowstart : nextrowstart - 1
         succ = successor(nontreejoint, mechanism)
         pred = predecessor(nontreejoint, mechanism)
+        @nocachecheck T = constraint_wrench_subspace(state, nontreejoint)
 
-        # Constraint wrench subspace.
-        T = constraint_wrench_subspace(nontreejoint, joint_transform(state, nontreejoint))
-        T = transform(T, transform_to_root(state, succ) * frame_definition(succ, T.frame)) # TODO: somewhat expensive
-
-        # Jacobian rows.
+        # Jacobian.
         foreach_with_extra_args(constraintjacobian, state, path, state.type_sorted_tree_joints) do constraintjacobian, state, path, treejoint # TODO: use closure once it doesn't allocate
             vrange = velocity_range(state, treejoint)
             if edge_index(treejoint) in path.indices
-                qjoint = configuration(state, treejoint)
-                toroot = transform_to_root(state, successor(treejoint, mechanism))
-                J = transform(motion_subspace(treejoint, qjoint), toroot)
-                sign = ifelse(direction(treejoint, path) == :up, -1, 1)
+                @nocachecheck J = motion_subspace_in_world(state, treejoint)
                 part = T.angular' * J.angular + T.linear' * J.linear # TODO: At_mul_B
                 direction(treejoint, path) == :up && (part = -part)
-                outrange = CartesianRange((rowrange, vrange))
-                @inbounds copy!(constraintjacobian, outrange, part, CartesianRange(indices(part)))
-            else # zero
-                @inbounds for col in vrange # TODO: use higher level abstraction once it's as fast
-                    for row in rowrange
-                        constraintjacobian[row, col] = 0
-                    end
-                end
+                set_matrix_block!(constraintjacobian, rowrange, vrange, part)
+            else
+                zero_matrix_block!(constraintjacobian, rowrange, vrange)
             end
         end
 
@@ -545,7 +535,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         @nocachecheck crossterm = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
         @nocachecheck biasaccel = crossterm + (bias_acceleration(state, succ) + -bias_acceleration(state, pred)) # 8.47 in Featherstone
         At_mul_B!(kjoint, T, biasaccel)
-        rowstart = nextrowstart
+        rowstart = nextrowstart # TODO: causes the only bit of allocation in this method...
     end
 end
 

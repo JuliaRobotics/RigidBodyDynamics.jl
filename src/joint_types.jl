@@ -5,6 +5,7 @@ Base.eltype(::Type{JointType{T}}) where {T} = T
 
 num_velocities(::T) where {T<:JointType} = num_velocities(T)
 num_positions(::T) where {T<:JointType} = num_positions(T)
+Base.@pure num_constraints(t::Type{T}) where {T<:JointType} = 6 - num_velocities(t)
 
 # Default implementations
 flip_direction(jt::JointType{T}) where {T} = deepcopy(jt)

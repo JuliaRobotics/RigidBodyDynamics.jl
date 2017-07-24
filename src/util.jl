@@ -60,10 +60,17 @@ end
 # Copy block of matrix. TODO: use higher level abstraction once it's fast
 @inline function set_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange, part::AbstractMatrix)
     for col in 1 : size(part, 2), row in 1 : size(part, 1)
-        out.data[irange[row], jrange[col]] = part[row, col]
+        out[irange[row], jrange[col]] = part[row, col]
     end
 end
 
+
+# zero block of a matrix. TODO: use higher level abstraction once it's fast
+@inline function zero_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange)
+    for col in jrange, row in irange
+        out[row, col] = 0
+    end
+end
 
 ## findunique
 function findunique(f, A)
