@@ -141,7 +141,7 @@ the velocity vector ``v``, that maps ``v`` to the twist of the joint's successor
 with respect to its predecessor. The returned motion subspace is expressed in
 the frame after the joint, which is attached to the joint's successor.
 """
-function motion_subspace(joint::Joint, q::AbstractVector)
+@inline function motion_subspace(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     motion_subspace(joint.jointType, frame_after(joint), frame_before(joint), q)
 end

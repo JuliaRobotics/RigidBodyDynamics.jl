@@ -67,6 +67,28 @@ See also [`path`](@ref), [`GeometricJacobian`](@ref), [`velocity(state, path)`](
 [`Twist`](@ref).
 """
 
+for T in (:GeometricJacobian, :MomentumMatrix)
+    @eval @inline function set_cols!(out::$T, vrange::UnitRange, part::$T)
+        @framecheck out.frame part.frame
+        for col in 1 : num_cols(part) # TODO: higher level abstraction once it's as fast
+            outcol = vrange[col]
+            out.angular[1, outcol] = part.angular[1, col]
+            out.angular[2, outcol] = part.angular[2, col]
+            out.angular[3, outcol] = part.angular[3, col]
+            out.linear[1, outcol] = part.linear[1, col]
+            out.linear[2, outcol] = part.linear[2, col]
+            out.linear[3, outcol] = part.linear[3, col]
+        end
+    end
+end
+
+@inline function zero_cols!(out::GeometricJacobian, vrange::UnitRange)
+    for j in vrange # TODO: use higher level abstraction once it's as fast
+        out.angular[1, j] = out.angular[2, j] = out.angular[3, j] = 0;
+        out.linear[1, j] = out.linear[2, j] = out.linear[3, j] = 0;
+    end
+end
+
 """
 $(SIGNATURES)
 
@@ -79,6 +101,8 @@ $noalloc_doc
 """
 function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path::TreePath, transformfun)
     @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
+    @framecheck out.body default_frame(target(path))
+    @framecheck out.base default_frame(source(path))
     update_transforms!(state)
     mechanism = state.mechanism
     foreach_with_extra_args(out, state, mechanism, path, state.type_sorted_tree_joints) do out, state, mechanism, path, joint # TODO: use closure once it doesn't allocate
@@ -89,15 +113,9 @@ function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path
             @nocachecheck tf = transform_to_root(state, body)
             part = transformfun(transform(motion_subspace(joint, qjoint), tf))
             direction(joint, path) == :up && (part = -part)
-            @framecheck out.frame part.frame
-            outrange = CartesianRange((1 : 3, vrange))
-            @inbounds copy!(out.angular, outrange, part.angular, CartesianRange(indices(part.angular)))
-            @inbounds copy!(out.linear, outrange, part.linear, CartesianRange(indices(part.linear)))
-        else # zero
-            @inbounds for j in vrange # TODO: use higher level abstraction once it's as fast
-                out.angular[1, j] = out.angular[2, j] = out.angular[3, j] = 0;
-                out.linear[1, j] = out.linear[2, j] = out.linear[3, j] = 0;
-            end
+            set_cols!(out, vrange, part)
+        else
+            zero_cols!(out, vrange)
         end
     end
     out
@@ -168,6 +186,12 @@ function gravitational_potential_energy(state::MechanismState{X, M, C}) where {X
     -dot(gravitationalforce, FreeVector3D(center_of_mass(state)))
  end
 
+@inline function set_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange, part::AbstractMatrix)
+    for col in 1 : size(part, 2), row in 1 : size(part, 1) # TODO: higher level abstraction once it's fast
+        out.data[irange[row], jrange[col]] = part[row, col]
+    end
+end
+
 const mass_matrix_doc = """Compute the joint-space mass matrix
 (also known as the inertia matrix) of the `Mechanism` in the given state, i.e.,
 the matrix ``M(q)`` in the unconstrained joint-space equations of motion
@@ -210,7 +234,7 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
             Sj = motion_subspace(jointj, state.qs[jointj])
             @nocachecheck Sj = transform(Sj, transform_to_root(state, bodyj))
             block = F.angular' * Sj.angular + F.linear' * Sj.linear
-            copy!(out.data, CartesianRange((irange, jrange)), block, CartesianRange(indices(block)))
+            set_matrix_block!(out, irange, jrange, block)
         end
     end
     out
@@ -265,9 +289,7 @@ function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformf
             @nocachecheck tf = transform_to_root(state, body)
             @nocachecheck inertia = crb_inertia(state, body)
             part = transformfun(inertia * transform(motion_subspace(joint, qjoint), tf)) # TODO: consider pure body frame implementation
-            @framecheck out.frame part.frame
-            copy!(out.angular, CartesianRange((1 : 3, vrange)), part.angular, CartesianRange(indices(part.angular)))
-            copy!(out.linear, CartesianRange((1 : 3, vrange)), part.linear, CartesianRange(indices(part.linear)))
+            set_cols!(out, vrange, part)
         end
     end
 end
