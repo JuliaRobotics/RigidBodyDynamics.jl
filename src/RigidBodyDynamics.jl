@@ -71,6 +71,7 @@ export
     configuration_derivative_to_velocity!,
     num_positions,
     num_velocities,
+    num_constraints,
     num_additional_states,
     num_bodies,
     configuration,
