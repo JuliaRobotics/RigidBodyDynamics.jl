@@ -3,6 +3,9 @@
 abstract type JointType{T<:Number} end
 Base.eltype(::Type{JointType{T}}) where {T} = T
 
+num_velocities(::T) where {T<:JointType} = num_velocities(T)
+num_positions(::T) where {T<:JointType} = num_positions(T)
+
 # Default implementations
 flip_direction(jt::JointType{T}) where {T} = deepcopy(jt)
 
@@ -42,8 +45,8 @@ end
 Base.show(io::IO, jt::QuaternionFloating) = print(io, "Quaternion floating joint")
 Random.rand(::Type{QuaternionFloating{T}}) where {T} = QuaternionFloating{T}()
 
-num_positions(::QuaternionFloating) = 7
-num_velocities(::QuaternionFloating) = 6
+num_positions(::Type{<:QuaternionFloating}) = 7
+num_velocities(::Type{<:QuaternionFloating}) = 6
 
 @inline function rotation(jt::QuaternionFloating, q::AbstractVector)
     @inbounds quat = Quat(q[1], q[2], q[3], q[4])
@@ -200,8 +203,8 @@ OneDegreeOfFreedomFixedAxis
 =#
 abstract type OneDegreeOfFreedomFixedAxis{T<:Number} <: JointType{T} end
 
-num_positions(::OneDegreeOfFreedomFixedAxis) = 1
-num_velocities(::OneDegreeOfFreedomFixedAxis) = 1
+num_positions(::Type{<:OneDegreeOfFreedomFixedAxis}) = 1
+num_velocities(::Type{<:OneDegreeOfFreedomFixedAxis}) = 1
 
 function zero_configuration!(q::AbstractVector, ::OneDegreeOfFreedomFixedAxis)
     q .= 0
@@ -377,8 +380,8 @@ end
 Base.show(io::IO, jt::Fixed) = print(io, "Fixed joint")
 Random.rand(::Type{Fixed{T}}) where {T} = Fixed{T}()
 
-num_positions(::Fixed) = 0
-num_velocities(::Fixed) = 0
+num_positions(::Type{<:Fixed}) = 0
+num_velocities(::Type{<:Fixed}) = 0
 
 function joint_transform(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
         q::AbstractVector{X}) where {T<:Number, X<:Number}

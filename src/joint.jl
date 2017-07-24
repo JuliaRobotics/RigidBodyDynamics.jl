@@ -83,7 +83,6 @@ end
 Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
 Base.showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
 
-# TODO: deprecate in favor of sum(num_positions, ...)
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
 num_velocities(itr) = reduce((val, joint) -> val + num_velocities(joint), 0, itr)
 
@@ -103,6 +102,7 @@ $(SIGNATURES)
 
 Return the length of the configuration vector of `joint`.
 """
+num_positions(::Type{Joint{T, JT}}) where {T, JT} = num_positions(JT)
 num_positions(joint::Joint) = num_positions(joint.jointType)
 
 """
@@ -110,6 +110,7 @@ $(SIGNATURES)
 
 Return the length of the velocity vector of `joint`.
 """
+num_velocities(::Type{Joint{T, JT}}) where {T, JT} = num_velocities(JT)
 num_velocities(joint::Joint) = num_velocities(joint.jointType)
 
 """
