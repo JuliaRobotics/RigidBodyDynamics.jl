@@ -21,6 +21,8 @@ struct TypeSortedCollection{D<:TupleOfVectors, I}
     end
 end
 
+eltypes(::Type{TypeSortedCollection{D, I}}) where {D, I} = [eltype(x) for x in D.parameters]
+
 function Base.append!(dest::TypeSortedCollection, A)
     data = dest.data
     type_to_index = Dict(T => i for (i, T) in enumerate(eltype.(data)))

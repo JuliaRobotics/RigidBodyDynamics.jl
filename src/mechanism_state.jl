@@ -46,7 +46,7 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
     function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
         C = promote_type(X, M)
 
-        type_sorted_joints = TypeSortedCollection(typedjoint.(joints(mechanism)), Graphs.edge_index) # TODO: really only needed to get type
+        type_sorted_joints = TypeSortedCollection(typedjoint.(joints(mechanism)), Graphs.edge_index)
         JointCollection = typeof(type_sorted_joints)
         type_sorted_tree_joints = JointCollection(typedjoint.(tree_joints(mechanism)), Graphs.edge_index)
         type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)), Graphs.edge_index)
@@ -65,6 +65,11 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
         joint_transforms = CacheElement(JointDict{M, Transform3DS{C}}(joints(mechanism)))
         joint_twists = CacheElement(JointDict{M, Twist{C}}(tree_joints(mechanism)))
         joint_bias_accelerations = CacheElement(JointDict{M, SpatialAcceleration{C}}(tree_joints(mechanism)))
+
+        JointTypes = eltypes(JointCollection)
+        motion_subspace_types = [Vector{Core.Inference.return_type(motion_subspace, (x, AbstractVector{X}))} for x in JointTypes]
+        MotionSubspaceCollection = TypeSortedCollection{Tuple{[Vector{x} for x in motion_subspace_types]...}, Graphs.edge_index}
+
         motion_subspaces_in_world = CacheElement(JointDict{M, MotionSubspace{C}}(tree_joints(mechanism)))
         constraint_wrench_subspaces = CacheElement(JointDict{M, WrenchSubspace{C}}(non_tree_joints(mechanism)))
 
