@@ -143,7 +143,7 @@ struct GeometricJacobian{A<:AbstractMatrix}
     angular::A
     linear::A
 
-    function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
+    @inline function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
         @boundscheck size(angular, 1) == 3 || error("size mismatch")
         @boundscheck size(linear, 1) == 3 || error("size mismatch")
         @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
@@ -157,7 +157,7 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
         angular::A
         linear::A
 
-        function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
+        @inline function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
             @boundscheck size(angular, 1) == 3 || error("size mismatch")
             @boundscheck size(linear, 1) == 3 || error("size mismatch")
             @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
@@ -762,7 +762,7 @@ function torque(jac::GeometricJacobian, wrench::Wrench)
 end
 
 for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAcceleration}), :GeometricJacobian => :(Union{Momentum, Wrench}))
-    @eval function Base.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
+    @eval @inline function Base.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
         @boundscheck length(x) == num_cols(mat) || error("size mismatch")
         @framecheck mat.frame vec.frame
         @simd for row in eachindex(x)

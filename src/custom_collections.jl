@@ -107,7 +107,7 @@ struct ConstVector{T} <: AbstractVector{T}
     length::Int64
 end
 Base.size(A::ConstVector) = (A.length, )
-Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
+@inline Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
 Base.IndexStyle(::Type{<:ConstVector}) = IndexLinear()
 
 
