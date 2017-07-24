@@ -81,7 +81,7 @@ end
 
 function constraint_wrench_subspace(jt::QuaternionFloating{T}, jointTransform::Transform3D{A}) where {T<:Number, A}
     S = promote_type(T, eltype(A))
-    WrenchSubspace(jointTransform.from, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
+    WrenchMatrix(jointTransform.from, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
 function bias_acceleration(jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
@@ -290,7 +290,7 @@ function constraint_wrench_subspace(jt::Prismatic{T}, jointTransform::Transform3
     Rcols12 = R[:, SVector(1, 2)]
     angular = hcat(R, zeros(SMatrix{3, 2, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), Rcols12)
-    WrenchSubspace(jointTransform.from, angular, linear)
+    WrenchMatrix(jointTransform.from, angular, linear)
 end
 
 function joint_torque!(τ::AbstractVector, jt::Prismatic, q::AbstractVector, joint_wrench::Wrench)
@@ -357,7 +357,7 @@ function constraint_wrench_subspace(jt::Revolute{T}, jointTransform::Transform3D
     Rcols12 = R[:, SVector(1, 2)]
     angular = hcat(Rcols12, zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 2, S}), R)
-    WrenchSubspace(jointTransform.from, angular, linear)
+    WrenchMatrix(jointTransform.from, angular, linear)
 end
 
 function joint_torque!(τ::AbstractVector, jt::Revolute, q::AbstractVector, joint_wrench::Wrench)
@@ -408,7 +408,7 @@ function constraint_wrench_subspace(jt::Fixed{T}, jointTransform::Transform3D{A}
     S = promote_type(T, eltype(A))
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
-    WrenchSubspace(jointTransform.from, angular, linear)
+    WrenchMatrix(jointTransform.from, angular, linear)
 end
 
 zero_configuration!(q::AbstractVector, ::Fixed) = nothing

@@ -84,10 +84,32 @@ end
 ## VectorSegment: type of a view of a vector
 const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # TODO: a bit too specific
 
-## postwalk: these three lines from https://github.com/MikeInnes/MacroTools.jl/blob/master/LICENSE.md
+
+## Functionality related to turning a 3xN SMatrix into a view of a 3x6 SMatrix
+const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
+
+@inline smatrix3x6view(mat::StaticMatrix) = _smatrix3x6view(Size(mat), mat)
+
+@generated function _smatrix3x6view(::Size{S}, mat::StaticMatrix) where {S}
+    Snew = (S[1], 6)
+    S[1] == 3 || error()
+    (0 <= S[2] <= Snew[2]) || error()
+    fillercols = Snew[2] - S[2]
+    fillerlength = S[1] * fillercols
+    T = eltype(mat)
+    exprs = vcat([:(mat[$i]) for i = 1 : prod(S)], [:(zero($T)) for i = 1 : fillerlength])
+    return quote
+        Base.@_inline_meta
+        @inbounds return view(similar_type(mat, Size($Snew))(tuple($(exprs...))), :, 1 : $S[2])
+    end
+end
+
+
+## postwalk: these three lines from https://github.com/MikeInnes/MacroTools.jl
 walk(x, inner, outer) = outer(x)
 walk(x::Expr, inner, outer) = outer(Expr(x.head, map(inner, x.args)...))
 postwalk(f, x) = walk(x, x -> postwalk(f, x), f)
+
 
 ## Geometry utilities
 @inline function vector_to_skew_symmetric{T}(v::SVector{3, T})

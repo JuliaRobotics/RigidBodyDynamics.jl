@@ -32,6 +32,8 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
     joint_transforms::CacheElement{JointDict{M, Transform3DS{C}}}
     joint_twists::CacheElement{JointDict{M, Twist{C}}}
     joint_bias_accelerations::CacheElement{JointDict{M, SpatialAcceleration{C}}}
+    motion_subspaces_in_world::CacheElement{JointDict{M, MotionSubspace{C}}}
+    constraint_wrench_subspaces::CacheElement{JointDict{M, WrenchSubspace{C}}}
 
     # body-specific
     transforms_to_root::CacheElement{BodyDict{M, Transform3DS{C}}}
@@ -63,6 +65,8 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
         joint_transforms = CacheElement(JointDict{M, Transform3DS{C}}(joints(mechanism)))
         joint_twists = CacheElement(JointDict{M, Twist{C}}(tree_joints(mechanism)))
         joint_bias_accelerations = CacheElement(JointDict{M, SpatialAcceleration{C}}(tree_joints(mechanism)))
+        motion_subspaces_in_world = CacheElement(JointDict{M, MotionSubspace{C}}(tree_joints(mechanism)))
+        constraint_wrench_subspaces = CacheElement(JointDict{M, WrenchSubspace{C}}(non_tree_joints(mechanism)))
 
         # body-specific
         transforms_to_root = CacheElement(BodyDict{M, Transform3DS{C}}(bodies(mechanism)))
@@ -88,7 +92,7 @@ struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
 
         state = new{X, M, C, JointCollection}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, type_sorted_ancestor_joints,
             constraint_jacobian_structure, q, v, s, qs, vs, joint_poses,
-            joint_transforms, joint_twists, joint_bias_accelerations,
+            joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces_in_world, constraint_wrench_subspaces,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
         zero!(state)
@@ -149,6 +153,8 @@ function setdirty!(state::MechanismState)
     setdirty!(state.joint_transforms)
     setdirty!(state.joint_twists)
     setdirty!(state.joint_bias_accelerations)
+    setdirty!(state.motion_subspaces_in_world)
+    setdirty!(state.constraint_wrench_subspaces)
     setdirty!(state.transforms_to_root)
     setdirty!(state.twists_wrt_world)
     setdirty!(state.bias_accelerations_wrt_world)
@@ -394,6 +400,21 @@ root frame of the mechanism when all joint accelerations are zero.
 """
 @joint_state_cache_accessor(bias_acceleration, update_joint_bias_accelerations!, joint_bias_accelerations)
 
+"""
+$(SIGNATURES)
+
+Return the motion subspace of the given joint expressed in the root frame of
+the mechanism.
+"""
+@joint_state_cache_accessor(motion_subspace_in_world, update_motion_subspaces_in_world!, motion_subspaces_in_world)
+
+"""
+$(SIGNATURES)
+
+Return the constraint wrench subspace of the given joint expressed in the frame after the joint.
+"""
+@joint_state_cache_accessor(constraint_wrench_subspace, update_constraint_wrench_subspaces!, constraint_wrench_subspaces)
+
 Base.@deprecate transform(state::MechanismState, joint::Joint) joint_transform(state, joint)
 
 const body_state_cache_accessors = Symbol[]
@@ -521,6 +542,22 @@ function update_joint_bias_accelerations!(state::MechanismState)
     update!(state.joint_bias_accelerations, f!, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
+function update_motion_subspaces_in_world!(state::MechanismState)
+    update_transforms!(state)
+    f! = (results, state) -> begin
+        @nocachecheck foreach_with_extra_args(results, state, state.type_sorted_tree_joints) do results, state, joint
+            mechanism = state.mechanism
+            body = successor(joint, mechanism)
+            parentbody = predecessor(joint, mechanism)
+            parentframe = default_frame(parentbody)
+            qjoint = configuration(state, joint)
+            S = change_base(motion_subspace(joint, qjoint), parentframe) # to make frames line up
+            results[joint] = MotionSubspace(transform(S, transform_to_root(state, body)))
+        end
+    end
+    update!(state.motion_subspaces_in_world, f!, state)
+end
+
 function update_twists_wrt_world!(state::MechanismState)
     update_transforms!(state)
     update_joint_twists!(state)
@@ -539,6 +576,20 @@ function update_twists_wrt_world!(state::MechanismState)
     end
     update!(state.twists_wrt_world, f!, state)
 end
+
+function update_constraint_wrench_subspaces!(state::MechanismState)
+    update_transforms!(state)
+    f! = (results, state) -> begin
+        foreach_with_extra_args(results, state, state.type_sorted_non_tree_joints) do results, state, joint
+            body = successor(joint, state.mechanism)
+            @nocachecheck tf = joint_transform(state, joint)
+            T = constraint_wrench_subspace(joint, tf)
+            @nocachecheck results[joint] = WrenchSubspace(transform(T, transform_to_root(state, body)))
+        end
+    end
+    update!(state.constraint_wrench_subspaces, f!, state)
+end
+
 
 function update_bias_accelerations_wrt_world!(state::MechanismState) # TODO: make more efficient
     update_transforms!(state)
