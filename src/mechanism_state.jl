@@ -406,7 +406,23 @@ $(SIGNATURES)
 Return the motion subspace of the given joint expressed in the root frame of
 the mechanism.
 """
-@joint_state_cache_accessor(motion_subspace_in_world, update_motion_subspaces_in_world!, motion_subspaces_in_world)
+function motion_subspace_in_world(state::MechanismState, joint::Joint, ::CacheSafe = RigidBodyDynamics.CacheSafe())
+    update_motion_subspaces_in_world!(state)
+    motion_subspace_in_world(state, joint, CacheUnsafe())
+end
+
+@inline function motion_subspace_in_world(state::MechanismState, joint::GenericJoint{T}, ::CacheUnsafe) where {T}
+    state.motion_subspaces_in_world.data[joint]
+end
+
+@inline function motion_subspace_in_world(state::MechanismState{X, M, C}, joint::Joint{M, JT}, ::CacheUnsafe) where {X, M, C, JT}
+    S = state.motion_subspaces_in_world.data[joint]
+    N = num_velocities(JT)
+    GeometricJacobian(S.body, S.base, S.frame, SMatrix{3, N, C}(S.angular), SMatrix{3, N, C}(S.linear))
+end
+
+push!(joint_state_cache_accessors, :motion_subspace_in_world)
+
 
 """
 $(SIGNATURES)

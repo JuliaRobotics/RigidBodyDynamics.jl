@@ -67,28 +67,6 @@ See also [`path`](@ref), [`GeometricJacobian`](@ref), [`velocity(state, path)`](
 [`Twist`](@ref).
 """
 
-for T in (:GeometricJacobian, :MomentumMatrix)
-    @eval @inline function set_cols!(out::$T, vrange::UnitRange, part::$T)
-        @framecheck out.frame part.frame
-        for col in 1 : num_cols(part) # TODO: higher level abstraction once it's as fast
-            outcol = vrange[col]
-            out.angular[1, outcol] = part.angular[1, col]
-            out.angular[2, outcol] = part.angular[2, col]
-            out.angular[3, outcol] = part.angular[3, col]
-            out.linear[1, outcol] = part.linear[1, col]
-            out.linear[2, outcol] = part.linear[2, col]
-            out.linear[3, outcol] = part.linear[3, col]
-        end
-    end
-end
-
-@inline function zero_cols!(out::GeometricJacobian, vrange::UnitRange)
-    for j in vrange # TODO: use higher level abstraction once it's as fast
-        out.angular[1, j] = out.angular[2, j] = out.angular[3, j] = 0;
-        out.linear[1, j] = out.linear[2, j] = out.linear[3, j] = 0;
-    end
-end
-
 """
 $(SIGNATURES)
 
@@ -103,15 +81,11 @@ function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path
     @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
     @framecheck out.body default_frame(target(path))
     @framecheck out.base default_frame(source(path))
-    update_transforms!(state)
-    mechanism = state.mechanism
-    foreach_with_extra_args(out, state, mechanism, path, state.type_sorted_tree_joints) do out, state, mechanism, path, joint # TODO: use closure once it doesn't allocate
+    update_motion_subspaces_in_world!(state)
+    foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints) do out, state, path, joint # TODO: use closure once it doesn't allocate
         vrange = velocity_range(state, joint)
         if edge_index(joint) in path.indices
-            body = successor(joint, mechanism)
-            qjoint = configuration(state, joint)
-            @nocachecheck tf = transform_to_root(state, body)
-            part = transformfun(transform(motion_subspace(joint, qjoint), tf))
+            @nocachecheck part = transformfun(motion_subspace_in_world(state, joint))
             direction(joint, path) == :up && (part = -part)
             set_cols!(out, vrange, part)
         else
@@ -186,12 +160,6 @@ function gravitational_potential_energy(state::MechanismState{X, M, C}) where {X
     -dot(gravitationalforce, FreeVector3D(center_of_mass(state)))
  end
 
-@inline function set_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange, part::AbstractMatrix)
-    for col in 1 : size(part, 2), row in 1 : size(part, 1) # TODO: higher level abstraction once it's fast
-        out.data[irange[row], jrange[col]] = part[row, col]
-    end
-end
-
 const mass_matrix_doc = """Compute the joint-space mass matrix
 (also known as the inertia matrix) of the `Mechanism` in the given state, i.e.,
 the matrix ``M(q)`` in the unconstrained joint-space equations of motion
@@ -217,22 +185,20 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
     @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
     @boundscheck out.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
     fill!(out.data, 0)
-    update_transforms!(state)
+    update_motion_subspaces_in_world!(state)
     update_crb_inertias!(state)
     joints = state.type_sorted_tree_joints
     foreach_with_extra_args(out, state, joints) do out, state, jointi # TODO: use closure once it doesn't allocate
         irange = velocity_range(state, jointi)
         bodyi = successor(jointi, state.mechanism)
-        Si = motion_subspace(jointi, state.qs[jointi])
-        @nocachecheck Si = transform(Si, transform_to_root(state, bodyi))
+        @nocachecheck Si = motion_subspace_in_world(state, jointi)
         @nocachecheck Ici = crb_inertia(state, bodyi)
         F = Ici * Si
         ancestor_joints = state.type_sorted_ancestor_joints[jointi]
         foreach_with_extra_args(out, state, irange, F, ancestor_joints) do out, state, irange, F, jointj # TODO: use closure once it doesn't allocate
             jrange = velocity_range(state, jointj)
             bodyj = successor(jointj, state.mechanism)
-            Sj = motion_subspace(jointj, state.qs[jointj])
-            @nocachecheck Sj = transform(Sj, transform_to_root(state, bodyj))
+            @nocachecheck Sj = motion_subspace_in_world(state, jointj)
             block = F.angular' * Sj.angular + F.linear' * Sj.linear
             set_matrix_block!(out, irange, jrange, block)
         end
@@ -279,18 +245,15 @@ $noalloc_doc
 """
 function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformfun)
     @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
+    update_motion_subspaces_in_world!(state)
     update_crb_inertias!(state)
     foreach_with_extra_args(out, state, state.type_sorted_tree_joints) do out, state, joint
         vrange = velocity_range(state, joint)
-        if !isempty(vrange)
-            mechanism = state.mechanism
-            body = successor(joint, mechanism)
-            qjoint = configuration(state, joint)
-            @nocachecheck tf = transform_to_root(state, body)
-            @nocachecheck inertia = crb_inertia(state, body)
-            part = transformfun(inertia * transform(motion_subspace(joint, qjoint), tf)) # TODO: consider pure body frame implementation
-            set_cols!(out, vrange, part)
-        end
+        mechanism = state.mechanism
+        body = successor(joint, mechanism)
+        @nocachecheck inertia = crb_inertia(state, body)
+        @nocachecheck part = transformfun(inertia * motion_subspace_in_world(state, joint)) # TODO: consider pure body frame implementation
+        set_cols!(out, vrange, part)
     end
 end
 

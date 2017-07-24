@@ -601,6 +601,13 @@ end
 Base.Array(jac::GeometricJacobian) = [Array(jac.angular); Array(jac.linear)]
 Base.eltype(::Type{GeometricJacobian{A}}) where {A} = eltype(A)
 
+@inline function zero_cols!(out::GeometricJacobian, vrange::UnitRange)
+    for j in vrange # TODO: use higher level abstraction once it's as fast
+        out.angular[1, j] = out.angular[2, j] = out.angular[3, j] = 0;
+        out.linear[1, j] = out.linear[2, j] = out.linear[3, j] = 0;
+    end
+end
+
 """
 $(SIGNATURES)
 
@@ -768,6 +775,21 @@ for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAccelera
                 mat.linear[2, row] * vec.linear[2] +
                 mat.linear[3, row] * vec.linear[3]
             end
+        end
+    end
+end
+
+for T in (:GeometricJacobian, :MomentumMatrix)
+    @eval @inline function set_cols!(out::$T, vrange::UnitRange, part::$T)
+        @framecheck out.frame part.frame
+        for col in 1 : num_cols(part) # TODO: higher level abstraction once it's as fast
+            outcol = vrange[col]
+            out.angular[1, outcol] = part.angular[1, col]
+            out.angular[2, outcol] = part.angular[2, col]
+            out.angular[3, outcol] = part.angular[3, col]
+            out.linear[1, outcol] = part.linear[1, col]
+            out.linear[2, outcol] = part.linear[2, col]
+            out.linear[3, outcol] = part.linear[3, col]
         end
     end
 end

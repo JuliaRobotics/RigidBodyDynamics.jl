@@ -57,6 +57,14 @@ Return a matrix `A` such that `A[:, i] == f(mat[:, i], vec)`.
 end
 
 
+# Copy block of matrix. TODO: use higher level abstraction once it's fast
+@inline function set_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange, part::AbstractMatrix)
+    for col in 1 : size(part, 2), row in 1 : size(part, 1)
+        out.data[irange[row], jrange[col]] = part[row, col]
+    end
+end
+
+
 ## findunique
 function findunique(f, A)
     results = find(f, A)

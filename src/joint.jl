@@ -102,7 +102,6 @@ $(SIGNATURES)
 
 Return the length of the configuration vector of `joint`.
 """
-num_positions(::Type{Joint{T, JT}}) where {T, JT} = num_positions(JT)
 num_positions(joint::Joint) = num_positions(joint.jointType)
 
 """
@@ -110,7 +109,6 @@ $(SIGNATURES)
 
 Return the length of the velocity vector of `joint`.
 """
-num_velocities(::Type{Joint{T, JT}}) where {T, JT} = num_velocities(JT)
 num_velocities(joint::Joint) = num_velocities(joint.jointType)
 
 """
