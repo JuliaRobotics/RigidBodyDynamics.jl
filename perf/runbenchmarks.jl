@@ -19,7 +19,6 @@ function create_benchmark_suite()
     suite = BenchmarkGroup()
     mechanism = create_floating_atlas()
     remove_fixed_tree_joints!(mechanism)
-    mcmechanism, _ = maximal_coordinates(mechanism)
 
     state = MechanismState{ScalarType}(mechanism)
     result = DynamicsResult{ScalarType}(mechanism)
@@ -84,10 +83,13 @@ function create_benchmark_suite()
         gravitational_potential_energy($state)
     end, setup = rand!($state))
 
+    mcmechanism, _ = maximal_coordinates(mechanism)
+    mcstate = MechanismState{ScalarType}(mcmechanism)
+    mcresult = DynamicsResult{ScalarType}(mcmechanism)
     suite["constraint_jacobian_and_bias!"] = @benchmarkable(begin
-        setdirty!($state)
-        RigidBodyDynamics.constraint_jacobian_and_bias!($state, $(result.constraintjacobian), $(result.constraintbias))
-    end, setup = rand!($state))
+        setdirty!($mcstate)
+        RigidBodyDynamics.constraint_jacobian_and_bias!($mcstate, $(mcresult.constraintjacobian), $(mcresult.constraintbias))
+    end, setup = rand!($mcstate))
 
     suite
 end
