@@ -74,7 +74,7 @@ struct Transform3D{A<:AbstractMatrix}
     from::CartesianFrame3D
     to::CartesianFrame3D
 
-    function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, mat::A) where {A}
+    @inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, mat::A) where {A}
         @boundscheck size(mat) == (4, 4) || throw(DimensionMismatch())
         new{A}(mat, from, to)
     end
@@ -166,7 +166,7 @@ for VectorType in (:FreeVector3D, :Point3D)
             v::V
             frame::CartesianFrame3D
 
-            function $VectorType(frame::CartesianFrame3D, v::V) where {V}
+            @inline function $VectorType(frame::CartesianFrame3D, v::V) where {V}
                 @boundscheck length(v) == 3 || throw(DimensionMismatch())
                 new{V}(v, frame)
             end

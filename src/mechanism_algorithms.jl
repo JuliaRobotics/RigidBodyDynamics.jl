@@ -55,17 +55,6 @@ Compute the center of mass of the whole `Mechanism` in the given state.
 """
 center_of_mass(state::MechanismState) = center_of_mass(state, bodies(state.mechanism))
 
-function _set_jacobian_part!(out::GeometricJacobian, part::GeometricJacobian, nextbaseframe::CartesianFrame3D, startind::Int64)
-    @framecheck part.frame out.frame
-    @framecheck part.base nextbaseframe
-    n = 3 * num_cols(part)
-    copy!(out.angular, startind, part.angular, 1, n)
-    copy!(out.linear, startind, part.linear, 1, n)
-    startind += n
-    nextbaseframe = part.body
-    startind, nextbaseframe
-end
-
 const geometric_jacobian_doc = """Compute a geometric Jacobian (also known as a
 basic, or spatial Jacobian) associated with the joints that form a path in the
 `Mechanism`'s spanning tree, in the given state.
@@ -89,21 +78,21 @@ subspaces of each of the joints to the frame in which `out` is expressed.
 $noalloc_doc
 """
 function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path::TreePath, transformfun)
+    @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
+    @framecheck out.body default_frame(target(path))
+    @framecheck out.base default_frame(source(path))
     update_motion_subspaces_in_world!(state)
-    @nocachecheck begin
-        @boundscheck num_velocities(path) == num_cols(out) || error("size mismatch")
-        mechanism = state.mechanism
-        nextbaseframe = out.base
-        startind = 1
-        lastjoint = last(path)
-        for joint in path
-            S = transformfun(motion_subspace_in_world(state, joint))
-            direction(joint, path) == :up && (S = -S)
-            startind, nextbaseframe = _set_jacobian_part!(out, S, nextbaseframe, startind)
-            joint == lastjoint && (@framecheck S.body out.body)
+    foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints) do out, state, path, joint # TODO: use closure once it doesn't allocate
+        vrange = velocity_range(state, joint)
+        if edge_index(joint) in path.indices
+            @nocachecheck part = transformfun(motion_subspace_in_world(state, joint))
+            direction(joint, path) == :up && (part = -part)
+            set_cols!(out, vrange, part)
+        else
+            zero_cols!(out, vrange)
         end
-        out
     end
+    out
 end
 
 """
@@ -149,7 +138,7 @@ The Jacobian is computed in the `Mechanism`'s root frame.
 See [`geometric_jacobian!(out, state, path)`](@ref).
 """
 function geometric_jacobian(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}}) where {X, M, C}
-    nv = num_velocities(path)
+    nv = num_velocities(state)
     angular = Matrix{C}(3, nv)
     linear = Matrix{C}(3, nv)
     bodyframe = default_frame(target(path))
@@ -169,32 +158,6 @@ function gravitational_potential_energy(state::MechanismState{X, M, C}) where {X
     # TODO: no need to explicitly compute center of mass
     gravitationalforce = mass(state.mechanism) * state.mechanism.gravitationalAcceleration
     -dot(gravitationalforce, FreeVector3D(center_of_mass(state)))
- end
-
- function force_space_matrix_transpose_mul_jacobian!(out::Matrix, rowstart::Int64, colstart::Int64,
-        mat::Union{MomentumMatrix, WrenchMatrix}, jac::GeometricJacobian, sign::Int64)
-     @framecheck(jac.frame, mat.frame)
-     n = num_cols(mat)
-     m = num_cols(jac)
-     @boundscheck (rowstart > 0 && rowstart + n - 1 <= size(out, 1)) || error("size mismatch")
-     @boundscheck (colstart > 0 && colstart + m - 1 <= size(out, 2)) || error("size mismatch")
-
-     # more efficient version of
-     # view(out, rowstart : rowstart + n - 1, colstart : colstart + n - 1)[:] = mat.angular' * jac.angular + mat.linear' * jac.linear
-
-     @inbounds begin
-         for col = 1 : m
-             outcol = colstart + col - 1
-             for row = 1 : n
-                 outrow = rowstart + row - 1
-                 out[outrow, outcol] = zero(eltype(out))
-                 for i = 1 : 3
-                     out[outrow, outcol] += flipsign(mat.angular[i, row] * jac.angular[i, col], sign)
-                     out[outrow, outcol] += flipsign(mat.linear[i, row] * jac.linear[i, col], sign)
-                 end
-             end
-         end
-     end
  end
 
 const mass_matrix_doc = """Compute the joint-space mass matrix
@@ -221,37 +184,26 @@ velocity vector ``v``.
 function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C}) where {X, M, C}
     @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
     @boundscheck out.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
+    fill!(out.data, 0)
     update_motion_subspaces_in_world!(state)
     update_crb_inertias!(state)
-    @nocachecheck begin
-        fill!(out.data, zero(C))
-        mechanism = state.mechanism
-        for jointi in tree_joints(mechanism)
-            # Hii
-            irange = velocity_range(state, jointi)
-            if length(irange) > 0
-                bodyi = successor(jointi, mechanism)
-                Si = motion_subspace_in_world(state, jointi)
-                Ii = crb_inertia(state, bodyi)
-                F = Ii * Si
-                istart = first(irange)
-                force_space_matrix_transpose_mul_jacobian!(out.data, istart, istart, F, Si, 1)
-
-                # Hji, Hij
-                body = predecessor(jointi, mechanism)
-                while (!isroot(body, mechanism))
-                    jointj = joint_to_parent(body, mechanism)
-                    jrange = velocity_range(state, jointj)
-                    if length(jrange) > 0
-                        Sj = motion_subspace_in_world(state, jointj)
-                        jstart = first(jrange)
-                        force_space_matrix_transpose_mul_jacobian!(out.data, istart, jstart, F, Sj, 1)
-                    end
-                    body = predecessor(jointj, mechanism)
-                end
-            end
+    joints = state.type_sorted_tree_joints
+    foreach_with_extra_args(out, state, joints) do out, state, jointi # TODO: use closure once it doesn't allocate
+        irange = velocity_range(state, jointi)
+        bodyi = successor(jointi, state.mechanism)
+        @nocachecheck Si = motion_subspace_in_world(state, jointi)
+        @nocachecheck Ici = crb_inertia(state, bodyi)
+        F = Ici * Si
+        ancestor_joints = state.type_sorted_ancestor_joints[jointi]
+        foreach_with_extra_args(out, state, irange, F, ancestor_joints) do out, state, irange, F, jointj # TODO: use closure once it doesn't allocate
+            jrange = velocity_range(state, jointj)
+            bodyj = successor(jointj, state.mechanism)
+            @nocachecheck Sj = motion_subspace_in_world(state, jointj)
+            block = F.angular' * Sj.angular + F.linear' * Sj.linear
+            set_matrix_block!(out.data, irange, jrange, block)
         end
     end
+    out
 end
 
 """
@@ -293,20 +245,15 @@ $noalloc_doc
 """
 function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformfun)
     @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
+    update_motion_subspaces_in_world!(state)
     update_crb_inertias!(state)
     foreach_with_extra_args(out, state, state.type_sorted_tree_joints) do out, state, joint
         vrange = velocity_range(state, joint)
-        if !isempty(vrange)
-            mechanism = state.mechanism
-            body = successor(joint, mechanism)
-            qjoint = configuration(state, joint)
-            @nocachecheck tf = transform_to_root(state, body)
-            @nocachecheck inertia = crb_inertia(state, body)
-            part = transformfun(inertia * transform(motion_subspace(joint, qjoint), tf)) # TODO: consider pure body frame implementation
-            @framecheck out.frame part.frame
-            copy!(out.angular, CartesianRange((1 : 3, vrange)), part.angular, CartesianRange(indices(part.angular)))
-            copy!(out.linear, CartesianRange((1 : 3, vrange)), part.linear, CartesianRange(indices(part.linear)))
-        end
+        mechanism = state.mechanism
+        body = successor(joint, mechanism)
+        @nocachecheck inertia = crb_inertia(state, body)
+        @nocachecheck part = transformfun(inertia * motion_subspace_in_world(state, joint)) # TODO: consider pure body frame implementation
+        set_cols!(out, vrange, part)
     end
 end
 
@@ -554,41 +501,41 @@ function inverse_dynamics(
 end
 
 function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian::AbstractMatrix, constraintbias::AbstractVector)
-    # TODO: allocations
-    update_motion_subspaces_in_world!(state)
-    update_constraint_wrench_subspaces!(state)
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
-    @nocachecheck begin
-        mechanism = state.mechanism
-        rowstart = 1
-        constraintjacobian[:] = 0
-        for (nontreejoint, path) in state.constraint_jacobian_structure
-            nextrowstart = rowstart + num_constraints(nontreejoint)
-            range = rowstart : nextrowstart - 1
-            succ = successor(nontreejoint, mechanism)
-            pred = predecessor(nontreejoint, mechanism)
+    update_motion_subspaces_in_world!(state)
+    update_constraint_wrench_subspaces!(state)
+    mechanism = state.mechanism
+    rowstart = Ref(1) # TODO: allocation
+    # note: order of rows of Jacobian and bias term is determined by iteration order of state.type_sorted_non_tree_joints
+    foreach_with_extra_args(constraintjacobian, constraintbias, state, mechanism, rowstart, state.type_sorted_non_tree_joints) do constraintjacobian, constraintbias, state, mechanism, rowstart, nontreejoint # TODO: use closure once it doesn't allocate
+        path = state.constraint_jacobian_structure[nontreejoint]
+        nextrowstart = rowstart[] + num_constraints(nontreejoint)
+        rowrange = rowstart[] : nextrowstart - 1
+        succ = successor(nontreejoint, mechanism)
+        pred = predecessor(nontreejoint, mechanism)
+        @nocachecheck T = constraint_wrench_subspace(state, nontreejoint)
 
-            # Constraint wrench subspace.
-            T = constraint_wrench_subspace(state, nontreejoint)
-            T = transform(T, transform_to_root(state, succ) * frame_definition(succ, T.frame)) # TODO: somewhat expensive
-
-            # Jacobian rows.
-            for treejoint in path
-                J = motion_subspace_in_world(state, treejoint)
-                colstart = first(velocity_range(state, treejoint))
-                sign = ifelse(direction(treejoint, path) == :up, -1, 1)
-                force_space_matrix_transpose_mul_jacobian!(constraintjacobian, rowstart, colstart, T, J, sign)
+        # Jacobian.
+        foreach_with_extra_args(constraintjacobian, state, path, T, rowrange, state.type_sorted_tree_joints) do constraintjacobian, state, path, T, rowrange, treejoint # TODO: use closure once it doesn't allocate
+            vrange = velocity_range(state, treejoint)
+            if edge_index(treejoint) in path.indices
+                @nocachecheck J = motion_subspace_in_world(state, treejoint)
+                part = T.angular' * J.angular + T.linear' * J.linear # TODO: At_mul_B
+                direction(treejoint, path) == :up && (part = -part)
+                set_matrix_block!(constraintjacobian, rowrange, vrange, part)
+            else
+                zero_matrix_block!(constraintjacobian, rowrange, vrange)
             end
-
-            # Constraint bias.
-            has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
-            kjoint = fastview(constraintbias, range)
-            crossterm = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
-            biasaccel = crossterm + (bias_acceleration(state, succ) + -bias_acceleration(state, pred)) # 8.47 in Featherstone
-            At_mul_B!(kjoint, T, biasaccel)
-            rowstart = nextrowstart
         end
+
+        # Constraint bias.
+        has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
+        kjoint = fastview(constraintbias, rowrange)
+        @nocachecheck crossterm = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
+        @nocachecheck biasaccel = crossterm + (-bias_acceleration(state, pred) + bias_acceleration(state, succ)) # 8.47 in Featherstone
+        At_mul_B!(kjoint, T, biasaccel)
+        rowstart[] = nextrowstart
     end
 end
 

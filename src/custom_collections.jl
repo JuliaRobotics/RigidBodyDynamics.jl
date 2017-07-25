@@ -72,7 +72,7 @@ end
 
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
 # heap-allocated variables. Hopefully this will not be necessary in a future version of Julia.
-for num_extra_args = 1 : 4
+for num_extra_args = 1 : 5
     extra_arg_syms = [Symbol("arg", i) for i = 1 : num_extra_args]
     @eval begin
         @generated function foreach_with_extra_args(f, $(extra_arg_syms...), tsc::TypeSortedCollection{D}, As::AbstractVector...) where {D}
@@ -107,7 +107,7 @@ struct ConstVector{T} <: AbstractVector{T}
     length::Int64
 end
 Base.size(A::ConstVector) = (A.length, )
-Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
+@inline Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
 Base.IndexStyle(::Type{<:ConstVector}) = IndexLinear()
 
 
@@ -222,7 +222,4 @@ end
 @inline Base.get{I, K, V}(d::UnsafeFastDict{I, K, V}, key) = d.values[I(key)]
 @inline Base.keys(d::UnsafeFastDict) = d.keys
 @inline Base.values(d::UnsafeFastDict) = d.values
-@inline function Base.setindex!{I, K, V}(d::UnsafeFastDict{I, K, V}, value::V, key::K)
-    @boundscheck haskey(d, key) || throw(KeyError(key))
-    d.values[I(key)] = value
-end
+@inline Base.setindex!{I, K, V}(d::UnsafeFastDict{I, K, V}, value::V, key) = (d.values[I(key)] = value)

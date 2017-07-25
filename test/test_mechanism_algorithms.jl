@@ -76,12 +76,13 @@
 
     @testset "joint_torque! / motion_subspace" begin
         for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
             qjoint = configuration(x, joint)
             wrench = rand(Wrench{Float64}, frame_after(joint))
             τ = Vector{Float64}(num_velocities(joint))
             joint_torque!(τ, joint, qjoint, wrench)
-            S = motion_subspace(joint, qjoint)
-            # @test isapprox(τ, torque(S, wrench)) # TODO: https://github.com/JuliaLang/julia/issues/20034
+            S = motion_subspace_in_world(x, joint)
+            @test isapprox(τ, torque(S, transform(wrench, transform_to_root(x, body))))
         end
     end
 
@@ -92,36 +93,39 @@
             body = rand([bs...])
             delete!(bs, body)
             base = rand([bs...])
-            p = RigidBodyDynamics.path(mechanism, base, body)
-            vpath = velocity(x, p)
+            p = path(mechanism, base, body)
+            v = velocity(x)
 
             J = geometric_jacobian(x, p)
             T = relative_twist(x, body, base)
-            @test isapprox(Twist(J, vpath), T; atol = 1e-12)
+            @test isapprox(Twist(J, v), T; atol = 1e-12)
 
             J1 = GeometricJacobian(J.body, J.base, J.frame, similar(J.angular), similar(J.linear))
             geometric_jacobian!(J1, x, p)
-            @test isapprox(Twist(J1, vpath), T; atol = 1e-12)
+            @test isapprox(Twist(J1, v), T; atol = 1e-12)
 
             H = rand(Transform3D, root_frame(mechanism), frame)
             J2 = GeometricJacobian(J.body, J.base, frame, similar(J.angular), similar(J.linear))
-            @test_throws ArgumentError geometric_jacobian!(J, x, p, H)
+            if num_velocities(p) > 0
+                @test_throws ArgumentError geometric_jacobian!(J, x, p, H)
+            end
             geometric_jacobian!(J2, x, p, H)
-            @test isapprox(Twist(J2, vpath), transform(T, H); atol = 1e-12)
+            @test isapprox(Twist(J2, v), transform(T, H); atol = 1e-12)
 
             J3 = GeometricJacobian(J.body, J.base, default_frame(body), similar(J.angular), similar(J.linear))
             geometric_jacobian!(J3, x, p)
-            @test isapprox(Twist(J3, vpath), transform(x, T, default_frame(body)); atol = 1e-12)
+            @test isapprox(Twist(J3, v), transform(x, T, default_frame(body)); atol = 1e-12)
         end
     end
 
     @testset "motion_subspace / constraint_wrench_subspace" begin
         for joint in tree_joints(mechanism)
+            body = successor(joint, mechanism)
             qjoint = configuration(x, joint)
-            S = motion_subspace(joint, qjoint)
-            jointTransform = joint_transform(joint, qjoint)
-            T = constraint_wrench_subspace(joint, jointTransform)::RigidBodyDynamics.WrenchSubspace{Float64} # TODO
-            # @test isapprox(T.angular' * S.angular + T.linear' * S.linear, zeros(6 - num_velocities(joint), num_velocities(joint)); atol = 1e-14) # TODO: https://github.com/JuliaLang/julia/issues/20034
+            S = motion_subspace_in_world(x, joint)
+            tf = joint_transform(joint, qjoint)
+            T = transform(constraint_wrench_subspace(joint, tf), transform_to_root(x, body))
+            @test isapprox(T.angular' * S.angular + T.linear' * S.linear, zeros(num_constraints(joint), num_velocities(joint)); atol = 1e-12)
         end
     end
 
@@ -201,9 +205,11 @@
         A = momentum_matrix(x)
         Amat = Array(A)
         for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            Ajoint = Amat[:, velocity_range(x, joint)]
-            @test isapprox(Array(crb_inertia(x, body) * motion_subspace_in_world(x, joint)), Ajoint; atol = 1e-12)
+            if num_velocities(joint) > 0 # TODO: Base.mapslices can't handle matrices with zero columns
+                body = successor(joint, mechanism)
+                Ajoint = Amat[:, velocity_range(x, joint)]
+                @test isapprox(Array(crb_inertia(x, body) * motion_subspace_in_world(x, joint)), Ajoint; atol = 1e-12)
+            end
         end
 
         v = velocity(x)

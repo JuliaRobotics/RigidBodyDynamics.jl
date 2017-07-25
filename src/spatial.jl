@@ -143,7 +143,7 @@ struct GeometricJacobian{A<:AbstractMatrix}
     angular::A
     linear::A
 
-    function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
+    @inline function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
         @boundscheck size(angular, 1) == 3 || error("size mismatch")
         @boundscheck size(linear, 1) == 3 || error("size mismatch")
         @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
@@ -157,7 +157,7 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
         angular::A
         linear::A
 
-        function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
+        @inline function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
             @boundscheck size(angular, 1) == 3 || error("size mismatch")
             @boundscheck size(linear, 1) == 3 || error("size mismatch")
             @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
@@ -230,29 +230,19 @@ Transform the `SpatialInertia` to a different frame.
 """
 function transform(inertia::SpatialInertia, t::Transform3D)
     @framecheck(t.from, inertia.frame)
-    T = promote_type(eltype(typeof(inertia)), eltype(typeof(t)))
-
-    if t.from == t.to
-        return convert(SpatialInertia{T}, inertia)
-    elseif inertia.mass == 0
-        return zero(SpatialInertia{T}, t.to)
-    else
-        J = inertia.moment
-        m = inertia.mass
-        c = inertia.crossPart
-
-        R = rotation(t)
-        p = translation(t)
-
-        cnew = R * c
-        Jnew = hat_squared(cnew)
-        cnew += m * p
-        Jnew -= hat_squared(cnew)
-        mInv = inv(m)
-        Jnew *= mInv
-        Jnew += R * J * R'
-        return SpatialInertia{T}(t.to, Jnew, cnew, m)
-    end
+    J = inertia.moment
+    m = inertia.mass
+    c = inertia.crossPart
+    R = rotation(t)
+    p = translation(t)
+    cnew = R * c
+    Jnew = hat_squared(cnew)
+    cnew += m * p
+    Jnew -= hat_squared(cnew)
+    mInv = ifelse(m > 0, inv(m), zero(m))
+    Jnew *= mInv
+    Jnew += R * J * R'
+    SpatialInertia(t.to, Jnew, cnew, convert(eltype(Jnew), m))
 end
 
 function Random.rand(::Type{<:SpatialInertia{T}}, frame::CartesianFrame3D) where {T}
@@ -305,19 +295,14 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
             x.body == y.body && x.base == y.base && x.frame == y.frame && isapprox(x.angular, y.angular; atol = atol) && isapprox(x.linear, y.linear; atol = atol)
         end
 
-        function (+)(m1::$MotionSpaceElement, m2::$MotionSpaceElement)
+        @inline function (+)(m1::$MotionSpaceElement, m2::$MotionSpaceElement)
             @framecheck(m1.frame, m2.frame)
+            @boundscheck begin
+                ((m1.body == m2.body && m1.base == m2.base) || m1.body == m2.base) || throw(ArgumentError("frame mismatch"))
+            end
             angular = m1.angular + m2.angular
             linear = m1.linear + m2.linear
-            if m1.body == m2.body && m1.base == m2.base
-                return $MotionSpaceElement(m1.body, m1.base, m1.frame, angular, linear)
-            elseif m1.body == m2.base
-                return $MotionSpaceElement(m2.body, m1.base, m1.frame, angular, linear)
-            elseif m1.base == m2.body
-                return $MotionSpaceElement(m1.body, m2.base, m1.frame, angular, linear)
-            else
-                throw(ArgumentError("frame mismatch"))
-            end
+            $MotionSpaceElement(m2.body, m1.base, m1.frame, angular, linear)
         end
 
         (-)(m::$MotionSpaceElement) = $MotionSpaceElement(m.base, m.body, m.frame, -m.angular, -m.linear)
@@ -584,12 +569,14 @@ const WrenchSubspace{T} = WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
 function WrenchSubspace(frame::CartesianFrame3D, angular, linear)
     WrenchMatrix(frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end
+WrenchSubspace(mat::WrenchMatrix) = WrenchSubspace(mat.frame, mat.angular, mat.linear)
 
 # MotionSubspace is the return type of motion_subspace(::Joint, ...)
 const MotionSubspace{T} = GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
 function MotionSubspace(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular, linear)
     GeometricJacobian(body, base, frame, smatrix3x6view(angular), smatrix3x6view(linear))
 end
+MotionSubspace(jac::GeometricJacobian) = MotionSubspace(jac.body, jac.base, jac.frame, jac.angular, jac.linear)
 
 # GeometricJacobian-specific functions
 Base.convert(::Type{GeometricJacobian{A}}, jac::GeometricJacobian{A}) where {A} = jac
@@ -598,6 +585,13 @@ function Base.convert(::Type{GeometricJacobian{A}}, jac::GeometricJacobian) wher
 end
 Base.Array(jac::GeometricJacobian) = [Array(jac.angular); Array(jac.linear)]
 Base.eltype(::Type{GeometricJacobian{A}}) where {A} = eltype(A)
+
+@inline function zero_cols!(out::GeometricJacobian, vrange::UnitRange)
+    for j in vrange # TODO: use higher level abstraction once it's as fast
+        out.angular[1, j] = out.angular[2, j] = out.angular[3, j] = 0;
+        out.linear[1, j] = out.linear[2, j] = out.linear[3, j] = 0;
+    end
+end
 
 """
 $(SIGNATURES)
@@ -647,16 +641,6 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
             print(io, "$($(string(ForceSpaceMatrix))) expressed in \"$(name(m.frame))\":\n$(Array(m))")
         end
 
-        function Base.hcat(mats::$ForceSpaceMatrix...)
-            frame = mats[1].frame
-            for j = 2 : length(mats)
-                @framecheck(mats[j].frame, frame)
-            end
-            angular = hcat((m.angular for m in mats)...)
-            linear = hcat((m.linear for m in mats)...)
-            $ForceSpaceMatrix(frame, angular, linear)
-        end
-
         function transform(mat::$ForceSpaceMatrix, transform::Transform3D)
             @framecheck(mat.frame, transform.from)
             R = rotation(transform)
@@ -683,8 +667,8 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     # GeometricJacobian * velocity vector --> Twist
     # GeometricJacobian * acceleration vector --> SpatialAcceleration
     @eval function $MotionSpaceElement(jac::GeometricJacobian, x::AbstractVector)
-        angular = convert(SVector{3}, _mul(jac.angular, x))
-        linear = convert(SVector{3}, _mul(jac.linear, x))
+        angular = convert(SVector{3}, jac.angular * x)
+        linear = convert(SVector{3}, jac.linear * x)
         $MotionSpaceElement(jac.body, jac.base, jac.frame, angular, linear)
     end
 end
@@ -694,8 +678,8 @@ for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :Mom
     # MomentumMatrix * acceleration vector --> Wrench
     # WrenchMatrix * dimensionless multipliers --> Wrench
     @eval function $ForceSpaceElement(mat::$ForceSpaceMatrix, x::AbstractVector)
-        angular = convert(SVector{3}, _mul(mat.angular, x))
-        linear = convert(SVector{3}, _mul(mat.linear, x))
+        angular = convert(SVector{3}, mat.angular * x)
+        linear = convert(SVector{3}, mat.linear * x)
         $ForceSpaceElement(mat.frame, angular, linear)
     end
 end
@@ -753,7 +737,7 @@ function torque(jac::GeometricJacobian, wrench::Wrench)
 end
 
 for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAcceleration}), :GeometricJacobian => :(Union{Momentum, Wrench}))
-    @eval function Base.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
+    @eval @inline function Base.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
         @boundscheck length(x) == num_cols(mat) || error("size mismatch")
         @framecheck mat.frame vec.frame
         @simd for row in eachindex(x)
@@ -766,6 +750,21 @@ for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAccelera
                 mat.linear[2, row] * vec.linear[2] +
                 mat.linear[3, row] * vec.linear[3]
             end
+        end
+    end
+end
+
+for T in (:GeometricJacobian, :MomentumMatrix)
+    @eval @inline function set_cols!(out::$T, vrange::UnitRange, part::$T)
+        @framecheck out.frame part.frame
+        for col in 1 : num_cols(part) # TODO: higher level abstraction once it's as fast
+            outcol = vrange[col]
+            out.angular[1, outcol] = part.angular[1, col]
+            out.angular[2, outcol] = part.angular[2, col]
+            out.angular[3, outcol] = part.angular[3, col]
+            out.linear[1, outcol] = part.linear[1, col]
+            out.linear[2, outcol] = part.linear[2, col]
+            out.linear[3, outcol] = part.linear[3, col]
         end
     end
 end

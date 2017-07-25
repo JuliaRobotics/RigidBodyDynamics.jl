@@ -12,10 +12,18 @@ Return a matrix `A` such that `A[:, i] == f(vec, mat[:, i])`.
 """
 @generated function colwise(f, vec::StaticVector, mat::StaticArray)
     length(vec) == size(mat, 1) || throw(DimensionMismatch())
-    exprs = [:(f(vec, mat[:, $j])) for j = 1:size(mat, 2)]
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $(Expr(:call, hcat, exprs...))
+    if size(mat, 2) == 0
+        T = similar_type(mat, promote_type(eltype(vec), eltype(mat)))
+        quote
+            $(Expr(:meta, :inline))
+            zeros($T)
+        end
+    else
+        exprs = [:(f(vec, mat[:, $j])) for j = 1 : size(mat, 2)]
+        quote
+            $(Expr(:meta, :inline))
+            @inbounds return $(Expr(:call, hcat, exprs...))
+        end
     end
 end
 
@@ -33,13 +41,36 @@ Return a matrix `A` such that `A[:, i] == f(mat[:, i], vec)`.
 """
 @generated function colwise(f, mat::StaticArray, vec::StaticVector)
     length(vec) == size(mat, 1) || throw(DimensionMismatch())
-    exprs = [:(f(mat[:, $j], vec)) for j = 1:size(mat, 2)]
-    return quote
-        $(Expr(:meta, :inline))
-        @inbounds return $(Expr(:call, hcat, exprs...))
+    if size(mat, 2) == 0
+        T = similar_type(mat, promote_type(eltype(vec), eltype(mat)))
+        quote
+            $(Expr(:meta, :inline))
+            zeros($T)
+        end
+    else
+        exprs = [:(f(mat[:, $j], vec)) for j = 1 : size(mat, 2)]
+        quote
+            $(Expr(:meta, :inline))
+            @inbounds return $(Expr(:call, hcat, exprs...))
+        end
     end
 end
 
+
+# Copy block of matrix. TODO: use higher level abstraction once it's fast
+@inline function set_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange, part::AbstractMatrix)
+    for col in 1 : size(part, 2), row in 1 : size(part, 1)
+        out[irange[row], jrange[col]] = part[row, col]
+    end
+end
+
+
+# zero block of a matrix. TODO: use higher level abstraction once it's fast
+@inline function zero_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange)
+    for col in jrange, row in irange
+        out[row, col] = 0
+    end
+end
 
 ## findunique
 function findunique(f, A)
@@ -69,7 +100,9 @@ end
 const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # TODO: a bit too specific
 
 
-## Views
+## Functionality related to turning a 3xN SMatrix into a view of a 3x6 SMatrix
+const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
+
 @inline smatrix3x6view(mat::StaticMatrix) = _smatrix3x6view(Size(mat), mat)
 
 @generated function _smatrix3x6view(::Size{S}, mat::StaticMatrix) where {S}
@@ -80,73 +113,18 @@ const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} 
     fillerlength = S[1] * fillercols
     T = eltype(mat)
     exprs = vcat([:(mat[$i]) for i = 1 : prod(S)], [:(zero($T)) for i = 1 : fillerlength])
-    colrange =
     return quote
         Base.@_inline_meta
         @inbounds return view(similar_type(mat, Size($Snew))(tuple($(exprs...))), :, 1 : $S[2])
     end
 end
 
-const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
 
-# Some operators involving a view of an SMatrix.
-# TODO: make more efficient and less specific, or remove once StaticArrays does this.
-function *(A::StaticMatrix, B::ContiguousSMatrixColumnView)
-    data = A * parent(B)
-    view(data, :, B.indexes[2])
-end
-
-function +(A::ContiguousSMatrixColumnView{S1, S2, T, L}, B::ContiguousSMatrixColumnView{S1, S2, T, L}) where {S1, S2, T, L}
-    @boundscheck size(A) == size(B) || error("size mismatch")
-    data = parent(A) + parent(B)
-    view(data, :, A.indexes[2])
-end
-
-function -(A::ContiguousSMatrixColumnView{S1, S2, T, L}, B::ContiguousSMatrixColumnView{S1, S2, T, L}) where {S1, S2, T, L}
-    @boundscheck size(A) == size(B) || error("size mismatch")
-    data = parent(A) - parent(B)
-    view(data, :, A.indexes[2])
-end
-
-function -(A::ContiguousSMatrixColumnView)
-    data = -parent(A)
-    view(data, :, A.indexes[2])
-end
-
-function *(s::Number, A::ContiguousSMatrixColumnView)
-    data = s * parent(A)
-    view(data, :, A.indexes[2])
-end
-
-# FIXME: hack to get around ambiguities
-_mul(a, b) = a * b
-
-# TODO: too specific
-function _mul(
-        A::ContiguousSMatrixColumnView{S1, S2, TA, L},
-        b::Union{StridedVector{Tb}, UnsafeVectorView{Tb}}) where {S1, S2, TA, L, Tb}
-    @boundscheck size(A, 2) == size(b, 1) || error("size mismatch")
-    ret = zeros(SVector{S1, promote_type(TA, Tb)})
-    for i = 1 : size(A, 2)
-        @inbounds bi = b[i]
-        Acol = SVector{S1, TA}(view(A, :, i))
-        ret = ret + Acol * bi
-    end
-    ret
-end
-
-@inline function colwise(f, A::ContiguousSMatrixColumnView, x::StaticVector)
-    typeof(A)(colwise(f, parent(A), x), A.indexes, A.offset1, A.stride1)
-end
-
-@inline function colwise(f, x::StaticVector, A::ContiguousSMatrixColumnView)
-    typeof(A)(colwise(f, x, parent(A)), A.indexes, A.offset1, A.stride1)
-end
-
-## postwalk: these three lines from https://github.com/MikeInnes/MacroTools.jl/blob/master/LICENSE.md
+## postwalk: these three lines from https://github.com/MikeInnes/MacroTools.jl
 walk(x, inner, outer) = outer(x)
 walk(x::Expr, inner, outer) = outer(Expr(x.head, map(inner, x.args)...))
 postwalk(f, x) = walk(x, x -> postwalk(f, x), f)
+
 
 ## Geometry utilities
 @inline function vector_to_skew_symmetric{T}(v::SVector{3, T})

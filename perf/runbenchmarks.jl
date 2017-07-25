@@ -28,8 +28,7 @@ function create_benchmark_suite()
     rfoot = findbody(mechanism, "r_foot")
     lhand = findbody(mechanism, "l_hand")
     p = path(mechanism, rfoot, lhand)
-    nvpath = num_velocities(p)
-    jac = GeometricJacobian(default_frame(lhand), default_frame(rfoot), root_frame(mechanism), Matrix{ScalarType}(3, nvpath), Matrix{ScalarType}(3, nvpath))
+    jac = GeometricJacobian(default_frame(lhand), default_frame(rfoot), root_frame(mechanism), Matrix{ScalarType}(3, nv), Matrix{ScalarType}(3, nv))
 
     suite["mass_matrix"] = @benchmarkable(begin
         setdirty!($state)
@@ -83,6 +82,14 @@ function create_benchmark_suite()
         setdirty!($state)
         gravitational_potential_energy($state)
     end, setup = rand!($state))
+
+    mcmechanism, _ = maximal_coordinates(mechanism)
+    mcstate = MechanismState{ScalarType}(mcmechanism)
+    mcresult = DynamicsResult{ScalarType}(mcmechanism)
+    suite["constraint_jacobian_and_bias!"] = @benchmarkable(begin
+        setdirty!($mcstate)
+        RigidBodyDynamics.constraint_jacobian_and_bias!($mcstate, $(mcresult.constraintjacobian), $(mcresult.constraintbias))
+    end, setup = rand!($mcstate))
 
     suite
 end
