@@ -83,8 +83,8 @@ function motion_subspace(jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D
     GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::QuaternionFloating{T}, jointTransform::Transform3D{A}) where {T<:Number, A}
-    S = promote_type(T, eltype(A))
+function constraint_wrench_subspace(jt::QuaternionFloating{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T<:Number, X<:Number}
+    S = promote_type(T, X)
     WrenchMatrix(jointTransform.from, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
@@ -243,7 +243,7 @@ A `Prismatic` joint type allows translation along a fixed axis.
 """
 struct Prismatic{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
-    rotationFromZAligned::RotMatrix{3, T}
+    rotationFromZAligned::RotMatrix3{T}
 
     """
     $(SIGNATURES)
@@ -288,9 +288,9 @@ function motion_subspace(jt::Prismatic{T}, frameAfter::CartesianFrame3D, frameBe
     GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::Prismatic{T}, jointTransform::Transform3D{A}) where {T<:Number, A}
-    S = promote_type(T, eltype(A))
-    R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
+function constraint_wrench_subspace(jt::Prismatic{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T<:Number, X<:Number}
+    S = promote_type(T, X)
+    R = convert(RotMatrix3{S}, jt.rotationFromZAligned)
     Rcols12 = R[:, SVector(1, 2)]
     angular = hcat(R, zeros(SMatrix{3, 2, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), Rcols12)
@@ -310,7 +310,7 @@ A `Revolute` joint type allows rotation about a fixed axis.
 """
 struct Revolute{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
-    rotationFromZAligned::RotMatrix{3, T}
+    rotationFromZAligned::RotMatrix3{T}
 
     """
     $(SIGNATURES)
@@ -331,7 +331,7 @@ flip_direction(jt::Revolute) = Revolute(-jt.axis)
 
 function joint_transform(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
     @inbounds aa = AngleAxis(q[1], jt.axis[1], jt.axis[2], jt.axis[3])
-    Transform3D(frameAfter, frameBefore, convert(RotMatrix{3, eltype(aa)}, aa))
+    Transform3D(frameAfter, frameBefore, convert(RotMatrix3{eltype(aa)}, aa))
 end
 
 function joint_twist(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
@@ -355,9 +355,9 @@ function motion_subspace(jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBef
     GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::Revolute{T}, jointTransform::Transform3D{A}) where {T<:Number, A}
-    S = promote_type(T, eltype(A))
-    R = convert(RotMatrix{3, S}, jt.rotationFromZAligned)
+function constraint_wrench_subspace(jt::Revolute{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T<:Number, X<:Number}
+    S = promote_type(T, X)
+    R = convert(RotMatrix3{S}, jt.rotationFromZAligned)
     Rcols12 = R[:, SVector(1, 2)]
     angular = hcat(Rcols12, zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 2, S}), R)
@@ -408,8 +408,8 @@ function motion_subspace(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore
     GeometricJacobian(frameAfter, frameBefore, frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
-function constraint_wrench_subspace(jt::Fixed{T}, jointTransform::Transform3D{A}) where {T<:Number, A}
-    S = promote_type(T, eltype(A))
+function constraint_wrench_subspace(jt::Fixed{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T<:Number, X<:Number}
+    S = promote_type(T, X)
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
     WrenchMatrix(jointTransform.from, angular, linear)

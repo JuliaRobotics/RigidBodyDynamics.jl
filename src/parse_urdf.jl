@@ -22,7 +22,7 @@ function parse_inertia(::Type{T}, xmlInertia::XMLElement) where {T}
 end
 
 function parse_pose(::Type{T}, xml_pose::Void) where {T}
-    rot = eye(RotMatrix{3, T})
+    rot = eye(RotMatrix3{T})
     trans = zero(SVector{3, T})
     rot, trans
 end
