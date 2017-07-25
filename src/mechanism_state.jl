@@ -622,7 +622,6 @@ function update_constraint_wrench_subspaces!(state::MechanismState)
     update!(state.constraint_wrench_subspaces, f!, state)
 end
 
-
 function update_bias_accelerations_wrt_world!(state::MechanismState) # TODO: make more efficient
     update_transforms!(state)
     update_twists_wrt_world!(state)
@@ -683,15 +682,15 @@ end
 
 contact_states(state::MechanismState, body::RigidBody) = state.contact_states[body]
 
-function newton_euler(state::MechanismState, body::RigidBody, accel::SpatialAcceleration)
-    inertia = spatial_inertia(state, body)
-    twist = twist_wrt_world(state, body)
+function newton_euler(state::MechanismState, body::RigidBody, accel::SpatialAcceleration, safety::CacheSafety = CacheSafe())
+    inertia = spatial_inertia(state, body, safety)
+    twist = twist_wrt_world(state, body, safety)
     newton_euler(inertia, accel, twist)
 end
 
-momentum(state::MechanismState, body::RigidBody) = spatial_inertia(state, body) * twist_wrt_world(state, body)
-momentum_rate_bias(state::MechanismState, body::RigidBody) = newton_euler(state, body, bias_acceleration(state, body))
-kinetic_energy(state::MechanismState, body::RigidBody) = kinetic_energy(spatial_inertia(state, body), twist_wrt_world(state, body))
+momentum(state::MechanismState, body::RigidBody, safety::CacheSafety = CacheSafe()) = spatial_inertia(state, body, safety) * twist_wrt_world(state, body, safety)
+momentum_rate_bias(state::MechanismState, body::RigidBody, safety::CacheSafety = CacheSafe()) = newton_euler(state, body, bias_acceleration(state, body, safety), safety)
+kinetic_energy(state::MechanismState, body::RigidBody, safety::CacheSafety = CacheSafe()) = kinetic_energy(spatial_inertia(state, body, safety), twist_wrt_world(state, body, safety))
 
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
     # TODO: replace with plain foreach and closure once that doesn't allocate
@@ -708,9 +707,9 @@ function configuration_derivative{X}(state::MechanismState{X})
     ret
 end
 
-function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
+function transform_to_root(state::MechanismState, frame::CartesianFrame3D, safety::CacheSafety = CacheSafe())
     body = body_fixed_frame_to_body(state.mechanism, frame) # FIXME: expensive
-    tf = transform_to_root(state, body)
+    tf = transform_to_root(state, body, safety)
     if tf.from != frame
         tf = tf * body_fixed_frame_definition(state.mechanism, frame) # TODO: consider caching
     end
@@ -729,17 +728,23 @@ end
 
 function momentum(state::MechanismState, body_itr)
     T = cache_eltype(state)
-    non_root_body_sum(state, zero(Momentum{T}, root_frame(state.mechanism)), momentum, body_itr)
+    update_twists_wrt_world!(state)
+    update_spatial_inertias!(state)
+    non_root_body_sum(state, zero(Momentum{T}, root_frame(state.mechanism)), (state, body) -> momentum(state, body, CacheUnsafe()), body_itr)
 end
 
 function momentum_rate_bias(state::MechanismState, body_itr)
     T = cache_eltype(state)
-    non_root_body_sum(state, zero(Wrench{T}, root_frame(state.mechanism)), momentum_rate_bias, body_itr)
+    update_bias_accelerations_wrt_world!(state)
+    update_spatial_inertias!(state)
+    non_root_body_sum(state, zero(Wrench{T}, root_frame(state.mechanism)), (state, body) -> momentum_rate_bias(state, body, CacheUnsafe()), body_itr)
 end
 
 function kinetic_energy(state::MechanismState, body_itr)
     T = cache_eltype(state)
-    non_root_body_sum(state, zero(T), kinetic_energy, body_itr)
+    update_twists_wrt_world!(state)
+    update_spatial_inertias!(state)
+    non_root_body_sum(state, zero(T), (state, body) -> kinetic_energy(state, body, CacheUnsafe()), body_itr)
 end
 
 for fun in (:momentum, :momentum_rate_bias, :kinetic_energy)
@@ -752,15 +757,8 @@ $(SIGNATURES)
 Return the homogeneous transform from `from` to `to`.
 """
 function relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D)
-    # TODO: check if this if-else is actually worth it
-    rootframe = root_frame(state.mechanism)
-    if to == rootframe
-        return transform_to_root(state, from)
-    elseif from == rootframe
-        return inv(transform_to_root(state, to))
-    else
-        return inv(transform_to_root(state, to)) * transform_to_root(state, from)
-    end
+    update_transforms!(state)
+    @nocachecheck inv(transform_to_root(state, to)) * transform_to_root(state, from)
 end
 
 """
@@ -769,16 +767,8 @@ $(SIGNATURES)
 Return the twist of `body` with respect to `base`, expressed in the
 `Mechanism`'s root frame.
 """
-function relative_twist(state::MechanismState, body::RigidBody, base::RigidBody)
-    # TODO: check if this if-else is actually worth it
-    rootBody = root_body(state.mechanism)
-    if base == rootBody
-        return twist_wrt_world(state, body)
-    elseif body == rootBody
-        return -twist_wrt_world(state, base)
-    else
-        return -twist_wrt_world(state, base) + twist_wrt_world(state, body)
-    end
+function relative_twist(state::MechanismState, body::RigidBody, base::RigidBody, safety::CacheSafety = CacheSafe())
+    -twist_wrt_world(state, base, safety) + twist_wrt_world(state, body, safety)
  end
 
  """
@@ -787,8 +777,8 @@ function relative_twist(state::MechanismState, body::RigidBody, base::RigidBody)
  Return the twist of `bodyFrame` with respect to `baseFrame`, expressed in the
  `Mechanism`'s root frame.
  """
-function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D)
-    twist = relative_twist(state, body_fixed_frame_to_body(state.mechanism, bodyFrame), body_fixed_frame_to_body(state.mechanism, baseFrame))
+function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D, safety::CacheSafety = CacheSafe())
+    twist = relative_twist(state, body_fixed_frame_to_body(state.mechanism, bodyFrame), body_fixed_frame_to_body(state.mechanism, baseFrame), safety)
     Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)
 end
 
@@ -802,7 +792,6 @@ for VectorType in (:Point3D, :FreeVector3D, :Twist, :Momentum, :Wrench)
 end
 
 function transform(state::MechanismState, accel::SpatialAcceleration, to::CartesianFrame3D)
-    accel.frame == to && return accel # nothing to be done
     oldToRoot = transform_to_root(state, accel.frame)
     rootToOld = inv(oldToRoot)
     twistOfBodyWrtBase = transform(relative_twist(state, accel.body, accel.base), rootToOld)
