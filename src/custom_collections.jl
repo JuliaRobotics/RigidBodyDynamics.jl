@@ -72,7 +72,7 @@ end
 
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
 # heap-allocated variables. Hopefully this will not be necessary in a future version of Julia.
-for num_extra_args = 1 : 4
+for num_extra_args = 1 : 5
     extra_arg_syms = [Symbol("arg", i) for i = 1 : num_extra_args]
     @eval begin
         @generated function foreach_with_extra_args(f, $(extra_arg_syms...), tsc::TypeSortedCollection{D}, As::AbstractVector...) where {D}

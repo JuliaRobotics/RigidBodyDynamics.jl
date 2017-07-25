@@ -506,18 +506,18 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
     update_motion_subspaces_in_world!(state)
     update_constraint_wrench_subspaces!(state)
     mechanism = state.mechanism
-    rowstart = 1
+    rowstart = Ref(1) # TODO: allocation
     # note: order of rows of Jacobian and bias term is determined by iteration order of state.type_sorted_non_tree_joints
-    foreach_with_extra_args(constraintjacobian, constraintbias, state, mechanism, state.type_sorted_non_tree_joints) do constraintjacobian, constraintbias, state, mechanism, nontreejoint # TODO: use closure once it doesn't allocate
+    foreach_with_extra_args(constraintjacobian, constraintbias, state, mechanism, rowstart, state.type_sorted_non_tree_joints) do constraintjacobian, constraintbias, state, mechanism, rowstart, nontreejoint # TODO: use closure once it doesn't allocate
         path = state.constraint_jacobian_structure[nontreejoint]
-        nextrowstart = rowstart + num_constraints(nontreejoint)
-        rowrange = rowstart : nextrowstart - 1
+        nextrowstart = rowstart[] + num_constraints(nontreejoint)
+        rowrange = rowstart[] : nextrowstart - 1
         succ = successor(nontreejoint, mechanism)
         pred = predecessor(nontreejoint, mechanism)
         @nocachecheck T = constraint_wrench_subspace(state, nontreejoint)
 
         # Jacobian.
-        foreach_with_extra_args(constraintjacobian, state, path, state.type_sorted_tree_joints) do constraintjacobian, state, path, treejoint # TODO: use closure once it doesn't allocate
+        foreach_with_extra_args(constraintjacobian, state, path, T, rowrange, state.type_sorted_tree_joints) do constraintjacobian, state, path, T, rowrange, treejoint # TODO: use closure once it doesn't allocate
             vrange = velocity_range(state, treejoint)
             if edge_index(treejoint) in path.indices
                 @nocachecheck J = motion_subspace_in_world(state, treejoint)
@@ -535,7 +535,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         @nocachecheck crossterm = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
         @nocachecheck biasaccel = crossterm + (-bias_acceleration(state, pred) + bias_acceleration(state, succ)) # 8.47 in Featherstone
         At_mul_B!(kjoint, T, biasaccel)
-        rowstart = nextrowstart # TODO: causes the only bit of allocation in this method...
+        rowstart[] = nextrowstart
     end
 end
 
