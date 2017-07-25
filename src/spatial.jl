@@ -641,16 +641,6 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
             print(io, "$($(string(ForceSpaceMatrix))) expressed in \"$(name(m.frame))\":\n$(Array(m))")
         end
 
-        function Base.hcat(mats::$ForceSpaceMatrix...)
-            frame = mats[1].frame
-            for j = 2 : length(mats)
-                @framecheck(mats[j].frame, frame)
-            end
-            angular = hcat((m.angular for m in mats)...)
-            linear = hcat((m.linear for m in mats)...)
-            $ForceSpaceMatrix(frame, angular, linear)
-        end
-
         function transform(mat::$ForceSpaceMatrix, transform::Transform3D)
             @framecheck(mat.frame, transform.from)
             R = rotation(transform)

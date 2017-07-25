@@ -47,7 +47,7 @@ vertex_index!(::Any, index::Int64) = error("Vertex types must implement this met
 # Edge interface
 edge_index(::Any) = error("Edge types must implement this method")
 edge_index!(::Any, index::Int64) = error("Edge types must implement this method")
-flip_direction!(::Any) = nothing # optional
+# optional: flip_direction!
 
 # Vertex and Edge types; useful for wrapping an existing type with the edge interface.
 # Note that DirectedGraph does not require using these types; just implement the edge interface.
@@ -340,8 +340,8 @@ Base.next(path::TreePath, state) = next(path.edges, state)
 Base.done(path::TreePath, state) = done(path.edges, state)
 Base.eltype(path::TreePath) = eltype(path.edges)
 Base.length(path::TreePath) = length(path.edges)
-Base.size(path::TreePath) = size(path.edges)
-Base.last(path::TreePath) = last(path.edges)
+# Base.size(path::TreePath) = size(path.edges)
+# Base.last(path::TreePath) = last(path.edges)
 
 function Base.show(io::IO, path::TreePath)
     println(io, "Path from $(path.source) to $(path.target):")
