@@ -230,29 +230,19 @@ Transform the `SpatialInertia` to a different frame.
 """
 function transform(inertia::SpatialInertia, t::Transform3D)
     @framecheck(t.from, inertia.frame)
-    T = promote_type(eltype(typeof(inertia)), eltype(typeof(t)))
-
-    if t.from == t.to
-        return convert(SpatialInertia{T}, inertia)
-    elseif inertia.mass == 0
-        return zero(SpatialInertia{T}, t.to)
-    else
-        J = inertia.moment
-        m = inertia.mass
-        c = inertia.crossPart
-
-        R = rotation(t)
-        p = translation(t)
-
-        cnew = R * c
-        Jnew = hat_squared(cnew)
-        cnew += m * p
-        Jnew -= hat_squared(cnew)
-        mInv = inv(m)
-        Jnew *= mInv
-        Jnew += R * J * R'
-        return SpatialInertia{T}(t.to, Jnew, cnew, m)
-    end
+    J = inertia.moment
+    m = inertia.mass
+    c = inertia.crossPart
+    R = rotation(t)
+    p = translation(t)
+    cnew = R * c
+    Jnew = hat_squared(cnew)
+    cnew += m * p
+    Jnew -= hat_squared(cnew)
+    mInv = ifelse(m > 0, inv(m), zero(m))
+    Jnew *= mInv
+    Jnew += R * J * R'
+    SpatialInertia(t.to, Jnew, cnew, convert(eltype(Jnew), m))
 end
 
 function Random.rand(::Type{<:SpatialInertia{T}}, frame::CartesianFrame3D) where {T}
@@ -305,19 +295,14 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
             x.body == y.body && x.base == y.base && x.frame == y.frame && isapprox(x.angular, y.angular; atol = atol) && isapprox(x.linear, y.linear; atol = atol)
         end
 
-        function (+)(m1::$MotionSpaceElement, m2::$MotionSpaceElement)
+        @inline function (+)(m1::$MotionSpaceElement, m2::$MotionSpaceElement)
             @framecheck(m1.frame, m2.frame)
+            @boundscheck begin
+                ((m1.body == m2.body && m1.base == m2.base) || m1.body == m2.base) || throw(ArgumentError("frame mismatch"))
+            end
             angular = m1.angular + m2.angular
             linear = m1.linear + m2.linear
-            if m1.body == m2.body && m1.base == m2.base
-                return $MotionSpaceElement(m1.body, m1.base, m1.frame, angular, linear)
-            elseif m1.body == m2.base
-                return $MotionSpaceElement(m2.body, m1.base, m1.frame, angular, linear)
-            elseif m1.base == m2.body
-                return $MotionSpaceElement(m1.body, m2.base, m1.frame, angular, linear)
-            else
-                throw(ArgumentError("frame mismatch"))
-            end
+            $MotionSpaceElement(m2.body, m1.base, m1.frame, angular, linear)
         end
 
         (-)(m::$MotionSpaceElement) = $MotionSpaceElement(m.base, m.body, m.frame, -m.angular, -m.linear)

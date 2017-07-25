@@ -533,7 +533,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
         kjoint = fastview(constraintbias, rowrange)
         @nocachecheck crossterm = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
-        @nocachecheck biasaccel = crossterm + (bias_acceleration(state, succ) + -bias_acceleration(state, pred)) # 8.47 in Featherstone
+        @nocachecheck biasaccel = crossterm + (-bias_acceleration(state, pred) + bias_acceleration(state, succ)) # 8.47 in Featherstone
         At_mul_B!(kjoint, T, biasaccel)
         rowstart = nextrowstart # TODO: causes the only bit of allocation in this method...
     end

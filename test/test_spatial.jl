@@ -43,7 +43,7 @@ end
         @test T3.body == T2.body
         @test T3.base == T1.base
         @test T3.frame == f3
-        @test isapprox(T2 + T1, T3)
+        # @test isapprox(T2 + T1, T3) # used to be allowed, but makes code slower; just switch T1 and T2 around
         @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f2, f4) # wrong frame
         @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f4, f3) # wrong base
         @test isapprox(Array(transform(T1, H31)), Ad(H31) * Array(T1))
