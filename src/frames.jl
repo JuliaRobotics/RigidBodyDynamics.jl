@@ -43,7 +43,7 @@ $(SIGNATURES)
 Check that `f1` and `f2` are identical (when bounds checks are enabled).
 
 Throws an `ArgumentError` if `f1` is not identical to `f2` when bounds checks
-are enabled. `\@framecheck` is a no-op when bounds checks are disabled.
+are enabled. `@framecheck` is a no-op when bounds checks are disabled.
 """
 macro framecheck(f1, f2)
     symname1 = string(f1)
