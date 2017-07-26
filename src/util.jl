@@ -207,7 +207,7 @@ function quaternion_derivative(quat::Quat, angular_velocity_in_body::AbstractVec
          q.w -q.z  q.y;
          q.z  q.w -q.x;
         -q.y  q.x  q.w]
-    M * (0.5 * ω)
+    M * (ω / 2)
 end
 
 function angular_velocity_in_body(quat::Quat, quat_derivative::AbstractVector)

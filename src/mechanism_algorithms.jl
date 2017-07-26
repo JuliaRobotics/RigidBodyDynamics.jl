@@ -147,19 +147,6 @@ function geometric_jacobian(state::MechanismState{X, M, C}, path::TreePath{Rigid
     geometric_jacobian!(jac, state, path, identity)
 end
 
-"""
-$(SIGNATURES)
-
-Return the gravitational potential energy in the given state, computed as the
-negation of the dot product of the gravitational force and the center
-of mass expressed in the `Mechanism`'s root frame.
-"""
-function gravitational_potential_energy(state::MechanismState{X, M, C}) where {X, M, C}
-    # TODO: no need to explicitly compute center of mass
-    gravitationalforce = mass(state.mechanism) * state.mechanism.gravitationalAcceleration
-    -dot(gravitationalforce, FreeVector3D(center_of_mass(state)))
- end
-
 const mass_matrix_doc = """Compute the joint-space mass matrix
 (also known as the inertia matrix) of the `Mechanism` in the given state, i.e.,
 the matrix ``M(q)`` in the unconstrained joint-space equations of motion
