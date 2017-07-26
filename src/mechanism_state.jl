@@ -824,7 +824,7 @@ end
 """
 $(SIGNATURES)
 
-Compute local coordinates ``\phi`` centered around (global) configuration vector
+Compute local coordinates ``\\phi`` centered around (global) configuration vector
 ``q_0``, as well as their time derivatives ``\\dot{\\phi}``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function local_coordinates!(ϕ::StridedVector, ϕd::StridedVector, state::MechanismState, q0::StridedVector)
@@ -843,7 +843,7 @@ end
 """
 $(SIGNATURES)
 
-Convert local coordinates ``\phi`` centered around ``q_0`` to (global)
+Convert local coordinates ``\\phi`` centered around ``q_0`` to (global)
 configuration vector ``q``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function global_coordinates!(state::MechanismState, q0::StridedVector, ϕ::StridedVector)

@@ -82,7 +82,7 @@ end
 
 
 # Cached download
-const module_tempdir = joinpath(Base.tempdir(), string(module_name(current_module())))
+const module_tempdir = joinpath(Base.tempdir(), string(module_name(@__MODULE__)))
 
 function cached_download(url::String, localFileName::String, cacheDir::String = joinpath(module_tempdir, string(hash(url))))
     if !ispath(cacheDir)
