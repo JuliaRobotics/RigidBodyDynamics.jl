@@ -692,6 +692,21 @@ momentum(state::MechanismState, body::RigidBody, safety::CacheSafety = CacheSafe
 momentum_rate_bias(state::MechanismState, body::RigidBody, safety::CacheSafety = CacheSafe()) = newton_euler(state, body, bias_acceleration(state, body, safety), safety)
 kinetic_energy(state::MechanismState, body::RigidBody, safety::CacheSafety = CacheSafe()) = kinetic_energy(spatial_inertia(state, body, safety), twist_wrt_world(state, body, safety))
 
+"""
+$(SIGNATURES)
+
+Return the gravitational potential energy in the given state, computed as the
+negation of the dot product of the gravitational force and the center
+of mass expressed in the `Mechanism`'s root frame.
+"""
+function gravitational_potential_energy(state::MechanismState, body::RigidBody, safety::CacheSafety = CacheSafe())
+    inertia = spatial_inertia(body)
+    m = inertia.mass
+    m > 0 || return zero(cache_eltype(state))
+    com = transform_to_root(state, body, safety) * center_of_mass(inertia)
+    -m * dot(state.mechanism.gravitationalAcceleration, FreeVector3D(com))
+end
+
 function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
     # TODO: replace with plain foreach and closure once that doesn't allocate
     joint_configuration_derivative! = (qd, joint, qjoint, vjoint) -> begin
@@ -747,7 +762,13 @@ function kinetic_energy(state::MechanismState, body_itr)
     non_root_body_sum(state, zero(T), (state, body) -> kinetic_energy(state, body, CacheUnsafe()), body_itr)
 end
 
-for fun in (:momentum, :momentum_rate_bias, :kinetic_energy)
+function gravitational_potential_energy(state::MechanismState, body_itr)
+    T = cache_eltype(state)
+    update_transforms!(state)
+    non_root_body_sum(state, zero(T), (state, body) -> gravitational_potential_energy(state, body, CacheUnsafe()), body_itr)
+end
+
+for fun in (:momentum, :momentum_rate_bias, :kinetic_energy, :gravitational_potential_energy)
     @eval $fun(state::MechanismState) = $fun(state, bodies(state.mechanism))
 end
 
