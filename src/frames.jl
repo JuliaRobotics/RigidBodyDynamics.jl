@@ -46,19 +46,15 @@ Throws an `ArgumentError` if `f1` is not identical to `f2` when bounds checks
 are enabled. `@framecheck` is a no-op when bounds checks are disabled.
 """
 macro framecheck(f1, f2)
-    symname1 = string(f1)
-    symname2 = string(f2)
-    ret = quote
+    quote
         @boundscheck begin
-            if $f1 != $f2
-                name1, name2 = name($f1), name($f2)
-                id1, id2 = ($f1).id, ($f2).id
-                msg = "$($symname1) (\"$name1\", id = $id1) ≠ $($symname2) (\"$name2\", id = $id2)"
-                throw(ArgumentError(msg))
-            end
+            $(esc(f1)) != $(esc(f2)) && framecheck_fail($(QuoteNode(f1)), $(QuoteNode(f2)), $(esc(f1)), $(esc(f2)))
         end
     end
-    :($(esc(ret)))
+end
+
+@noinline function framecheck_fail(sym1, sym2, f1, f2)
+    throw(ArgumentError("$(string(sym1)) (\"$(name(f1))\", id = $(f1.id)) ≠ $(string(sym2)) (\"$(name(f2))\", id = $(f2.id))"))
 end
 
 
