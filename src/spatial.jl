@@ -215,7 +215,7 @@ function Base.isapprox(x::SpatialInertia, y::SpatialInertia; atol = 1e-12)
     x.frame == y.frame && isapprox(x.moment, y.moment; atol = atol) && isapprox(x.crossPart, y.crossPart; atol = atol) && isapprox(x.mass, y.mass; atol = atol)
 end
 
-function (+)(inertia1::SpatialInertia, inertia2::SpatialInertia)
+function Base.:+(inertia1::SpatialInertia, inertia2::SpatialInertia)
     @framecheck(inertia1.frame, inertia2.frame)
     moment = inertia1.moment + inertia2.moment
     crossPart = inertia1.crossPart + inertia2.crossPart
@@ -295,7 +295,7 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
             x.body == y.body && x.base == y.base && x.frame == y.frame && isapprox(x.angular, y.angular; atol = atol) && isapprox(x.linear, y.linear; atol = atol)
         end
 
-        @inline function (+)(m1::$MotionSpaceElement, m2::$MotionSpaceElement)
+        @inline function Base.:+(m1::$MotionSpaceElement, m2::$MotionSpaceElement)
             @framecheck(m1.frame, m2.frame)
             @boundscheck begin
                 ((m1.body == m2.body && m1.base == m2.base) || m1.body == m2.base) || throw(ArgumentError("frame mismatch"))
@@ -305,7 +305,7 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
             $MotionSpaceElement(m2.body, m1.base, m1.frame, angular, linear)
         end
 
-        (-)(m::$MotionSpaceElement) = $MotionSpaceElement(m.base, m.body, m.frame, -m.angular, -m.linear)
+        Base.:-(m::$MotionSpaceElement) = $MotionSpaceElement(m.base, m.body, m.frame, -m.angular, -m.linear)
 
         change_base(m::$MotionSpaceElement, base::CartesianFrame3D) = $MotionSpaceElement(m.body, base, m.frame, m.angular, m.linear)
 
@@ -537,17 +537,17 @@ for ForceSpaceElement in (:Momentum, :Wrench)
             $ForceSpaceElement(transform.to, angular, linear)
         end
 
-        function (+)(f1::$ForceSpaceElement, f2::$ForceSpaceElement)
+        function Base.:+(f1::$ForceSpaceElement, f2::$ForceSpaceElement)
             @framecheck(f1.frame, f2.frame)
             $ForceSpaceElement(f1.frame, f1.angular + f2.angular, f1.linear + f2.linear)
         end
 
-        function (-)(f1::$ForceSpaceElement, f2::$ForceSpaceElement)
+        function Base.:-(f1::$ForceSpaceElement, f2::$ForceSpaceElement)
             @framecheck(f1.frame, f2.frame)
             $ForceSpaceElement(f1.frame, f1.angular - f2.angular, f1.linear - f2.linear)
         end
 
-        (-)(f::$ForceSpaceElement) = $ForceSpaceElement(f.frame, -f.angular, -f.linear)
+        Base.:-(f::$ForceSpaceElement) = $ForceSpaceElement(f.frame, -f.angular, -f.linear)
 
         Base.Array(f::$ForceSpaceElement) = [f.angular...; f.linear...]
         Base.isapprox(x::$ForceSpaceElement, y::$ForceSpaceElement; atol = 1e-12) = x.frame == y.frame && isapprox(x.angular, y.angular, atol = atol) && isapprox(x.linear, y.linear, atol = atol)
@@ -603,7 +603,7 @@ angular_part(jac::GeometricJacobian) = jac.angular
 linear_part(jac::GeometricJacobian) = jac.linear
 change_base(jac::GeometricJacobian, base::CartesianFrame3D) = GeometricJacobian(jac.body, base, jac.frame, jac.angular, jac.linear)
 
-(-)(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.angular, -jac.linear)
+Base.:-(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.angular, -jac.linear)
 
 function Base.show(io::IO, jac::GeometricJacobian)
     print(io, "GeometricJacobian: body: \"$(name(jac.body))\", base: \"$(name(jac.base))\", expressed in \"$(name(jac.frame))\":\n$(Array(jac))")
@@ -684,13 +684,13 @@ for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :Mom
     end
 end
 
-function (*)(inertia::SpatialInertia, twist::Twist)
+function Base.:*(inertia::SpatialInertia, twist::Twist)
     @framecheck(inertia.frame, twist.frame)
     angular, linear = mul_inertia(inertia.moment, inertia.crossPart, inertia.mass, twist.angular, twist.linear)
     Momentum(inertia.frame, angular, linear)
 end
 
-function (*)(inertia::SpatialInertia, jac::GeometricJacobian)
+function Base.:*(inertia::SpatialInertia, jac::GeometricJacobian)
     @framecheck(inertia.frame, jac.frame)
     Jω = jac.angular
     Jv = jac.linear
