@@ -79,6 +79,8 @@ kinematic tree.
 """
 RigidBodyDynamics.path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = TreePath(from, to, mechanism.tree)
 
+has_loops(mechanism::Mechanism) = num_edges(mechanism.graph) > num_edges(mechanism.tree)
+
 function Base.show(io::IO, mechanism::Mechanism)
     println(io, "Spanning tree:")
     print(io, mechanism.tree)

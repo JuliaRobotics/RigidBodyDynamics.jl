@@ -488,6 +488,7 @@ function inverse_dynamics(
 end
 
 function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian::AbstractMatrix, constraintbias::AbstractVector)
+    has_loops(state.mechanism) || return # nothing to be done
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
     update_motion_subspaces_in_world!(state)
