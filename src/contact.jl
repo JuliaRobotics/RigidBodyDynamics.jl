@@ -200,8 +200,8 @@ function dynamics!(ẋ::ViscoelasticCoulombStateDeriv, model::ViscoelasticCoulom
     k = model.k
     b = model.b
     x = state.tangential_displacement
-    @framecheck ẋ.deriv.frame state.tangential_displacement.frame
-    ẋ.deriv.v .= (-(k * x + ftangential) / b).v
+    @framecheck ẋ.deriv.frame x.frame
+    ẋ.deriv.v .= (-k .* x.v .- ftangential.v) ./ b
 end
 
 const DefaultContactPoint{T} = ContactPoint{T,SoftContactModel{HuntCrossleyModel{T},ViscoelasticCoulombModel{T}}}
