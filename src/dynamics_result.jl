@@ -8,7 +8,7 @@ Type parameters:
 * `T`: the scalar type of the dynamics-related variables.
 * `M`: the scalar type of the `Mechanism`.
 """
-mutable struct DynamicsResult{T<:Number, M<:Number}
+mutable struct DynamicsResult{T, M}
     mechanism::Mechanism{M}
 
     massmatrix::Symmetric{T, Matrix{T}}
@@ -32,7 +32,7 @@ mutable struct DynamicsResult{T<:Number, M<:Number}
     z::Vector{T}
     Y::Matrix{T}
 
-    function DynamicsResult{T}(mechanism::Mechanism{M}) where {T<:Number, M<:Number}
+    function DynamicsResult{T}(mechanism::Mechanism{M}) where {T, M}
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
 

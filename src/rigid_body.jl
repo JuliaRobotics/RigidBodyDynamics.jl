@@ -7,7 +7,7 @@ A `RigidBody` has inertia (represented as a [`SpatialInertia`](@ref)),
 unless it represents a root (world) body. A `RigidBody` additionally stores
 a list of definitions of coordinate systems that are rigidly attached to it.
 """
-mutable struct RigidBody{T<:Number}
+mutable struct RigidBody{T}
     name::String
     inertia::Nullable{SpatialInertia{T}}
     frameDefinitions::Vector{Transform3DS{T}}
@@ -15,7 +15,7 @@ mutable struct RigidBody{T<:Number}
     id::Int64
 
     # inertia undefined; can be used for the root of a kinematic tree
-    function RigidBody{T}(name::String) where {T<:Number}
+    function RigidBody{T}(name::String) where {T}
         frame = CartesianFrame3D(name)
         new{T}(name, Nullable{SpatialInertia{T}}(), [eye(Transform3DS{T}, frame)], DefaultContactPoint{T}[], -1)
     end

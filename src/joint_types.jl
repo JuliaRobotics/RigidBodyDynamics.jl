@@ -1,6 +1,6 @@
 # TODO: put in separate module
 
-abstract type JointType{T<:Number} end
+abstract type JointType{T} end
 Base.eltype(::Type{JointType{T}}) where {T} = T
 
 num_velocities(::T) where {T<:JointType} = num_velocities(T)
@@ -78,20 +78,20 @@ function joint_transform(jt::QuaternionFloating, frameAfter::CartesianFrame3D, f
 end
 
 function motion_subspace(jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
-        q::AbstractVector{X}) where {T<:Number, X<:Number}
+        q::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
     GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::QuaternionFloating{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T<:Number, X<:Number}
+function constraint_wrench_subspace(jt::QuaternionFloating{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
     S = promote_type(T, X)
     WrenchMatrix(jointTransform.from, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
 function bias_acceleration(jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T<:Number, X<:Number}
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
 end
@@ -138,7 +138,7 @@ function rand_configuration!(q::AbstractVector, jt::QuaternionFloating)
 end
 
 function joint_twist(jt::QuaternionFloating{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T<:Number, X<:Number}
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     angular = convert(SVector{3, S}, angular_velocity(jt, v))
     linear = convert(SVector{3, S}, linear_velocity(jt, v))
@@ -204,7 +204,7 @@ end
 #=
 OneDegreeOfFreedomFixedAxis
 =#
-abstract type OneDegreeOfFreedomFixedAxis{T<:Number} <: JointType{T} end
+abstract type OneDegreeOfFreedomFixedAxis{T} <: JointType{T} end
 
 num_positions(::Type{<:OneDegreeOfFreedomFixedAxis}) = 1
 num_velocities(::Type{<:OneDegreeOfFreedomFixedAxis}) = 1
@@ -220,7 +220,7 @@ function rand_configuration!(q::AbstractVector, ::OneDegreeOfFreedomFixedAxis)
  end
 
 function bias_acceleration(jt::OneDegreeOfFreedomFixedAxis{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T<:Number, X<:Number}
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
 end
@@ -243,7 +243,7 @@ $(TYPEDEF)
 
 A `Prismatic` joint type allows translation along a fixed axis.
 """
-struct Prismatic{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
+struct Prismatic{T} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
     rotationFromZAligned::RotMatrix3{T}
 
@@ -283,14 +283,14 @@ function joint_spatial_acceleration(jt::Prismatic{T}, frameAfter::CartesianFrame
 end
 
 function motion_subspace(jt::Prismatic{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
-        q::AbstractVector{X}) where {T<:Number, X<:Number}
+        q::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     angular = zeros(SMatrix{3, 1, S})
     linear = SMatrix{3, 1, S}(jt.axis)
     GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::Prismatic{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T<:Number, X<:Number}
+function constraint_wrench_subspace(jt::Prismatic{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
     S = promote_type(T, X)
     R = convert(RotMatrix3{S}, jt.rotationFromZAligned)
     Rcols12 = R[:, SVector(1, 2)]
@@ -310,7 +310,7 @@ $(TYPEDEF)
 
 A `Revolute` joint type allows rotation about a fixed axis.
 """
-struct Revolute{T<:Number} <: OneDegreeOfFreedomFixedAxis{T}
+struct Revolute{T} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
     rotationFromZAligned::RotMatrix3{T}
 
@@ -350,14 +350,14 @@ function joint_spatial_acceleration(jt::Revolute{T}, frameAfter::CartesianFrame3
 end
 
 function motion_subspace(jt::Revolute{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
-        q::AbstractVector{X}) where {T<:Number, X<:Number}
+        q::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     angular = SMatrix{3, 1, S}(jt.axis)
     linear = zeros(SMatrix{3, 1, S})
     GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::Revolute{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T<:Number, X<:Number}
+function constraint_wrench_subspace(jt::Revolute{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
     S = promote_type(T, X)
     R = convert(RotMatrix3{S}, jt.rotationFromZAligned)
     Rcols12 = R[:, SVector(1, 2)]
@@ -378,7 +378,7 @@ $(TYPEDEF)
 The `Fixed` joint type is a degenerate joint type, in the sense that it allows
 no motion between its predecessor and successor rigid bodies.
 """
-struct Fixed{T<:Number} <: JointType{T}
+struct Fixed{T} <: JointType{T}
 end
 Base.show(io::IO, jt::Fixed) = print(io, "Fixed joint")
 Random.rand(::Type{Fixed{T}}) where {T} = Fixed{T}()
@@ -387,13 +387,13 @@ num_positions(::Type{<:Fixed}) = 0
 num_velocities(::Type{<:Fixed}) = 0
 
 function joint_transform(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
-        q::AbstractVector{X}) where {T<:Number, X<:Number}
+        q::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     eye(Transform3DS{S}, frameAfter, frameBefore)
 end
 
 function joint_twist(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T<:Number, X<:Number}
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     zero(Twist{S}, frameAfter, frameBefore, frameAfter)
 end
@@ -405,12 +405,12 @@ function joint_spatial_acceleration(jt::Fixed{T}, frameAfter::CartesianFrame3D, 
 end
 
 function motion_subspace(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
-        q::AbstractVector{X}) where {T<:Number, X<:Number}
+        q::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     GeometricJacobian(frameAfter, frameBefore, frameAfter, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
-function constraint_wrench_subspace(jt::Fixed{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T<:Number, X<:Number}
+function constraint_wrench_subspace(jt::Fixed{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
     S = promote_type(T, X)
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
@@ -421,7 +421,7 @@ zero_configuration!(q::AbstractVector, ::Fixed) = nothing
 rand_configuration!(q::AbstractVector, ::Fixed) = nothing
 
 function bias_acceleration(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T<:Number, X<:Number}
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
 end

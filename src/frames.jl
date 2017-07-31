@@ -172,7 +172,7 @@ for VectorType in (:FreeVector3D, :Point3D)
             end
         end
 
-        $VectorType(::Type{T}, frame::CartesianFrame3D) where {T<:Number} = $VectorType(frame, zeros(SVector{3, T}))
+        $VectorType(::Type{T}, frame::CartesianFrame3D) where {T} = $VectorType(frame, zeros(SVector{3, T}))
         $VectorType(frame::CartesianFrame3D, x::Number, y::Number, z::Number) = $VectorType(frame, SVector(x, y, z))
 
         Base.convert(::Type{$VectorType{V}}, p::$VectorType{V}) where {V} = p
