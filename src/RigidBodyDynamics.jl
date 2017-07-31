@@ -19,6 +19,7 @@ export
     SpatialInertia,
     RigidBody,
     Joint,
+    GenericJoint,
     JointType,
     QuaternionFloating,
     Revolute,
