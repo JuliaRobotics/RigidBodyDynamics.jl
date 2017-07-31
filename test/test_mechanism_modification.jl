@@ -1,18 +1,18 @@
 function floating_joint_transform_to_configuration!(joint::Joint, q::AbstractVector, jointTransform::Transform3D)
     @framecheck frame_before(joint) jointTransform.to
     @framecheck frame_after(joint) jointTransform.from
-    joint.jointType::QuaternionFloating
-    RigidBodyDynamics.rotation!(joint.jointType, q, rotation(jointTransform))
-    RigidBodyDynamics.translation!(joint.jointType, q, translation(jointTransform))
+    joint_type(joint)::QuaternionFloating
+    RigidBodyDynamics.rotation!(joint_type(joint), q, rotation(jointTransform))
+    RigidBodyDynamics.translation!(joint_type(joint), q, translation(jointTransform))
 end
 
 function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, jointTwist::Twist)
     @framecheck frame_before(joint) jointTwist.base
     @framecheck frame_after(joint) jointTwist.body
     @framecheck frame_after(joint) jointTwist.frame
-    joint.jointType::QuaternionFloating
-    RigidBodyDynamics.angular_velocity!(joint.jointType, v, jointTwist.angular)
-    RigidBodyDynamics.linear_velocity!(joint.jointType, v, jointTwist.linear)
+    joint_type(joint)::QuaternionFloating
+    RigidBodyDynamics.angular_velocity!(joint_type(joint), v, jointTwist.angular)
+    RigidBodyDynamics.linear_velocity!(joint_type(joint), v, jointTwist.linear)
 end
 
 @testset "mechanism modification" begin
@@ -81,7 +81,7 @@ end
         rand!(state)
         q = configuration(state)
         M = mass_matrix(state)
-        nonfixedjoints = collect(filter(j -> !isa(j.jointType, Fixed), tree_joints(mechanism)))
+        nonfixedjoints = collect(filter(j -> !(joint_type(j) isa Fixed), tree_joints(mechanism)))
 
         remove_fixed_tree_joints!(mechanism)
         @test tree_joints(mechanism) == nonfixedjoints

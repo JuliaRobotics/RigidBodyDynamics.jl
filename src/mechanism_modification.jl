@@ -175,7 +175,7 @@ function remove_fixed_tree_joints!(mechanism::Mechanism)
     graph = mechanism.graph
 
     # Update graph.
-    fixedjoints = filter(j -> isa(j.jointType, Fixed), tree_joints(mechanism))
+    fixedjoints = filter(j -> joint_type(j) isa Fixed, tree_joints(mechanism))
     newtreejoints = setdiff(tree_joints(mechanism), fixedjoints)
     for fixedjoint in fixedjoints
         pred = source(fixedjoint, graph)

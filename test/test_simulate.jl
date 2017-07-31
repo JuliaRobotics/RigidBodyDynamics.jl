@@ -55,7 +55,7 @@
         state = MechanismState{Float64}(mechanism)
         z0 = 0.05
         zero!(state)
-        RigidBodyDynamics.translation!(floatingjoint.jointType, configuration(state, floatingjoint), SVector(1., 2., z0 - com.v[3]))
+        RigidBodyDynamics.translation!(joint_type(floatingjoint), configuration(state, floatingjoint), SVector(1., 2., z0 - com.v[3]))
         setdirty!(state)
 
         energy0 = gravitational_potential_energy(state)

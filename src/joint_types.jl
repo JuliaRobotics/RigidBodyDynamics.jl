@@ -8,6 +8,7 @@ num_positions(::T) where {T<:JointType} = num_positions(T)
 Base.@pure num_constraints(t::Type{T}) where {T<:JointType} = 6 - num_velocities(t)
 
 # Default implementations
+isfloating(::Type{<:JointType}) = false
 flip_direction(jt::JointType{T}) where {T} = deepcopy(jt)
 
 function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
@@ -48,6 +49,7 @@ Random.rand(::Type{QuaternionFloating{T}}) where {T} = QuaternionFloating{T}()
 
 num_positions(::Type{<:QuaternionFloating}) = 7
 num_velocities(::Type{<:QuaternionFloating}) = 6
+isfloating(::Type{<:QuaternionFloating}) = true
 
 @inline function rotation(jt::QuaternionFloating, q::AbstractVector)
     @inbounds quat = Quat(q[1], q[2], q[3], q[4])
