@@ -198,23 +198,28 @@ end
     angular, linear
 end
 
-function quaternion_derivative(quat::Quat, angular_velocity_in_body::AbstractVector)
-    @boundscheck length(angular_velocity_in_body) == 3 || error("size mismatch")
-    q = quat
-    ω = angular_velocity_in_body
-    M = @SMatrix [
+@inline function body_angular_velocity_to_quat_derivative_jacobian(q::Quat)
+    mat = @SMatrix [
         -q.x -q.y -q.z;
          q.w -q.z  q.y;
          q.z  q.w -q.x;
         -q.y  q.x  q.w]
-    M * (ω / 2)
+    mat / 2
 end
 
-function angular_velocity_in_body(quat::Quat, quat_derivative::AbstractVector)
-    q = quat
-    MInv = @SMatrix [
+@inline function quat_derivative_to_body_angular_velocity_jacobian(q::Quat)
+    2 * @SMatrix [
      -q.x  q.w  q.z -q.y;
      -q.y -q.z  q.w  q.x;
      -q.z  q.y -q.x  q.w]
-    2 * (MInv * quat_derivative)
+end
+
+@inline function quaternion_derivative(q::Quat, angular_velocity_in_body::AbstractVector)
+    @boundscheck length(angular_velocity_in_body) == 3 || error("size mismatch")
+    body_angular_velocity_to_quat_derivative_jacobian(q) * angular_velocity_in_body
+end
+
+@inline function angular_velocity_in_body(q::Quat, quat_derivative::AbstractVector)
+    @boundscheck length(quat_derivative) == 4 || error("size mismatch")
+    quat_derivative_to_body_angular_velocity_jacobian(q) * quat_derivative
 end

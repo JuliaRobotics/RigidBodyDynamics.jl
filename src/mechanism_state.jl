@@ -716,6 +716,15 @@ function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismSt
     foreach_with_extra_args(joint_configuration_derivative!, out, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
+function configuration_derivative_to_velocity_adjoint!(fq, state::MechanismState, fv)
+    # TODO: replace with plain foreach and closure once that doesn't allocate
+    foreach_with_extra_args(fq, state, fv, state.type_sorted_tree_joints, values(state.qs)) do fq, state, fv, joint, qjoint
+        fqjoint = fastview(fq, configuration_range(state, joint))
+        fvjoint = fastview(fv, velocity_range(state, joint))
+        configuration_derivative_to_velocity_adjoint!(fqjoint, joint, qjoint, fvjoint)
+    end
+end
+
 function configuration_derivative{X}(state::MechanismState{X})
     ret = Vector{X}(num_positions(state.mechanism))
     configuration_derivative!(ret, state)

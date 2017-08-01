@@ -206,6 +206,34 @@ end
 """
 $(SIGNATURES)
 
+Given  a linear function
+
+```math
+f(v) = \\langle f_v, v \\rangle
+```
+where ``v`` is the joint velocity vector, return a vector ``f_q`` such that
+
+```math
+\\langle f_v, v \\rangle = \\langle f_q, \\dot{q}(v) \\rangle.
+```
+
+Note: since ``v`` is a linear function of ``\\dot{q}`` (see [`configuration_derivative_to_velocity!`](@ref)),
+we can write ``v = V_q \\dot{q}``, so
+```math
+\\langle f_v, v \\rangle = \\langle f_v, V_q \\dot{q} \\rangle = \\langle V_q^{*} f_v, \\dot{q} \\rangle
+```
+so ``f_q = V_q^{*} f_v``.
+"""
+function configuration_derivative_to_velocity_adjoint!(fq, joint::Joint, q::AbstractVector, fv)
+    @boundscheck check_num_positions(joint, fq)
+    @boundscheck check_num_positions(joint, q)
+    @boundscheck check_num_velocities(joint, fv)
+    configuration_derivative_to_velocity_adjoint!(fq, joint_type(joint), q, fv)
+end
+
+"""
+$(SIGNATURES)
+
 Compute the time derivative ``\\dot{q}`` of the joint configuration vector ``q``
 given ``q`` and the joint velocity vector ``v`` (in place).
 
