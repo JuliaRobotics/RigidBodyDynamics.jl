@@ -51,11 +51,11 @@ num_positions(::Type{<:QuaternionFloating}) = 7
 num_velocities(::Type{<:QuaternionFloating}) = 6
 isfloating(::Type{<:QuaternionFloating}) = true
 
-@inline function rotation(jt::QuaternionFloating, q::AbstractVector)
-    @inbounds quat = Quat(q[1], q[2], q[3], q[4])
+@inline function rotation(jt::QuaternionFloating, q::AbstractVector, normalize::Bool = true)
+    @inbounds quat = Quat(q[1], q[2], q[3], q[4], normalize)
     quat
 end
-@inline function rotation!(jt::QuaternionFloating, q::AbstractVector, rot::Rotation{3})
+@inline function rotation!(q::AbstractVector, jt::QuaternionFloating, rot::Rotation{3})
     quat = Quat(rot)
     @inbounds q[1] = quat.w
     @inbounds q[2] = quat.x
@@ -63,15 +63,22 @@ end
     @inbounds q[4] = quat.z
     nothing
 end
+@inline function rotation!(q::AbstractVector, jt::QuaternionFloating, rot::AbstractVector)
+    @inbounds q[1] = rot[1]
+    @inbounds q[2] = rot[2]
+    @inbounds q[3] = rot[3]
+    @inbounds q[4] = rot[4]
+    nothing
+end
 
 @inline translation(jt::QuaternionFloating, q::AbstractVector) = @inbounds return SVector(q[5], q[6], q[7])
-@inline translation!(jt::QuaternionFloating, q::AbstractVector, trans::AbstractVector) = @inbounds copy!(q, 5, trans, 1, 3)
+@inline translation!(q::AbstractVector, jt::QuaternionFloating, trans::AbstractVector) = @inbounds copy!(q, 5, trans, 1, 3)
 
 @inline angular_velocity(jt::QuaternionFloating, v::AbstractVector) = @inbounds return SVector(v[1], v[2], v[3])
-@inline angular_velocity!(jt::QuaternionFloating, v::AbstractVector, ω::AbstractVector) = @inbounds copy!(v, 1, ω, 1, 3)
+@inline angular_velocity!(v::AbstractVector, jt::QuaternionFloating, ω::AbstractVector) = @inbounds copy!(v, 1, ω, 1, 3)
 
 @inline linear_velocity(jt::QuaternionFloating, v::AbstractVector) = @inbounds return SVector(v[4], v[5], v[6])
-@inline linear_velocity!(jt::QuaternionFloating, v::AbstractVector, ν::AbstractVector) = @inbounds copy!(v, 4, ν, 1, 3)
+@inline linear_velocity!(v::AbstractVector, jt::QuaternionFloating, ν::AbstractVector) = @inbounds copy!(v, 4, ν, 1, 3)
 
 function joint_transform(jt::QuaternionFloating, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
     Transform3D(frameAfter, frameBefore, rotation(jt, q), translation(jt, q))
@@ -104,8 +111,8 @@ function configuration_derivative_to_velocity!(v::AbstractVector, jt::Quaternion
     ω = angular_velocity_in_body(quat, quatdot)
     posdot = translation(jt, q̇)
     linear = inv(quat) * posdot
-    angular_velocity!(jt, v, ω)
-    linear_velocity!(jt, v, linear)
+    angular_velocity!(v, jt, ω)
+    linear_velocity!(v, jt, linear)
     nothing
 end
 
@@ -115,25 +122,22 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::Quaterni
     linear = linear_velocity(jt, v)
     quatdot = quaternion_derivative(quat, ω)
     transdot = quat * linear
-    @inbounds q̇[1] = quatdot[1]# TODO: should use something like rotation!
-    @inbounds q̇[2] = quatdot[2]
-    @inbounds q̇[3] = quatdot[3]
-    @inbounds q̇[4] = quatdot[4]
-    translation!(jt, q̇, transdot)
+    rotation!(q̇, jt, quatdot)
+    translation!(q̇, jt, transdot)
     nothing
 end
 
 function zero_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
-    rotation!(jt, q, eye(Quat{T}))
-    translation!(jt, q, zeros(SVector{3, T}))
+    rotation!(q, jt, eye(Quat{T}))
+    translation!(q, jt, zeros(SVector{3, T}))
     nothing
 end
 
 function rand_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
-    rotation!(jt, q, rand(Quat{T}))
-    translation!(jt, q, randn(SVector{3, T}))
+    rotation!(q, jt, rand(Quat{T}))
+    translation!(q, jt, randn(SVector{3, T}))
     nothing
 end
 
@@ -154,8 +158,8 @@ function joint_spatial_acceleration(jt::QuaternionFloating{T}, frameAfter::Carte
 end
 
 function joint_torque!(τ::AbstractVector, jt::QuaternionFloating, q::AbstractVector, joint_wrench::Wrench)
-    angular_velocity!(jt, τ, joint_wrench.angular)
-    linear_velocity!(jt, τ, joint_wrench.linear)
+    angular_velocity!(τ, jt, joint_wrench.angular)
+    linear_velocity!(τ, jt, joint_wrench.linear)
     nothing
 end
 
@@ -194,8 +198,8 @@ function global_coordinates!(q::AbstractVector, jt::QuaternionFloating, q0::Abst
     ξ = Twist(frameAfter, frame0, frame0, ξrot, ξtrans)
     relative_transform = exp(ξ)
     t = t0 * relative_transform
-    rotation!(jt, q, rotation(t))
-    translation!(jt, q, translation(t))
+    rotation!(q, jt, rotation(t))
+    translation!(q, jt, translation(t))
     nothing
 end
 
