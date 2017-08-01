@@ -71,6 +71,7 @@ export
     configuration_derivative,
     velocity_to_configuration_derivative!,
     configuration_derivative_to_velocity!,
+    configuration_derivative_to_velocity_adjoint!,
     num_positions,
     num_velocities,
     num_constraints,

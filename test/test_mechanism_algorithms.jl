@@ -477,4 +477,14 @@
             @test isapprox(ϕ, zeros(num_velocities(joint)); atol = 1e-6) # FIXME: tolerance is way too high
         end
     end
+
+    @testset "configuration_derivative_to_velocity_adjoint!" begin
+        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...)
+        x = MechanismState{Float64}(mechanism)
+        configuration(x) .= rand(num_positions(x)) # needs to work for configuration vectors that do not satisfy the state constraints as well
+        fv = rand(num_velocities(x))
+        fq = zeros(num_positions(x))
+        configuration_derivative_to_velocity_adjoint!(fq, x, fv)
+        @test dot(fv, velocity(x)) ≈ dot(fq, configuration_derivative(x))
+    end
 end
