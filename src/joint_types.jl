@@ -151,7 +151,7 @@ end
 function rand_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
     rotation!(q, jt, rand(Quat{T}))
-    translation!(q, jt, randn(SVector{3, T}))
+    translation!(q, jt, rand(SVector{3, T}) - 0.5)
     nothing
 end
 
