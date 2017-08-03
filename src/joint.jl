@@ -37,7 +37,7 @@ See also:
 * Definition 2.9 in Duindam, "Port-Based Modeling and Control for Efficient Bipedal Walking Robots", 2006.
 * Section 4.4 of Featherstone, "Rigid Body Dynamics Algorithms", 2008.
 """
-mutable struct Joint{T<:Number, JT<:JointType{T}}
+mutable struct Joint{T, JT<:JointType{T}}
     name::String
     frameBefore::CartesianFrame3D
     frameAfter::CartesianFrame3D

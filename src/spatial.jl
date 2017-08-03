@@ -22,7 +22,7 @@ of point ``x`` expressed in frame ``i``.
 ``J`` is the mass moment of inertia, ``m`` is the total mass, and ``c`` is the
 'cross part', center of mass position scaled by ``m``.
 """
-struct SpatialInertia{T<:Number}
+struct SpatialInertia{T}
     frame::CartesianFrame3D
     moment::SMatrix{3, 3, T, 9}
     crossPart::SVector{3, T} # mass times center of mass
@@ -30,7 +30,7 @@ struct SpatialInertia{T<:Number}
 end
 
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
-    @eval struct $MotionSpaceElement{T<:Number}
+    @eval struct $MotionSpaceElement{T}
         # describes motion of body w.r.t. base, expressed in frame
         body::CartesianFrame3D
         base::CartesianFrame3D
@@ -81,7 +81,7 @@ See [`Twist`](@ref).
 SpatialAcceleration
 
 for ForceSpaceElement in (:Momentum, :Wrench)
-    @eval struct $ForceSpaceElement{T<:Number}
+    @eval struct $ForceSpaceElement{T}
         frame::CartesianFrame3D
         angular::SVector{3, T}
         linear::SVector{3, T}
@@ -180,8 +180,8 @@ MomentumMatrix
 
 # SpatialInertia-specific functions
 Base.eltype(::Type{SpatialInertia{T}}) where {T} = T
-@inline Base.convert(::SpatialInertia{T}, inertia::SpatialInertia{T}) where {T<:Number} = inertia
-@inline function Base.convert(::Type{SpatialInertia{T}}, inertia::SpatialInertia) where {T<:Number}
+@inline Base.convert(::SpatialInertia{T}, inertia::SpatialInertia{T}) where {T} = inertia
+@inline function Base.convert(::Type{SpatialInertia{T}}, inertia::SpatialInertia) where {T}
     SpatialInertia(inertia.frame, convert(SMatrix{3, 3, T}, inertia.moment), convert(SVector{3, T}, inertia.crossPart), convert(T, inertia.mass))
 end
 function Base.convert(::Type{SMatrix{6, 6, T}}, inertia::SpatialInertia) where {T}
@@ -278,8 +278,8 @@ end
 # MotionSpaceElement-specific
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     @eval begin
-        Base.convert(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement{T}) where {T<:Number} = m
-        function Base.convert(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement) where {T<:Number}
+        Base.convert(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement{T}) where {T} = m
+        function Base.convert(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement) where {T}
             $MotionSpaceElement(m.body, m.base, m.frame, convert(SVector{3, T}, m.angular), convert(SVector{3, T}, m.linear))
         end
         Base.convert(::Type{Vector{T}}, m::$MotionSpaceElement{T}) where {T} = [m.angular...; m.linear...]
@@ -501,9 +501,9 @@ for ForceSpaceElement in (:Momentum, :Wrench)
             $ForceSpaceElement(angular.frame, angular.v, linear.v)
         end
 
-        Base.convert(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) where {T<:Number} = f
+        Base.convert(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) where {T} = f
 
-        function Base.convert(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement) where {T<:Number}
+        function Base.convert(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement) where {T}
             $ForceSpaceElement(f.frame, convert(SVector{3, T}, f.angular), convert(SVector{3, T}, f.linear))
         end
 

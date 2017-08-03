@@ -17,13 +17,13 @@ $(TYPEDEF)
 
 A [Butcher tableau](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Explicit_Runge.E2.80.93Kutta_methods).
 """
-struct ButcherTableau{N, T<:Number, L}
+struct ButcherTableau{N, T, L}
     a::SMatrix{N, N, T, L}
     b::SVector{N, T}
     c::SVector{N, T}
     explicit::Bool
 
-    function ButcherTableau(a::AbstractMatrix{T}, b::AbstractVector{T}) where {T<:Number}
+    function ButcherTableau(a::AbstractMatrix{T}, b::AbstractVector{T}) where {T}
         N = size(a, 1)
         L = N^2
         @assert N > 0
@@ -132,7 +132,7 @@ function process(storage::ExpandingStorage, t, state)
     nothing
 end
 
-mutable struct MuntheKaasStageCache{N, T<:Number}
+mutable struct MuntheKaasStageCache{N, T}
     q0::Vector{T} # global coordinates
     vs::SVector{N, Vector{T}} # velocity vector for each stage
     vds::SVector{N, Vector{T}} # time derivatives of vs
@@ -144,7 +144,7 @@ mutable struct MuntheKaasStageCache{N, T<:Number}
     vstep::Vector{T} # velocity after complete step
     sstep::Vector{T} # additional state after complete step
 
-    function MuntheKaasStageCache{N, T}() where {N, T<:Number}
+    function MuntheKaasStageCache{N, T}() where {N, T}
         q0 = Vector{T}()
         vs = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
         vds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
@@ -197,7 +197,7 @@ From [Iserles et al., 'Lie-group methods' (2000)](https://hal.archives-ouvertes.
 
 Another useful reference is [Park and Chung, 'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005)](http://www.ent.mrt.ac.lk/iml/paperbase/TRO%20Collection/TRO/2005/october/7.pdf).
 """
-struct MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}
+struct MuntheKaasIntegrator{N, T, F, S<:OdeResultsSink, L}
     dynamics!::F # dynamics!(vd, sd, t, state), sets vd (time derivative of v) and sd (time derivative of s) given time t and state
     tableau::ButcherTableau{N, T, L}
     sink::S
@@ -209,7 +209,7 @@ struct MuntheKaasIntegrator{N, T<:Number, F, S<:OdeResultsSink, L}
     * a [`ButcherTableau`](@ref) `tableau`, specifying the integrator coefficients;
     * an [`OdeResultsSink`](@ref) `sink` which processes the results of the integration procedure at each time step.
     """
-    function MuntheKaasIntegrator(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S) where {N, T<:Number, F, S<:OdeResultsSink, L}
+    function MuntheKaasIntegrator(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S) where {N, T, F, S<:OdeResultsSink, L}
         @assert isexplicit(tableau)
         stages = MuntheKaasStageCache{N, T}()
         new{N, T, F, S, L}(dynamics!, tableau, sink, stages)

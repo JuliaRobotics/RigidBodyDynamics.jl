@@ -5,13 +5,13 @@ A `Mechanism` represents an interconnection of rigid bodies and joints.
 `Mechanism`s store the joint layout and inertia parameters, but no
 state-dependent information.
 """
-mutable struct Mechanism{T<:Number}
+mutable struct Mechanism{T}
     graph::DirectedGraph{RigidBody{T}, GenericJoint{T}}
     tree::SpanningTree{RigidBody{T}, GenericJoint{T}}
     environment::ContactEnvironment{T}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
-    function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81))) where {T<:Number}
+    function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81))) where {T}
         graph = DirectedGraph{RigidBody{T}, GenericJoint{T}}()
         add_vertex!(graph, rootBody)
         tree = SpanningTree(graph, rootBody)

@@ -14,7 +14,7 @@ Type parameters:
 * `M`: the scalar type of the `Mechanism`
 * `C`: the scalar type of the cache variables (`== promote_type(X, M)`)
 """
-struct MechanismState{X<:Number, M<:Number, C<:Number, JointCollection}
+struct MechanismState{X, M, C, JointCollection}
     mechanism::Mechanism{M}
     type_sorted_tree_joints::JointCollection
     type_sorted_non_tree_joints::JointCollection
