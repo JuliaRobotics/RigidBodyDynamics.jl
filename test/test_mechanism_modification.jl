@@ -2,8 +2,8 @@ function floating_joint_transform_to_configuration!(joint::Joint, q::AbstractVec
     @framecheck frame_before(joint) jointTransform.to
     @framecheck frame_after(joint) jointTransform.from
     joint_type(joint)::QuaternionFloating
-    RigidBodyDynamics.rotation!(joint_type(joint), q, rotation(jointTransform))
-    RigidBodyDynamics.translation!(joint_type(joint), q, translation(jointTransform))
+    RigidBodyDynamics.rotation!(q, joint_type(joint), rotation(jointTransform))
+    RigidBodyDynamics.translation!(q, joint_type(joint), translation(jointTransform))
 end
 
 function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, jointTwist::Twist)
@@ -11,8 +11,8 @@ function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, join
     @framecheck frame_after(joint) jointTwist.body
     @framecheck frame_after(joint) jointTwist.frame
     joint_type(joint)::QuaternionFloating
-    RigidBodyDynamics.angular_velocity!(joint_type(joint), v, jointTwist.angular)
-    RigidBodyDynamics.linear_velocity!(joint_type(joint), v, jointTwist.linear)
+    RigidBodyDynamics.angular_velocity!(v, joint_type(joint), jointTwist.angular)
+    RigidBodyDynamics.linear_velocity!(v, joint_type(joint), jointTwist.linear)
 end
 
 @testset "mechanism modification" begin
