@@ -86,6 +86,14 @@
         end
     end
 
+    @testset "isfloating" begin
+        for joint in joints(mechanism)
+            S = motion_subspace_in_world(x, joint)
+            @test isfloating(joint) == (rank(Array(S)) == 6)
+            @test isfloating(joint) == (num_constraints(joint) == 0)
+        end
+    end
+
     @testset "geometric_jacobian / relative_twist" begin
         frame = CartesianFrame3D()
         for i = 1 : 100

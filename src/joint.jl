@@ -68,6 +68,7 @@ typedjoint(joint::Joint) = Joint(joint)
 
 frame_before(joint::Joint) = joint.frameBefore
 frame_after(joint::Joint) = joint.frameAfter
+joint_type(joint::Joint) = joint.jointType
 
 RigidBodyDynamics.Graphs.edge_index(joint::Joint) = joint.id
 RigidBodyDynamics.Graphs.edge_index!(joint::Joint, id::Int64) = (joint.id = id)
@@ -323,3 +324,11 @@ function global_coordinates!(q::AbstractVector, joint::Joint, q0::AbstractVector
     @boundscheck check_num_velocities(joint, ϕ)
     global_coordinates!(q, joint.jointType, q0, ϕ)
 end
+
+"""
+$(SIGNATURES)
+
+Whether the joint is a floating joint, i.e., whether it imposes no constraints
+on the relative motions of its successor and predecessor bodies.
+"""
+isfloating(joint::Joint) = isfloating(typeof(joint.jointType))
