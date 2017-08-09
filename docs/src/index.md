@@ -32,7 +32,11 @@ Contact is not yet supported.
 ## Installation
 
 ### Installing Julia
-Download links and more detailed instructions are available on the [Julia](http://julialang.org/) website.
+Download links and more detailed instructions are available on the [Julia](http://julialang.org/) website. The latest release of RigidBodyDynamics.jl requires version 0.6 of Julia (the latest stable version).
+
+!!! warning
+
+    Do **not** use `apt-get` or `brew` to install Julia, as the versions provided by these package managers tend to be out of date.
 
 ### Installing RigidBodyDynamics
 To install the latest tagged release of RigidBodyDynamics, simply run
@@ -41,7 +45,7 @@ To install the latest tagged release of RigidBodyDynamics, simply run
 Pkg.add("RigidBodyDynamics") 
 ```
 
-To check out the master branch and work on the bleeding edge, additionally run
+To check out the master branch and work on the bleeding edge (generally, not recommended), additionally run
 
 ```julia
 Pkg.checkout("RigidBodyDynamics")
