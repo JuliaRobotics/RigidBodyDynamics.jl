@@ -202,6 +202,7 @@ function configuration_derivative_to_velocity!(v::AbstractVector, joint::Joint, 
     @boundscheck check_num_positions(joint, q̇)
     configuration_derivative_to_velocity!(v, joint.jointType, q, q̇)
 end
+Base.@deprecate configuration_derivative_to_velocity!(joint::Joint, v::AbstractVector, q::AbstractVector, q̇::AbstractVector) configuration_derivative_to_velocity!(v, joint, q, q̇)
 
 """
 $(SIGNATURES)
@@ -247,6 +248,7 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, joint::Joint
     @boundscheck check_num_velocities(joint, v)
     velocity_to_configuration_derivative!(q̇, joint.jointType, q, v)
 end
+Base.@deprecate velocity_to_configuration_derivative!(joint::Joint, q̇::AbstractVector, q::AbstractVector, v::AbstractVector) velocity_to_configuration_derivative!(q̇, joint, q, v)
 
 """
 $(SIGNATURES)
@@ -258,6 +260,7 @@ function zero_configuration!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
     zero_configuration!(q, joint.jointType)
 end
+Base.@deprecate zero_configuration!(joint::Joint, q::AbstractVector) zero_configuration!(q, joint)
 
 """
 $(SIGNATURES)
@@ -269,6 +272,7 @@ function rand_configuration!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
     rand_configuration!(q, joint.jointType)
 end
+Base.@deprecate rand_configuration!(joint::Joint, q::AbstractVector) rand_configuration!(q, joint)
 
 """
 $(SIGNATURES)
@@ -310,6 +314,8 @@ function joint_torque!(τ::AbstractVector, joint::Joint, q::AbstractVector, join
     joint_torque!(τ, joint.jointType, q, joint_wrench)
 end
 
+Base.@deprecate joint_torque!(joint::Joint, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench) joint_torque!(τ, joint, q, joint_wrench)
+
 """
 $(SIGNATURES)
 
@@ -336,6 +342,7 @@ function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
     @boundscheck check_num_velocities(joint, v)
     local_coordinates!(ϕ, ϕ̇, joint.jointType, q0, q, v)
 end
+Base.@deprecate local_coordinates!(joint::Joint, ϕ::AbstractVector, ϕ̇::AbstractVector, q0::AbstractVector, q::AbstractVector, v::AbstractVector) local_coordinates!(ϕ, ϕ̇, joint, q0, q, v)
 
 """
 $(SIGNATURES)
@@ -352,6 +359,7 @@ function global_coordinates!(q::AbstractVector, joint::Joint, q0::AbstractVector
     @boundscheck check_num_velocities(joint, ϕ)
     global_coordinates!(q, joint.jointType, q0, ϕ)
 end
+Base.@deprecate global_coordinates!(joint::Joint, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector) global_coordinates!(q, joint, q0, ϕ)
 
 """
 $(SIGNATURES)
