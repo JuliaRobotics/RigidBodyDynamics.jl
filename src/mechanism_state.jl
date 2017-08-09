@@ -707,7 +707,7 @@ function gravitational_potential_energy(state::MechanismState, body::RigidBody, 
     -m * dot(state.mechanism.gravitationalAcceleration, FreeVector3D(com))
 end
 
-function configuration_derivative!{X}(out::AbstractVector{X}, state::MechanismState{X})
+function configuration_derivative!(out::AbstractVector{X}, state::MechanismState{X}) where {X}
     # TODO: replace with plain foreach and closure once that doesn't allocate
     joint_configuration_derivative! = (qd, joint, qjoint, vjoint) -> begin
         qdjoint = fastview(qd, first(parentindexes(qjoint)))
@@ -725,7 +725,7 @@ function configuration_derivative_to_velocity_adjoint!(fq, state::MechanismState
     end
 end
 
-function configuration_derivative{X}(state::MechanismState{X})
+function configuration_derivative(state::MechanismState{X}) where {X}
     ret = Vector{X}(num_positions(state.mechanism))
     configuration_derivative!(ret, state)
     ret

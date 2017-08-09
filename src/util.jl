@@ -127,7 +127,7 @@ postwalk(f, x) = walk(x, x -> postwalk(f, x), f)
 
 
 ## Geometry utilities
-@inline function vector_to_skew_symmetric{T}(v::SVector{3, T})
+@inline function vector_to_skew_symmetric(v::SVector{3, T}) where {T}
     @SMatrix [zero(T) -v[3] v[2];
               v[3] zero(T) -v[1];
               -v[2] v[1] zero(T)]
