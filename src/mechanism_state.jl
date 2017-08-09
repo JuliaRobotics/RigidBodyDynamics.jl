@@ -100,6 +100,8 @@ struct MechanismState{X, M, C, JointCollection}
     end
 end
 
+MechanismState(mechanism::Mechanism{M}) where {M} = MechanismState{M}(mechanism)
+
 Base.@deprecate MechanismState(::Type{X}, mechanism::Mechanism{M}) where {X, M} MechanismState{X}(mechanism)
 
 Base.show(io::IO, ::MechanismState{X, M, C}) where {X, M, C} = print(io, "MechanismState{$X, $M, $C, …}(…)")
