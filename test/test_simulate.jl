@@ -2,7 +2,7 @@
     @testset "simulate" begin
         # use simulate function (Munthe-Kaas integrator)
         acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
-        x = MechanismState{Float64}(acrobot)
+        x = MechanismState(acrobot)
         rand!(x)
         total_energy_before = gravitational_potential_energy(x) + kinetic_energy(x)
         times, qs, vs = simulate(x, 0.1; Δt = 1e-2)
@@ -12,7 +12,7 @@
         @test isapprox(total_energy_after, total_energy_before, atol = 1e-3)
 
         total_energy_before = gravitational_potential_energy(x) + kinetic_energy(x)
-        result = DynamicsResult{Float64}(acrobot)
+        result = DynamicsResult(acrobot)
 
         # use RingBufferStorage
         using RigidBodyDynamics.OdeIntegrators
@@ -52,7 +52,7 @@
         halfspace = HalfSpace3D(point, normal)
         add_environment_primitive!(mechanism, halfspace)
 
-        state = MechanismState{Float64}(mechanism)
+        state = MechanismState(mechanism)
         z0 = 0.05
         zero!(state)
         RigidBodyDynamics.translation!(configuration(state, floatingjoint), joint_type(floatingjoint), SVector(1., 2., z0 - com.v[3]))
@@ -109,7 +109,7 @@
             frictionmodel = ViscoelasticCoulombModel(μ, 50e3, 1e4)
             m, b = deepcopy((mechanism, body))
             add_contact_point!(b, ContactPoint(contactlocation, SoftContactModel(normalmodel, frictionmodel)))
-            state = MechanismState{Float64}(m)
+            state = MechanismState(m)
             simulate(state, 1., Δt = 1e-3) # settle into steady state
             x1 = transform(state, contactlocation, worldframe)
             simulate(state, 0.5, Δt = 1e-3)

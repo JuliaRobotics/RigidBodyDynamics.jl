@@ -47,7 +47,7 @@ end
             @test RigidBodyDynamics.is_fixed_to_body(body, frame)
         end
 
-        state = MechanismState{Float64}(mechanism) # issue 63
+        state = MechanismState(mechanism) # issue 63
         rand!(state)
         M = mass_matrix(state)
 
@@ -55,13 +55,13 @@ end
         # make sure mass matrix is block diagonal, and that blocks on diagonal are the same
         doubleAcrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
         acrobot2 = parse_urdf(Float64, "urdf/Acrobot.urdf")
-        xSingle = MechanismState{Float64}(acrobot2)
+        xSingle = MechanismState(acrobot2)
         rand!(xSingle)
         qSingle = configuration(xSingle)
         nqSingle = length(qSingle)
         parentBody = root_body(doubleAcrobot)
         attach!(doubleAcrobot, parentBody, acrobot2)
-        x = MechanismState{Float64}(doubleAcrobot)
+        x = MechanismState(doubleAcrobot)
         set_configuration!(x, [qSingle; qSingle])
         H = mass_matrix(x)
         H11 = H[1 : nqSingle, 1 : nqSingle]
@@ -77,7 +77,7 @@ end
         jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
         shuffle!(jointTypes)
         mechanism = rand_tree_mechanism(Float64, jointTypes...)
-        state = MechanismState{Float64}(mechanism)
+        state = MechanismState(mechanism)
         rand!(state)
         q = configuration(state)
         M = mass_matrix(state)
@@ -85,7 +85,7 @@ end
 
         remove_fixed_tree_joints!(mechanism)
         @test tree_joints(mechanism) == nonfixedjoints
-        state_no_fixed_joints = MechanismState{Float64}(mechanism)
+        state_no_fixed_joints = MechanismState(mechanism)
         set_configuration!(state_no_fixed_joints, q)
         M_no_fixed_joints = mass_matrix(state_no_fixed_joints)
         @test isapprox(M_no_fixed_joints, M, atol = 1e-12)
@@ -113,7 +113,7 @@ end
             jointTypes = [Revolute{Float64} for i = 1 : 4]
             shuffle!(jointTypes)
             mechanism = rand_tree_mechanism(Float64, jointTypes...)
-            state = MechanismState{Float64}(mechanism)
+            state = MechanismState(mechanism)
             rand!(state)
             M = mass_matrix(state)
 
@@ -122,7 +122,7 @@ end
             @test root_body(mechanismPart) == bodymap[submechanismRoot]
             @test mechanism.gravitationalAcceleration.v == mechanismPart.gravitationalAcceleration.v
 
-            substate = MechanismState{Float64}(mechanismPart)
+            substate = MechanismState(mechanismPart)
             for (oldjoint, newjoint) in jointmap
                 set_configuration!(substate, newjoint, configuration(state, oldjoint))
                 set_velocity!(substate, newjoint, velocity(state, oldjoint))
@@ -143,7 +143,7 @@ end
             mechanism1 = rand_floating_tree_mechanism(Float64, jointTypes...)
 
             # random state
-            x1 = MechanismState{Float64}(mechanism1)
+            x1 = MechanismState(mechanism1)
             rand!(x1)
 
             # copy and set up mapping from bodies and joints of mechanism1 to those of mechanism2
@@ -168,7 +168,7 @@ end
 
             # mimic the same state for the rerooted mechanism
             # copy non-floating joint configurations and velocities
-            x2 = MechanismState{Float64}(mechanism2)
+            x2 = MechanismState(mechanism2)
             for (joint1, joint2) in jointmap
                 if joint1 != floatingjoint
                     joint2Rerooted = joint2 #get(flippedJointMapping, joint2, joint2)
@@ -187,10 +187,10 @@ end
             floating_joint_twist_to_velocity!(newfloatingjoint, velocity(x2, newfloatingjoint), newfloatingjointTwist)
 
             # do dynamics and compute spatial accelerations
-            result1 = DynamicsResult{Float64}(mechanism1)
+            result1 = DynamicsResult(mechanism1)
             dynamics!(result1, x1)
             spatial_accelerations!(result1, x1)
-            result2 = DynamicsResult{Float64}(mechanism2)
+            result2 = DynamicsResult(mechanism2)
             dynamics!(result2, x2)
             spatial_accelerations!(result2, x2)
 
@@ -220,11 +220,11 @@ end
         mcMechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(treeMechanism)
 
         # randomize state of tree mechanism
-        treeState = MechanismState{Float64}(treeMechanism)
+        treeState = MechanismState(treeMechanism)
         rand!(treeState)
 
         # put maximal coordinate system in state that is equivalent to tree mechanism state
-        mcState = MechanismState{Float64}(mcMechanism)
+        mcState = MechanismState(mcMechanism)
         for oldbody in non_root_bodies(treeMechanism)
             newbody = bodymap[oldbody]
             joint = newfloatingjoints[newbody]
@@ -238,11 +238,11 @@ end
         setdirty!(mcState)
 
         # do dynamics and compute spatial accelerations
-        treeDynamicsResult = DynamicsResult{Float64}(treeMechanism);
+        treeDynamicsResult = DynamicsResult(treeMechanism);
         dynamics!(treeDynamicsResult, treeState)
         spatial_accelerations!(treeDynamicsResult, treeState)
 
-        mcDynamicsResult = DynamicsResult{Float64}(mcMechanism);
+        mcDynamicsResult = DynamicsResult(mcMechanism);
         dynamics!(mcDynamicsResult, mcState)
         spatial_accelerations!(mcDynamicsResult, mcState)
 
@@ -258,14 +258,14 @@ end
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
         mechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(mechanism)
 
-        stateFloat64 = MechanismState{Float64}(mechanism)
+        stateFloat64 = MechanismState(mechanism)
         rand!(stateFloat64)
         NullDual = typeof(ForwardDiff.Dual(0., ()))
         stateDual = MechanismState{NullDual}(mechanism)
         configuration(stateDual)[:] = configuration(stateFloat64)
         velocity(stateDual)[:] = velocity(stateFloat64)
 
-        dynamicsResultFloat64 = DynamicsResult{Float64}(mechanism)
+        dynamicsResultFloat64 = DynamicsResult(mechanism)
         dynamics!(dynamicsResultFloat64, stateFloat64)
 
         dynamicsResultDual = DynamicsResult{NullDual}(mechanism)

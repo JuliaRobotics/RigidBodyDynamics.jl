@@ -76,6 +76,8 @@ mutable struct DynamicsResult{T, M}
     end
 end
 
+DynamicsResult(mechanism::Mechanism{M}) where {M} = DynamicsResult{M}(mechanism)
+
 Base.@deprecate DynamicsResult(::Type{T}, mechanism::Mechanism{M}) where {T, M} DynamicsResult{T}(mechanism)
 
 contact_state_derivatives(result::DynamicsResult, body::RigidBody) = result.contact_state_derivatives[body]

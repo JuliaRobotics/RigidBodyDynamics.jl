@@ -46,7 +46,7 @@
     @test findjoint(doublePendulum, joint2.name) == joint2
     @test_throws ErrorException findjoint(doublePendulum, "bla")
 
-    x = MechanismState{Float64}(doublePendulum)
+    x = MechanismState(doublePendulum)
     rand!(x)
 
     # from http://underactuated.csail.mit.edu/underactuated.html?chapter=3
@@ -87,7 +87,7 @@
     # compare against URDF
     doublePendulumUrdf = parse_urdf(Float64, "urdf/Acrobot.urdf")
     remove_fixed_tree_joints!(doublePendulumUrdf)
-    x_urdf = MechanismState{Float64}(doublePendulumUrdf)
+    x_urdf = MechanismState(doublePendulumUrdf)
     for (i, j) in enumerate(joints(doublePendulum))
         urdf_joints = collect(joints(doublePendulumUrdf))
         index = findfirst(joint -> joint.name == j.name, urdf_joints)
