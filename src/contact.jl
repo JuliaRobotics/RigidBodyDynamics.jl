@@ -216,14 +216,10 @@ mutable struct HalfSpace3D{T}
     point::Point3D{SVector{3, T}}
     outward_normal::FreeVector3D{SVector{3, T}}
 
-    function (::Type{HalfSpace3D{T}}){T}(point::Point3D{SVector{3, T}}, outward_normal::FreeVector3D{SVector{3, T}})
+    function HalfSpace3D(point::Point3D{SVector{3, T}}, outward_normal::FreeVector3D{SVector{3, T}}) where {T}
         @framecheck point.frame outward_normal.frame
         new{T}(point, normalize(outward_normal))
     end
-end
-
-function HalfSpace3D(point::Point3D{SVector{3, T}}, outward_normal::FreeVector3D{SVector{3, T}}) where {T}
-    HalfSpace3D{T}(point, outward_normal)
 end
 
 frame(halfspace::HalfSpace3D) = halfspace.point.frame

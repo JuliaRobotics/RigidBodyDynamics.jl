@@ -217,9 +217,9 @@ end
 
 # Associative
 @inline Base.length(d::UnsafeFastDict) = length(d.values)
-@inline Base.haskey{I, K, V}(d::UnsafeFastDict{I, K, V}, key) = (1 <= I(key) <= length(d)) && (@inbounds return d.keys[I(key)] === key)
-@inline Base.getindex{I, K, V}(d::UnsafeFastDict{I, K, V}, key) = get(d, key)
-@inline Base.get{I, K, V}(d::UnsafeFastDict{I, K, V}, key) = d.values[I(key)]
+@inline Base.haskey(d::UnsafeFastDict{I, K, V}, key) where {I, K, V} = (1 <= I(key) <= length(d)) && (@inbounds return d.keys[I(key)] === key)
+@inline Base.getindex(d::UnsafeFastDict, key) = get(d, key)
+@inline Base.get(d::UnsafeFastDict{I, K, V}, key) where {I, K, V} = d.values[I(key)]
 @inline Base.keys(d::UnsafeFastDict) = d.keys
 @inline Base.values(d::UnsafeFastDict) = d.values
-@inline Base.setindex!{I, K, V}(d::UnsafeFastDict{I, K, V}, value::V, key) = (d.values[I(key)] = value)
+@inline Base.setindex!(d::UnsafeFastDict{I, K, V}, value::V, key) where {I, K, V} = (d.values[I(key)] = value)

@@ -80,7 +80,7 @@ struct Transform3D{A<:AbstractMatrix}
     end
 end
 
-Base.eltype{A}(::Type{Transform3D{A}}) = eltype(A)
+Base.eltype(::Type{Transform3D{A}}) where {A} = eltype(A)
 const Transform3DS{T} = Transform3D{SMatrix{4, 4, T, 16}}
 
 @inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3}, trans::SVector{3})
