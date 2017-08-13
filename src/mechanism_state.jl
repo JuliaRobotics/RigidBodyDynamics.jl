@@ -46,12 +46,12 @@ struct MechanismState{X, M, C, JointCollection}
     function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
         C = promote_type(X, M)
         canonicalize_graph!(mechanism)
-        type_sorted_joints = TypeSortedCollection(typedjoint.(joints(mechanism)), Graphs.edge_index) # TODO: really only needed to get type
+        type_sorted_joints = TypeSortedCollection(typedjoint.(joints(mechanism))) # just to get the type...
         JointCollection = typeof(type_sorted_joints)
-        type_sorted_tree_joints = JointCollection(typedjoint.(tree_joints(mechanism)), Graphs.edge_index)
-        type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)), Graphs.edge_index)
+        type_sorted_tree_joints = JointCollection(typedjoint.(tree_joints(mechanism)))
+        type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)))
         ancestor_joints(joint) = path(mechanism, successor(joint, mechanism), root_body(mechanism)).edges
-        type_sorted_ancestor_joints = JointDict{M, JointCollection}(j => JointCollection(typedjoint.(ancestor_joints(j)), Graphs.edge_index) for j in tree_joints(mechanism))
+        type_sorted_ancestor_joints = JointDict{M, JointCollection}(j => JointCollection(typedjoint.(ancestor_joints(j))) for j in tree_joints(mechanism))
 
         q = Vector{X}(num_positions(mechanism))
         v = zeros(X, num_velocities(mechanism))
@@ -536,33 +536,35 @@ end
 
 # Cache variable update functions
 function update_transforms!(state::MechanismState)
-    update_tree_joint_transforms! = (results, joints, qs) -> map!(joint_transform, values(results), joints, qs)
-    update!(state.joint_transforms, update_tree_joint_transforms!, state.type_sorted_tree_joints, values(state.qs))
-    setdirty!(state.joint_transforms) # hack: we're not done yet
+    # TODO: a little gross
+    if isdirty(state.joint_transforms)
+        tree_joint_transforms = fastview(values(state.joint_transforms.data), 1 : length(tree_joints((state.mechanism))))
+        map!(joint_transform, tree_joint_transforms, state.type_sorted_tree_joints, values(state.qs))
 
-    update_transforms_to_root! = (results, state) -> begin
-        mechanism = state.mechanism
-        results[root_body(mechanism)] = eye(Transform3DS{cache_eltype(state)}, root_frame(mechanism))
-        @nocachecheck for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            parentbody = predecessor(joint, mechanism)
-            parent_to_root = results[parentbody]
-            before_joint_to_parent = state.joint_poses[joint]
-            results[body] = parent_to_root * before_joint_to_parent * joint_transform(state, joint)
+        update_transforms_to_root! = (results, state) -> begin
+            mechanism = state.mechanism
+            results[root_body(mechanism)] = eye(Transform3DS{cache_eltype(state)}, root_frame(mechanism))
+            @nocachecheck for joint in tree_joints(mechanism)
+                body = successor(joint, mechanism)
+                parentbody = predecessor(joint, mechanism)
+                parent_to_root = results[parentbody]
+                before_joint_to_parent = state.joint_poses[joint]
+                results[body] = parent_to_root * before_joint_to_parent * joint_transform(state, joint)
+            end
         end
-    end
-    update!(state.transforms_to_root, update_transforms_to_root!, state)
+        update!(state.transforms_to_root, update_transforms_to_root!, state)
 
-    update_non_tree_joint_transforms! = (results, state) -> begin
-        @nocachecheck foreach_with_extra_args(results, state, state.type_sorted_non_tree_joints) do results, state, joint # TODO: use closure once it's fast
-            pred = predecessor(joint, state.mechanism)
-            succ = successor(joint, state.mechanism)
-            before_to_root = transform_to_root(state, pred) * frame_definition(pred, frame_before(joint)) # TODO: slow!
-            after_to_root = transform_to_root(state, succ) * frame_definition(succ, frame_after(joint)) # TODO: slow!
-            results[joint] = inv(before_to_root) * after_to_root
+        update_non_tree_joint_transforms! = (results, state) -> begin
+            @nocachecheck foreach_with_extra_args(results, state, state.type_sorted_non_tree_joints) do results, state, joint # TODO: use closure once it's fast
+                pred = predecessor(joint, state.mechanism)
+                succ = successor(joint, state.mechanism)
+                before_to_root = transform_to_root(state, pred) * frame_definition(pred, frame_before(joint)) # TODO: slow!
+                after_to_root = transform_to_root(state, succ) * frame_definition(succ, frame_after(joint)) # TODO: slow!
+                results[joint] = inv(before_to_root) * after_to_root
+            end
         end
+        update!(state.joint_transforms, update_non_tree_joint_transforms!, state)
     end
-    update!(state.joint_transforms, update_non_tree_joint_transforms!, state)
 end
 
 function update_joint_twists!(state::MechanismState)

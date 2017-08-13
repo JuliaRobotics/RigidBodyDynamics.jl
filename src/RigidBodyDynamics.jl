@@ -5,6 +5,7 @@ module RigidBodyDynamics
 using Base.Random
 using StaticArrays
 using Rotations
+using TypeSortedCollections
 using LightXML
 using DocStringExtensions
 using Compat
