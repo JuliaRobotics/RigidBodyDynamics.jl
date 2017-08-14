@@ -39,7 +39,7 @@ function create_benchmark_suite()
         setdirty!($state)
         inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalwrenches)
     end, setup = begin
-        v̇ = rand(num_velocities($mechanism))
+        v̇ = rand(ScalarType, num_velocities($mechanism))
         externalwrenches = RigidBodyDynamics.BodyDict{ScalarType}(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
         rand!($state)
     end)
@@ -49,7 +49,7 @@ function create_benchmark_suite()
         dynamics!($result, $state, τ, externalwrenches)
     end, setup = begin
         rand!($state)
-        τ = rand(num_velocities($mechanism))
+        τ = rand(ScalarType, num_velocities($mechanism))
         externalwrenches = RigidBodyDynamics.BodyDict{ScalarType}(body => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
     end)
 
