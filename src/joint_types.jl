@@ -350,7 +350,7 @@ end
 flip_direction(jt::Revolute) = Revolute(-jt.axis)
 
 function joint_transform(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
-    @inbounds aa = AngleAxis(q[1], jt.axis[1], jt.axis[2], jt.axis[3])
+    @inbounds aa = AngleAxis(q[1], jt.axis[1], jt.axis[2], jt.axis[3], false)
     Transform3D(frameAfter, frameBefore, convert(RotMatrix3{eltype(aa)}, aa))
 end
 
