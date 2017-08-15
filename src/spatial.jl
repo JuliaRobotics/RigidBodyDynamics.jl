@@ -434,7 +434,7 @@ function Base.exp(twist::Twist)
     else
         # (2.36)
         ω = ϕrot / θ
-        rot = RotMatrix(AngleAxis(θ, ω[1], ω[2], ω[3]))
+        rot = RotMatrix(AngleAxis(θ, ω[1], ω[2], ω[3], false))
         v = ϕtrans / θ
         trans = ω × v
         trans -= rot * trans
