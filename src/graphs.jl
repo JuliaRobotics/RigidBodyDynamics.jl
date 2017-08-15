@@ -31,6 +31,7 @@ export
     rewire!,
     flip_direction!,
     replace_edge!,
+    reindex!,
     root,
     edge_to_parent,
     edges_to_children,
@@ -94,6 +95,16 @@ in_edges(vertex::V, g::DirectedGraph{V, E}) where {V, E} = g.inedges[vertex_inde
 out_edges(vertex::V, g::DirectedGraph{V, E}) where {V, E} = g.outedges[vertex_index(vertex)]
 
 Base.show(io::IO, ::DirectedGraph{V, E}) where {V, E} = print(io, "DirectedGraph{$V, $E}(…)")
+
+function Base.empty!(g::DirectedGraph)
+    empty!(g.vertices)
+    empty!(g.edges)
+    empty!(g.sources)
+    empty!(g.targets)
+    empty!(g.inedges)
+    empty!(g.outedges)
+    g
+end
 
 function add_vertex!(g::DirectedGraph{V, E}, vertex::V) where {V, E}
     @assert vertex ∉ vertices(g)
@@ -183,6 +194,21 @@ function replace_edge!(g::DirectedGraph{V, E}, old_edge::E, new_edge::E) where {
     in_edge_index = findfirst(in_edges(dest, g), old_edge)
     in_edges(dest, g)[in_edge_index] = new_edge
     edge_index!(old_edge, -1)
+    g
+end
+
+function reindex!(g::DirectedGraph{V, E}, vertices_in_order, edges_in_order) where {V, E}
+    @assert isempty(setdiff(vertices(g), vertices_in_order))
+    @assert isempty(setdiff(edges(g), edges_in_order))
+    sources = source.(edges_in_order, g)
+    targets = target.(edges_in_order, g)
+    empty!(g)
+    for v in vertices_in_order
+        add_vertex!(g, v)
+    end
+    for (source, target, e) in zip(sources, targets, edges_in_order)
+        add_edge!(g, source, target, e)
+    end
     g
 end
 

@@ -285,4 +285,21 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
             @test new_edge ∈ edges_to_children(src, tree)
         end
     end
+
+    @testset "reindex!" begin
+        graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
+        for i = 1 : 100
+            add_vertex!(graph, Vertex(i))
+        end
+        for i = 1 : num_vertices(graph) - 1
+            add_edge!(graph, rand(vertices(graph)), rand(vertices(graph)), Edge(Float64(i)))
+        end
+        newvertices = shuffle(vertices(graph))
+        newedges = shuffle(edges(graph))
+        reindex!(graph, newvertices, newedges)
+        @test all(vertices(graph) .== newvertices)
+        @test all(edges(graph) .== newedges)
+        @test all(vertex_index.(vertices(graph)) .== 1 : num_vertices(graph))
+        @test all(edge_index.(edges(graph)) .== 1 : num_edges(graph))
+    end
 end
