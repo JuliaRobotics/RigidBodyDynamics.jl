@@ -361,10 +361,12 @@ function newton_euler!(
         out::Associative{RigidBody{M}, Wrench{T}}, state::MechanismState{X, M},
         accelerations::Associative{RigidBody{M}, SpatialAcceleration{T}},
         externalwrenches::Associative{RigidBody{M}, Wrench{W}}) where {T, X, M, W}
+    update_twists_wrt_world!(state)
+    update_spatial_inertias!(state)
     mechanism = state.mechanism
     for joint in tree_joints(mechanism)
         body = successor(joint, mechanism)
-        wrench = newton_euler(state, body, accelerations[body])
+        wrench = newton_euler(state, body, accelerations[body], CacheUnsafe())
         out[body] = haskey(externalwrenches, body) ? wrench - externalwrenches[body] : wrench
     end
 end
