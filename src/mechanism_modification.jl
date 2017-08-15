@@ -264,6 +264,15 @@ function maximal_coordinates(mechanism::Mechanism)
     ret, newfloatingjoints, bodymap, jointmap
 end
 
+function canonicalize_graph!(mechanism::Mechanism)
+    root = root_body(mechanism)
+    treejoints = copy(tree_joints(mechanism))
+    vertices = append!([root], successor(joint, mechanism) for joint in treejoints)
+    edges = vcat(treejoints, non_tree_joints(mechanism))
+    reindex!(mechanism.graph, vertices, edges)
+    mechanism.tree = SpanningTree(mechanism.graph, root, treejoints)
+end
+
 add_environment_primitive!(mechanism::Mechanism, halfspace::HalfSpace3D) = push!(mechanism.environment, halfspace)
 """
 $(SIGNATURES)
