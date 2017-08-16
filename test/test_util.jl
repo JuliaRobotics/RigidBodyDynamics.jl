@@ -54,42 +54,4 @@ import RigidBodyDynamics: hat, rotation_vector_rate, colwise
         @test all(keys(d2) .== 1 : 3)
         @test all(values(d2) .== 3 * (1 : 3))
     end
-
-    @testset "TypeSortedCollection" begin
-        x = Pair[3. => 1; 4 => 2; 5 => 3]
-        sortedx = RigidBodyDynamics.TypeSortedCollection(x, last)
-        index = RigidBodyDynamics.indexfun(sortedx)
-        @test index == last
-        @test length(sortedx) == length(x)
-
-        f(x::Pair{Int64, Int64}) = 3 * first(x)
-        f(x::Pair{Float64, Int64}) = round(Int64, first(x) / 2)
-
-        maptest(f, results, index, x) = begin
-            for element in x
-                results[index(element)] != f(element) && return false
-            end
-            true
-        end
-
-        results = Vector{Int64}(maximum(index.(x)))
-        map!(f, results, sortedx)
-        @test maptest(f, results, index, x)
-
-        y = Pair[1. => 4; 2. => 2; 3. => 3]
-        sortedy = typeof(sortedx)(y, index)
-        @test typeof(sortedy) == typeof(sortedx)
-
-        results = Vector{Int64}(maximum(index.(y)))
-        map!(f, results, sortedy)
-        @test maptest(f, results, index, y)
-
-        foreach_extra_args_result = Dict{Int64, Int64}()
-        g(extra_arg::Int64, element::Pair) = (foreach_extra_args_result[last(element)] = round(Int64, extra_arg * first(element)))
-        extra_arg = 5
-        RigidBodyDynamics.foreach_with_extra_args(g, extra_arg, sortedx)
-        for element in x
-            @test foreach_extra_args_result[index(element)] == g(extra_arg, element)
-        end
-    end
 end
