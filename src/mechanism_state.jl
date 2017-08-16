@@ -366,7 +366,7 @@ Return the joint transform for the given joint, i.e. the transform from
 `frame_after(joint)` to `frame_before(joint)`.
 """
 @inline function joint_transform(state::MechanismState, joint::Joint)
-    isdirty(state.joint_transforms) && update_transforms!(state)
+    update_transforms!(state)
     state.joint_transforms.data[joint]
 end
 
@@ -377,7 +377,7 @@ Return the joint twist for the given joint, i.e. the twist of
 root frame of the mechanism.
 """
 @inline function twist(state::MechanismState, joint::Joint)
-    isdirty(state.joint_twists) && update_joint_twists!(state)
+    update_joint_twists!(state)
     state.joint_twists.data[joint]
 end
 
@@ -389,7 +389,7 @@ of `frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
 root frame of the mechanism when all joint accelerations are zero.
 """
 @inline function bias_acceleration(state::MechanismState, joint::Joint)
-    isdirty(state.joint_bias_accelerations) && update_joint_bias_accelerations!(state)
+    update_joint_bias_accelerations!(state)
     state.joint_bias_accelerations.data[joint]
 end
 
@@ -400,12 +400,12 @@ Return the motion subspace of the given joint expressed in the root frame of
 the mechanism.
 """
 @inline function motion_subspace_in_world(state::MechanismState, joint::GenericJoint{T}) where {T}
-    isdirty(state.motion_subspaces_in_world) && update_motion_subspaces_in_world!(state)
+    update_motion_subspaces_in_world!(state)
     state.motion_subspaces_in_world.data[joint]
 end
 
 @inline function motion_subspace_in_world(state::MechanismState{X, M, C}, joint::Joint{M, JT}) where {X, M, C, JT}
-    isdirty(state.motion_subspaces_in_world) && update_motion_subspaces_in_world!(state)
+    update_motion_subspaces_in_world!(state)
     S = state.motion_subspaces_in_world.data[joint]
     N = num_velocities(JT)
     GeometricJacobian(S.body, S.base, S.frame, SMatrix{3, N, C}(S.angular), SMatrix{3, N, C}(S.linear))
@@ -417,12 +417,12 @@ $(SIGNATURES)
 Return the constraint wrench subspace of the given joint expressed in the frame after the joint.
 """
 @inline function constraint_wrench_subspace(state::MechanismState, joint::GenericJoint{T}) where {T}
-    isdirty(state.constraint_wrench_subspaces) && update_constraint_wrench_subspaces!(state)
+    update_constraint_wrench_subspaces!(state)
     state.constraint_wrench_subspaces.data[joint]
 end
 
 @inline function constraint_wrench_subspace(state::MechanismState{X, M, C}, joint::Joint{M, JT}) where {X, M, C, JT}
-    isdirty(state.constraint_wrench_subspaces) && update_constraint_wrench_subspaces!(state)
+    update_constraint_wrench_subspaces!(state)
     T = state.constraint_wrench_subspaces.data[joint]
     N = num_constraints(JT)
     WrenchMatrix(T.frame, SMatrix{3, N, C}(T.angular), SMatrix{3, N, C}(T.linear))
@@ -438,7 +438,7 @@ Return the transform from `default_frame(body)` to the root frame of the
 mechanism.
 """
 @inline function transform_to_root(state::MechanismState, body::RigidBody)
-    isdirty(state.transforms_to_root) && update_transforms!(state)
+    update_transforms!(state)
     state.transforms_to_root.data[body]
 end
 
@@ -449,7 +449,7 @@ Return the twist of `default_frame(body)` with respect to the root frame of the
 mechanism, expressed in the root frame.
 """
 @inline function twist_wrt_world(state::MechanismState, body::RigidBody)
-    isdirty(state.twists_wrt_world) && update_twists_wrt_world!(state)
+    update_twists_wrt_world!(state)
     state.twists_wrt_world.data[body]
 end
 
@@ -462,7 +462,7 @@ root frame of the mechanism, expressed in the root frame, when all joint
 accelerations are zero.
 """
 @inline function bias_acceleration(state::MechanismState, body::RigidBody)
-    isdirty(state.bias_accelerations_wrt_world) && update_bias_accelerations_wrt_world!(state)
+    update_bias_accelerations_wrt_world!(state)
     state.bias_accelerations_wrt_world.data[body]
 end
 
@@ -473,7 +473,7 @@ Return the spatial inertia of `body` expressed in the root frame of the
 mechanism.
 """
 @inline function spatial_inertia(state::MechanismState, body::RigidBody)
-    isdirty(state.inertias) && update_spatial_inertias!(state)
+    update_spatial_inertias!(state)
     state.inertias.data[body]
 end
 
@@ -484,13 +484,14 @@ Return the composite rigid body inertia `body` expressed in the root frame of th
 mechanism.
 """
 @inline function crb_inertia(state::MechanismState, body::RigidBody)
-    isdirty(state.crb_inertias) && update_crb_inertias!(state)
+    update_crb_inertias!(state)
     state.crb_inertias.data[body]
 end
 
 
 # Cache variable update functions
-@noinline function update_transforms!(state::MechanismState)
+@inline update_transforms!(state::MechanismState) = isdirty(state.transforms_to_root) && _update_transforms!(state)
+@noinline function _update_transforms!(state::MechanismState)
     # TODO: a little gross
     if isdirty(state.joint_transforms)
         tree_joint_transforms = fastview(values(state.joint_transforms.data), 1 : length(tree_joints((state.mechanism))))
@@ -522,17 +523,20 @@ end
     end
 end
 
-@noinline function update_joint_twists!(state::MechanismState)
+@inline update_joint_twists!(state::MechanismState) = isdirty(state.joint_twists) && _update_joint_twists!(state)
+@noinline function _update_joint_twists!(state::MechanismState)
     f! = (results, joints, qs, vs) -> map!(joint_twist, values(results), joints, qs, vs)
     update!(state.joint_twists, f!, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
-@noinline function update_joint_bias_accelerations!(state::MechanismState)
+@inline update_joint_bias_accelerations!(state::MechanismState) = isdirty(state.joint_bias_accelerations) && _update_joint_bias_accelerations!(state)
+@noinline function _update_joint_bias_accelerations!(state::MechanismState)
     f! = (results, joints, qs, vs) -> map!(bias_acceleration, values(results), joints, qs, vs)
     update!(state.joint_bias_accelerations, f!, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
-@noinline function update_motion_subspaces_in_world!(state::MechanismState)
+@inline update_motion_subspaces_in_world!(state::MechanismState) = isdirty(state.motion_subspaces_in_world) && _update_motion_subspaces_in_world!(state)
+@noinline function _update_motion_subspaces_in_world!(state::MechanismState)
     update_transforms!(state)
     f! = (results, state) -> begin
         foreach_with_extra_args(results, state, state.type_sorted_tree_joints) do results, state, joint
@@ -548,7 +552,8 @@ end
     update!(state.motion_subspaces_in_world, f!, state)
 end
 
-@noinline function update_twists_wrt_world!(state::MechanismState)
+@inline update_twists_wrt_world!(state::MechanismState) = isdirty(state.twists_wrt_world) && _update_twists_wrt_world!(state)
+@noinline function _update_twists_wrt_world!(state::MechanismState)
     update_transforms!(state)
     update_joint_twists!(state)
     f! = (results, state) -> begin
@@ -567,7 +572,8 @@ end
     update!(state.twists_wrt_world, f!, state)
 end
 
-@noinline function update_constraint_wrench_subspaces!(state::MechanismState)
+@inline update_constraint_wrench_subspaces!(state::MechanismState) = isdirty(state.constraint_wrench_subspaces) && _update_constraint_wrench_subspaces!(state)
+@noinline function _update_constraint_wrench_subspaces!(state::MechanismState)
     update_transforms!(state)
     f! = (results, state) -> begin
         foreach_with_extra_args(results, state, state.type_sorted_non_tree_joints) do results, state, joint
@@ -581,7 +587,8 @@ end
     update!(state.constraint_wrench_subspaces, f!, state)
 end
 
-@noinline function update_bias_accelerations_wrt_world!(state::MechanismState) # TODO: make more efficient
+@inline update_bias_accelerations_wrt_world!(state::MechanismState) = isdirty(state.bias_accelerations_wrt_world) && _update_bias_accelerations_wrt_world!(state)
+@noinline function _update_bias_accelerations_wrt_world!(state::MechanismState) # TODO: make more efficient
     update_transforms!(state)
     update_twists_wrt_world!(state)
     update_joint_bias_accelerations!(state)
@@ -608,7 +615,8 @@ end
     update!(state.bias_accelerations_wrt_world, f!, state)
 end
 
-@noinline function update_spatial_inertias!(state::MechanismState)
+@inline update_spatial_inertias!(state::MechanismState) = isdirty(state.inertias) && _update_spatial_inertias!(state)
+@noinline function _update_spatial_inertias!(state::MechanismState)
     update_transforms!(state)
     f! = (results, state) -> begin
         mechanism = state.mechanism
@@ -621,7 +629,8 @@ end
     update!(state.inertias, f!, state)
 end
 
-@noinline function update_crb_inertias!(state::MechanismState)
+@inline update_crb_inertias!(state::MechanismState) = isdirty(state.crb_inertias) && _update_crb_inertias!(state)
+@noinline function _update_crb_inertias!(state::MechanismState)
     update_spatial_inertias!(state)
     f! = (results, state) -> begin
         mechanism = state.mechanism
