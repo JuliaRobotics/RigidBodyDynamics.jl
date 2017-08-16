@@ -26,26 +26,23 @@ Compute the center of mass of an iterable subset of a `Mechanism`'s bodies in
 the given state. Ignores the root body of the mechanism.
 """
 function center_of_mass(state::MechanismState, itr)
-    update_transforms!(state)
-    @nocachecheck begin
-        T = cache_eltype(state)
-        mechanism = state.mechanism
-        frame = root_frame(mechanism)
-        com = Point3D(frame, zeros(SVector{3, T}))
-        mass = zero(T)
-        for body in itr
-            if !isroot(body, mechanism)
-                inertia = spatial_inertia(body)
-                if inertia.mass > 0
-                    bodycom = transform_to_root(state, body) * center_of_mass(inertia)
-                    com += inertia.mass * FreeVector3D(bodycom)
-                    mass += inertia.mass
-                end
+    T = cache_eltype(state)
+    mechanism = state.mechanism
+    frame = root_frame(mechanism)
+    com = Point3D(frame, zeros(SVector{3, T}))
+    mass = zero(T)
+    for body in itr
+        if !isroot(body, mechanism)
+            inertia = spatial_inertia(body)
+            if inertia.mass > 0
+                bodycom = transform_to_root(state, body) * center_of_mass(inertia)
+                com += inertia.mass * FreeVector3D(bodycom)
+                mass += inertia.mass
             end
         end
-        com /= mass
-        com
     end
+    com /= mass
+    com
 end
 
 """
@@ -85,7 +82,7 @@ function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path
     foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints) do out, state, path, joint # TODO: use closure once it doesn't allocate
         vrange = velocity_range(state, joint)
         if edge_index(joint) in path.indices
-            @nocachecheck part = transformfun(motion_subspace_in_world(state, joint))
+            part = transformfun(motion_subspace_in_world(state, joint))
             direction(joint, path) == :up && (part = -part)
             set_cols!(out, vrange, part)
         else
@@ -178,14 +175,14 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
     foreach_with_extra_args(out, state, joints) do out, state, jointi # TODO: use closure once it doesn't allocate
         irange = velocity_range(state, jointi)
         bodyi = successor(jointi, state.mechanism)
-        @nocachecheck Si = motion_subspace_in_world(state, jointi)
-        @nocachecheck Ici = crb_inertia(state, bodyi)
+        Si = motion_subspace_in_world(state, jointi)
+        Ici = crb_inertia(state, bodyi)
         F = Ici * Si
         ancestor_joints = state.type_sorted_ancestor_joints[jointi]
         foreach_with_extra_args(out, state, irange, F, ancestor_joints) do out, state, irange, F, jointj # TODO: use closure once it doesn't allocate
             jrange = velocity_range(state, jointj)
             bodyj = successor(jointj, state.mechanism)
-            @nocachecheck Sj = motion_subspace_in_world(state, jointj)
+            Sj = motion_subspace_in_world(state, jointj)
             block = F.angular' * Sj.angular + F.linear' * Sj.linear
             set_matrix_block!(out.data, irange, jrange, block)
         end
@@ -238,8 +235,8 @@ function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformf
         vrange = velocity_range(state, joint)
         mechanism = state.mechanism
         body = successor(joint, mechanism)
-        @nocachecheck inertia = crb_inertia(state, body)
-        @nocachecheck part = transformfun(inertia * motion_subspace_in_world(state, joint)) # TODO: consider pure body frame implementation
+        inertia = crb_inertia(state, body)
+        part = transformfun(inertia * motion_subspace_in_world(state, joint)) # TODO: consider pure body frame implementation
         set_cols!(out, vrange, part)
     end
 end
@@ -294,49 +291,45 @@ end
 
 function bias_accelerations!(out::Associative{RigidBody{M}, SpatialAcceleration{T}}, state::MechanismState{X, M}) where {T, X, M}
     update_bias_accelerations_wrt_world!(state)
-    @nocachecheck begin
-        mechanism = state.mechanism
-        gravitybias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
-        for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            out[body] = gravitybias + bias_acceleration(state, body)
-        end
-        nothing
+    mechanism = state.mechanism
+    gravitybias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
+    for joint in tree_joints(mechanism)
+        body = successor(joint, mechanism)
+        out[body] = gravitybias + bias_acceleration(state, body)
     end
+    nothing
 end
 
 function spatial_accelerations!(out::Associative{RigidBody{M}, SpatialAcceleration{T}},
         state::MechanismState{X, M}, vd::StridedVector) where {T, X, M}
     update_twists_wrt_world!(state)
-    @nocachecheck begin
-        mechanism = state.mechanism
-        root = root_body(mechanism)
-        joints = state.type_sorted_tree_joints
-        qs = values(state.qs)
-        vs = values(state.vs)
+    mechanism = state.mechanism
+    root = root_body(mechanism)
+    joints = state.type_sorted_tree_joints
+    qs = values(state.qs)
+    vs = values(state.vs)
 
-        # Compute joint accelerations
-        foreach_with_extra_args(state, out, vd, joints, qs, vs) do state, accels, vd, joint, qjoint, vjoint # TODO: use closure once it doesn't allocate
-            body = successor(joint, state.mechanism)
-            parentbody = predecessor(joint, state.mechanism)
-            vdjoint = fastview(vd, velocity_range(state, joint))
-            accels[body] = joint_spatial_acceleration(joint, qjoint, vjoint, vdjoint)
-        end
+    # Compute joint accelerations
+    foreach_with_extra_args(state, out, vd, joints, qs, vs) do state, accels, vd, joint, qjoint, vjoint # TODO: use closure once it doesn't allocate
+        body = successor(joint, state.mechanism)
+        parentbody = predecessor(joint, state.mechanism)
+        vdjoint = fastview(vd, velocity_range(state, joint))
+        accels[body] = joint_spatial_acceleration(joint, qjoint, vjoint, vdjoint)
+    end
 
-        # Recursive propagation
-        out[root] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
-        for joint in tree_joints(mechanism)
-            body = successor(joint, mechanism)
-            parentbody = predecessor(joint, mechanism)
-            parentframe = default_frame(parentbody)
+    # Recursive propagation
+    out[root] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
+    for joint in tree_joints(mechanism)
+        body = successor(joint, mechanism)
+        parentbody = predecessor(joint, mechanism)
+        parentframe = default_frame(parentbody)
 
-             # TODO: awkward way of doing this (consider switching to body frame implementation):
-            toroot = transform_to_root(state, body)
-            twistwrtworld = transform(twist_wrt_world(state, body), inv(toroot))
-            jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
-            jointaccel = change_base(out[body], parentframe) # to make frames line up
-            out[body] = out[parentbody] + transform(jointaccel, toroot, twistwrtworld, jointtwist)
-        end
+            # TODO: awkward way of doing this (consider switching to body frame implementation):
+        toroot = transform_to_root(state, body)
+        twistwrtworld = transform(twist_wrt_world(state, body), inv(toroot))
+        jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
+        jointaccel = change_base(out[body], parentframe) # to make frames line up
+        out[body] = out[parentbody] + transform(jointaccel, toroot, twistwrtworld, jointtwist)
     end
     nothing
 end
@@ -366,7 +359,7 @@ function newton_euler!(
     mechanism = state.mechanism
     for joint in tree_joints(mechanism)
         body = successor(joint, mechanism)
-        wrench = newton_euler(state, body, accelerations[body], CacheUnsafe())
+        wrench = newton_euler(state, body, accelerations[body])
         out[body] = haskey(externalwrenches, body) ? wrench - externalwrenches[body] : wrench
     end
 end
@@ -378,27 +371,25 @@ function joint_wrenches_and_torques!(
         state::MechanismState{X, M}) where {T, X, M}
     # Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
     @boundscheck length(torquesout) == num_velocities(state) || error("length of torque vector is wrong")
-    @nocachecheck begin
-        mechanism = state.mechanism
-        joints = tree_joints(mechanism)
-        for i = length(joints) : -1 : 1
-            joint = joints[i]
-            body = successor(joint, mechanism)
-            parentbody = predecessor(joint, mechanism)
-            jointwrench = net_wrenches_in_joint_wrenches_out[body]
-            if !isroot(parentbody, mechanism)
-                # TODO: consider also doing this for the root:
-                net_wrenches_in_joint_wrenches_out[parentbody] += jointwrench # action = -reaction
-            end
+    mechanism = state.mechanism
+    joints = tree_joints(mechanism)
+    for i = length(joints) : -1 : 1
+        joint = joints[i]
+        body = successor(joint, mechanism)
+        parentbody = predecessor(joint, mechanism)
+        jointwrench = net_wrenches_in_joint_wrenches_out[body]
+        if !isroot(parentbody, mechanism)
+            # TODO: consider also doing this for the root:
+            net_wrenches_in_joint_wrenches_out[parentbody] += jointwrench # action = -reaction
         end
+    end
 
-        foreach_with_extra_args(state, torquesout, net_wrenches_in_joint_wrenches_out, state.type_sorted_tree_joints) do state, τ, wrenches, joint # TODO: use closure once it doesn't allocate
-            body = successor(joint, state.mechanism)
-            @inbounds τjoint = fastview(τ, velocity_range(state, joint))
-            # TODO: awkward to transform back to body frame; consider switching to body-frame implementation
-            tf = inv(transform_to_root(state, body))
-            joint_torque!(τjoint, joint, configuration(state, joint), transform(wrenches[body], tf))
-        end
+    foreach_with_extra_args(state, torquesout, net_wrenches_in_joint_wrenches_out, state.type_sorted_tree_joints) do state, τ, wrenches, joint # TODO: use closure once it doesn't allocate
+        body = successor(joint, state.mechanism)
+        @inbounds τjoint = fastview(τ, velocity_range(state, joint))
+        # TODO: awkward to transform back to body frame; consider switching to body-frame implementation
+        tf = inv(transform_to_root(state, body))
+        joint_torque!(τjoint, joint, configuration(state, joint), transform(wrenches[body], tf))
     end
 end
 
@@ -504,13 +495,13 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         rowrange = rowstart[] : nextrowstart - 1
         succ = successor(nontreejoint, mechanism)
         pred = predecessor(nontreejoint, mechanism)
-        @nocachecheck T = constraint_wrench_subspace(state, nontreejoint)
+        T = constraint_wrench_subspace(state, nontreejoint)
 
         # Jacobian.
         foreach_with_extra_args(constraintjacobian, state, path, T, rowrange, state.type_sorted_tree_joints) do constraintjacobian, state, path, T, rowrange, treejoint # TODO: use closure once it doesn't allocate
             vrange = velocity_range(state, treejoint)
             if edge_index(treejoint) in path.indices
-                @nocachecheck J = motion_subspace_in_world(state, treejoint)
+                J = motion_subspace_in_world(state, treejoint)
                 part = T.angular' * J.angular + T.linear' * J.linear # TODO: At_mul_B
                 direction(treejoint, path) == :up && (part = -part)
                 set_matrix_block!(constraintjacobian, rowrange, vrange, part)
@@ -522,8 +513,8 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         # Constraint bias.
         has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
         kjoint = fastview(constraintbias, rowrange)
-        @nocachecheck crossterm = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
-        @nocachecheck biasaccel = crossterm + (-bias_acceleration(state, pred) + bias_acceleration(state, succ)) # 8.47 in Featherstone
+        crossterm = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
+        biasaccel = crossterm + (-bias_acceleration(state, pred) + bias_acceleration(state, succ)) # 8.47 in Featherstone
         At_mul_B!(kjoint, T, biasaccel)
         rowstart[] = nextrowstart
     end
@@ -531,46 +522,44 @@ end
 
 function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M, C}) where {X, M, C, T}
     update_twists_wrt_world!(state)
-    @nocachecheck begin
-        mechanism = state.mechanism
-        root = root_body(mechanism)
-        frame = default_frame(root)
-        for body in bodies(mechanism)
-            wrench = zero(Wrench{T}, frame)
-            points = contact_points(body)
-            if !isempty(points)
-                # TODO: AABB
-                body_to_root = transform_to_root(state, body)
-                twist = twist_wrt_world(state, body)
-                states_for_body = contact_states(state, body)
-                state_derivs_for_body = contact_state_derivatives(result, body)
-                for i = 1 : length(points)
-                    @inbounds c = points[i]
-                    point = body_to_root * location(c)
-                    velocity = point_velocity(twist, point)
-                    states_for_point = states_for_body[i]
-                    state_derivs_for_point = state_derivs_for_body[i]
-                    for j = 1 : length(mechanism.environment.halfspaces)
-                        primitive = mechanism.environment.halfspaces[j]
-                        contact_state = states_for_point[j]
-                        contact_state_deriv = state_derivs_for_point[j]
-                        model = contact_model(c)
-                        # TODO: would be good to move this to Contact module
-                        # arguments: model, state, state_deriv, point, velocity, primitive
-                        if point_inside(primitive, point)
-                            separation, normal = Contact.detect_contact(primitive, point)
-                            force = Contact.contact_dynamics!(contact_state_deriv, contact_state,
-                                model, -separation, velocity, normal)
-                            wrench += Wrench(point, force)
-                        else
-                            Contact.reset!(contact_state)
-                            Contact.zero!(contact_state_deriv)
-                        end
+    mechanism = state.mechanism
+    root = root_body(mechanism)
+    frame = default_frame(root)
+    for body in bodies(mechanism)
+        wrench = zero(Wrench{T}, frame)
+        points = contact_points(body)
+        if !isempty(points)
+            # TODO: AABB
+            body_to_root = transform_to_root(state, body)
+            twist = twist_wrt_world(state, body)
+            states_for_body = contact_states(state, body)
+            state_derivs_for_body = contact_state_derivatives(result, body)
+            for i = 1 : length(points)
+                @inbounds c = points[i]
+                point = body_to_root * location(c)
+                velocity = point_velocity(twist, point)
+                states_for_point = states_for_body[i]
+                state_derivs_for_point = state_derivs_for_body[i]
+                for j = 1 : length(mechanism.environment.halfspaces)
+                    primitive = mechanism.environment.halfspaces[j]
+                    contact_state = states_for_point[j]
+                    contact_state_deriv = state_derivs_for_point[j]
+                    model = contact_model(c)
+                    # TODO: would be good to move this to Contact module
+                    # arguments: model, state, state_deriv, point, velocity, primitive
+                    if point_inside(primitive, point)
+                        separation, normal = Contact.detect_contact(primitive, point)
+                        force = Contact.contact_dynamics!(contact_state_deriv, contact_state,
+                            model, -separation, velocity, normal)
+                        wrench += Wrench(point, force)
+                    else
+                        Contact.reset!(contact_state)
+                        Contact.zero!(contact_state_deriv)
                     end
                 end
             end
-            set_contact_wrench!(result, body, wrench)
         end
+        set_contact_wrench!(result, body, wrench)
     end
 end
 
