@@ -396,6 +396,18 @@
         @test isapprox(τ, zeros(num_velocities(mechanism)); atol = 1e-10)
     end
 
+    @testset "dynamics_bias / inverse_dynamics" begin
+        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
+        x = MechanismState(mechanism)
+        rand!(x)
+
+        externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
+        v̇ = zeros(num_velocities(x))
+        τ1 = inverse_dynamics(x, v̇, externalwrenches)
+        τ2 = dynamics_bias(x, externalwrenches)
+        @test τ1 ≈ τ2
+    end
+
     @testset "dynamics ode method" begin
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
         x = MechanismState(mechanism)

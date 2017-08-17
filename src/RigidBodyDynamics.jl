@@ -145,6 +145,8 @@ export
     momentum_rate_bias,
     inverse_dynamics!,
     inverse_dynamics,
+    dynamics_bias!,
+    dynamics_bias,
     dynamics!,
     parse_urdf,
     simulate,

@@ -402,10 +402,7 @@ function joint_wrenches_and_torques!(
     end
 end
 
-"""
-$(SIGNATURES)
-
-Compute the 'dynamics bias term', i.e. the term
+const dynamics_bias_doc = """Compute the 'dynamics bias term', i.e. the term
 ```math
 c(q, v, w_\\text{ext})
 ```
@@ -419,6 +416,12 @@ wrenches ``w_\\text{ext}``.
 
 The `externalwrenches` argument can be used to specify additional
 wrenches that act on the `Mechanism`'s bodies.
+"""
+
+"""
+$(SIGNATURES)
+
+$dynamics_bias_doc
 
 $noalloc_doc
 """
@@ -431,6 +434,24 @@ function dynamics_bias!(
     bias_accelerations!(biasaccelerations, state)
     newton_euler!(wrenches, state, biasaccelerations, externalwrenches)
     joint_wrenches_and_torques!(torques, wrenches, state)
+end
+
+"""
+$(SIGNATURES)
+
+$dynamics_bias_doc
+"""
+function dynamics_bias(
+        state::MechanismState{X, M},
+        externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{X}}()) where {X, M, W}
+    T = promote_type(X, M, W)
+    mechanism = state.mechanism
+    torques = Vector{T}(num_velocities(state))
+    rootframe = root_frame(mechanism)
+    jointwrenches = BodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+    accelerations = BodyDict{M, SpatialAcceleration{T}}(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+    dynamics_bias!(torques, accelerations, jointwrenches, state, externalwrenches)
+    torques
 end
 
 const inverse_dynamics_doc = """Do inverse dynamics, i.e. compute ``\\tau``
