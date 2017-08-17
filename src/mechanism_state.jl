@@ -74,7 +74,7 @@ struct MechanismState{X, M, C, JointCollection}
         bias_accelerations_wrt_world = CacheElement(BodyDict{M, SpatialAcceleration{C}}(bodies(mechanism)))
         inertias = CacheElement(BodyDict{M, SpatialInertia{C}}(bodies(mechanism)))
         crb_inertias = CacheElement(BodyDict{M, SpatialInertia{C}}(bodies(mechanism)))
-        contact_states = BodyDict{M, Vector{Vector{DefaultSoftContactState{C}}}}(b => Vector{Vector{DefaultSoftContactState{C}}}() for b in bodies(mechanism))
+        contact_states = BodyDict{M, Vector{Vector{DefaultSoftContactState{X}}}}(b => Vector{Vector{DefaultSoftContactState{X}}}() for b in bodies(mechanism))
         startind = 1
         for body in bodies(mechanism), point in contact_points(body)
             model = contact_model(point)
