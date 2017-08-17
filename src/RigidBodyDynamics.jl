@@ -145,11 +145,14 @@ export
     momentum_rate_bias,
     inverse_dynamics!,
     inverse_dynamics,
+    dynamics_bias!,
+    dynamics_bias,
     dynamics!,
     parse_urdf,
     simulate,
     findbody,
     findjoint,
+    body_fixed_frame_to_body,
     # macros
     @framecheck
 
