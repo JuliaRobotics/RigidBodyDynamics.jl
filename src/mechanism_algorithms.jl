@@ -193,6 +193,8 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
     out
 end
 
+mass_matrix!(result::DynamicsResult, state::MechanismState) = mass_matrix!(result.massmatrix, state)
+
 """
 $(SIGNATURES)
 
@@ -436,6 +438,10 @@ function dynamics_bias!(
     joint_wrenches_and_torques!(torques, wrenches, state)
 end
 
+function dynamics_bias!(result::DynamicsResult, state::MechanismState)
+    dynamics_bias!(result.dynamicsbias, result.accelerations, result.jointwrenches, state, result.totalwrenches)
+end
+
 """
 $(SIGNATURES)
 
@@ -519,7 +525,8 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
     mechanism = state.mechanism
     rowstart = Ref(1) # TODO: allocation
     # note: order of rows of Jacobian and bias term is determined by iteration order of state.type_sorted_non_tree_joints
-    foreach_with_extra_args(constraintjacobian, constraintbias, state, mechanism, rowstart, state.type_sorted_non_tree_joints) do constraintjacobian, constraintbias, state, mechanism, rowstart, nontreejoint # TODO: use closure once it doesn't allocate
+     # TODO: use closure once it doesn't allocate
+    foreach_with_extra_args(constraintjacobian, constraintbias, state, mechanism, rowstart, state.type_sorted_non_tree_joints) do constraintjacobian, constraintbias, state, mechanism, rowstart, nontreejoint
         path = state.constraint_jacobian_structure[nontreejoint]
         nextrowstart = rowstart[] + num_constraints(nontreejoint)
         rowrange = rowstart[] : nextrowstart - 1
@@ -549,6 +556,8 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         rowstart[] = nextrowstart
     end
 end
+
+constraint_jacobian_and_bias!(result::DynamicsResult, state::MechanismState) = constraint_jacobian_and_bias!(state, result.constraintjacobian, result.constraintbias)
 
 function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M, C}) where {X, M, C, T}
     update_twists_wrt_world!(state)
@@ -723,9 +732,9 @@ function dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M},
         contactwrench = result.contactwrenches[body]
         result.totalwrenches[body] = haskey(externalwrenches, body) ? externalwrenches[body] + contactwrench : contactwrench
     end
-    dynamics_bias!(result.dynamicsbias, result.accelerations, result.jointwrenches, state, result.totalwrenches)
-    mass_matrix!(result.massmatrix, state)
-    constraint_jacobian_and_bias!(state, result.constraintjacobian, result.constraintbias)
+    dynamics_bias!(result, state)
+    mass_matrix!(result, state)
+    constraint_jacobian_and_bias!(result, state)
     dynamics_solve!(result, torques)
     nothing
 end
