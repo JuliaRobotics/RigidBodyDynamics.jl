@@ -43,7 +43,11 @@ struct MechanismState{X, M, C, JointCollection}
     crb_inertias::CacheElement{BodyDict{M, SpatialInertia{C}}}
     contact_states::BodyDict{M, Vector{Vector{DefaultSoftContactState{X}}}} # TODO: consider moving to separate type
 
-    function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
+    function MechanismState(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M}
+        @assert length(q) == num_positions(mechanism)
+        @assert length(v) == num_velocities(mechanism)
+        @assert length(s) == num_additional_states(mechanism)
+
         C = promote_type(X, M)
         canonicalize_graph!(mechanism)
         type_sorted_joints = TypeSortedCollection(typedjoint.(joints(mechanism))) # just to get the type...
@@ -52,10 +56,6 @@ struct MechanismState{X, M, C, JointCollection}
         type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)))
         ancestor_joints(joint) = path(mechanism, successor(joint, mechanism), root_body(mechanism)).edges
         type_sorted_ancestor_joints = JointDict{M, JointCollection}(j => JointCollection(typedjoint.(ancestor_joints(j))) for j in tree_joints(mechanism))
-
-        q = Vector{X}(num_positions(mechanism))
-        v = zeros(X, num_velocities(mechanism))
-        s = zeros(X, num_additional_states(mechanism))
 
         # joint-specific
         qstart, vstart = 1, 1
@@ -90,17 +90,25 @@ struct MechanismState{X, M, C, JointCollection}
         m = mechanism
         constraint_jacobian_structure = JointDict{M, TreePath{RigidBody{M}, GenericJoint{M}}}(j => path(m, predecessor(j, m), successor(j, m)) for j in non_tree_joints(m))
 
-        state = new{X, M, C, JointCollection}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, type_sorted_ancestor_joints,
+        new{X, M, C, JointCollection}(mechanism, type_sorted_tree_joints, type_sorted_non_tree_joints, type_sorted_ancestor_joints,
             constraint_jacobian_structure, q, v, s, qs, vs, joint_poses,
             joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces_in_world, constraint_wrench_subspaces,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
+    end
+
+    function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
+        q = Vector{X}(num_positions(mechanism))
+        v = Vector{X}(num_velocities(mechanism))
+        s = Vector{X}(num_additional_states(mechanism))
+        state = MechanismState(mechanism, q, v, s)
         zero!(state)
         state
     end
 end
 
 MechanismState(mechanism::Mechanism{M}) where {M} = MechanismState{M}(mechanism)
+MechanismState(mechanism::Mechanism, q::Vector{X}, v::Vector{X}) where {X} = MechanismState(mechanism, q, v, Vector{X}(0))
 
 Base.@deprecate MechanismState(::Type{X}, mechanism::Mechanism{M}) where {X, M} MechanismState{X}(mechanism)
 

@@ -58,6 +58,16 @@
 
         @test q == configuration(x)
         @test v == velocity(x)
+
+        q2 = rand(num_positions(mechanism))
+        v2 = rand(num_velocities(mechanism))
+        q2copy = deepcopy(q2)
+        v2copy = deepcopy(v2)
+        x2 = MechanismState(mechanism, q2, v2)
+        @test configuration(x2) === q2
+        @test velocity(x2) === v2
+        @test all(configuration(x2) .== q2copy)
+        @test all(velocity(x2) .== v2copy)
     end
 
     @testset "q̇ <-> v" begin
@@ -285,9 +295,7 @@
         rand!(x)
 
         function q_to_M(q)
-            local x = MechanismState{eltype(q)}(mechanism)
-            set_configuration!(x, q)
-            zero_velocity!(x)
+            local x = MechanismState(mechanism, q, zeros(eltype(q), num_velocities(mechanism)))
             vec(mass_matrix(x))
         end
         nv = num_velocities(mechanism)
