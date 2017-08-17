@@ -150,6 +150,7 @@ export
     simulate,
     findbody,
     findjoint,
+    body_fixed_frame_to_body,
     # macros
     @framecheck
 
