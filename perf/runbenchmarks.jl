@@ -96,7 +96,15 @@ end
 
 function runbenchmarks()
     suite = create_benchmark_suite()
-    tune!(suite)
+
+    paramspath = joinpath(dirname(@__FILE__), "benchmarkparams.jld")
+    if isfile(paramspath)
+        BenchmarkTools.loadparams!(suite, BenchmarkTools.load(paramspath, "suite"), :evals);
+    else
+        tune!(suite, verbose = true)
+        BenchmarkTools.save(paramspath, "suite", BenchmarkTools.params(suite))
+    end
+
     Profile.clear_malloc_data()
     results = run(suite, verbose = true)
     for result in results
