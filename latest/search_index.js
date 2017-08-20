@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installing Julia",
     "category": "section",
-    "text": "Download links and more detailed instructions are available on the Julia website."
+    "text": "Download links and more detailed instructions are available on the Julia website. The latest release of RigidBodyDynamics.jl requires version 0.6 of Julia (the latest stable version).warning: Warning\nDo not use apt-get or brew to install Julia, as the versions provided by these package managers tend to be out of date."
 },
 
 {
@@ -53,7 +53,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installing RigidBodyDynamics",
     "category": "section",
-    "text": "To install the latest tagged release of RigidBodyDynamics, simply runPkg.add(\"RigidBodyDynamics\") To check out the master branch and work on the bleeding edge, additionally runPkg.checkout(\"RigidBodyDynamics\")RigidBodyDynamics currently only supports version 0.5 of Julia."
+    "text": "To install the latest tagged release of RigidBodyDynamics, simply runPkg.add(\"RigidBodyDynamics\") To check out the master branch and work on the bleeding edge (generally, not recommended), additionally runPkg.checkout(\"RigidBodyDynamics\")"
 },
 
 {
@@ -157,7 +157,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.Transform3D",
     "category": "Type",
-    "text": "immutable Transform3D{A<:AbstractArray{T,2}}\n\nA homogeneous transformation matrix representing the transformation from one three-dimensional Cartesian coordinate system to another.\n\n\n\n"
+    "text": "struct Transform3D{A<:(AbstractArray{T,2} where T)}\n\nA homogeneous transformation matrix representing the transformation from one three-dimensional Cartesian coordinate system to another.\n\n\n\n"
 },
 
 {
@@ -173,7 +173,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.Point3D",
     "category": "Type",
-    "text": "immutable Point3D{V<:AbstractArray{T,1}}\n\nA Point3D represents a position in a given coordinate system.\n\nA Point3D is a bound vector. Applying a Transform3D to a Point3D both rotates and translates the Point3D.\n\n\n\n"
+    "text": "struct Point3D{V<:(AbstractArray{T,1} where T)}\n\nA Point3D represents a position in a given coordinate system.\n\nA Point3D is a bound vector. Applying a Transform3D to a Point3D both rotates and translates the Point3D.\n\n\n\n"
 },
 
 {
@@ -181,7 +181,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.FreeVector3D",
     "category": "Type",
-    "text": "immutable FreeVector3D{V<:AbstractArray{T,1}}\n\nA FreeVector3D represents a free vector.\n\nExamples of free vectors include displacements and velocities of points.\n\nApplying a Transform3D to a FreeVector3D only rotates the FreeVector3D.\n\n\n\n"
+    "text": "struct FreeVector3D{V<:(AbstractArray{T,1} where T)}\n\nA FreeVector3D represents a free vector.\n\nExamples of free vectors include displacements and velocities of points.\n\nApplying a Transform3D to a FreeVector3D only rotates the FreeVector3D.\n\n\n\n"
 },
 
 {
@@ -197,7 +197,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.SpatialInertia",
     "category": "Type",
-    "text": "immutable SpatialInertia{T<:Number}\n\nA spatial inertia, or inertia matrix, represents the mass distribution of a rigid body.\n\nA spatial inertia expressed in frame i is defined as:\n\nI^i =\nint_Brholeft(xright)leftbeginarraycc\nhatp^Tleft(xright)hatpleft(xright)  hatpleft(xright)\nhatp^Tleft(xright)  I\nendarrayrightdx=leftbeginarraycc\nJ  hatc\nhatc^T  mI\nendarrayright\n\nwhere rho(x) is the density of point x, and p(x) are the coordinates of point x expressed in frame i. J is the mass moment of inertia, m is the total mass, and c is the 'cross part', center of mass position scaled by m.\n\n\n\n"
+    "text": "struct SpatialInertia{T}\n\nA spatial inertia, or inertia matrix, represents the mass distribution of a rigid body.\n\nA spatial inertia expressed in frame i is defined as:\n\nI^i =\nint_Brholeft(xright)leftbeginarraycc\nhatp^Tleft(xright)hatpleft(xright)  hatpleft(xright)\nhatp^Tleft(xright)  I\nendarrayrightdx=leftbeginarraycc\nJ  hatc\nhatc^T  mI\nendarrayright\n\nwhere rho(x) is the density of point x, and p(x) are the coordinates of point x expressed in frame i. J is the mass moment of inertia, m is the total mass, and c is the 'cross part', center of mass position scaled by m.\n\n\n\n"
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.Twist",
     "category": "Type",
-    "text": "immutable Twist{T<:Number}\n\nA twist represents the relative angular and linear motion between two bodies.\n\nThe twist of frame j with respect to frame i, expressed in frame k is defined as\n\nT_j^ki=left(beginarrayc\nomega_j^ki\nv_j^ki\nendarrayright)inmathbbR^6\n\nsuch that\n\nleftbeginarraycc\nhatomega_j^ki  v_j^ki\n0  0\nendarrayright=H_i^kdotH_j^iH_k^j\n\nwhere H^beta_alpha is the homogeneous transform from frame alpha to frame beta, and hatx is the 3 times 3 skew symmetric matrix that satisfies hatx y = x times y for all y in mathbbR^3.\n\nHere, omega_j^ki is the angular part and v_j^ki is the linear part. Note that the linear part is not in general the same as the linear velocity of the origin of frame j.\n\n\n\n"
+    "text": "struct Twist{T}\n\nA twist represents the relative angular and linear motion between two bodies.\n\nThe twist of frame j with respect to frame i, expressed in frame k is defined as\n\nT_j^ki=left(beginarrayc\nomega_j^ki\nv_j^ki\nendarrayright)inmathbbR^6\n\nsuch that\n\nleftbeginarraycc\nhatomega_j^ki  v_j^ki\n0  0\nendarrayright=H_i^kdotH_j^iH_k^j\n\nwhere H^beta_alpha is the homogeneous transform from frame alpha to frame beta, and hatx is the 3 times 3 skew symmetric matrix that satisfies hatx y = x times y for all y in mathbbR^3.\n\nHere, omega_j^ki is the angular part and v_j^ki is the linear part. Note that the linear part is not in general the same as the linear velocity of the origin of frame j.\n\n\n\n"
 },
 
 {
@@ -221,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.SpatialAcceleration",
     "category": "Type",
-    "text": "immutable SpatialAcceleration{T<:Number}\n\nA spatial acceleration is the time derivative of a twist.\n\nSee Twist.\n\n\n\n"
+    "text": "struct SpatialAcceleration{T}\n\nA spatial acceleration is the time derivative of a twist.\n\nSee Twist.\n\n\n\n"
 },
 
 {
@@ -237,7 +237,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.Momentum",
     "category": "Type",
-    "text": "immutable Momentum{T<:Number}\n\nA Momentum is the product of a SpatialInertia and a Twist, i.e.\n\nh^i =\nleft(beginarrayc\nk^i\nl^i\nendarrayright) =\nI^i T^i j_k\n\nwhere I^i is the spatial inertia of a given body expressed in frame i, and T^i j_k is the twist of frame k (attached to the body) with respect to inertial frame j, expressed in frame i. k^i is the angular momentum and l^i is the linear momentum.\n\n\n\n"
+    "text": "struct Momentum{T}\n\nA Momentum is the product of a SpatialInertia and a Twist, i.e.\n\nh^i =\nleft(beginarrayc\nk^i\nl^i\nendarrayright) =\nI^i T^i j_k\n\nwhere I^i is the spatial inertia of a given body expressed in frame i, and T^i j_k is the twist of frame k (attached to the body) with respect to inertial frame j, expressed in frame i. k^i is the angular momentum and l^i is the linear momentum.\n\n\n\n"
 },
 
 {
@@ -245,7 +245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.Wrench",
     "category": "Type",
-    "text": "immutable Wrench{T<:Number}\n\nA wrench represents a system of forces.\n\nThe wrench w^i expressed in frame i is defined as\n\nw^i =\nleft(beginarrayc\ntau^i\nf^i\nendarrayright) =\nsum_jleft(beginarrayc\nr_j^itimes f_j^i\nf_j^i\nendarrayright)\n\nwhere the f_j^i are forces expressed in frame i, exerted at positions r_j^i. tau^i is the total torque and f^i is the total force.\n\n\n\n"
+    "text": "struct Wrench{T}\n\nA wrench represents a system of forces.\n\nThe wrench w^i expressed in frame i is defined as\n\nw^i =\nleft(beginarrayc\ntau^i\nf^i\nendarrayright) =\nsum_jleft(beginarrayc\nr_j^itimes f_j^i\nf_j^i\nendarrayright)\n\nwhere the f_j^i are forces expressed in frame i, exerted at positions r_j^i. tau^i is the total torque and f^i is the total force.\n\n\n\n"
 },
 
 {
@@ -261,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.GeometricJacobian",
     "category": "Type",
-    "text": "immutable GeometricJacobian{A<:AbstractArray{T,2}}\n\nA geometric Jacobian (also known as basic, or spatial Jacobian) maps a vector of joint velocities to a twist.\n\n\n\n"
+    "text": "struct GeometricJacobian{A<:(AbstractArray{T,2} where T)}\n\nA geometric Jacobian (also known as basic, or spatial Jacobian) maps a vector of joint velocities to a twist.\n\n\n\n"
 },
 
 {
@@ -277,7 +277,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.MomentumMatrix",
     "category": "Type",
-    "text": "immutable MomentumMatrix{A<:AbstractArray{T,2}}\n\nA momentum matrix maps a joint velocity vector to momentum.\n\nThis is a slight generalization of the centroidal momentum matrix (Orin, Goswami, \"Centroidal momentum matrix of a humanoid robot: Structure and properties.\") in that the matrix (and hence the corresponding total momentum) need not be expressed in a centroidal frame.\n\n\n\n"
+    "text": "struct MomentumMatrix{A<:(AbstractArray{T,2} where T)}\n\nA momentum matrix maps a joint velocity vector to momentum.\n\nThis is a slight generalization of the centroidal momentum matrix (Orin, Goswami, \"Centroidal momentum matrix of a humanoid robot: Structure and properties.\") in that the matrix (and hence the corresponding total momentum) need not be expressed in a centroidal frame.\n\n\n\n"
 },
 
 {
@@ -353,6 +353,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.Momentum,RigidBodyDynamics.Transform3D}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.transform",
+    "category": "Method",
+    "text": "transform(f, transform)\n\n\nTransform the Momentum to a different frame.\n\n\n\n"
+},
+
+{
     "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.SpatialAcceleration,RigidBodyDynamics.Transform3D,RigidBodyDynamics.Twist,RigidBodyDynamics.Twist}",
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.transform",
@@ -374,6 +382,46 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.transform",
     "category": "Method",
     "text": "transform(twist, transform)\n\n\nTransform the Twist to a different frame.\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.Wrench,RigidBodyDynamics.Transform3D}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.transform",
+    "category": "Method",
+    "text": "transform(f, transform)\n\n\nTransform the Wrench to a different frame.\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.invtransform-Tuple{RigidBodyDynamics.FreeVector3D,RigidBodyDynamics.Transform3D}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.invtransform",
+    "category": "Method",
+    "text": "invtransform(x, t)\n\n\nApply the inverse transform, i.e. return x, originally expressed in CartesianFrame3D t.from, transformed to t.to.\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.invtransform-Tuple{RigidBodyDynamics.Point3D,RigidBodyDynamics.Transform3D}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.invtransform",
+    "category": "Method",
+    "text": "invtransform(x, t)\n\n\nApply the inverse transform, i.e. return x, originally expressed in CartesianFrame3D t.from, transformed to t.to.\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.FreeVector3D,RigidBodyDynamics.Transform3D}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.transform",
+    "category": "Method",
+    "text": "transform(x, t)\n\n\nReturn x transformed to CartesianFrame3D t.from.\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.Point3D,RigidBodyDynamics.Transform3D}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.transform",
+    "category": "Method",
+    "text": "transform(x, t)\n\n\nReturn x transformed to CartesianFrame3D t.from.\n\n\n\n"
 },
 
 {
@@ -445,7 +493,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Joints",
     "title": "RigidBodyDynamics.Joint",
     "category": "Type",
-    "text": "type Joint{T<:Number}\n\nA joint represents a kinematic restriction of the relative twist between two rigid bodies to a linear subspace of dimension k. The state related to the joint is parameterized by two sets of variables, namely\n\na vector q in  mathcalQ, parameterizing the relative homogeneous transform.\na vector v in mathbbR^k, parameterizing the relative twist.\n\nA joint has a direction. The rigid body before the joint is called the joint's predecessor, and the rigid body after the joint is its successor.\n\nThe twist of the successor with respect to the predecessor is a linear function of v.\n\nFor some joint types (notably those using a redundant representation of relative orientation, such as a unit quaternion), dotq, the time derivative of q, may not be the same as v. However, an invertible linear transformation exists between dotq and v.\n\nSee also:\n\nDefinition 2.9 in Duindam, \"Port-Based Modeling and Control for Efficient Bipedal Walking Robots\", 2006.\nSection 4.4 of Featherstone, \"Rigid Body Dynamics Algorithms\", 2008.\n\n\n\n"
+    "text": "type Joint{T, JT<:RigidBodyDynamics.JointType{T}}\n\nA joint represents a kinematic restriction of the relative twist between two rigid bodies to a linear subspace of dimension k. The state related to the joint is parameterized by two sets of variables, namely\n\na vector q in  mathcalQ, parameterizing the relative homogeneous transform.\na vector v in mathbbR^k, parameterizing the relative twist.\n\nA joint has a direction. The rigid body before the joint is called the joint's predecessor, and the rigid body after the joint is its successor.\n\nThe twist of the successor with respect to the predecessor is a linear function of v.\n\nFor some joint types (notably those using a redundant representation of relative orientation, such as a unit quaternion), dotq, the time derivative of q, may not be the same as v. However, an invertible linear transformation exists between dotq and v.\n\nSee also:\n\nDefinition 2.9 in Duindam, \"Port-Based Modeling and Control for Efficient Bipedal Walking Robots\", 2006.\nSection 4.4 of Featherstone, \"Rigid Body Dynamics Algorithms\", 2008.\n\n\n\n"
 },
 
 {
@@ -457,7 +505,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.bias_acceleration-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{X,1},AbstractArray{X,1}}",
+    "location": "joints.html#RigidBodyDynamics.bias_acceleration-Tuple{RigidBodyDynamics.Joint,AbstractArray{T,1} where T,AbstractArray{T,1} where T}",
     "page": "Joints",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "Method",
@@ -465,15 +513,23 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.configuration_derivative_to_velocity!-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{T,1},AbstractArray{T,1},AbstractArray{T,1}}",
+    "location": "joints.html#RigidBodyDynamics.configuration_derivative_to_velocity!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,AbstractArray{T,1} where T}",
     "page": "Joints",
     "title": "RigidBodyDynamics.configuration_derivative_to_velocity!",
     "category": "Method",
-    "text": "configuration_derivative_to_velocity!(joint, v, q, q̇)\n\n\nCompute joint velocity vector v given the joint configuration vector q and its time derivative dotq (in place).\n\nNote that this mapping is linear.\n\nSee also velocity_to_configuration_derivative!, the inverse mapping.\n\n\n\n"
+    "text": "configuration_derivative_to_velocity!(v, joint, q, q̇)\n\n\nCompute joint velocity vector v given the joint configuration vector q and its time derivative dotq (in place).\n\nNote that this mapping is linear.\n\nSee also velocity_to_configuration_derivative!, the inverse mapping.\n\n\n\n"
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.constraint_wrench_subspace-Tuple{RigidBodyDynamics.Joint{M},RigidBodyDynamics.Transform3D{A}}",
+    "location": "joints.html#RigidBodyDynamics.configuration_derivative_to_velocity_adjoint!-Tuple{Any,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,Any}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.configuration_derivative_to_velocity_adjoint!",
+    "category": "Method",
+    "text": "configuration_derivative_to_velocity_adjoint!(fq, joint, q, fv)\n\n\nGiven  a linear function\n\nf(v) = langle f_v v rangle\n\nwhere v is the joint velocity vector, return a vector f_q such that\n\nlangle f_v v rangle = langle f_q dotq(v) rangle\n\nNote: since v is a linear function of dotq (see configuration_derivative_to_velocity!), we can write v = V_q dotq, so\n\nlangle f_v v rangle = langle f_v V_q dotq rangle = langle V_q^* f_v dotq rangle\n\nso f_q = V_q^* f_v.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.constraint_wrench_subspace-Tuple{RigidBodyDynamics.Joint,RigidBodyDynamics.Transform3D}",
     "page": "Joints",
     "title": "RigidBodyDynamics.constraint_wrench_subspace",
     "category": "Method",
@@ -481,15 +537,15 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.global_coordinates!-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{T,1},AbstractArray{T,1},AbstractArray{T,1}}",
+    "location": "joints.html#RigidBodyDynamics.global_coordinates!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,AbstractArray{T,1} where T}",
     "page": "Joints",
     "title": "RigidBodyDynamics.global_coordinates!",
     "category": "Method",
-    "text": "global_coordinates!(joint, q, q0, ϕ)\n\n\nCompute the global parameterization of the joint's configuration, q, given a 'base' orientation q_0 and a vector of local coordinates  centered around q_0.\n\nSee also local_coordinates!.\n\n\n\n"
+    "text": "global_coordinates!(q, joint, q0, ϕ)\n\n\nCompute the global parameterization of the joint's configuration, q, given a 'base' orientation q_0 and a vector of local coordinates  centered around q_0.\n\nSee also local_coordinates!.\n\n\n\n"
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.has_fixed_subspaces-Tuple{RigidBodyDynamics.Joint{M}}",
+    "location": "joints.html#RigidBodyDynamics.has_fixed_subspaces-Tuple{RigidBodyDynamics.Joint}",
     "page": "Joints",
     "title": "RigidBodyDynamics.has_fixed_subspaces",
     "category": "Method",
@@ -497,15 +553,23 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.joint_torque!-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{T,1},AbstractArray{T,1},RigidBodyDynamics.Wrench}",
+    "location": "joints.html#RigidBodyDynamics.isfloating-Tuple{RigidBodyDynamics.Joint}",
     "page": "Joints",
-    "title": "RigidBodyDynamics.joint_torque!",
+    "title": "RigidBodyDynamics.isfloating",
     "category": "Method",
-    "text": "joint_torque!(joint, τ, q, joint_wrench)\n\n\nGiven the wrench exerted across the joint on the joint's successor, compute the vector of joint torques tau (in place), in configuration q.\n\n\n\n"
+    "text": "isfloating(joint)\n\n\nWhether the joint is a floating joint, i.e., whether it imposes no constraints on the relative motions of its successor and predecessor bodies.\n\n\n\n"
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.joint_transform-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{X,1}}",
+    "location": "joints.html#RigidBodyDynamics.joint_torque!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,RigidBodyDynamics.Wrench}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.joint_torque!",
+    "category": "Method",
+    "text": "joint_torque!(τ, joint, q, joint_wrench)\n\n\nGiven the wrench exerted across the joint on the joint's successor, compute the vector of joint torques tau (in place), in configuration q.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.joint_transform-Tuple{RigidBodyDynamics.Joint,AbstractArray{T,1} where T}",
     "page": "Joints",
     "title": "RigidBodyDynamics.joint_transform",
     "category": "Method",
@@ -513,67 +577,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.local_coordinates!-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{T,1},AbstractArray{T,1},AbstractArray{T,1},AbstractArray{T,1},AbstractArray{T,1}}",
+    "location": "joints.html#RigidBodyDynamics.local_coordinates!-Tuple{AbstractArray{T,1} where T,AbstractArray{T,1} where T,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,AbstractArray{T,1} where T,AbstractArray{T,1} where T}",
     "page": "Joints",
     "title": "RigidBodyDynamics.local_coordinates!",
     "category": "Method",
-    "text": "local_coordinates!(joint, ϕ, ϕ̇, q0, q, v)\n\n\nCompute a vector of local coordinates phi around configuration q_0 corresponding to configuration q (in place). Also compute the time derivative dotphi of phi given the joint velocity vector v.\n\nThe local coordinate vector phi must be zero if and only if q = q_0.\n\nFor revolute or prismatic joint types, the local coordinates can just be phi = q - q_0, but for joint types with configuration vectors that are restricted to a manifold (e.g. when unit quaternions are used to represent orientation), elementwise subtraction may not make sense. For such joints, exponential coordinates could be used as the local coordinate vector phi.\n\nSee also global_coordinates!.\n\n\n\n"
+    "text": "local_coordinates!(ϕ, ϕ̇, joint, q0, q, v)\n\n\nCompute a vector of local coordinates phi around configuration q_0 corresponding to configuration q (in place). Also compute the time derivative dotphi of phi given the joint velocity vector v.\n\nThe local coordinate vector phi must be zero if and only if q = q_0.\n\nFor revolute or prismatic joint types, the local coordinates can just be phi = q - q_0, but for joint types with configuration vectors that are restricted to a manifold (e.g. when unit quaternions are used to represent orientation), elementwise subtraction may not make sense. For such joints, exponential coordinates could be used as the local coordinate vector phi.\n\nSee also global_coordinates!.\n\n\n\n"
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.motion_subspace-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{X,1}}",
+    "location": "joints.html#RigidBodyDynamics.motion_subspace-Tuple{RigidBodyDynamics.Joint,AbstractArray{T,1} where T}",
     "page": "Joints",
     "title": "RigidBodyDynamics.motion_subspace",
     "category": "Method",
     "text": "motion_subspace(joint, q)\n\n\nReturn a basis for the motion subspace of the joint in configuration q.\n\nThe motion subspace basis is a 6 times  k matrix, where k is the dimension of the velocity vector v, that maps v to the twist of the joint's successor with respect to its predecessor. The returned motion subspace is expressed in the frame after the joint, which is attached to the joint's successor.\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.num_positions-Tuple{RigidBodyDynamics.Joint{M}}",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.num_positions",
-    "category": "Method",
-    "text": "num_positions(joint)\n\n\nReturn the length of the configuration vector of joint.\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.num_velocities-Tuple{RigidBodyDynamics.Joint{M}}",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.num_velocities",
-    "category": "Method",
-    "text": "num_velocities(joint)\n\n\nReturn the length of the velocity vector of joint.\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.rand_configuration!-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{T,1}}",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.rand_configuration!",
-    "category": "Method",
-    "text": "rand_configuration!(joint, q)\n\n\nSet q to a random configuration. The distribution used depends on the joint type.\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.velocity_to_configuration_derivative!-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{T,1},AbstractArray{T,1},AbstractArray{T,1}}",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.velocity_to_configuration_derivative!",
-    "category": "Method",
-    "text": "velocity_to_configuration_derivative!(joint, q̇, q, v)\n\n\nCompute the time derivative dotq of the joint configuration vector q given q and the joint velocity vector v (in place).\n\nNote that this mapping is linear.\n\nSee also configuration_derivative_to_velocity!, the inverse mapping.\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.zero_configuration!-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{T,1}}",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.zero_configuration!",
-    "category": "Method",
-    "text": "zero_configuration!(joint, q)\n\n\nSet q to the 'zero' configuration, corresponding to an identity joint transform.\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.joint_twist-Tuple{RigidBodyDynamics.Joint{M},AbstractArray{X,1},AbstractArray{X,1}}",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.joint_twist",
-    "category": "Method",
-    "text": "joint_twist(joint, q, v)\n\n\nReturn the twist of joint's  successor with respect to its predecessor, expressed in the frame after the joint.\n\nNote that this is the same as Twist(motion_subspace(joint, q), v).\n\n\n\n"
 },
 
 {
@@ -585,59 +601,67 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "joints.html#RigidBodyDynamics.num_positions-Tuple{RigidBodyDynamics.Joint}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.num_positions",
+    "category": "Method",
+    "text": "num_positions(joint)\n\n\nReturn the length of the configuration vector of joint.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.num_velocities-Tuple{RigidBodyDynamics.Joint}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.num_velocities",
+    "category": "Method",
+    "text": "num_velocities(joint)\n\n\nReturn the length of the velocity vector of joint.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.rand_configuration!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.rand_configuration!",
+    "category": "Method",
+    "text": "rand_configuration!(q, joint)\n\n\nSet q to a random configuration. The distribution used depends on the joint type.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.velocity_to_configuration_derivative!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,AbstractArray{T,1} where T}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.velocity_to_configuration_derivative!",
+    "category": "Method",
+    "text": "velocity_to_configuration_derivative!(q̇, joint, q, v)\n\n\nCompute the time derivative dotq of the joint configuration vector q given q and the joint velocity vector v (in place).\n\nNote that this mapping is linear.\n\nSee also configuration_derivative_to_velocity!, the inverse mapping.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.zero_configuration!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.zero_configuration!",
+    "category": "Method",
+    "text": "zero_configuration!(q, joint)\n\n\nSet q to the 'zero' configuration, corresponding to an identity joint transform.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.joint_spatial_acceleration-Tuple{RigidBodyDynamics.Joint,AbstractArray{T,1} where T,AbstractArray{T,1} where T,AbstractArray{T,1} where T}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.joint_spatial_acceleration",
+    "category": "Method",
+    "text": "joint_spatial_acceleration(joint, q, v, vd)\n\n\nReturn the spatial acceleration of joint's  successor with respect to its predecessor, expressed in the frame after the joint.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.joint_twist-Tuple{RigidBodyDynamics.Joint,AbstractArray{T,1} where T,AbstractArray{T,1} where T}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.joint_twist",
+    "category": "Method",
+    "text": "joint_twist(joint, q, v)\n\n\nReturn the twist of joint's  successor with respect to its predecessor, expressed in the frame after the joint.\n\nNote that this is the same as Twist(motion_subspace(joint, q), v).\n\n\n\n"
+},
+
+{
     "location": "joints.html#Functions-1",
     "page": "Joints",
     "title": "Functions",
     "category": "section",
     "text": "Modules = [RigidBodyDynamics]\nOrder   = [:function]\nPages   = [\"joint.jl\"]"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.Fixed",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.Fixed",
-    "category": "Type",
-    "text": "immutable Fixed{T<:Number} <: RigidBodyDynamics.JointType{T<:Number}\n\nThe Fixed joint type is a degenerate joint type, in the sense that it allows no motion between its predecessor and successor rigid bodies.\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.Prismatic",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.Prismatic",
-    "category": "Type",
-    "text": "immutable Prismatic{T<:Number} <: RigidBodyDynamics.OneDegreeOfFreedomFixedAxis{T<:Number}\n\nA Prismatic joint type allows translation along a fixed axis.\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.Prismatic-Tuple{StaticArrays.SVector{3,T}}",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.Prismatic",
-    "category": "Method",
-    "text": "Prismatic(axis)\n\n\nConstruct a new Prismatic joint type, allowing translation along axis (expressed in the frame before the joint).\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.QuaternionFloating",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.QuaternionFloating",
-    "category": "Type",
-    "text": "immutable QuaternionFloating{T} <: RigidBodyDynamics.JointType{T}\n\nA floating joint type that uses a unit quaternion representation for orientation.\n\nFloating joints are 6-degree-of-freedom joints that are in a sense degenerate, as they impose no constraints on the relative motion between two bodies.\n\nThe full, 7-dimensional configuration vector of a QuaternionFloating joint type consists of a unit quaternion representing the orientation that rotates vectors from the frame 'directly after' the joint to the frame 'directly before' it, and a 3D position vector representing the origin of the frame after the joint in the frame before the joint.\n\nThe 6-dimensional velocity vector of a QuaternionFloating joint is the twist of the frame after the joint with respect to the frame before it, expressed in the frame after the joint.\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.Revolute",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.Revolute",
-    "category": "Type",
-    "text": "immutable Revolute{T<:Number} <: RigidBodyDynamics.OneDegreeOfFreedomFixedAxis{T<:Number}\n\nA Revolute joint type allows rotation about a fixed axis.\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.Revolute-Tuple{StaticArrays.SVector{3,T}}",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.Revolute",
-    "category": "Method",
-    "text": "Revolute(axis)\n\n\nConstruct a new Revolute joint type, allowing rotation about axis (expressed in the frame before the joint).\n\n\n\n"
 },
 
 {
@@ -677,7 +701,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.RigidBody",
     "category": "Type",
-    "text": "type RigidBody{T<:Number}\n\nA non-deformable body.\n\nA RigidBody has inertia (represented as a SpatialInertia), unless it represents a root (world) body. A RigidBody additionally stores a list of definitions of coordinate systems that are rigidly attached to it.\n\n\n\n"
+    "text": "type RigidBody{T}\n\nA non-deformable body.\n\nA RigidBody has inertia (represented as a SpatialInertia), unless it represents a root (world) body. A RigidBody additionally stores a list of definitions of coordinate systems that are rigidly attached to it.\n\n\n\n"
 },
 
 {
@@ -689,7 +713,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "rigidbody.html#RigidBodyDynamics.add_contact_point!-Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Contact.ContactPoint{T,RigidBodyDynamics.Contact.SoftContactModel{RigidBodyDynamics.Contact.HuntCrossleyModel{T},RigidBodyDynamics.Contact.ViscoelasticCoulombModel{T}}}}",
+    "location": "rigidbody.html#RigidBodyDynamics.add_contact_point!-Union{Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Contact.ContactPoint{T,RigidBodyDynamics.Contact.SoftContactModel{RigidBodyDynamics.Contact.HuntCrossleyModel{T},RigidBodyDynamics.Contact.ViscoelasticCoulombModel{T}}}}, Tuple{T}} where T",
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.add_contact_point!",
     "category": "Method",
@@ -697,7 +721,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "rigidbody.html#RigidBodyDynamics.add_frame!-Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Transform3D}",
+    "location": "rigidbody.html#RigidBodyDynamics.add_frame!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.Transform3D}",
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.add_frame!",
     "category": "Method",
@@ -821,7 +845,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.Mechanism",
     "category": "Type",
-    "text": "type Mechanism{T<:Number}\n\nA Mechanism represents an interconnection of rigid bodies and joints. Mechanisms store the joint layout and inertia parameters, but no state-dependent information.\n\n\n\n"
+    "text": "type Mechanism{T}\n\nA Mechanism represents an interconnection of rigid bodies and joints. Mechanisms store the joint layout and inertia parameters, but no state-dependent information.\n\n\n\n"
 },
 
 {
@@ -841,19 +865,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.attach!",
+    "location": "mechanism.html#RigidBodyDynamics.attach!-Union{Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}},RigidBodyDynamics.Transform3D,RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Transform3D}, Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}},RigidBodyDynamics.Transform3D,RigidBodyDynamics.RigidBody{T}}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
-    "category": "Function",
-    "text": "attach!(mechanism, parentbody, childmechanism, childroot_to_parent)\nattach!(mechanism, parentbody, childmechanism)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
+    "category": "Method",
+    "text": "attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds jointToPredecessor and successorToJoint define where joint is attached to each body. jointToPredecessor should define frame_before(joint) with respect to any frame fixed to predecessor, and likewise successorToJoint should define any frame fixed to successor with respect to frame_after(joint).\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.attach!",
+    "location": "mechanism.html#RigidBodyDynamics.attach!-Union{Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.Transform3D}, Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
-    "category": "Function",
-    "text": "attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds jointToPredecessor and successorToJoint define where joint is attached to each body. jointToPredecessor should define frame_before(joint) with respect to any frame fixed to predecessor, and likewise successorToJoint should define any frame fixed to successor with respect to frame_after(joint).\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
+    "category": "Method",
+    "text": "attach!(mechanism, parentbody, childmechanism)\nattach!(mechanism, parentbody, childmechanism, childroot_to_parent)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
 },
 
 {
@@ -865,35 +889,35 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Tuple{Type{T},Vararg{Any,N}}",
+    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{Type{T},Vararg{Type{#s6} where #s6<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "Method",
-    "text": "rand_chain_mechanism(t, jointTypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n"
+    "text": "rand_chain_mechanism(?, jointtypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n"
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Tuple{Type{T},Vararg{Any,N}}",
+    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s6} where #s6<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "Method",
-    "text": "rand_floating_tree_mechanism(t, nonFloatingJointTypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n"
+    "text": "rand_floating_tree_mechanism(?, nonfloatingjointtypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n"
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Tuple{Type{T},Function,Vararg{Any,N}}",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Function,Vararg{Type{#s4} where #s4<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
-    "text": "rand_tree_mechanism(?, parentselector, jointTypes)\n\n\nCreate a random tree Mechanism with the given joint types. Each new body is attached to a parent selected using the parentselector function.\n\n\n\n"
+    "text": "rand_tree_mechanism(?, parentselector, jointtypes)\n\n\nCreate a random tree Mechanism with the given joint types. Each new body is attached to a parent selected using the parentselector function.\n\n\n\n"
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Tuple{Type{T},Vararg{Any,N}}",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s6} where #s6<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
-    "text": "rand_tree_mechanism(t, jointTypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n"
+    "text": "rand_tree_mechanism(?, jointtypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n"
 },
 
 {
@@ -913,7 +937,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.submechanism-Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T}}",
+    "location": "mechanism.html#RigidBodyDynamics.submechanism-Union{Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T}}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.submechanism",
     "category": "Method",
@@ -925,7 +949,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rebuild_spanning_tree!",
     "category": "Function",
-    "text": "rebuild_spanning_tree!(mechanism, next_edge)\nrebuild_spanning_tree!(mechanism)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
+    "text": "rebuild_spanning_tree!(mechanism)\nrebuild_spanning_tree!(mechanism, next_edge)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
 },
 
 {
@@ -933,7 +957,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "Creating and modifying Mechanisms",
     "category": "section",
-    "text": "parse_urdfModules = [RigidBodyDynamics]\nOrder   = [:function]\nPages   = [\"mechanism_manipulation.jl\"]"
+    "text": "parse_urdfModules = [RigidBodyDynamics]\nOrder   = [:function]\nPages   = [\"mechanism_modification.jl\"]"
 },
 
 {
@@ -945,11 +969,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.bodies-Tuple{RigidBodyDynamics.Mechanism{T}}",
+    "location": "mechanism.html#RigidBodyDynamics.bodies-Tuple{RigidBodyDynamics.Mechanism}",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.bodies",
     "category": "Method",
     "text": "bodies(mechanism)\n\n\nReturn the RigidBodys that are part of the Mechanism as an iterable collection.\n\n\n\n"
+},
+
+{
+    "location": "mechanism.html#RigidBodyDynamics.body_fixed_frame_to_body-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.body_fixed_frame_to_body",
+    "category": "Method",
+    "text": "body_fixed_frame_to_body(mechanism, frame)\n\n\nReturn the RigidBody to which frame is attached.\n\nNote: this function is linear in the number of bodies and is not meant to be called in tight loops.\n\n\n\n"
 },
 
 {
@@ -1065,19 +1097,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanism.html#Base.eltype-Union{Tuple{Type{RigidBodyDynamics.Mechanism{T}}}, Tuple{T}} where T",
+    "page": "Mechanism",
+    "title": "Base.eltype",
+    "category": "Method",
+    "text": "eltype(?)\n\n\nCreate a new Mechanism containing only a root body, to which other bodies can be attached with joints.\n\n\n\n"
+},
+
+{
     "location": "mechanism.html#RigidBodyDynamics.body_fixed_frame_definition-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.body_fixed_frame_definition",
     "category": "Method",
     "text": "body_fixed_frame_definition(mechanism, frame)\n\n\nReturn the definition of body-fixed frame frame, i.e., the Transform3D from frame to the default frame of the body to which it is attached.\n\nNote: this function is linear in the number of bodies and is not meant to be called in tight loops.\n\nSee also default_frame, frame_definition.\n\n\n\n"
-},
-
-{
-    "location": "mechanism.html#RigidBodyDynamics.body_fixed_frame_to_body-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}",
-    "page": "Mechanism",
-    "title": "RigidBodyDynamics.body_fixed_frame_to_body",
-    "category": "Method",
-    "text": "body_fixed_frame_to_body(mechanism, frame)\n\n\nReturn the RigidBody to which frame is attached.\n\nNote: this function is linear in the number of bodies and is not meant to be called in tight loops.\n\n\n\n"
 },
 
 {
@@ -1125,7 +1157,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.MechanismState",
     "category": "Type",
-    "text": "immutable MechanismState{X<:Number, M<:Number, C<:Number}\n\nA MechanismState stores state information for an entire Mechanism. It contains the joint configuration and velocity vectors q and v, and a vector of additional states s. In addition, it stores cache variables that depend on q and v and are aimed at preventing double work.\n\nType parameters:\n\nX: the scalar type of the q, v, and s vectors.\nM: the scalar type of the Mechanism\nC: the scalar type of the cache variables (== promote_type(X, M))\n\n\n\n"
+    "text": "struct MechanismState{X, M, C, JointCollection}\n\nA MechanismState stores state information for an entire Mechanism. It contains the joint configuration and velocity vectors q and v, and a vector of additional states s. In addition, it stores cache variables that depend on q and v and are aimed at preventing double work.\n\nType parameters:\n\nX: the scalar type of the q, v, and s vectors.\nM: the scalar type of the Mechanism\nC: the scalar type of the cache variables (== promote_type(X, M))\n\n\n\n"
 },
 
 {
@@ -1169,19 +1201,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}",
-    "page": "MechanismState",
-    "title": "RigidBodyDynamics.configuration",
-    "category": "Method",
-    "text": "configuration(state, path)\n\n\nReturn the part of the Mechanism's configuration vector q associated with the joints along path.\n\n\n\n"
-},
-
-{
     "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration",
     "category": "Method",
     "text": "configuration(state)\n\n\nReturn the configuration vector q.\n\nNote that this returns a reference to the underlying data in state. The user is responsible for calling setdirty! after modifying this vector to ensure that dependent cache variables are invalidated.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.constraint_wrench_subspace-Union{Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}}}, Tuple{T}} where T",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.constraint_wrench_subspace",
+    "category": "Method",
+    "text": "constraint_wrench_subspace(state, joint)\n\n\nReturn the constraint wrench subspace of the given joint expressed in the frame after the joint.\n\n\n\n"
 },
 
 {
@@ -1193,7 +1225,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.global_coordinates!-Tuple{RigidBodyDynamics.MechanismState,Union{Base.ReshapedArray{T,1,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray{T,1},SubArray{T,1,A<:Union{Base.ReshapedArray{T,N,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray},I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex,Colon,Int64,Range{Int64}},N}},L}},Union{Base.ReshapedArray{T,1,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray{T,1},SubArray{T,1,A<:Union{Base.ReshapedArray{T,N,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray},I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex,Colon,Int64,Range{Int64}},N}},L}}}",
+    "location": "mechanismstate.html#RigidBodyDynamics.global_coordinates!-Tuple{RigidBodyDynamics.MechanismState,Union{Base.ReshapedArray{T,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{T,1}, SubArray{T,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray} where T,Union{Base.ReshapedArray{T,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{T,1}, SubArray{T,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray} where T}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.global_coordinates!",
     "category": "Method",
@@ -1201,23 +1233,31 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.local_coordinates!-Tuple{RigidBodyDynamics.MechanismState,Union{Base.ReshapedArray{T,1,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray{T,1},SubArray{T,1,A<:Union{Base.ReshapedArray{T,N,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray},I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex,Colon,Int64,Range{Int64}},N}},L}},Union{Base.ReshapedArray{T,1,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray{T,1},SubArray{T,1,A<:Union{Base.ReshapedArray{T,N,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray},I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex,Colon,Int64,Range{Int64}},N}},L}},Union{Base.ReshapedArray{T,1,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray{T,1},SubArray{T,1,A<:Union{Base.ReshapedArray{T,N,A<:DenseArray,MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N}}},DenseArray},I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex,Colon,Int64,Range{Int64}},N}},L}}}",
+    "location": "mechanismstate.html#RigidBodyDynamics.gravitational_potential_energy-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.gravitational_potential_energy",
+    "category": "Method",
+    "text": "gravitational_potential_energy(state, body)\n\n\nReturn the gravitational potential energy in the given state, computed as the negation of the dot product of the gravitational force and the center of mass expressed in the Mechanism's root frame.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.joint_transform-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.joint_transform",
+    "category": "Method",
+    "text": "joint_transform(state, joint)\n\n\nReturn the joint transform for the given joint, i.e. the transform from frame_after(joint) to frame_before(joint).\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.local_coordinates!-Tuple{Union{Base.ReshapedArray{T,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{T,1}, SubArray{T,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray} where T,Union{Base.ReshapedArray{T,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{T,1}, SubArray{T,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray} where T,RigidBodyDynamics.MechanismState,Union{Base.ReshapedArray{T,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{T,1}, SubArray{T,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray} where T}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.local_coordinates!",
     "category": "Method",
-    "text": "local_coordinates!(state, ϕ, ϕd, q0)\n\n\nCompute local coordinates phi centered around (global) configuration vector q_0, as well as their time derivatives dotphi.\n\n\n\n"
+    "text": "local_coordinates!(ϕ, ϕd, state, q0)\n\n\nCompute local coordinates phi centered around (global) configuration vector q_0, as well as their time derivatives dotphi.\n\n\n\n"
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.motion_subspace-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
-    "page": "MechanismState",
-    "title": "RigidBodyDynamics.motion_subspace",
-    "category": "Method",
-    "text": "motion_subspace(state, joint)\n\n\nReturn the motion subspace of the given joint expressed in frame_after(joint).\n\n\n\n"
-},
-
-{
-    "location": "mechanismstate.html#RigidBodyDynamics.motion_subspace_in_world-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.motion_subspace_in_world-Union{Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}}}, Tuple{T}} where T",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.motion_subspace_in_world",
     "category": "Method",
@@ -1289,7 +1329,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.set_additional_state!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1}}",
+    "location": "mechanismstate.html#RigidBodyDynamics.set_additional_state!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1} where T}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.set_additional_state!",
     "category": "Method",
@@ -1297,7 +1337,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1}}",
+    "location": "mechanismstate.html#RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1} where T}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.set_configuration!",
     "category": "Method",
@@ -1305,7 +1345,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1}}",
+    "location": "mechanismstate.html#RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1} where T}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.set_configuration!",
     "category": "Method",
@@ -1313,7 +1353,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1}}",
+    "location": "mechanismstate.html#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1} where T}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.set_velocity!",
     "category": "Method",
@@ -1321,7 +1361,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1}}",
+    "location": "mechanismstate.html#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1} where T}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.set_velocity!",
     "category": "Method",
@@ -1342,14 +1382,6 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.spatial_inertia",
     "category": "Method",
     "text": "spatial_inertia(state, body)\n\n\nReturn the spatial inertia of body expressed in the root frame of the mechanism.\n\n\n\n"
-},
-
-{
-    "location": "mechanismstate.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
-    "page": "MechanismState",
-    "title": "RigidBodyDynamics.transform",
-    "category": "Method",
-    "text": "transform(state, joint)\n\n\nReturn the joint transform for the given joint, i.e. the transform from frame_after(joint) to frame_before(joint).\n\n\n\n"
 },
 
 {
@@ -1374,14 +1406,6 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.velocity",
     "category": "Method",
     "text": "velocity(state, joint)\n\n\nReturn the part of the velocity vector v associated with joint.\n\n\n\n"
-},
-
-{
-    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}",
-    "page": "MechanismState",
-    "title": "RigidBodyDynamics.velocity",
-    "category": "Method",
-    "text": "velocity(state, path)\n\n\nReturn the part of the Mechanism's velocity vector v associated with the joints along path.\n\n\n\n"
 },
 
 {
@@ -1422,14 +1446,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Base.Random.rand!",
     "category": "Method",
     "text": "rand!(state)\n\n\nRandomize both the configuration and velocity. Invalidates cache variables.\n\n\n\n"
-},
-
-{
-    "location": "mechanismstate.html#RigidBodyDynamics.non_tree_joints-Tuple{RigidBodyDynamics.MechanismState}",
-    "page": "MechanismState",
-    "title": "RigidBodyDynamics.non_tree_joints",
-    "category": "Method",
-    "text": "non_tree_joints(state)\n\n\nReturn the Joints that are not part of the underlying Mechanism's spanning tree as an iterable collection.\n\n\n\n"
 },
 
 {
@@ -1485,7 +1501,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.DynamicsResult",
     "category": "Type",
-    "text": "type DynamicsResult{M<:Number, T<:Number}\n\nStores variables related to the dynamics of a Mechanism, e.g. the Mechanism's mass matrix and joint acceleration vector.\n\nType parameters:\n\nM: the scalar type of the Mechanism.\nT: the scalar type of the dynamics-related variables.\n\n\n\n"
+    "text": "type DynamicsResult{T, M}\n\nStores variables related to the dynamics of a Mechanism, e.g. the Mechanism's mass matrix and joint acceleration vector.\n\nType parameters:\n\nT: the scalar type of the dynamics-related variables.\nM: the scalar type of the Mechanism.\n\n\n\n"
 },
 
 {
@@ -1513,19 +1529,35 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics!",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{M}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{Tau,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{Tau,1}}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{Tau}, Tuple{T}, Tuple{W}, Tuple{X}} where W where Tau where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
-    "category": "Function",
-    "text": "dynamics!(result, state, torques)\ndynamics!(result, state)\ndynamics!(result, state, torques, externalwrenches)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies.\n\n\n\n"
+    "category": "Method",
+    "text": "dynamics!(result, state)\ndynamics!(result, state, torques)\ndynamics!(result, state, torques, externalwrenches)\n\n\nCompute the joint acceleration vector dotv and Lagrange multipliers lambda that satisfy the joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau - K(q)^T lambda\n\nand the constraint equations\n\nK(q) dotv = -k\n\ngiven joint configuration vector q, joint velocity vector v, and (optionally) joint torques tau and external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies.\n\n\n\n"
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics!",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{M}, Tuple{Tau}, Tuple{T}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1},AbstractArray{Tau,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1},AbstractArray{Tau,1}}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1}}, Tuple{W}, Tuple{X}} where W where Tau where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
-    "category": "Function",
-    "text": "dynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\ndynamics!(ẋ, result, state, stateVec)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "category": "Method",
+    "text": "dynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+},
+
+{
+    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.SpatialAcceleration{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.SpatialAcceleration{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{M}, Tuple{T}, Tuple{W}, Tuple{X}} where W where M where X where T",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics.dynamics_bias!",
+    "category": "Method",
+    "text": "dynamics_bias!(torques, biasaccelerations, wrenches, state)\ndynamics_bias!(torques, biasaccelerations, wrenches, state, externalwrenches)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+},
+
+{
+    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias-Union{Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{W}, Tuple{X}} where W where M where X",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics.dynamics_bias",
+    "category": "Method",
+    "text": "dynamics_bias(state)\ndynamics_bias(state, externalwrenches)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies.\n\n\n\n"
 },
 
 {
@@ -1553,7 +1585,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian-Tuple{RigidBodyDynamics.MechanismState{X,M,C},RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M}}}",
+    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian-Union{Tuple{C}, Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection,RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M,RigidBodyDynamics.JointType{M}}}}, Tuple{X}} where C where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.geometric_jacobian",
     "category": "Method",
@@ -1561,27 +1593,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.gravitational_potential_energy-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}",
-    "page": "Kinematics/dynamics algorithms",
-    "title": "RigidBodyDynamics.gravitational_potential_energy",
-    "category": "Method",
-    "text": "gravitational_potential_energy(state)\n\n\nReturn the gravitational potential energy in the given state, computed as the negation of the dot product of the gravitational force and the center of mass expressed in the Mechanism's root frame.\n\n\n\n"
-},
-
-{
-    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics",
-    "page": "Kinematics/dynamics algorithms",
-    "title": "RigidBodyDynamics.inverse_dynamics",
-    "category": "Function",
-    "text": "inverse_dynamics(state, v̇)\ninverse_dynamics(state, v̇, externalwrenches)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
-},
-
-{
-    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!",
+    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.SpatialAcceleration{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.SpatialAcceleration{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1}}, Tuple{M}, Tuple{T}, Tuple{V}, Tuple{W}, Tuple{X}} where W where V where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
-    "category": "Function",
+    "category": "Method",
     "text": "inverse_dynamics!(torquesout, jointwrenchesout, accelerations, state, v̇)\ninverse_dynamics!(torquesout, jointwrenchesout, accelerations, state, v̇, externalwrenches)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+},
+
+{
+    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics-Union{Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1}}, Tuple{V}, Tuple{W}, Tuple{X}} where W where V where M where X",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics.inverse_dynamics",
+    "category": "Method",
+    "text": "inverse_dynamics(state, v̇)\ninverse_dynamics(state, v̇, externalwrenches)\n\n\nDo inverse dynamics, i.e. compute tau in the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies.\n\nThis method implements the recursive Newton-Euler algorithm.\n\nCurrently doesn't support Mechanisms with cycles.\n\n\n\n"
 },
 
 {
@@ -1593,7 +1617,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.mass_matrix!-Tuple{Symmetric{C,Array{C,2}},RigidBodyDynamics.MechanismState{X,M,C}}",
+    "location": "algorithms.html#RigidBodyDynamics.mass_matrix!-Union{Tuple{C}, Tuple{M}, Tuple{Symmetric{C,Array{C,2}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection}, Tuple{X}} where C where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.mass_matrix!",
     "category": "Method",
@@ -1601,7 +1625,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.mass_matrix-Tuple{RigidBodyDynamics.MechanismState{X,M,C}}",
+    "location": "algorithms.html#RigidBodyDynamics.mass_matrix-Union{Tuple{C}, Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection}, Tuple{X}} where C where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.mass_matrix",
     "category": "Method",
@@ -1641,23 +1665,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.relative_acceleration-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody,AbstractArray{T,1}}",
-    "page": "Kinematics/dynamics algorithms",
-    "title": "RigidBodyDynamics.relative_acceleration",
-    "category": "Method",
-    "text": "relative_acceleration(state, body, base, v̇)\n\n\nCompute the spatial acceleration of body with respect to base for the given state and joint acceleration vector dotv.\n\n\n\n"
-},
-
-{
-    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!",
-    "page": "Kinematics/dynamics algorithms",
-    "title": "RigidBodyDynamics.dynamics_bias!",
-    "category": "Function",
-    "text": "dynamics_bias!(torques, biasaccelerations, wrenches, state, externalwrenches)\ndynamics_bias!(torques, biasaccelerations, wrenches, state)\n\n\nCompute the 'dynamics bias term', i.e. the term\n\nc(q v w_textext)\n\nin the unconstrained joint-space equations of motion\n\nM(q) dotv + c(q v w_textext) = tau\n\ngiven joint configuration vector q, joint velocity vector v, joint acceleration vector dotv and (optionally) external wrenches w_textext.\n\nThe externalwrenches argument can be used to specify additional wrenches that act on the Mechanism's bodies.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
-},
-
-{
-    "location": "algorithms.html#RigidBodyDynamics.subtree_mass-Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}",
+    "location": "algorithms.html#RigidBodyDynamics.subtree_mass-Union{Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}, Tuple{T}} where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.subtree_mass",
     "category": "Method",
@@ -1713,51 +1721,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.ExpandingStorage",
-    "page": "Simulation",
-    "title": "RigidBodyDynamics.OdeIntegrators.ExpandingStorage",
-    "category": "Type",
-    "text": "type ExpandingStorage{T} <: RigidBodyDynamics.OdeIntegrators.OdeResultsSink\n\nAn OdeResultsSink that stores the state at each integration time step in Vectors that may expand.\n\n\n\n"
-},
-
-{
-    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator",
-    "page": "Simulation",
-    "title": "RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator",
-    "category": "Type",
-    "text": "A Lie-group-aware ODE integrator.\n\nMuntheKaasIntegrator is used to properly integrate the dynamics of globally parameterized rigid joints (Duindam, Port-Based Modeling and Control for Efficient Bipedal Walking Robots, 2006, Definition 2.9). Global parameterizations of e.g. SO(3) are needed to avoid singularities, but this leads to the problem that the tangent space no longer has the same dimension as the ambient space of the global parameterization. A Munthe-Kaas integrator solves this problem by converting back and forth between local and global coordinates at every integration time step.\n\nThe idea is to do the dynamics and compute the stages of the integration scheme in terms of local coordinates centered around the global parameterization of the configuration at the end of the previous time step (e.g. exponential coordinates), combine the stages into a new set of local coordinates as usual for Runge-Kutta methods, and then convert the local coordinates back to global coordinates.\n\nFrom Iserles et al., 'Lie-group methods' (2000).\n\nAnother useful reference is Park and Chung, 'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005).\n\n\n\n"
-},
-
-{
-    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator-Tuple{F,RigidBodyDynamics.OdeIntegrators.ButcherTableau{N,T<:Number,L},S<:RigidBodyDynamics.OdeIntegrators.OdeResultsSink}",
-    "page": "Simulation",
-    "title": "RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator",
-    "category": "Method",
-    "text": "Create a MuntheKaasIntegrator given:\n\na callable dynamics!(vd, t, state) that updates the joint acceleration vector vd at time t and in state state;\na ButcherTableau tableau, specifying the integrator coefficients;\nan OdeResultsSink sink which processes the results of the integration procedure at each time step.\n\n\n\n"
-},
-
-{
     "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.OdeResultsSink",
     "page": "Simulation",
     "title": "RigidBodyDynamics.OdeIntegrators.OdeResultsSink",
     "category": "Type",
     "text": "abstract OdeResultsSink\n\nDoes 'something' with the results of an ODE integration (e.g. storing results, visualizing, etc.). Subtypes must implement:\n\ninitialize(sink, state): called with the initial state when integration begins.\nprocess(sink, t, state): called at every integration time step with the current state and time.\n\n\n\n"
-},
-
-{
-    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.RingBufferStorage",
-    "page": "Simulation",
-    "title": "RigidBodyDynamics.OdeIntegrators.RingBufferStorage",
-    "category": "Type",
-    "text": "type RingBufferStorage{T} <: RigidBodyDynamics.OdeIntegrators.OdeResultsSink\n\nAn OdeResultsSink that stores the state at each integration time step in a ring buffer.\n\n\n\n"
-},
-
-{
-    "location": "simulation.html#Base.step-Tuple{RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator,Real,Any,Real}",
-    "page": "Simulation",
-    "title": "Base.step",
-    "category": "Method",
-    "text": "step(integrator, t, state, Δt)\n\n\nTake a single integration step.\n\nstate must be of a type for which the following functions are defined:\n\nconfiguration(state), returns the configuration vector in global coordinates;\nvelocity(state), returns the velocity vector;\nadditional_state(state), returns the vector of additional states;\nset_velocity!(state, v), sets velocity vector to v;\nset_additional_state!(state, s), sets vector of additional states to s;\nglobal_coordinates!(state, q0, ϕ), sets global coordinates in state based on local coordinates ϕ centered around global coordinates q0;\nlocal_coordinates!(state, ϕ, ϕd, q0), converts state's global configuration q and velocity v to local coordinates centered around global coordinates q0.\n\n\n\n"
 },
 
 {
@@ -1769,7 +1737,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.runge_kutta_4-Tuple{Type{T}}",
+    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.runge_kutta_4-Union{Tuple{Type{T}}, Tuple{T}} where T",
     "page": "Simulation",
     "title": "RigidBodyDynamics.OdeIntegrators.runge_kutta_4",
     "category": "Method",
@@ -1777,11 +1745,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.ButcherTableau",
+    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.step-Tuple{RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator,Real,Any,Real}",
     "page": "Simulation",
-    "title": "RigidBodyDynamics.OdeIntegrators.ButcherTableau",
-    "category": "Type",
-    "text": "immutable ButcherTableau{N, T<:Number, L}\n\nA Butcher tableau.\n\n\n\n"
+    "title": "RigidBodyDynamics.OdeIntegrators.step",
+    "category": "Method",
+    "text": "step(integrator, t, state, Δt)\n\n\nTake a single integration step.\n\nstate must be of a type for which the following functions are defined:\n\nconfiguration(state), returns the configuration vector in global coordinates;\nvelocity(state), returns the velocity vector;\nadditional_state(state), returns the vector of additional states;\nset_velocity!(state, v), sets velocity vector to v;\nset_additional_state!(state, s), sets vector of additional states to s;\nglobal_coordinates!(state, q0, ϕ), sets global coordinates in state based on local coordinates ϕ centered around global coordinates q0;\nlocal_coordinates!(ϕ, ϕd, state, q0), converts state's global configuration q and velocity v to local coordinates centered around global coordinates q0.\n\n\n\n"
 },
 
 {
@@ -1805,7 +1773,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Benchmarks",
     "title": "Benchmarks",
     "category": "section",
-    "text": "Run perf/runbenchmarks.jl (-O3 and --check-bounds=no flags recommended) to see benchmark results for the Atlas robot (v5) in the following scenarios:Compute the joint-space mass matrix.\nDo inverse dynamics.\nDo forward dynamics.Note that results on Travis builds are not at all representative because of code coverage. Results on a recent, fast machine with version 0.0.4:Output of versioninfo():Julia Version 0.5.0\nCommit 3c9d753 (2016-09-19 18:14 UTC)\nPlatform Info:\n  System: Linux (x86_64-pc-linux-gnu)\n  CPU: Intel(R) Core(TM) i7-6950X CPU @ 3.00GHz\n  WORD_SIZE: 64\n  BLAS: libopenblas (USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell)\n  LAPACK: libopenblas64_\n  LIBM: libopenlibm\n  LLVM: libLLVM-3.7.1 (ORCJIT, broadwell)Mass matrix:  memory estimate:  0.00 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     23.034 μs (0.00% GC)\n  median time:      23.364 μs (0.00% GC)\n  mean time:        23.546 μs (0.00% GC)\n  maximum time:     52.605 μs (0.00% GC)\n  --------------\n  samples:          10000\n  evals/sample:     1\n  time tolerance:   5.00%\n  memory tolerance: 1.00%Inverse dynamics:  memory estimate:  0.00 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     29.178 μs (0.00% GC)\n  median time:      29.704 μs (0.00% GC)\n  mean time:        30.276 μs (0.00% GC)\n  maximum time:     65.232 μs (0.00% GC)\n  --------------\n  samples:          10000\n  evals/sample:     1\n  time tolerance:   5.00%\n  memory tolerance: 1.00%Forward dynamics:  memory estimate:  48.00 bytes\n  allocs estimate:  2\n  --------------\n  minimum time:     53.336 μs (0.00% GC)\n  median time:      82.928 μs (0.00% GC)\n  mean time:        83.334 μs (0.00% GC)\n  maximum time:     208.453 μs (0.00% GC)\n  --------------\n  samples:          10000\n  evals/sample:     1\n  time tolerance:   5.00%\n  memory tolerance: 1.00%"
+    "text": "To get maximal performance, it is recommended to:Rebuild the Julia system image for your CPU architecture\nPass -O3 and --check-bounds=no as command line flags to julia.Run perf/runbenchmarks.jl to see benchmark results for the Atlas robot (v5) in the following scenarios:Compute the joint-space mass matrix.\nDo inverse dynamics.\nDo forward dynamics.Note that results on Travis builds are not at all representative because of code coverage. Results on a recent, fast machine with version 0.2.0:Output of versioninfo():Julia Version 0.6.0\nCommit 9036443 (2017-06-19 13:05 UTC)\nPlatform Info:\n  OS: Linux (x86_64-pc-linux-gnu)\n  CPU: Intel(R) Core(TM) i7-6950X CPU @ 3.00GHz\n  WORD_SIZE: 64\n  BLAS: libopenblas (USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell)\n  LAPACK: libopenblas64_\n  LIBM: libopenlibm\n  LLVM: libLLVM-3.9.1 (ORCJIT, broadwell)Mass matrix:  memory estimate:  0 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     13.790 μs (0.00% GC)\n  median time:      14.263 μs (0.00% GC)\n  mean time:        14.340 μs (0.00% GC)\n  maximum time:     71.598 μs (0.00% GC)Inverse dynamics:  memory estimate:  0 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     12.491 μs (0.00% GC)\n  median time:      12.870 μs (0.00% GC)\n  mean time:        60.109 μs (0.00% GC)\n  maximum time:     471.387 ms (0.00% GC)Forward dynamics:  memory estimate:  64 bytes\n  allocs estimate:  3\n  --------------\n  minimum time:     47.291 μs (0.00% GC)\n  median time:      50.349 μs (0.00% GC)\n  mean time:        153.675 μs (0.00% GC)\n  maximum time:     1.033 s (0.00% GC)"
 },
 
 ]}
