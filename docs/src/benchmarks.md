@@ -30,10 +30,10 @@ Mass matrix:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     14.112 μs (0.00% GC)
-  median time:      14.836 μs (0.00% GC)
-  mean time:        14.795 μs (0.00% GC)
-  maximum time:     68.117 μs (0.00% GC)
+  minimum time:     13.790 μs (0.00% GC)
+  median time:      14.263 μs (0.00% GC)
+  mean time:        14.340 μs (0.00% GC)
+  maximum time:     71.598 μs (0.00% GC)
 ```
 
 Inverse dynamics:
@@ -41,10 +41,10 @@ Inverse dynamics:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     12.957 μs (0.00% GC)
-  median time:      13.408 μs (0.00% GC)
-  mean time:        13.707 μs (0.00% GC)
-  maximum time:     33.793 μs (0.00% GC)
+  minimum time:     12.491 μs (0.00% GC)
+  median time:      12.870 μs (0.00% GC)
+  mean time:        60.109 μs (0.00% GC)
+  maximum time:     471.387 ms (0.00% GC)
 ```
 
 Forward dynamics:
@@ -52,8 +52,8 @@ Forward dynamics:
   memory estimate:  64 bytes
   allocs estimate:  3
   --------------
-  minimum time:     45.531 μs (0.00% GC)
-  median time:      49.981 μs (0.00% GC)
-  mean time:        58.648 μs (0.00% GC)
-  maximum time:     1.323 ms (0.00% GC)
+  minimum time:     47.291 μs (0.00% GC)
+  median time:      50.349 μs (0.00% GC)
+  mean time:        153.675 μs (0.00% GC)
+  maximum time:     1.033 s (0.00% GC)
 ```
