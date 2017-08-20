@@ -20,6 +20,11 @@ quantities are expressed.
 struct CartesianFrame3D
     id::Int64
 
+    """
+    $(SIGNATURES)
+
+    Create a `CartesianFrame3D` with the given name.
+    """
     function CartesianFrame3D(name::String)
         ret = new(next_frame_id.x)
         next_frame_id.x = Base.Checked.checked_add(next_frame_id.x, 1)
@@ -27,6 +32,11 @@ struct CartesianFrame3D
         ret
     end
 
+    """
+    $(SIGNATURES)
+
+    Create an anonymous `CartesianFrame3D`.
+    """
     function CartesianFrame3D()
         ret = new(next_frame_id.x)
         next_frame_id.x = Base.Checked.checked_add(next_frame_id.x, 1)
@@ -40,7 +50,7 @@ Base.show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(na
 """
 $(SIGNATURES)
 
-Check that `f1` and `f2` are identical (when bounds checks are enabled).
+Check that `CartesianFrame3D`s `f1` and `f2` are identical (when bounds checks are enabled).
 
 Throws an `ArgumentError` if `f1` is not identical to `f2` when bounds checks
 are enabled. `@framecheck` is a no-op when bounds checks are disabled.

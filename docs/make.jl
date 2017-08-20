@@ -2,7 +2,7 @@ using Documenter, RigidBodyDynamics
 
 makedocs(
     # options
-    modules = [RigidBodyDynamics],
+    modules = [RigidBodyDynamics, RigidBodyDynamics.OdeIntegrators],
     format = :html,
     sitename ="RigidBodyDynamics.jl",
     authors = "Twan Koolen and contributors.",

@@ -7,7 +7,7 @@ Basic `Mechanism` simulation: integrate the state from time ``0`` to `finalTime`
 starting from the initial state `state0`. Return a `Vector` of times, as well as
 `Vector`s of configuration vectors and velocity vectors at these times.
 
-Uses `MuntheKaasIntegrator`. See [`MuntheKaasIntegrator`](@ref) for a lower
+Uses `MuntheKaasIntegrator`. See [`RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator`](@ref) for a lower
 level interface with more options.
 """
 function simulate(state0::MechanismState, finalTime; Δt = 1e-4)

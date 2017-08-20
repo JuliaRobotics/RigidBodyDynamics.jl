@@ -22,8 +22,9 @@ Pages   = ["joint.jl"]
 
 ## `JointType`s
 
-```@autodocs
-Modules = [RigidBodyDynamics]
-Order   = [:type, :function]
-Pages   = ["joint_types.jl"]
+```@docs
+QuaternionFloating
+Revolute
+Prismatic
+Fixed
 ```
