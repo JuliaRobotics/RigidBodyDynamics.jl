@@ -12,8 +12,16 @@ simulate
 ```
 
 ## Lower level ODE integration interface
+```@docs
+MuntheKaasIntegrator
+ButcherTableau
+OdeResultsSink
+RingBufferStorage
+ExpandingStorage
+```
+
 ```@autodocs
 Modules = [RigidBodyDynamics.OdeIntegrators]
-Order   = [:type, :function]
+Order   = [:function]
 Pages   = ["ode_integrators.jl"]
 ```

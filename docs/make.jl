@@ -1,4 +1,4 @@
-using Documenter, RigidBodyDynamics
+using Documenter, RigidBodyDynamics, RigidBodyDynamics.OdeIntegrators
 
 makedocs(
     # options

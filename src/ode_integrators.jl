@@ -6,6 +6,7 @@ using DocStringExtensions
 
 export runge_kutta_4,
     MuntheKaasIntegrator,
+    ButcherTableau,
     OdeResultsSink,
     RingBufferStorage,
     ExpandingStorage,
