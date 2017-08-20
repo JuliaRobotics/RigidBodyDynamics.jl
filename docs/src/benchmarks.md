@@ -10,7 +10,7 @@ Run `perf/runbenchmarks.jl` to see benchmark results for the Atlas robot (v5) in
 1. Do inverse dynamics.
 1. Do forward dynamics.
 
-Note that results on Travis builds are **not at all** representative because of code coverage. Results on a recent, fast machine with version 0.2.0:
+Note that results on Travis builds are **not at all** representative because of code coverage. Results on a recent, fast machine with version 0.3.0:
 
 Output of `versioninfo()`:
 ```
