@@ -293,7 +293,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.@framecheck",
     "category": "Macro",
-    "text": "@framecheck(f1, f2)\n\n\nCheck that f1 and f2 are identical (when bounds checks are enabled).\n\nThrows an ArgumentError if f1 is not identical to f2 when bounds checks are enabled. @framecheck is a no-op when bounds checks are disabled.\n\n\n\n"
+    "text": "@framecheck(f1, f2)\n\n\nCheck that CartesianFrame3Ds f1 and f2 are identical (when bounds checks are enabled).\n\nThrows an ArgumentError if f1 is not identical to f2 when bounds checks are enabled. @framecheck is a no-op when bounds checks are disabled.\n\n\n\n"
 },
 
 {
@@ -317,7 +317,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.kinetic_energy",
     "category": "Method",
-    "text": "kinetic_energy(I, twist)\n\n\nCompute the kinetic energy of a body with spatial inertia I, which has twist T with respect to an inertial frame.\n\n\n\n"
+    "text": "kinetic_energy(inertia, twist)\n\n\nCompute the kinetic energy of a body with spatial inertia I, which has twist T with respect to an inertial frame.\n\n\n\n"
 },
 
 {
@@ -325,7 +325,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.newton_euler",
     "category": "Method",
-    "text": "newton_euler(I, Ṫ, T)\n\n\nApply the Newton-Euler equations to find the external wrench required to make a body with spatial inertia I, which has twist T with respect to an inertial frame, achieve spatial acceleration dotT.\n\nThis wrench is also equal to the rate of change of momentum of the body.\n\n\n\n"
+    "text": "newton_euler(inertia, spatial_accel, twist)\n\n\nApply the Newton-Euler equations to find the external wrench required to make a body with spatial inertia I, which has twist T with respect to an inertial frame, achieve spatial acceleration dotT.\n\nThis wrench is also equal to the rate of change of momentum of the body.\n\n\n\n"
 },
 
 {
@@ -665,11 +665,43 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "joints.html#RigidBodyDynamics.QuaternionFloating",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.QuaternionFloating",
+    "category": "Type",
+    "text": "struct QuaternionFloating{T} <: RigidBodyDynamics.JointType{T}\n\nA floating joint type that uses a unit quaternion representation for orientation.\n\nFloating joints are 6-degree-of-freedom joints that are in a sense degenerate, as they impose no constraints on the relative motion between two bodies.\n\nThe full, 7-dimensional configuration vector of a QuaternionFloating joint type consists of a unit quaternion representing the orientation that rotates vectors from the frame 'directly after' the joint to the frame 'directly before' it, and a 3D position vector representing the origin of the frame after the joint in the frame before the joint.\n\nThe 6-dimensional velocity vector of a QuaternionFloating joint is the twist of the frame after the joint with respect to the frame before it, expressed in the frame after the joint.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.Revolute",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.Revolute",
+    "category": "Type",
+    "text": "struct Revolute{T} <: RigidBodyDynamics.OneDegreeOfFreedomFixedAxis{T}\n\nA Revolute joint type allows rotation about a fixed axis.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.Prismatic",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.Prismatic",
+    "category": "Type",
+    "text": "struct Prismatic{T} <: RigidBodyDynamics.OneDegreeOfFreedomFixedAxis{T}\n\nA Prismatic joint type allows translation along a fixed axis.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.Fixed",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.Fixed",
+    "category": "Type",
+    "text": "struct Fixed{T} <: RigidBodyDynamics.JointType{T}\n\nThe Fixed joint type is a degenerate joint type, in the sense that it allows no motion between its predecessor and successor rigid bodies.\n\n\n\n"
+},
+
+{
     "location": "joints.html#JointTypes-1",
     "page": "Joints",
     "title": "JointTypes",
     "category": "section",
-    "text": "Modules = [RigidBodyDynamics]\nOrder   = [:type, :function]\nPages   = [\"joint_types.jl\"]"
+    "text": "QuaternionFloating\nRevolute\nPrismatic\nFixed"
 },
 
 {
@@ -1094,14 +1126,6 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.tree_joints",
     "category": "Method",
     "text": "tree_joints(mechanism)\n\n\nReturn the Joints that are part of the Mechanism's spanning tree as an iterable collection.\n\n\n\n"
-},
-
-{
-    "location": "mechanism.html#Base.eltype-Union{Tuple{Type{RigidBodyDynamics.Mechanism{T}}}, Tuple{T}} where T",
-    "page": "Mechanism",
-    "title": "Base.eltype",
-    "category": "Method",
-    "text": "eltype(?)\n\n\nCreate a new Mechanism containing only a root body, to which other bodies can be attached with joints.\n\n\n\n"
 },
 
 {
@@ -1709,7 +1733,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Simulation",
     "title": "RigidBodyDynamics.simulate",
     "category": "Function",
-    "text": "simulate(state0, finalTime; Δt)\n\n\nBasic Mechanism simulation: integrate the state from time 0 to finalTime starting from the initial state state0. Return a Vector of times, as well as Vectors of configuration vectors and velocity vectors at these times.\n\nUses MuntheKaasIntegrator. See MuntheKaasIntegrator for a lower level interface with more options.\n\n\n\n"
+    "text": "simulate(state0, finalTime; Δt)\n\n\nBasic Mechanism simulation: integrate the state from time 0 to finalTime starting from the initial state state0. Return a Vector of times, as well as Vectors of configuration vectors and velocity vectors at these times.\n\nUses MuntheKaasIntegrator. See RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator for a lower level interface with more options.\n\n\n\n"
 },
 
 {
@@ -1721,11 +1745,43 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator",
+    "page": "Simulation",
+    "title": "RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator",
+    "category": "Type",
+    "text": "A Lie-group-aware ODE integrator.\n\nMuntheKaasIntegrator is used to properly integrate the dynamics of globally parameterized rigid joints (Duindam, Port-Based Modeling and Control for Efficient Bipedal Walking Robots, 2006, Definition 2.9). Global parameterizations of e.g. SO(3) are needed to avoid singularities, but this leads to the problem that the tangent space no longer has the same dimension as the ambient space of the global parameterization. A Munthe-Kaas integrator solves this problem by converting back and forth between local and global coordinates at every integration time step.\n\nThe idea is to do the dynamics and compute the stages of the integration scheme in terms of local coordinates centered around the global parameterization of the configuration at the end of the previous time step (e.g. exponential coordinates), combine the stages into a new set of local coordinates as usual for Runge-Kutta methods, and then convert the local coordinates back to global coordinates.\n\nFrom Iserles et al., 'Lie-group methods' (2000).\n\nAnother useful reference is Park and Chung, 'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005).\n\n\n\n"
+},
+
+{
+    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.ButcherTableau",
+    "page": "Simulation",
+    "title": "RigidBodyDynamics.OdeIntegrators.ButcherTableau",
+    "category": "Type",
+    "text": "struct ButcherTableau{N, T, L}\n\nA Butcher tableau.\n\n\n\n"
+},
+
+{
     "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.OdeResultsSink",
     "page": "Simulation",
     "title": "RigidBodyDynamics.OdeIntegrators.OdeResultsSink",
     "category": "Type",
     "text": "abstract OdeResultsSink\n\nDoes 'something' with the results of an ODE integration (e.g. storing results, visualizing, etc.). Subtypes must implement:\n\ninitialize(sink, state): called with the initial state when integration begins.\nprocess(sink, t, state): called at every integration time step with the current state and time.\n\n\n\n"
+},
+
+{
+    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.RingBufferStorage",
+    "page": "Simulation",
+    "title": "RigidBodyDynamics.OdeIntegrators.RingBufferStorage",
+    "category": "Type",
+    "text": "type RingBufferStorage{T} <: RigidBodyDynamics.OdeIntegrators.OdeResultsSink\n\nAn OdeResultsSink that stores the state at each integration time step in a ring buffer.\n\n\n\n"
+},
+
+{
+    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.ExpandingStorage",
+    "page": "Simulation",
+    "title": "RigidBodyDynamics.OdeIntegrators.ExpandingStorage",
+    "category": "Type",
+    "text": "type ExpandingStorage{T} <: RigidBodyDynamics.OdeIntegrators.OdeResultsSink\n\nAn OdeResultsSink that stores the state at each integration time step in Vectors that may expand.\n\n\n\n"
 },
 
 {
@@ -1757,7 +1813,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Simulation",
     "title": "Lower level ODE integration interface",
     "category": "section",
-    "text": "Modules = [RigidBodyDynamics.OdeIntegrators]\nOrder   = [:type, :function]\nPages   = [\"ode_integrators.jl\"]"
+    "text": "MuntheKaasIntegrator\nButcherTableau\nOdeResultsSink\nRingBufferStorage\nExpandingStorageModules = [RigidBodyDynamics.OdeIntegrators]\nOrder   = [:function]\nPages   = [\"ode_integrators.jl\"]"
 },
 
 {
