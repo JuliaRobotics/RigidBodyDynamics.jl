@@ -1,8 +1,8 @@
-using Documenter, RigidBodyDynamics
+using Documenter, RigidBodyDynamics, RigidBodyDynamics.OdeIntegrators
 
 makedocs(
     # options
-    modules = [RigidBodyDynamics],
+    modules = [RigidBodyDynamics, RigidBodyDynamics.OdeIntegrators],
     format = :html,
     sitename ="RigidBodyDynamics.jl",
     authors = "Twan Koolen and contributors.",

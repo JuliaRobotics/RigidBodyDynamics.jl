@@ -11,6 +11,12 @@ mutable struct Mechanism{T}
     environment::ContactEnvironment{T}
     gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
+    """
+    $(SIGNATURES)
+
+    Create a new `Mechanism` containing only a root body, to which other bodies can
+    be attached with joints.
+    """
     function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81))) where {T}
         graph = DirectedGraph{RigidBody{T}, GenericJoint{T}}()
         add_vertex!(graph, rootBody)
@@ -21,12 +27,6 @@ mutable struct Mechanism{T}
     end
 end
 
-"""
-$(SIGNATURES)
-
-Create a new `Mechanism` containing only a root body, to which other bodies can
-be attached with joints.
-"""
 Base.eltype(::Type{Mechanism{T}}) where {T} = T
 
 """

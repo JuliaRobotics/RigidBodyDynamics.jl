@@ -711,7 +711,11 @@ to an inertial frame, achieve spatial acceleration ``\\dot{T}``.
 
 This wrench is also equal to the rate of change of momentum of the body.
 """
-function newton_euler(I::SpatialInertia, Ṫ::SpatialAcceleration, T::Twist)
+function newton_euler(inertia::SpatialInertia, spatial_accel::SpatialAcceleration, twist::Twist)
+    I = inertia
+    T = twist
+    Ṫ = spatial_accel
+
     body = Ṫ.body
     base = Ṫ.base # TODO: should assert that this is an inertial frame somehow
     frame = Ṫ.frame
@@ -775,14 +779,14 @@ $(SIGNATURES)
 Compute the kinetic energy of a body with spatial inertia ``I``, which has
 twist ``T`` with respect to an inertial frame.
 """
-function kinetic_energy(I::SpatialInertia, twist::Twist)
-    @framecheck(I.frame, twist.frame)
+function kinetic_energy(inertia::SpatialInertia, twist::Twist)
+    @framecheck(inertia.frame, twist.frame)
     # TODO: should assert that twist.base is an inertial frame somehow
     ω = twist.angular
     v = twist.linear
-    J = I.moment
-    c = I.crossPart
-    m = I.mass
+    J = inertia.moment
+    c = inertia.crossPart
+    m = inertia.mass
     (dot(ω, J * ω) + dot(v, m * v + 2 * cross(ω, c))) / 2
 end
 
