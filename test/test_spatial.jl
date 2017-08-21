@@ -82,6 +82,14 @@ end
         @test W1.frame == f1
         @test isapprox(W1, transform(W2, H21))
         @test_throws ArgumentError Wrench(point1, force2) # wrong frame
+
+        @testset "wrench constructed from plain Vectors" begin
+            point1 = Point3D(f1, [1., 0., 0.])
+            force1 = FreeVector3D(f1, [0, 1, 0])
+            w = @inferred(Wrench(point1, force1))
+            @test isa(w, Wrench{Float64})
+        end
+
     end
 
     @testset "momentum" begin

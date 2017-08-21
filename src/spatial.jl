@@ -86,6 +86,12 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         angular::SVector{3, T}
         linear::SVector{3, T}
     end
+
+    @eval function $ForceSpaceElement(frame::CartesianFrame3D, angular::AbstractVector{T1}, linear::AbstractVector{T2}) where {T1, T2}
+        T = promote_type(T1, T2)
+        $ForceSpaceElement{T}(frame, convert(SVector{3, T}, angular), convert(SVector{3, T}, linear))
+    end
+
 end
 
 """
