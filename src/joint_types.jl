@@ -338,7 +338,7 @@ struct Revolute{T} <: OneDegreeOfFreedomFixedAxis{T}
     Construct a new `Revolute` joint type, allowing rotation about `axis`
     (expressed in the frame before the joint).
     """
-    Revolute(axis::AbstractVector{T}) where {T} = new{T}(axis, rotation_between(SVector(zero(T), zero(T), one(T)), SVector(axis)))
+    Revolute(axis::AbstractVector{T}) where {T} = new{T}(axis, rotation_between(SVector(zero(T), zero(T), one(T)), SVector{3, T}(axis)))
 end
 
 Base.show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.axis)")
