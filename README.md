@@ -10,6 +10,7 @@ RigidBodyDynamics.jl is a rigid body dynamics library in pure Julia. It aims to 
 See the [latest stable documentation](https://tkoolen.github.io/RigidBodyDynamics.jl/stable/) for a list of features, installation instructions, and a quick-start guide. Installation should only take a couple of minutes, including installing Julia itself. See the [notebooks directory](https://github.com/tkoolen/RigidBodyDynamics.jl/tree/master/notebooks) for some usage examples.
 
 ## News
+* August 22, 2017: [tagged version 0.3.0](https://github.com/tkoolen/RigidBodyDynamics.jl/releases/tag/v0.3.0). Drops Julia 0.5 support.
 * June 18, 2017: [tagged version 0.2.0](https://github.com/JuliaLang/METADATA.jl/pull/9814). Supports Julia 0.6. This is the last version to support Julia 0.5.
 * March 20, 2017: [tagged version 0.1.0](https://github.com/JuliaLang/METADATA.jl/pull/8431).
 * February 16, 2017: [tagged version 0.0.6](https://github.com/JuliaLang/METADATA.jl/pull/7989).
