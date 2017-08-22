@@ -27,6 +27,12 @@ struct SpatialInertia{T}
     moment::SMatrix{3, 3, T, 9}
     crossPart::SVector{3, T} # mass times center of mass
     mass::T
+
+    @inline function SpatialInertia(frame::CartesianFrame3D, moment::AbstractMatrix{T}, crossPart::AbstractVector{T}, mass::T) where T
+        @boundscheck size(moment) == (3, 3) || error("size mismatch")
+        @boundscheck size(crossPart) == (3,) || error("size mismatch")
+        new{T}(frame, moment, crossPart, mass)
+    end
 end
 
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)

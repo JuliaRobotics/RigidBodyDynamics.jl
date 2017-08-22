@@ -33,6 +33,10 @@ end
         @test isapprox(Array(I2) + Array(I3), Array(I2 + I3); atol = 1e-12)
         @inferred transform(zero(SpatialInertia{Float32}, f1), eye(Transform3D, f1))
         @test I2 + zero(I2) == I2
+
+        # Test that the constructor works with dynamic arrays (which are
+        # converted to static arrays internally)
+        I4 = @inferred(SpatialInertia(f2, eye(3), zeros(3), 1.0))
     end
 
     @testset "twist" begin
