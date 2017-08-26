@@ -27,4 +27,5 @@ QuaternionFloating
 Revolute
 Prismatic
 Fixed
+Planar
 ```
