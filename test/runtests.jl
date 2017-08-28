@@ -16,6 +16,7 @@ create_autodiff(x, dx) = [ForwardDiff.Dual(x[i], dx[i]) for i in 1 : length(x)]
 @inline Base.mod2pi{T<:ForwardDiff.Dual}(x::T) = ForwardDiff.Dual(mod2pi(ForwardDiff.value(x)), ForwardDiff.partials(x))
 @inline Base.rem(x::ForwardDiff.Dual, n::Real) = ForwardDiff.Dual(rem(ForwardDiff.value(x), n), ForwardDiff.partials(x))
 
+include("test_urdf_parser.jl")
 include("test_graph.jl")
 include("test_util.jl")
 include("test_frames.jl")

@@ -1,3 +1,17 @@
+struct JointLimits{T}
+    position::Pair{Vector{T}}
+    velocity::Pair{Vector{T}}
+    effort::Pair{Vector{T}}
+end
+
+function JointLimits(::JT) where {T, JT <: JointType{T}}
+    p = Pair(fill(typemin(T), num_positions(JT)), fill(typemax(T), num_positions(JT)))
+    v = Pair(fill(typemin(T), num_velocities(JT)), fill(typemax(T), num_velocities(JT)))
+    e = Pair(fill(typemin(T), num_velocities(JT)), fill(typemax(T), num_velocities(JT)))
+    JointLimits{T}(p, v, e)
+end
+
+
 # The constructor setup for Joint may look strange. The constructors are
 # designed so that e.g. a call to Joint("bla", QuaternionFloating{Float64}())
 # returns a Joint{T, JointType{T}}, not a JointType{T, QuaternionFloating{T}}.
@@ -43,25 +57,26 @@ mutable struct Joint{T, JT<:JointType{T}}
     frameAfter::CartesianFrame3D
     jointType::JT
     id::Int64
+    limits::JointLimits{T}
 
-    function Joint{T, JT}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T}) where {T, JT<:JointType{T}}
-        new{T, JointType{T}}(name, frameBefore, frameAfter, jointType, -1)
+    function Joint{T, JT}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T}, limits::JointLimits{T}=JointLimits(jointType)) where {T, JT<:JointType{T}}
+        new{T, JointType{T}}(name, frameBefore, frameAfter, jointType, -1, limits)
     end
 
     function Joint(other::Joint{T}) where T
         JT = typeof(other.jointType)
-        new{T, JT}(other.name, other.frameBefore, other.frameAfter, other.jointType, other.id)
+        new{T, JT}(other.name, other.frameBefore, other.frameAfter, other.jointType, other.id, deepcopy(other.limits))
     end
 end
 
 const GenericJoint{T} = Joint{T, JointType{T}}
 
-function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jtype::JointType{T}) where T
-    GenericJoint{T}(name, frameBefore, frameAfter, jtype)
+function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jtype::JointType{T}, limits::JointLimits{T}=JointLimits(jtype)) where T
+    GenericJoint{T}(name, frameBefore, frameAfter, jtype, limits)
 end
 
-function Joint(name::String, jtype::JointType)
-    Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jtype)
+function Joint(name::String, jtype::JointType, limits::JointLimits=JointLimits(jtype))
+    Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jtype, limits)
 end
 
 typedjoint(joint::Joint) = Joint(joint)
