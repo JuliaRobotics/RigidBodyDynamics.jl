@@ -55,20 +55,18 @@ function parse_joint_bounds(jtype::JT, xml_joint::XMLElement) where {T, JT <: Jo
     bounds = JointBounds(jtype)
     for element in get_elements_by_tagname(xml_joint, "limit")
         if has_attribute(element, "lower")
-            bounds.position.lower .= parse_scalar(T, element, "lower")
+            bounds.position .= Bounds.(parse_scalar(T, element, "lower"), upper.(bounds.position))
         end
         if has_attribute(element, "upper")
-            bounds.position.upper .= parse_scalar(T, element, "upper")
+            bounds.position .= Bounds.(lower.(bounds.position), parse_scalar(T, element, "upper"))
         end
         if has_attribute(element, "velocity")
             v = parse_scalar(T, element, "velocity")
-            bounds.velocity.lower .= .-v
-            bounds.velocity.upper .= v
+            bounds.velocity .= Bounds(-v, v)
         end
         if has_attribute(element, "effort")
             e = parse_scalar(T, element, "effort")
-            bounds.effort.lower .= .-e
-            bounds.effort.upper .= e
+            bounds.effort .= Bounds(-e, e)
         end
     end
     bounds

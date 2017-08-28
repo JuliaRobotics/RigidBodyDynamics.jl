@@ -1,21 +1,30 @@
 struct Bounds{T}
     lower::T
     upper::T
+
+    Bounds(lower::T1, upper::T2) where {T1, T2} = new{promote_type(T1, T2)}(lower, upper)
+    Bounds{T}() where {T} = new{T}(typemin(T), typemax(T))
 end
 
+upper(b::Bounds) = b.upper
+lower(b::Bounds) = b.lower
+Base.:(==)(b1::Bounds, b2::Bounds) = b1.lower == b2.lower && b1.upper == b2.upper
+Base.show(io::IO, b::Bounds) = print(io, "(", lower(b), ", ", upper(b), ")")
+Base.clamp(x, b::Bounds) = clamp(x, b.lower, b.upper)
+Base.intersect(b1::Bounds, b2::Bounds) = Bounds(max(b1.lower, b2.lower), min(b1.upper, b2.upper))
+
 struct JointBounds{T}
-    position::Bounds{Vector{T}}
-    velocity::Bounds{Vector{T}}
-    effort::Bounds{Vector{T}}
+    position::Vector{Bounds{T}}
+    velocity::Vector{Bounds{T}}
+    effort::Vector{Bounds{T}}
 end
 
 function JointBounds(::JT) where {T, JT <: JointType{T}}
-    p = Bounds(fill(typemin(T), num_positions(JT)), fill(typemax(T), num_positions(JT)))
-    v = Bounds(fill(typemin(T), num_velocities(JT)), fill(typemax(T), num_velocities(JT)))
-    e = Bounds(fill(typemin(T), num_velocities(JT)), fill(typemax(T), num_velocities(JT)))
+    p = fill(Bounds{T}(), num_positions(JT))
+    v = fill(Bounds{T}(), num_velocities(JT))
+    e = fill(Bounds{T}(), num_velocities(JT))
     JointBounds{T}(p, v, e)
 end
-
 
 # The constructor setup for Joint may look strange. The constructors are
 # designed so that e.g. a call to Joint("bla", QuaternionFloating{Float64}())
