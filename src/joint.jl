@@ -102,6 +102,10 @@ frame_before(joint::Joint) = joint.frameBefore
 frame_after(joint::Joint) = joint.frameAfter
 joint_type(joint::Joint) = joint.jointType
 
+position_bounds(joint::Joint) = joint.bounds.position
+velocity_bounds(joint::Joint) = joint.bounds.velocity
+effort_bounds(joint::Joint) = joint.bounds.effort
+
 RigidBodyDynamics.Graphs.edge_index(joint::Joint) = joint.id
 RigidBodyDynamics.Graphs.edge_index!(joint::Joint, id::Int64) = (joint.id = id)
 function RigidBodyDynamics.Graphs.flip_direction!(joint::Joint)
