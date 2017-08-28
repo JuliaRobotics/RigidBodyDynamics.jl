@@ -51,34 +51,34 @@ function parse_joint_type(::Type{T}, xml_joint::XMLElement) where {T}
     end
 end
 
-function parse_joint_limits(jtype::JT, xml_joint::XMLElement) where {T, JT <: JointType{T}}
-    limits = JointLimits(jtype)
+function parse_joint_bounds(jtype::JT, xml_joint::XMLElement) where {T, JT <: JointType{T}}
+    bounds = JointBounds(jtype)
     for element in get_elements_by_tagname(xml_joint, "limit")
         if has_attribute(element, "lower")
-            limits.position.first .= parse_scalar(T, element, "lower")
+            bounds.position.lower .= parse_scalar(T, element, "lower")
         end
         if has_attribute(element, "upper")
-            limits.position.second .= parse_scalar(T, element, "upper")
+            bounds.position.upper .= parse_scalar(T, element, "upper")
         end
         if has_attribute(element, "velocity")
             v = parse_scalar(T, element, "velocity")
-            limits.velocity.first .= .-v
-            limits.velocity.second .= v
+            bounds.velocity.lower .= .-v
+            bounds.velocity.upper .= v
         end
         if has_attribute(element, "effort")
             e = parse_scalar(T, element, "effort")
-            limits.effort.first .= .-e
-            limits.effort.second .= e
+            bounds.effort.lower .= .-e
+            bounds.effort.upper .= e
         end
     end
-    limits
+    bounds
 end
 
 function parse_joint(::Type{T}, xml_joint::XMLElement) where {T}
     name = attribute(xml_joint, "name")
     jointType = parse_joint_type(T, xml_joint)
-    jointLimits = parse_joint_limits(jointType, xml_joint)
-    return Joint(name, jointType, jointLimits)
+    jointBounds = parse_joint_bounds(jointType, xml_joint)
+    return Joint(name, jointType, jointBounds)
 end
 
 function parse_inertia(::Type{T}, xml_inertial::XMLElement, frame::CartesianFrame3D) where {T}

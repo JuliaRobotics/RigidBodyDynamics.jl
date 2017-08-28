@@ -1,14 +1,19 @@
-struct JointLimits{T}
-    position::Pair{Vector{T}}
-    velocity::Pair{Vector{T}}
-    effort::Pair{Vector{T}}
+struct Bounds{T}
+    lower::T
+    upper::T
 end
 
-function JointLimits(::JT) where {T, JT <: JointType{T}}
-    p = Pair(fill(typemin(T), num_positions(JT)), fill(typemax(T), num_positions(JT)))
-    v = Pair(fill(typemin(T), num_velocities(JT)), fill(typemax(T), num_velocities(JT)))
-    e = Pair(fill(typemin(T), num_velocities(JT)), fill(typemax(T), num_velocities(JT)))
-    JointLimits{T}(p, v, e)
+struct JointBounds{T}
+    position::Bounds{Vector{T}}
+    velocity::Bounds{Vector{T}}
+    effort::Bounds{Vector{T}}
+end
+
+function JointBounds(::JT) where {T, JT <: JointType{T}}
+    p = Bounds(fill(typemin(T), num_positions(JT)), fill(typemax(T), num_positions(JT)))
+    v = Bounds(fill(typemin(T), num_velocities(JT)), fill(typemax(T), num_velocities(JT)))
+    e = Bounds(fill(typemin(T), num_velocities(JT)), fill(typemax(T), num_velocities(JT)))
+    JointBounds{T}(p, v, e)
 end
 
 
@@ -57,26 +62,26 @@ mutable struct Joint{T, JT<:JointType{T}}
     frameAfter::CartesianFrame3D
     jointType::JT
     id::Int64
-    limits::JointLimits{T}
+    bounds::JointBounds{T}
 
-    function Joint{T, JT}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T}, limits::JointLimits{T}=JointLimits(jointType)) where {T, JT<:JointType{T}}
-        new{T, JointType{T}}(name, frameBefore, frameAfter, jointType, -1, limits)
+    function Joint{T, JT}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T}, bounds::JointBounds{T}=JointBounds(jointType)) where {T, JT<:JointType{T}}
+        new{T, JointType{T}}(name, frameBefore, frameAfter, jointType, -1, bounds)
     end
 
     function Joint(other::Joint{T}) where T
         JT = typeof(other.jointType)
-        new{T, JT}(other.name, other.frameBefore, other.frameAfter, other.jointType, other.id, deepcopy(other.limits))
+        new{T, JT}(other.name, other.frameBefore, other.frameAfter, other.jointType, other.id, deepcopy(other.bounds))
     end
 end
 
 const GenericJoint{T} = Joint{T, JointType{T}}
 
-function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jtype::JointType{T}, limits::JointLimits{T}=JointLimits(jtype)) where T
-    GenericJoint{T}(name, frameBefore, frameAfter, jtype, limits)
+function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jtype::JointType{T}, bounds::JointBounds{T}=JointBounds(jtype)) where T
+    GenericJoint{T}(name, frameBefore, frameAfter, jtype, bounds)
 end
 
-function Joint(name::String, jtype::JointType, limits::JointLimits=JointLimits(jtype))
-    Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jtype, limits)
+function Joint(name::String, jtype::JointType, bounds::JointBounds=JointBounds(jtype))
+    Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jtype, bounds)
 end
 
 typedjoint(joint::Joint) = Joint(joint)
