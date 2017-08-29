@@ -1,3 +1,10 @@
+"""
+$(TYPEDEF)
+
+Bounds is a scalar-like type representing a closed interval from ``lower`` to 
+``upper``. To indicate that a vector of values falls with some range, use a 
+``Vector{Bounds{T}}``. 
+"""
 struct Bounds{T}
     lower::T
     upper::T
@@ -15,6 +22,12 @@ upper(b::Bounds) = b.upper
 lower(b::Bounds) = b.lower
 Base.:(==)(b1::Bounds, b2::Bounds) = b1.lower == b2.lower && b1.upper == b2.upper
 Base.show(io::IO, b::Bounds) = print(io, "(", lower(b), ", ", upper(b), ")")
+
+"""
+$(SIGNATURES)
+
+Return the closest value to ``x`` within the interval described by ``b``.
+"""
 Base.clamp(x, b::Bounds) = clamp(x, b.lower, b.upper)
 Base.intersect(b1::Bounds, b2::Bounds) = Bounds(max(b1.lower, b2.lower), min(b1.upper, b2.upper))
 
