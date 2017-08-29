@@ -2,12 +2,15 @@ struct Bounds{T}
     lower::T
     upper::T
 
-    function Bounds(lower::T1, upper::T2) where {T1, T2}
+    function Bounds{T}(lower, upper) where T
         @assert lower <= upper
-        new{promote_type(T1, T2)}(lower, upper)
+        new{T}(lower, upper)
     end
     Bounds{T}() where {T} = new{T}(typemin(T), typemax(T))
 end
+
+Bounds(lower::T1, upper::T2) where {T1, T2} = 
+    Bounds{promote_type(T1, T2)}(lower, upper)
 
 upper(b::Bounds) = b.upper
 lower(b::Bounds) = b.lower
