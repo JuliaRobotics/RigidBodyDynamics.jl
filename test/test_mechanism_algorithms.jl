@@ -68,6 +68,9 @@
         @test velocity(x2) === v2
         @test all(configuration(x2) .== q2copy)
         @test all(velocity(x2) .== v2copy)
+
+        @test @inferred(num_positions(mechanism)) == 27
+        @test @inferred(num_velocities(mechanism)) == 26
     end
 
     @testset "q̇ <-> v" begin
