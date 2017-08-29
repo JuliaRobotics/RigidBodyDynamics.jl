@@ -9,8 +9,7 @@ struct Bounds{T}
     Bounds{T}() where {T} = new{T}(typemin(T), typemax(T))
 end
 
-Bounds(lower::T1, upper::T2) where {T1, T2} = 
-    Bounds{promote_type(T1, T2)}(lower, upper)
+Bounds(lower::T1, upper::T2) where {T1, T2} = Bounds{promote_type(T1, T2)}(lower, upper)
 
 upper(b::Bounds) = b.upper
 lower(b::Bounds) = b.lower

@@ -153,6 +153,9 @@ export
     findbody,
     findjoint,
     body_fixed_frame_to_body,
+    position_bounds,
+    velocity_bounds,
+    effort_bounds,
     # macros
     @framecheck
 
