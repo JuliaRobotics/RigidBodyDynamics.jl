@@ -17,11 +17,11 @@ end
 
 @testset "mechanism modification" begin
     @testset "attach mechanism" begin
-        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
+        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...)
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
 
-        mechanism2 = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]]...)
+        mechanism2 = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 5]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 5]]...)
         additionalFrames = Dict{CartesianFrame3D, RigidBody{Float64}}()
         for body in bodies(mechanism2)
             for i = 1 : 5
@@ -74,7 +74,7 @@ end
     end
 
     @testset "remove fixed joints" begin
-        jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
+        jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Fixed{Float64} for i = 1 : 10]]
         shuffle!(jointTypes)
         mechanism = rand_tree_mechanism(Float64, jointTypes...)
         state = MechanismState(mechanism)
@@ -92,7 +92,7 @@ end
     end
 
     @testset "replace joint" begin
-        jointtypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]]
+        jointtypes = [QuaternionFloating{Float64}; Planar{Float64}; [Revolute{Float64} for i = 1 : 10]]
         shuffle!(jointtypes)
         mechanism = rand_tree_mechanism(Float64, jointtypes...)
 
@@ -109,7 +109,7 @@ end
 
     @testset "submechanism" begin
         for testnum = 1 : 100
-            jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
+            jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Fixed{Float64} for i = 1 : 10]]
             jointTypes = [Revolute{Float64} for i = 1 : 4]
             shuffle!(jointTypes)
             mechanism = rand_tree_mechanism(Float64, jointTypes...)
@@ -216,7 +216,7 @@ end
 
     @testset "maximal coordinates" begin
         # create random tree mechanism and equivalent mechanism in maximal coordinates
-        treeMechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
+        treeMechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; Planar{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
         mcMechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(treeMechanism)
 
         # randomize state of tree mechanism
@@ -255,7 +255,7 @@ end
     end # maximal coordinates
 
     @testset "generic scalar dynamics" begin # TODO: move to a better place
-        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
+        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
         mechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(mechanism)
 
         stateFloat64 = MechanismState(mechanism)

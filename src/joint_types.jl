@@ -2,19 +2,24 @@
 
 abstract type JointType{T} end
 Base.eltype(::Type{JointType{T}}) where {T} = T
-
 num_velocities(::T) where {T<:JointType} = num_velocities(T)
 num_positions(::T) where {T<:JointType} = num_positions(T)
 Base.@pure num_constraints(t::Type{T}) where {T<:JointType} = 6 - num_velocities(t)
 
 # Default implementations
 isfloating(::Type{<:JointType}) = false
-flip_direction(jt::JointType{T}) where {T} = deepcopy(jt)
+
+function flip_direction(jt::JointType{T}) where {T}
+    warn("Flipping direction is not supported for this joint type.") # TODO
+    deepcopy(jt)
+end
+
+zero_configuration!(q::AbstractVector, ::JointType) = (q[:] = 0; nothing)
 
 function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
         jt::JointType, q0::AbstractVector, q::AbstractVector, v::AbstractVector)
     ϕ .= q .- q0
-    ϕ̇ .= v
+    velocity_to_configuration_derivative!(ϕ̇, jt, q, v)
     nothing
 end
 
@@ -24,6 +29,16 @@ end
 
 function configuration_derivative_to_velocity_adjoint!(out, jt::JointType, q::AbstractVector, f)
     out .= f
+end
+
+function configuration_derivative_to_velocity!(v::AbstractVector, ::JointType, q::AbstractVector, q̇::AbstractVector)
+    v .= q̇
+    nothing
+end
+
+function velocity_to_configuration_derivative!(q̇::AbstractVector, ::JointType, q::AbstractVector, v::AbstractVector)
+    q̇ .= v
+    nothing
 end
 
 
@@ -227,11 +242,6 @@ abstract type OneDegreeOfFreedomFixedAxis{T} <: JointType{T} end
 num_positions(::Type{<:OneDegreeOfFreedomFixedAxis}) = 1
 num_velocities(::Type{<:OneDegreeOfFreedomFixedAxis}) = 1
 
-function zero_configuration!(q::AbstractVector, ::OneDegreeOfFreedomFixedAxis)
-    q .= 0
-    nothing
-end
-
 function rand_configuration!(q::AbstractVector, ::OneDegreeOfFreedomFixedAxis)
     randn!(q)
     nothing
@@ -244,17 +254,6 @@ function bias_acceleration(jt::OneDegreeOfFreedomFixedAxis{T}, frameAfter::Carte
 end
 
 has_fixed_subspaces(jt::OneDegreeOfFreedomFixedAxis) = true
-
-function configuration_derivative_to_velocity!(v::AbstractVector, ::OneDegreeOfFreedomFixedAxis, q::AbstractVector, q̇::AbstractVector)
-    v .= q̇
-    nothing
-end
-
-function velocity_to_configuration_derivative!(q̇::AbstractVector, ::OneDegreeOfFreedomFixedAxis, q::AbstractVector, v::AbstractVector)
-    q̇ .= v
-    nothing
-end
-
 
 """
 $(TYPEDEF)
@@ -271,7 +270,10 @@ struct Prismatic{T} <: OneDegreeOfFreedomFixedAxis{T}
     Construct a new `Prismatic` joint type, allowing translation along `axis`
     (expressed in the frame before the joint).
     """
-    Prismatic(axis::AbstractVector{T}) where {T} = new{T}(axis, rotation_between(SVector(zero(T), zero(T), one(T)), SVector{3, T}(axis)))
+    function Prismatic(axis::AbstractVector{T}) where {T}
+        a = normalize(axis)
+        new{T}(a, rotation_between(SVector(zero(T), zero(T), one(T)), SVector{3, T}(a)))
+    end
 end
 
 Base.show(io::IO, jt::Prismatic) = print(io, "Prismatic joint with axis $(jt.axis)")
@@ -338,7 +340,10 @@ struct Revolute{T} <: OneDegreeOfFreedomFixedAxis{T}
     Construct a new `Revolute` joint type, allowing rotation about `axis`
     (expressed in the frame before the joint).
     """
-    Revolute(axis::AbstractVector{T}) where {T} = new{T}(axis, rotation_between(SVector(zero(T), zero(T), one(T)), SVector{3, T}(axis)))
+    function Revolute(axis::AbstractVector{T}) where {T}
+        a = normalize(axis)
+        new{T}(a, rotation_between(SVector(zero(T), zero(T), one(T)), SVector{3, T}(a)))
+    end
 end
 
 Base.show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.axis)")
@@ -448,3 +453,141 @@ has_fixed_subspaces(jt::Fixed) = true
 configuration_derivative_to_velocity!(v::AbstractVector, ::Fixed, q::AbstractVector, q̇::AbstractVector) = nothing
 velocity_to_configuration_derivative!(q̇::AbstractVector, ::Fixed, q::AbstractVector, v::AbstractVector) = nothing
 joint_torque!(τ::AbstractVector, jt::Fixed, q::AbstractVector, joint_wrench::Wrench) = nothing
+
+
+"""
+$(TYPEDEF)
+
+The `Planar` joint type allows translation along two orthogonal vectors, referred to as ``x`` and ``y``,
+as well as rotation about an axis ``z = x \\times y``.
+
+The components of the 3-dimensional configuration vector ``q`` associated with a `Planar` joint are the
+``x``- and ``y``-coordinates of the translation, and the angle of rotation ``\\theta`` about ``z``, in that order.
+
+The components of the 3-dimension velocity vector ``v`` associated with a `Planar` joint are the
+``x``- and ``y``-coordinates of the linear part of the joint twist, expressed in the frame after the joint,
+followed by the ``z``-component of the angular part of this joint twist.
+
+!!! warning
+
+    For the `Planar` joint type, ``v \\neq \\dot{q}``! Although the angular parts of ``v`` and ``\\dot{q}``
+    are the same, their linear parts differ. The linear part of ``v`` is the linear part of ``\\dot{q}``, rotated
+    to the frame after the joint. This parameterization was chosen to allow the translational component of the
+    joint transform to be independent of the rotation angle ``\\theta`` (i.e., the rotation is applied **after** the
+    translation), while still retaining a constant motion subspace expressed in the frame after the joint.
+
+"""
+struct Planar{T} <: JointType{T}
+    x_axis::SVector{3, T}
+    y_axis::SVector{3, T}
+    rot_axis::SVector{3, T}
+
+    """
+    $(SIGNATURES)
+
+    Construct a new `Planar` joint type with the ``xy``-plane in which translation is allowed defined
+    by 3-vectors `x` and `y` expressed in the frame before the joint.
+    """
+    function Planar{T}(x_axis::AbstractVector, y_axis::AbstractVector) where {T}
+        x, y = map(axis -> normalize(SVector{3}(axis)), (x_axis, y_axis))
+        @assert isapprox(x ⋅ y, 0; atol = 10 * eps(T))
+        z = cross(x, y)
+        new{T}(x, y, z)
+    end
+end
+
+Planar(x_axis::AbstractVector{X}, y_axis::AbstractVector{Y}) where {X, Y} = Planar{promote_type(X, Y)}(x_axis, y_axis)
+
+Base.show(io::IO, jt::Planar) = print(io, "Planar joint with x-axis $(jt.x_axis) and y-axis $(jt.y_axis)")
+
+function Random.rand(::Type{Planar{T}}) where {T}
+    x = normalize(randn(SVector{3, T}))
+    y = normalize(randn(SVector{3, T}))
+    y = normalize(y - (x ⋅ y) * x)
+    Planar(x, y)
+end
+
+num_positions(::Type{<:Planar}) = 3
+num_velocities(::Type{<:Planar}) = 3
+has_fixed_subspaces(jt::Planar) = true
+flip_direction(jt::Planar) = Planar(-jt.x_axis, -jt.y_axis, -jt.rot_axis)
+
+function rand_configuration!(q::AbstractVector{T}, ::Planar) where {T}
+    q[1] = rand() - T(0.5)
+    q[2] = rand() - T(0.5)
+    q[3] = randn()
+    nothing
+end
+
+function joint_transform(jt::Planar{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}) where {T, X}
+    @inbounds rot = RotMatrix(AngleAxis(q[3], jt.rot_axis[1], jt.rot_axis[2], jt.rot_axis[3], false))
+    @inbounds trans = jt.x_axis * q[1] + jt.y_axis * q[2]
+    Transform3D(frameAfter, frameBefore, rot, trans)
+end
+
+function joint_twist(jt::Planar{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
+    @inbounds angular = jt.rot_axis * v[3]
+    @inbounds linear = jt.x_axis * v[1] + jt.y_axis * v[2]
+    Twist(frameAfter, frameBefore, frameAfter, angular, linear)
+end
+
+function joint_spatial_acceleration(jt::Planar{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
+    S = promote_type(T, X, XD)
+    @inbounds angular = jt.rot_axis * vd[3]
+    @inbounds linear = jt.x_axis * vd[1] + jt.y_axis * vd[2]
+    SpatialAcceleration{S}(frameAfter, frameBefore, frameAfter, angular, linear)
+end
+
+function motion_subspace(jt::Planar{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}) where {T, X}
+    S = promote_type(T, X)
+    angular = hcat(zeros(SMatrix{3, 2, S}), jt.rot_axis)
+    linear = hcat(jt.x_axis, jt.y_axis, zeros(SVector{3, S}))
+    GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
+end
+
+function constraint_wrench_subspace(jt::Planar{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
+    S = promote_type(T, X)
+    angular = hcat(zeros(SVector{3, S}), jt.x_axis, jt.y_axis)
+    linear = hcat(jt.rot_axis, zeros(SMatrix{3, 2, S}))
+    WrenchMatrix(jointTransform.from, angular, linear)
+end
+
+function bias_acceleration(jt::Planar{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
+    zero(SpatialAcceleration{promote_type(T, X)}, frameAfter, frameBefore, frameAfter)
+end
+
+function joint_torque!(τ::AbstractVector, jt::Planar, q::AbstractVector, joint_wrench::Wrench)
+    @inbounds τ[1] = dot(joint_wrench.linear, jt.x_axis)
+    @inbounds τ[2] = dot(joint_wrench.linear, jt.y_axis)
+    @inbounds τ[3] = dot(joint_wrench.angular, jt.rot_axis)
+    nothing
+end
+
+function configuration_derivative_to_velocity!(v::AbstractVector, jt::Planar, q::AbstractVector, q̇::AbstractVector)
+    vlinear = RotMatrix(-q[3]) * SVector(q̇[1], q̇[2])
+    v[1] = vlinear[1]
+    v[2] = vlinear[2]
+    v[3] = q̇[3]
+    nothing
+end
+
+function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::Planar, q::AbstractVector, v::AbstractVector)
+    q̇linear = RotMatrix(q[3]) * SVector(v[1], v[2])
+    q̇[1] = q̇linear[1]
+    q̇[2] = q̇linear[2]
+    q̇[3] = v[3]
+    nothing
+end
+
+function configuration_derivative_to_velocity_adjoint!(out, jt::Planar, q::AbstractVector, f)
+    outlinear = RotMatrix(q[3]) * SVector(f[1], f[2])
+    out[1] = outlinear[1]
+    out[2] = outlinear[2]
+    out[3] = f[3]
+    nothing
+end

@@ -26,6 +26,7 @@ export
     Revolute,
     Prismatic,
     Fixed,
+    Planar,
     Twist,
     GeometricJacobian,
     Wrench,

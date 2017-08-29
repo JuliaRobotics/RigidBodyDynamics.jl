@@ -49,13 +49,14 @@ $(TYPEDEF)
 
 A joint represents a kinematic restriction of the relative twist between two
 rigid bodies to a linear subspace of dimension ``k``.
+
+A joint has a direction. The rigid body before the joint is called the
+joint's predecessor, and the rigid body after the joint is its successor.
+
 The state related to the joint is parameterized by two sets of variables, namely
 
 * a vector ``q \\in  \\mathcal{Q}``, parameterizing the relative homogeneous transform.
 * a vector ``v \\in \\mathbb{R}^k``, parameterizing the relative twist.
-
-A joint has a direction. The rigid body before the joint is called the
-joint's predecessor, and the rigid body after the joint is its successor.
 
 The twist of the successor with respect to the predecessor is a linear function
 of ``v``.
