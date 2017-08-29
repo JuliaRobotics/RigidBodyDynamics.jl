@@ -510,4 +510,17 @@
         configuration_derivative_to_velocity_adjoint!(fq, x, fv)
         @test dot(fv, velocity(x)) ≈ dot(fq, configuration_derivative(x))
     end
+
+    @testset "joint bounds" begin
+        @test @inferred(RigidBodyDynamics.Bounds{Float64}()).lower == -Inf
+        @test @inferred(RigidBodyDynamics.Bounds{Float64}()).upper == Inf
+        @test @inferred(RigidBodyDynamics.Bounds(-1, 2.0)).lower == -1
+        @test @inferred(RigidBodyDynamics.Bounds(-1, 2.0)).upper == 2
+        @test isa(RigidBodyDynamics.Bounds(-1, 1.0).lower, Float64)
+        @test isa(RigidBodyDynamics.Bounds(-1, 1.0).upper, Float64)
+        @test @inferred(clamp(1.5, RigidBodyDynamics.Bounds(-1, 1))) == RigidBodyDynamics.upper(RigidBodyDynamics.Bounds(-1, 1))
+        @test @inferred(clamp(-3, RigidBodyDynamics.Bounds(-2, 1))) == RigidBodyDynamics.lower(RigidBodyDynamics.Bounds(-2, 1))
+        @test @inferred(clamp(0, RigidBodyDynamics.Bounds(-1, 1))) == 0
+        @test @inferred(intersect(RigidBodyDynamics.Bounds(-1, 1), RigidBodyDynamics.Bounds(-0.5, 2.0))) == RigidBodyDynamics.Bounds(-0.5, 1.0)
+    end
 end

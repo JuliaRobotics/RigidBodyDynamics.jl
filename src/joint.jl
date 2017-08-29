@@ -1,3 +1,36 @@
+"""
+$(TYPEDEF)
+
+Bounds is a scalar-like type representing a closed interval from ``lower`` to 
+``upper``. To indicate that a vector of values falls with some range, use a 
+``Vector{Bounds{T}}``. 
+"""
+struct Bounds{T}
+    lower::T
+    upper::T
+
+    function Bounds{T}(lower, upper) where T
+        @assert lower <= upper
+        new{T}(lower, upper)
+    end
+    Bounds{T}() where {T} = new{T}(typemin(T), typemax(T))
+end
+
+Bounds(lower::T1, upper::T2) where {T1, T2} = Bounds{promote_type(T1, T2)}(lower, upper)
+
+upper(b::Bounds) = b.upper
+lower(b::Bounds) = b.lower
+Base.:(==)(b1::Bounds, b2::Bounds) = b1.lower == b2.lower && b1.upper == b2.upper
+Base.show(io::IO, b::Bounds) = print(io, "(", lower(b), ", ", upper(b), ")")
+
+"""
+$(SIGNATURES)
+
+Return the closest value to ``x`` within the interval described by ``b``.
+"""
+Base.clamp(x, b::Bounds) = clamp(x, b.lower, b.upper)
+Base.intersect(b1::Bounds, b2::Bounds) = Bounds(max(b1.lower, b2.lower), min(b1.upper, b2.upper))
+
 # The constructor setup for Joint may look strange. The constructors are
 # designed so that e.g. a call to Joint("bla", QuaternionFloating{Float64}())
 # returns a Joint{T, JointType{T}}, not a JointType{T, QuaternionFloating{T}}.
@@ -43,25 +76,31 @@ mutable struct Joint{T, JT<:JointType{T}}
     frameAfter::CartesianFrame3D
     jointType::JT
     id::Int64
+    position_bounds::Vector{Bounds{T}}
+    velocity_bounds::Vector{Bounds{T}}
+    effort_bounds::Vector{Bounds{T}}
 
-    function Joint{T, JT}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JointType{T}) where {T, JT<:JointType{T}}
-        new{T, JointType{T}}(name, frameBefore, frameAfter, jointType, -1)
+    function Joint{T, JT}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JT; 
+                          position_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_positions(jointType)),
+                          velocity_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(jointType)),
+                          effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(jointType))) where {T, JT<:JointType{T}}
+        new{T, JointType{T}}(name, frameBefore, frameAfter, jointType, -1, position_bounds, velocity_bounds, effort_bounds)
     end
 
     function Joint(other::Joint{T}) where T
         JT = typeof(other.jointType)
-        new{T, JT}(other.name, other.frameBefore, other.frameAfter, other.jointType, other.id)
+        new{T, JT}(other.name, other.frameBefore, other.frameAfter, other.jointType, other.id, deepcopy(other.position_bounds), deepcopy(other.velocity_bounds), deepcopy(other.effort_bounds))
     end
 end
 
 const GenericJoint{T} = Joint{T, JointType{T}}
 
-function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jtype::JointType{T}) where T
-    GenericJoint{T}(name, frameBefore, frameAfter, jtype)
+function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jtype::JointType{T}; kw...) where T
+    GenericJoint{T}(name, frameBefore, frameAfter, jtype; kw...)
 end
 
-function Joint(name::String, jtype::JointType)
-    Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jtype)
+function Joint(name::String, jtype::JointType; kw...)
+    Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jtype; kw...)
 end
 
 typedjoint(joint::Joint) = Joint(joint)
@@ -69,6 +108,30 @@ typedjoint(joint::Joint) = Joint(joint)
 frame_before(joint::Joint) = joint.frameBefore
 frame_after(joint::Joint) = joint.frameAfter
 joint_type(joint::Joint) = joint.jointType
+
+"""
+$(SIGNATURES)
+
+Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the 
+configuration for ``joint``
+"""
+position_bounds(joint::Joint) = joint.position_bounds
+
+"""
+$(SIGNATURES)
+
+Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the 
+velocity for ``joint``
+"""
+velocity_bounds(joint::Joint) = joint.velocity_bounds
+
+"""
+$(SIGNATURES)
+
+Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the 
+effort for ``joint``
+"""
+effort_bounds(joint::Joint) = joint.effort_bounds
 
 RigidBodyDynamics.Graphs.edge_index(joint::Joint) = joint.id
 RigidBodyDynamics.Graphs.edge_index!(joint::Joint, id::Int64) = (joint.id = id)

@@ -34,22 +34,51 @@ function parse_pose(::Type{T}, xml_pose::XMLElement) where {T}
     rot, trans
 end
 
-function parse_joint(::Type{T}, xml_joint::XMLElement) where {T}
-    name = attribute(xml_joint, "name")
+function parse_joint_type(::Type{T}, xml_joint::XMLElement) where {T}
     jointType = attribute(xml_joint, "type")
     if jointType == "revolute" || jointType == "continuous" # TODO: handle joint limits for revolute
         axis = SVector{3}(parse_vector(T, find_element(xml_joint, "axis"), "xyz", "1 0 0"))
-        return Joint(name, Revolute(axis))
+        return Revolute(axis)
     elseif jointType == "prismatic"
         axis = SVector{3}(parse_vector(T, find_element(xml_joint, "axis"), "xyz", "1 0 0"))
-        return Joint(name, Prismatic(axis))
+        return Prismatic(axis)
     elseif jointType == "floating"
-        return Joint(name, QuaternionFloating{T}())
+        return QuaternionFloating{T}()
     elseif jointType == "fixed"
-        return Joint(name, Fixed{T}())
+        return Fixed{T}()
     else
         error("joint type $jointType not recognized")
     end
+end
+
+function parse_joint_bounds(jtype::JT, xml_joint::XMLElement) where {T, JT <: JointType{T}}
+    position_bounds = fill(Bounds{T}(), num_positions(jtype))
+    velocity_bounds = fill(Bounds{T}(), num_velocities(jtype))
+    effort_bounds = fill(Bounds{T}(), num_velocities(jtype))
+    for element in get_elements_by_tagname(xml_joint, "limit")
+        if has_attribute(element, "lower")
+            position_bounds .= Bounds.(parse_scalar(T, element, "lower"), upper.(position_bounds))
+        end
+        if has_attribute(element, "upper")
+            position_bounds .= Bounds.(lower.(position_bounds), parse_scalar(T, element, "upper"))
+        end
+        if has_attribute(element, "velocity")
+            v = parse_scalar(T, element, "velocity")
+            velocity_bounds .= Bounds(-v, v)
+        end
+        if has_attribute(element, "effort")
+            e = parse_scalar(T, element, "effort")
+            effort_bounds .= Bounds(-e, e)
+        end
+    end
+    position_bounds, velocity_bounds, effort_bounds
+end
+
+function parse_joint(::Type{T}, xml_joint::XMLElement) where {T}
+    name = attribute(xml_joint, "name")
+    jointType = parse_joint_type(T, xml_joint)
+    position_bounds, velocity_bounds, effort_bounds = parse_joint_bounds(jointType, xml_joint)
+    return Joint(name, jointType; position_bounds=position_bounds, velocity_bounds=velocity_bounds, effort_bounds=effort_bounds)
 end
 
 function parse_inertia(::Type{T}, xml_inertial::XMLElement, frame::CartesianFrame3D) where {T}
