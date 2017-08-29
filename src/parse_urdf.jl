@@ -52,31 +52,33 @@ function parse_joint_type(::Type{T}, xml_joint::XMLElement) where {T}
 end
 
 function parse_joint_bounds(jtype::JT, xml_joint::XMLElement) where {T, JT <: JointType{T}}
-    bounds = JointBounds(jtype)
+    position_bounds = fill(Bounds{T}(), num_positions(jtype))
+    velocity_bounds = fill(Bounds{T}(), num_velocities(jtype))
+    effort_bounds = fill(Bounds{T}(), num_velocities(jtype))
     for element in get_elements_by_tagname(xml_joint, "limit")
         if has_attribute(element, "lower")
-            bounds.position .= Bounds.(parse_scalar(T, element, "lower"), upper.(bounds.position))
+            position_bounds .= Bounds.(parse_scalar(T, element, "lower"), upper.(position_bounds))
         end
         if has_attribute(element, "upper")
-            bounds.position .= Bounds.(lower.(bounds.position), parse_scalar(T, element, "upper"))
+            position_bounds .= Bounds.(lower.(position_bounds), parse_scalar(T, element, "upper"))
         end
         if has_attribute(element, "velocity")
             v = parse_scalar(T, element, "velocity")
-            bounds.velocity .= Bounds(-v, v)
+            velocity_bounds .= Bounds(-v, v)
         end
         if has_attribute(element, "effort")
             e = parse_scalar(T, element, "effort")
-            bounds.effort .= Bounds(-e, e)
+            effort_bounds .= Bounds(-e, e)
         end
     end
-    bounds
+    position_bounds, velocity_bounds, effort_bounds
 end
 
 function parse_joint(::Type{T}, xml_joint::XMLElement) where {T}
     name = attribute(xml_joint, "name")
     jointType = parse_joint_type(T, xml_joint)
-    jointBounds = parse_joint_bounds(jointType, xml_joint)
-    return Joint(name, jointType, jointBounds)
+    position_bounds, velocity_bounds, effort_bounds = parse_joint_bounds(jointType, xml_joint)
+    return Joint(name, jointType; position_bounds=position_bounds, velocity_bounds=velocity_bounds, effort_bounds=effort_bounds)
 end
 
 function parse_inertia(::Type{T}, xml_inertial::XMLElement, frame::CartesianFrame3D) where {T}
