@@ -493,7 +493,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Joints",
     "title": "RigidBodyDynamics.Joint",
     "category": "Type",
-    "text": "type Joint{T, JT<:RigidBodyDynamics.JointType{T}}\n\nA joint represents a kinematic restriction of the relative twist between two rigid bodies to a linear subspace of dimension k. The state related to the joint is parameterized by two sets of variables, namely\n\na vector q in  mathcalQ, parameterizing the relative homogeneous transform.\na vector v in mathbbR^k, parameterizing the relative twist.\n\nA joint has a direction. The rigid body before the joint is called the joint's predecessor, and the rigid body after the joint is its successor.\n\nThe twist of the successor with respect to the predecessor is a linear function of v.\n\nFor some joint types (notably those using a redundant representation of relative orientation, such as a unit quaternion), dotq, the time derivative of q, may not be the same as v. However, an invertible linear transformation exists between dotq and v.\n\nSee also:\n\nDefinition 2.9 in Duindam, \"Port-Based Modeling and Control for Efficient Bipedal Walking Robots\", 2006.\nSection 4.4 of Featherstone, \"Rigid Body Dynamics Algorithms\", 2008.\n\n\n\n"
+    "text": "type Joint{T, JT<:RigidBodyDynamics.JointType{T}}\n\nA joint represents a kinematic restriction of the relative twist between two rigid bodies to a linear subspace of dimension k.\n\nA joint has a direction. The rigid body before the joint is called the joint's predecessor, and the rigid body after the joint is its successor.\n\nThe state related to the joint is parameterized by two sets of variables, namely\n\na vector q in  mathcalQ, parameterizing the relative homogeneous transform.\na vector v in mathbbR^k, parameterizing the relative twist.\n\nThe twist of the successor with respect to the predecessor is a linear function of v.\n\nFor some joint types (notably those using a redundant representation of relative orientation, such as a unit quaternion), dotq, the time derivative of q, may not be the same as v. However, an invertible linear transformation exists between dotq and v.\n\nSee also:\n\nDefinition 2.9 in Duindam, \"Port-Based Modeling and Control for Efficient Bipedal Walking Robots\", 2006.\nSection 4.4 of Featherstone, \"Rigid Body Dynamics Algorithms\", 2008.\n\n\n\n"
 },
 
 {
@@ -729,11 +729,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "joints.html#RigidBodyDynamics.Planar",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.Planar",
+    "category": "Type",
+    "text": "struct Planar{T} <: RigidBodyDynamics.JointType{T}\n\nThe Planar joint type allows translation along two orthogonal vectors, referred to as x and y, as well as rotation about an axis z = x times y.\n\nThe components of the 3-dimensional configuration vector q associated with a Planar joint are the x- and y-coordinates of the translation, and the angle of rotation theta about z, in that order.\n\nThe components of the 3-dimension velocity vector v associated with a Planar joint are the x- and y-coordinates of the linear part of the joint twist, expressed in the frame after the joint, followed by the z-component of the angular part of this joint twist.\n\nwarning: Warning\nFor the Planar joint type, v neq dotq! Although the angular parts of v and dotq are the same, their linear parts differ. The linear part of v is the linear part of dotq, rotated to the frame after the joint. This parameterization was chosen to allow the translational component of the joint transform to be independent of the rotation angle theta (i.e., the rotation is applied after the translation), while still retaining a constant motion subspace expressed in the frame after the joint.\n\n\n\n"
+},
+
+{
     "location": "joints.html#JointTypes-1",
     "page": "Joints",
     "title": "JointTypes",
     "category": "section",
-    "text": "QuaternionFloating\nRevolute\nPrismatic\nFixed"
+    "text": "QuaternionFloating\nRevolute\nPrismatic\nFixed\nPlanar"
 },
 
 {
