@@ -1,9 +1,12 @@
-@testset "mechanism algorithms" begin
-    mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 5]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]; [Planar{Float64} for i = 1 : 5]]...)
-    x = MechanismState(mechanism)
-    rand!(x)
+function RigidBodyDynamics.rand_tree_mechanism()
+    rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 5]; [Fixed{Float64} for i = 1 : 5]; [QuaternionSpherical{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]; [Planar{Float64} for i = 1 : 5]]...)
+end
 
+@testset "mechanism algorithms" begin
     @testset "show" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         mechanism_with_loops = deepcopy(mechanism)
         for i = 1 : 5
             pred = rand(bodies(mechanism_with_loops))
@@ -25,6 +28,9 @@
     end
 
     @testset "basic stuff" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         q = vcat([configuration(x, joint) for joint in tree_joints(mechanism)]...)
         v = vcat([velocity(x, joint) for joint in tree_joints(mechanism)]...)
 
@@ -74,6 +80,9 @@
     end
 
     @testset "q̇ <-> v" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         q = configuration(x)
         q̇ = configuration_derivative(x)
         v = velocity(x)
@@ -88,6 +97,9 @@
     end
 
     @testset "joint_torque! / motion_subspace" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             qjoint = configuration(x, joint)
@@ -100,6 +112,9 @@
     end
 
     @testset "isfloating" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         for joint in joints(mechanism)
             S = motion_subspace_in_world(x, joint)
             @test isfloating(joint) == (rank(Array(S)) == 6)
@@ -108,6 +123,9 @@
     end
 
     @testset "geometric_jacobian / relative_twist" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         frame = CartesianFrame3D()
         for i = 1 : 100
             bs = Set(bodies(mechanism))
@@ -140,6 +158,9 @@
     end
 
     @testset "motion_subspace / constraint_wrench_subspace" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             qjoint = configuration(x, joint)
@@ -170,6 +191,9 @@
     # end
 
     @testset "relative_acceleration" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         result = DynamicsResult(mechanism)
         for body in bodies(mechanism)
             for base in bodies(mechanism)
@@ -198,6 +222,9 @@
     end
 
     @testset "motion subspace / twist wrt world" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             parentBody = predecessor(joint, mechanism)
@@ -206,6 +233,9 @@
     end
 
     @testset "composite rigid body inertias" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             crb = crb_inertia(x, body)
@@ -223,6 +253,9 @@
     end
 
     @testset "momentum_matrix / summing momenta" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         A = momentum_matrix(x)
         Amat = Array(A)
         for joint in tree_joints(mechanism)
@@ -255,6 +288,9 @@
     end
 
     @testset "mass matrix / kinetic energy" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         Ek = kinetic_energy(x)
         M = mass_matrix(x)
         v = velocity(x)
@@ -275,6 +311,7 @@
     end
 
     @testset "spatial_inertia!" begin
+        mechanism = rand_tree_mechanism()
         body = rand(collect(non_root_bodies(mechanism)))
         newinertia = rand(SpatialInertia{eltype(mechanism)}, spatial_inertia(body).frame)
         spatial_inertia!(body, newinertia)
@@ -282,8 +319,10 @@
     end
 
     @testset "inverse dynamics / acceleration term" begin
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        rand!(x)
         M = mass_matrix(x)
-
         function v̇_to_τ(v̇)
             inverse_dynamics(x, v̇)
         end
@@ -345,10 +384,9 @@
     end
 
     @testset "momentum matrix" begin
-        mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]; Planar{Float64}]...)
+        mechanism = rand_tree_mechanism()
         x = MechanismState(mechanism)
-        rand_configuration!(x)
-        rand_velocity!(x)
+        rand!(x)
         q = configuration(x)
         q̇ = configuration_derivative(x)
         v = velocity(x)
@@ -376,9 +414,7 @@
     @testset "inverse dynamics / external wrenches" begin
         mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
         x = MechanismState(mechanism)
-        rand_configuration!(x)
-        rand_velocity!(x)
-
+        rand!(x)
         v̇ = rand(num_velocities(mechanism))
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
         τ = inverse_dynamics(x, v̇, externalwrenches)
@@ -395,12 +431,11 @@
     end
 
     @testset "dynamics / inverse dynamics" begin
-        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...)
+        mechanism = rand_tree_mechanism()
         x = MechanismState(mechanism)
         rand!(x)
         externalTorques = rand(num_velocities(mechanism))
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
-
         result = DynamicsResult(mechanism)
         dynamics!(result, x, externalTorques, externalwrenches)
         τ = inverse_dynamics(x, result.v̇, externalwrenches) - externalTorques
@@ -408,10 +443,9 @@
     end
 
     @testset "dynamics_bias / inverse_dynamics" begin
-        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...)
+        mechanism = rand_tree_mechanism()
         x = MechanismState(mechanism)
         rand!(x)
-
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
         v̇ = zeros(num_velocities(x))
         τ1 = inverse_dynamics(x, v̇, externalwrenches)
@@ -420,7 +454,7 @@
     end
 
     @testset "dynamics ode method" begin
-        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...)
+        mechanism = rand_tree_mechanism()
         x = MechanismState(mechanism)
         rand!(x)
         torques = rand(num_velocities(mechanism))
@@ -437,10 +471,9 @@
     end
 
     @testset "power flow" begin
-        mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
+        mechanism = rand_tree_mechanism()
         x = MechanismState(mechanism)
-        rand_configuration!(x)
-        rand_velocity!(x)
+        rand!(x)
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
         τ = rand(num_velocities(mechanism))
         result = DynamicsResult(mechanism)
@@ -463,7 +496,7 @@
     end
 
     @testset "local / global coordinates" begin
-        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...)
+        mechanism = rand_tree_mechanism()
         state = MechanismState(mechanism)
         rand!(state)
         for joint in joints(mechanism)
@@ -502,7 +535,7 @@
     end
 
     @testset "configuration_derivative_to_velocity_adjoint!" begin
-        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...)
+        mechanism = rand_tree_mechanism()
         x = MechanismState(mechanism)
         configuration(x) .= rand(num_positions(x)) # needs to work for configuration vectors that do not satisfy the state constraints as well
         fv = rand(num_velocities(x))
