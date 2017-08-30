@@ -737,11 +737,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "joints.html#RigidBodyDynamics.QuaternionSpherical",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.QuaternionSpherical",
+    "category": "Type",
+    "text": "struct QuaternionSpherical{T} <: RigidBodyDynamics.JointType{T}\n\nThe QuaternionSpherical joint type allows rotation in any direction. It is an implementation of a ball-and-socket joint.\n\nThe 4-dimensional configuration vector q associated with a QuaternionSpherical joint is the unit quaternion that describes the orientation of the frame after the joint with respect to the frame before the joint. In other words, it is the quaternion that can be used to rotate vectors from the frame after the joint to the frame before the joint.\n\nThe 3-dimensional velocity vector v associated with a QuaternionSpherical joint is the angular velocity of the frame after the joint with respect to the frame before the joint, expressed in the frame after the joint (body frame).\n\n\n\n"
+},
+
+{
     "location": "joints.html#JointTypes-1",
     "page": "Joints",
     "title": "JointTypes",
     "category": "section",
-    "text": "QuaternionFloating\nRevolute\nPrismatic\nFixed\nPlanar"
+    "text": "QuaternionFloating\nRevolute\nPrismatic\nFixed\nPlanar\nQuaternionSpherical"
 },
 
 {
