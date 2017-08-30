@@ -10,8 +10,6 @@ export
     Edge,
     Vertex,
     data,
-    vertex_index,
-    edge_index,
     vertex_type,
     edge_type,
     vertices,
@@ -29,7 +27,6 @@ export
     remove_vertex!,
     remove_edge!,
     rewire!,
-    flip_direction!,
     replace_edge!,
     reindex!,
     root,
@@ -48,7 +45,7 @@ vertex_index!(::Any, index::Int64) = error("Vertex types must implement this met
 # Edge interface
 edge_index(::Any) = error("Edge types must implement this method")
 edge_index!(::Any, index::Int64) = error("Edge types must implement this method")
-# optional: flip_direction!
+flip_direction(x::Any) = deepcopy(x)
 
 # Vertex and Edge types; useful for wrapping an existing type with the edge interface.
 # Note that DirectedGraph does not require using these types; just implement the edge interface.
@@ -178,22 +175,19 @@ function rewire!(g::DirectedGraph{V, E}, edge::E, newsource::V, newtarget::V) wh
     g
 end
 
-function flip_direction!(edge::E, g::DirectedGraph{V, E}) where {V, E}
-    flip_direction!(edge)
-    rewire!(g, edge, target(edge, g), source(edge, g))
-end
-
 function replace_edge!(g::DirectedGraph{V, E}, old_edge::E, new_edge::E) where {V, E}
-    src = source(old_edge, g)
-    dest = target(old_edge, g)
-    index = edge_index(old_edge)
-    edge_index!(new_edge, index)
-    g.edges[index] = new_edge
-    out_edge_index = findfirst(out_edges(src, g), old_edge)
-    out_edges(src, g)[out_edge_index] = new_edge
-    in_edge_index = findfirst(in_edges(dest, g), old_edge)
-    in_edges(dest, g)[in_edge_index] = new_edge
-    edge_index!(old_edge, -1)
+    if new_edge !== old_edge
+        src = source(old_edge, g)
+        dest = target(old_edge, g)
+        index = edge_index(old_edge)
+        edge_index!(new_edge, index)
+        g.edges[index] = new_edge
+        out_edge_index = findfirst(out_edges(src, g), old_edge)
+        out_edges(src, g)[out_edge_index] = new_edge
+        in_edge_index = findfirst(in_edges(dest, g), old_edge)
+        in_edges(dest, g)[in_edge_index] = new_edge
+        edge_index!(old_edge, -1)
+    end
     g
 end
 
@@ -256,30 +250,42 @@ function SpanningTree(g::DirectedGraph{V, E}, root::V, edges::AbstractVector{E})
     SpanningTree(g, root, edges, inedges, outedges, edge_tree_indices)
 end
 
-function SpanningTree(g::DirectedGraph{V, E}, root::V, next_edge = first #= breadth first =#) where {V, E}
-    treevertices = [root]
-    edges = E[]
+function SpanningTree(g::DirectedGraph{V, E}, root::V, flipped_edge_map::Associative = Dict{E, E}();
+        next_edge = first #= breadth first =#) where {V, E}
+    tree_edges = E[]
+    tree_vertices = [root]
     frontier = E[]
     append!(frontier, out_edges(root, g))
     append!(frontier, in_edges(root, g))
     while !isempty(frontier)
         # select a new edge
         e = next_edge(frontier)
-        if source(e, g) ∉ treevertices
-            flip_direction!(e, g)
-        end
-        push!(edges, e)
-        child = target(e, g)
-        push!(treevertices, child)
 
-        # update the frontier
+        # remove edges from frontier
+        flip = source(e, g) ∉ tree_vertices
+        child = flip ? source(e, g) : target(e, g)
         filter!(x -> x ∉ in_edges(child, g), frontier)
         filter!(x -> x ∉ out_edges(child, g), frontier)
-        append!(frontier, x for x in out_edges(child, g) if target(x, g) ∉ treevertices)
-        append!(frontier, x for x in in_edges(child, g) if source(x, g) ∉ treevertices)
+
+        # flip current edge if necessary
+        if flip
+            rewire!(g, e, target(e, g), source(e, g))
+            newedge = flip_direction(e)
+            replace_edge!(g, e, newedge)
+            flipped_edge_map[e] = newedge
+            e = newedge
+        end
+
+        # update tree
+        push!(tree_edges, e)
+        push!(tree_vertices, child)
+
+        # add new edges to frontier
+        append!(frontier, x for x in out_edges(child, g) if target(x, g) ∉ tree_vertices)
+        append!(frontier, x for x in in_edges(child, g) if source(x, g) ∉ tree_vertices)
     end
-    length(treevertices) == num_vertices(g) || error("Graph is not connected.")
-    SpanningTree(g, root, edges)
+    length(tree_vertices) == num_vertices(g) || error("Graph is not connected.")
+    SpanningTree(g, root, tree_edges)
 end
 
 # adds an edge and vertex to both the tree and the underlying graph

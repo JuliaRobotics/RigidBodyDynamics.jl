@@ -1,9 +1,9 @@
 """
 $(TYPEDEF)
 
-Bounds is a scalar-like type representing a closed interval from ``lower`` to 
-``upper``. To indicate that a vector of values falls with some range, use a 
-``Vector{Bounds{T}}``. 
+Bounds is a scalar-like type representing a closed interval from ``lower`` to
+``upper``. To indicate that a vector of values falls with some range, use a
+``Vector{Bounds{T}}``.
 """
 struct Bounds{T}
     lower::T
@@ -71,21 +71,21 @@ See also:
 * Definition 2.9 in Duindam, "Port-Based Modeling and Control for Efficient Bipedal Walking Robots", 2006.
 * Section 4.4 of Featherstone, "Rigid Body Dynamics Algorithms", 2008.
 """
-mutable struct Joint{T, JT<:JointType{T}}
+struct Joint{T, JT<:JointType{T}}
     name::String
     frameBefore::CartesianFrame3D
     frameAfter::CartesianFrame3D
     jointType::JT
-    id::Int64
+    id::Base.RefValue{Int64}
     position_bounds::Vector{Bounds{T}}
     velocity_bounds::Vector{Bounds{T}}
     effort_bounds::Vector{Bounds{T}}
 
-    function Joint{T, JT}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JT; 
+    function Joint{T, JT}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JT;
                           position_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_positions(jointType)),
                           velocity_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(jointType)),
                           effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(jointType))) where {T, JT<:JointType{T}}
-        new{T, JointType{T}}(name, frameBefore, frameAfter, jointType, -1, position_bounds, velocity_bounds, effort_bounds)
+        new{T, JointType{T}}(name, frameBefore, frameAfter, jointType, Ref(-1), position_bounds, velocity_bounds, effort_bounds)
     end
 
     function Joint(other::Joint{T}) where T
@@ -113,7 +113,7 @@ joint_type(joint::Joint) = joint.jointType
 """
 $(SIGNATURES)
 
-Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the 
+Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the
 configuration for ``joint``
 """
 position_bounds(joint::Joint) = joint.position_bounds
@@ -121,7 +121,7 @@ position_bounds(joint::Joint) = joint.position_bounds
 """
 $(SIGNATURES)
 
-Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the 
+Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the
 velocity for ``joint``
 """
 velocity_bounds(joint::Joint) = joint.velocity_bounds
@@ -129,20 +129,19 @@ velocity_bounds(joint::Joint) = joint.velocity_bounds
 """
 $(SIGNATURES)
 
-Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the 
+Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the
 effort for ``joint``
 """
 effort_bounds(joint::Joint) = joint.effort_bounds
 
-RigidBodyDynamics.Graphs.edge_index(joint::Joint) = joint.id
-RigidBodyDynamics.Graphs.edge_index!(joint::Joint, id::Int64) = (joint.id = id)
-function RigidBodyDynamics.Graphs.flip_direction!(joint::Joint)
-    newbefore = frame_after(joint)
-    newafter = frame_before(joint)
-    joint.frameBefore = newbefore
-    joint.frameAfter = newafter
-    joint.jointType = flip_direction(joint.jointType)
-    joint
+RigidBodyDynamics.Graphs.edge_index(joint::Joint) = joint.id[]
+RigidBodyDynamics.Graphs.edge_index!(joint::Joint, id::Int64) = (joint.id[] = id)
+function RigidBodyDynamics.Graphs.flip_direction(joint::Joint)
+    jtype = RigidBodyDynamics.flip_direction(joint_type(joint))
+    Joint(joint.name, frame_after(joint), frame_before(joint), jtype;
+        position_bounds = joint.position_bounds,
+        velocity_bounds = joint.velocity_bounds,
+        effort_bounds = joint.effort_bounds)
 end
 
 Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")

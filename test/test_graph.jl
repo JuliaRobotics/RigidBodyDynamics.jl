@@ -1,4 +1,4 @@
-Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
+Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
 
 @testset "graphs" begin
     @testset "disconnected" begin
@@ -105,7 +105,7 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
         end
     end
 
-    @testset "rewire! / flip_direction!" begin
+    @testset "rewire!" begin
         graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
         for i = 1 : 100
             add_vertex!(graph, Vertex(i))
@@ -137,12 +137,6 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
             @test data(source(e, graph)) == data(source(e_orig, original))
             @test data(target(e, graph)) == data(target(e_orig, original))
         end
-
-        olddata = data(edge)
-        flip_direction!(edge, graph)
-        @test source(edge, graph) == newtarget
-        @test target(edge, graph) == newsource
-        @test data(edge) == -olddata
     end
 
     @testset "replace_edge!" begin
@@ -162,7 +156,7 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
             new_edge = Edge(NaN)
             replace_edge!(graph, old_edge, new_edge)
 
-            @test edge_index(old_edge) == -1
+            @test Graphs.edge_index(old_edge) == -1
             @test all(data.(vertices(graph)) .== data.(vertices(original)))
             @test new_edge ∈ in_edges(dest, graph)
             @test old_edge ∉ in_edges(dest, graph)
@@ -267,13 +261,23 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
 
         for i = 1 : 10
             old_edge = rand(edges(tree))
+
             src = source(old_edge, tree)
             dest = target(old_edge, tree)
+            old_id = Graphs.edge_index(old_edge)
+
+            # make sure that replacing edge with itself doesn't mess with anything
+            replace_edge!(tree, old_edge, old_edge)
+            @test source(old_edge, tree) == src
+            @test target(old_edge, tree) == dest
+            @test Graphs.edge_index(old_edge) == old_id
+
+            # replace with a new edge
             d = Int32(-10 * i)
             new_edge = Edge(d)
             replace_edge!(tree, old_edge, new_edge)
 
-            @test edge_index(old_edge) == -1
+            @test Graphs.edge_index(old_edge) == -1
             @test new_edge ∈ in_edges(dest, tree)
             @test old_edge ∉ in_edges(dest, tree)
             @test new_edge ∈ out_edges(src, tree)
@@ -283,6 +287,35 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
             @test data(new_edge) == d
             @test edge_to_parent(dest, tree) == new_edge
             @test new_edge ∈ edges_to_children(src, tree)
+        end
+
+        original = deepcopy(graph2)
+        edgemap = Dict(zip(edges(original), edges(graph2)))
+        newroot = rand(setdiff(vertices(graph2), [root2]))
+        flipped_edge_map = Dict{Edge{Int32}, Edge{Int32}}()
+        newtree = SpanningTree(graph2, newroot, flipped_edge_map)
+
+        @test !isempty(flipped_edge_map)
+        for (oldedge, newedge) in edgemap
+            flipped = haskey(flipped_edge_map, newedge)
+            if flipped
+                newedge = flipped_edge_map[newedge]
+            end
+
+            old_source_ind = Graphs.vertex_index(source(oldedge, original))
+            old_target_ind = Graphs.vertex_index(target(oldedge, original))
+            new_source_ind = Graphs.vertex_index(source(newedge, graph2))
+            new_target_ind = Graphs.vertex_index(target(newedge, graph2))
+
+            if flipped
+                @test data(oldedge) == -data(newedge)
+                @test new_source_ind == old_target_ind
+                @test new_target_ind == old_source_ind
+            else
+                @test data(oldedge) == data(newedge)
+                @test new_source_ind == old_source_ind
+                @test new_target_ind == old_target_ind
+            end
         end
     end
 
@@ -299,7 +332,7 @@ Graphs.flip_direction!(edge::Edge{Float64}) = (edge.data = -edge.data)
         reindex!(graph, newvertices, newedges)
         @test all(vertices(graph) .== newvertices)
         @test all(edges(graph) .== newedges)
-        @test all(vertex_index.(vertices(graph)) .== 1 : num_vertices(graph))
-        @test all(edge_index.(edges(graph)) .== 1 : num_edges(graph))
+        @test all(Graphs.vertex_index.(vertices(graph)) .== 1 : num_vertices(graph))
+        @test all(Graphs.edge_index.(edges(graph)) .== 1 : num_edges(graph))
     end
 end
