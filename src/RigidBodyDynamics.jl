@@ -27,6 +27,7 @@ export
     Prismatic,
     Fixed,
     Planar,
+    QuaternionSpherical,
     Twist,
     GeometricJacobian,
     Wrench,

@@ -10,8 +10,7 @@ Base.@pure num_constraints(t::Type{T}) where {T<:JointType} = 6 - num_velocities
 isfloating(::Type{<:JointType}) = false
 
 function flip_direction(jt::JointType{T}) where {T}
-    warn("Flipping direction is not supported for this joint type.") # TODO
-    deepcopy(jt)
+    error("Flipping direction is not supported for $(typeof(jt))")
 end
 
 zero_configuration!(q::AbstractVector, ::JointType) = (q[:] = 0; nothing)
@@ -60,28 +59,30 @@ The 6-dimensional velocity vector of a `QuaternionFloating` joint is the twist
 of the frame after the joint with respect to the frame before it, expressed in
 the frame after the joint.
 """
-struct QuaternionFloating{T} <: JointType{T}
-end
+struct QuaternionFloating{T} <: JointType{T} end
 
 Base.show(io::IO, jt::QuaternionFloating) = print(io, "Quaternion floating joint")
 Random.rand(::Type{QuaternionFloating{T}}) where {T} = QuaternionFloating{T}()
 
 num_positions(::Type{<:QuaternionFloating}) = 7
 num_velocities(::Type{<:QuaternionFloating}) = 6
+has_fixed_subspaces(jt::QuaternionFloating) = true
 isfloating(::Type{<:QuaternionFloating}) = true
 
 @inline function rotation(jt::QuaternionFloating, q::AbstractVector, normalize::Bool = true)
     @inbounds quat = Quat(q[1], q[2], q[3], q[4], normalize)
     quat
 end
-@inline function rotation!(q::AbstractVector, jt::QuaternionFloating, rot::Rotation{3})
-    quat = Quat(rot)
+
+@inline function rotation!(q::AbstractVector, jt::QuaternionFloating, rot::Rotation{3, T}) where T
+    quat = convert(Quat{T}, rot)
     @inbounds q[1] = quat.w
     @inbounds q[2] = quat.x
     @inbounds q[3] = quat.y
     @inbounds q[4] = quat.z
     nothing
 end
+
 @inline function rotation!(q::AbstractVector, jt::QuaternionFloating, rot::AbstractVector)
     @inbounds q[1] = rot[1]
     @inbounds q[2] = rot[2]
@@ -121,8 +122,6 @@ function bias_acceleration(jt::QuaternionFloating{T}, frameAfter::CartesianFrame
     S = promote_type(T, X)
     zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
 end
-
-has_fixed_subspaces(jt::QuaternionFloating) = true
 
 function configuration_derivative_to_velocity!(v::AbstractVector, jt::QuaternionFloating, q::AbstractVector, q̇::AbstractVector)
     quat = rotation(jt, q)
@@ -241,6 +240,7 @@ abstract type OneDegreeOfFreedomFixedAxis{T} <: JointType{T} end
 
 num_positions(::Type{<:OneDegreeOfFreedomFixedAxis}) = 1
 num_velocities(::Type{<:OneDegreeOfFreedomFixedAxis}) = 1
+has_fixed_subspaces(jt::OneDegreeOfFreedomFixedAxis) = true
 
 function rand_configuration!(q::AbstractVector, ::OneDegreeOfFreedomFixedAxis)
     randn!(q)
@@ -252,8 +252,6 @@ function bias_acceleration(jt::OneDegreeOfFreedomFixedAxis{T}, frameAfter::Carte
     S = promote_type(T, X)
     zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
 end
-
-has_fixed_subspaces(jt::OneDegreeOfFreedomFixedAxis) = true
 
 """
 $(TYPEDEF)
@@ -405,9 +403,11 @@ struct Fixed{T} <: JointType{T}
 end
 Base.show(io::IO, jt::Fixed) = print(io, "Fixed joint")
 Random.rand(::Type{Fixed{T}}) where {T} = Fixed{T}()
+flip_direction(jt::Fixed) = deepcopy(jt)
 
 num_positions(::Type{<:Fixed}) = 0
 num_velocities(::Type{<:Fixed}) = 0
+has_fixed_subspaces(jt::Fixed) = true
 
 function joint_transform(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
         q::AbstractVector{X}) where {T, X}
@@ -449,7 +449,6 @@ function bias_acceleration(jt::Fixed{T}, frameAfter::CartesianFrame3D, frameBefo
     zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
 end
 
-has_fixed_subspaces(jt::Fixed) = true
 configuration_derivative_to_velocity!(v::AbstractVector, ::Fixed, q::AbstractVector, q̇::AbstractVector) = nothing
 velocity_to_configuration_derivative!(q̇::AbstractVector, ::Fixed, q::AbstractVector, v::AbstractVector) = nothing
 joint_torque!(τ::AbstractVector, jt::Fixed, q::AbstractVector, joint_wrench::Wrench) = nothing
@@ -510,7 +509,6 @@ end
 num_positions(::Type{<:Planar}) = 3
 num_velocities(::Type{<:Planar}) = 3
 has_fixed_subspaces(jt::Planar) = true
-flip_direction(jt::Planar) = Planar(-jt.x_axis, -jt.y_axis, -jt.rot_axis)
 
 function rand_configuration!(q::AbstractVector{T}, ::Planar) where {T}
     q[1] = rand() - T(0.5)
@@ -589,5 +587,141 @@ function configuration_derivative_to_velocity_adjoint!(out, jt::Planar, q::Abstr
     out[1] = outlinear[1]
     out[2] = outlinear[2]
     out[3] = f[3]
+    nothing
+end
+
+
+"""
+$(TYPEDEF)
+
+The `QuaternionSpherical` joint type allows rotation in any direction. It is an
+implementation of a ball-and-socket joint.
+
+The 4-dimensional configuration vector ``q`` associated with a `QuaternionSpherical` joint
+is the unit quaternion that describes the orientation of the frame after the joint
+with respect to the frame before the joint. In other words, it is the quaternion that
+can be used to rotate vectors from the frame after the joint to the frame before the
+joint.
+
+The 3-dimensional velocity vector ``v`` associated with a `QuaternionSpherical` joint is
+the angular velocity of the frame after the joint with respect to the frame before
+the joint, expressed in the frame after the joint (body frame).
+"""
+struct QuaternionSpherical{T} <: JointType{T} end
+
+Base.show(io::IO, jt::QuaternionSpherical) = print(io, "Quaternion spherical joint")
+Random.rand(::Type{QuaternionSpherical{T}}) where {T} = QuaternionSpherical{T}()
+num_positions(::Type{<:QuaternionSpherical}) = 4
+num_velocities(::Type{<:QuaternionSpherical}) = 3
+has_fixed_subspaces(jt::QuaternionSpherical) = true
+
+@inline function rotation(jt::QuaternionSpherical, q::AbstractVector, normalize::Bool = true)
+    @inbounds quat = Quat(q[1], q[2], q[3], q[4], normalize)
+    quat
+end
+
+@inline function rotation!(q::AbstractVector, jt::QuaternionSpherical, rot::Rotation{3, T}) where {T}
+    quat = convert(Quat{T}, rot)
+    @inbounds q[1] = quat.w
+    @inbounds q[2] = quat.x
+    @inbounds q[3] = quat.y
+    @inbounds q[4] = quat.z
+    nothing
+end
+
+function joint_transform(jt::QuaternionSpherical, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
+    quat = rotation(jt, q)
+    @inbounds return Transform3D(frameAfter, frameBefore, quat)
+end
+
+function motion_subspace(jt::QuaternionSpherical{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}) where {T, X}
+    S = promote_type(T, X)
+    angular = eye(SMatrix{3, 3, S})
+    linear = zeros(SMatrix{3, 3, S})
+    GeometricJacobian(frameAfter, frameBefore, frameAfter, angular, linear)
+end
+
+function constraint_wrench_subspace(jt::QuaternionSpherical{T}, jointTransform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
+    S = promote_type(T, X)
+    angular = zeros(SMatrix{3, 3, S})
+    linear = eye(SMatrix{3, 3, S})
+    WrenchMatrix(jointTransform.from, angular, linear)
+end
+
+function bias_acceleration(jt::QuaternionSpherical{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
+    S = promote_type(T, X)
+    zero(SpatialAcceleration{S}, frameAfter, frameBefore, frameAfter)
+end
+
+function configuration_derivative_to_velocity!(v::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, q̇::AbstractVector)
+    quat = rotation(jt, q)
+    @inbounds quatdot = SVector(q̇[1], q̇[2], q̇[3], q̇[4])
+    v .= angular_velocity_in_body(quat, quatdot)
+    nothing
+end
+
+function configuration_derivative_to_velocity_adjoint!(fq, jt::QuaternionSpherical, q::AbstractVector, fv)
+    quatnorm = sqrt(q[1]^2 + q[2]^2 + q[3]^2 + q[4]^2) # TODO: make this nicer
+    quat = Quat(q[1] / quatnorm, q[2] / quatnorm, q[3] / quatnorm, q[4] / quatnorm, false)
+    fq .= (quat_derivative_to_body_angular_velocity_jacobian(quat)' * fv) ./ quatnorm
+    nothing
+end
+
+function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, v::AbstractVector)
+    quat = rotation(jt, q)
+    q̇ .= quaternion_derivative(quat, v)
+    nothing
+end
+
+function zero_configuration!(q::AbstractVector, jt::QuaternionSpherical)
+    T = eltype(q)
+    rotation!(q, jt, eye(Quat{T}))
+    nothing
+end
+
+function rand_configuration!(q::AbstractVector, jt::QuaternionSpherical)
+    T = eltype(q)
+    rotation!(q, jt, rand(Quat{T}))
+    nothing
+end
+
+function joint_twist(jt::QuaternionSpherical{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
+    S = promote_type(T, X)
+    angular = SVector{3, S}(v)
+    linear = zeros(SVector{3, S})
+    Twist(frameAfter, frameBefore, frameAfter, angular, linear)
+end
+
+function joint_spatial_acceleration(jt::QuaternionSpherical{T}, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
+    S = promote_type(T, X, XD)
+    angular = SVector{3, S}(vd)
+    linear = zeros(SVector{3, S})
+    SpatialAcceleration(frameAfter, frameBefore, frameAfter, angular, linear)
+end
+
+function joint_torque!(τ::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, joint_wrench::Wrench)
+    τ .= joint_wrench.angular
+    nothing
+end
+
+# uses exponential coordinates centered around q0
+function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
+        jt::QuaternionSpherical, q0::AbstractVector, q::AbstractVector, v::AbstractVector)
+    quat = inv(rotation(jt, q0)) * rotation(jt, q)
+    rv = RodriguesVec(quat)
+    ϕstatic = SVector(rv.sx, rv.sy, rv.sz)
+    ϕ .= ϕstatic
+    ϕ̇ .= rotation_vector_rate(ϕstatic, v)
+    nothing
+end
+
+function global_coordinates!(q::AbstractVector, jt::QuaternionSpherical, q0::AbstractVector, ϕ::AbstractVector)
+    quat0 = rotation(jt, q0)
+    quat = quat0 * Quat(RodriguesVec(ϕ[1], ϕ[2], ϕ[3]))
+    rotation!(q, jt, quat)
     nothing
 end

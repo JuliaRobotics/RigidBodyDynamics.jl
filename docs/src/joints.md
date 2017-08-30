@@ -28,4 +28,5 @@ Revolute
 Prismatic
 Fixed
 Planar
+QuaternionSpherical
 ```

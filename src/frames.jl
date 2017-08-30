@@ -91,17 +91,19 @@ const Transform3DS{T} = Transform3D{SMatrix{4, 4, T, 16}}
 
 @inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3}, trans::SVector{3})
     T = promote_type(eltype(typeof(rot)), eltype(typeof(trans)))
-    @inbounds mat = @SMatrix [rot[1] rot[4] rot[7] trans[1];
-                              rot[2] rot[5] rot[8] trans[2];
-                              rot[3] rot[6] rot[9] trans[3];
+    R = convert(RotMatrix3{T}, rot)
+    @inbounds mat = @SMatrix [R[1] R[4] R[7] trans[1];
+                              R[2] R[5] R[8] trans[2];
+                              R[3] R[6] R[9] trans[3];
                               zero(T) zero(T) zero(T) one(T)]
    Transform3D(from, to, mat)
 end
 
 @inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3, T}) where {T}
-    @inbounds mat = @SMatrix [rot[1] rot[4] rot[7] zero(T);
-                              rot[2] rot[5] rot[8] zero(T);
-                              rot[3] rot[6] rot[9] zero(T);
+    R = convert(RotMatrix3{T}, rot)
+    @inbounds mat = @SMatrix [R[1] R[4] R[7] zero(T);
+                              R[2] R[5] R[8] zero(T);
+                              R[3] R[6] R[9] zero(T);
                               zero(T) zero(T) zero(T) one(T)]
    Transform3D(from, to, mat)
 end
