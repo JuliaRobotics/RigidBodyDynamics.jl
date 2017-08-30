@@ -113,6 +113,20 @@ joint_type(joint::Joint) = joint.jointType
 """
 $(SIGNATURES)
 
+Change the joint type of ``joint`` to ``jt``. This also resets the bounds of the
+joint to ``-Inf..Inf``
+"""
+function set_joint_type!(joint::Joint{T}, jt::JointType{T}) where T
+    joint.jointType = jt
+    joint.position_bounds = fill(Bounds{T}(), num_positions(jt))
+    joint.velocity_bounds = fill(Bounds{T}(), num_velocities(jt))
+    joint.effort_bounds = fill(Bounds{T}(), num_velocities(jt))
+    joint
+end
+
+"""
+$(SIGNATURES)
+
 Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the 
 configuration for ``joint``
 """

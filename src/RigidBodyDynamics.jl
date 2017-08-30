@@ -47,6 +47,7 @@ export
     frame_before,
     frame_after,
     joint_type,
+    set_joint_type!,
     add_frame!,
     transform,
     invtransform,
