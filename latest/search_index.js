@@ -537,6 +537,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "joints.html#RigidBodyDynamics.effort_bounds-Tuple{RigidBodyDynamics.Joint}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.effort_bounds",
+    "category": "Method",
+    "text": "effort_bounds(joint)\n\n\nReturn a VectorBoundsT giving the upper and lower bounds of the  effort for joint\n\n\n\n"
+},
+
+{
     "location": "joints.html#RigidBodyDynamics.global_coordinates!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,AbstractArray{T,1} where T}",
     "page": "Joints",
     "title": "RigidBodyDynamics.global_coordinates!",
@@ -617,11 +625,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "joints.html#RigidBodyDynamics.position_bounds-Tuple{RigidBodyDynamics.Joint}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.position_bounds",
+    "category": "Method",
+    "text": "position_bounds(joint)\n\n\nReturn a VectorBoundsT giving the upper and lower bounds of the  configuration for joint\n\n\n\n"
+},
+
+{
     "location": "joints.html#RigidBodyDynamics.rand_configuration!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint}",
     "page": "Joints",
     "title": "RigidBodyDynamics.rand_configuration!",
     "category": "Method",
     "text": "rand_configuration!(q, joint)\n\n\nSet q to a random configuration. The distribution used depends on the joint type.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.velocity_bounds-Tuple{RigidBodyDynamics.Joint}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.velocity_bounds",
+    "category": "Method",
+    "text": "velocity_bounds(joint)\n\n\nReturn a VectorBoundsT giving the upper and lower bounds of the  velocity for joint\n\n\n\n"
 },
 
 {
@@ -638,6 +662,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.zero_configuration!",
     "category": "Method",
     "text": "zero_configuration!(q, joint)\n\n\nSet q to the 'zero' configuration, corresponding to an identity joint transform.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#Base.Math.clamp-Tuple{Any,RigidBodyDynamics.Bounds}",
+    "page": "Joints",
+    "title": "Base.Math.clamp",
+    "category": "Method",
+    "text": "clamp(x, b)\n\n\nReturn the closest value to x within the interval described by b.\n\n\n\n"
 },
 
 {
@@ -921,7 +953,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{Type{T},Vararg{Type{#s6} where #s6<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "Method",
@@ -929,7 +961,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s6} where #s6<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "Method",
@@ -937,7 +969,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Function,Vararg{Type{#s4} where #s4<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Function,Vararg{Type{#s5} where #s5<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
@@ -945,7 +977,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s6} where #s6<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
