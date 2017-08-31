@@ -1,18 +1,18 @@
-function floating_joint_transform_to_configuration!(joint::Joint, q::AbstractVector, jointTransform::Transform3D)
-    @framecheck frame_before(joint) jointTransform.to
-    @framecheck frame_after(joint) jointTransform.from
+function floating_joint_transform_to_configuration!(joint::Joint, q::AbstractVector, joint_transform::Transform3D)
+    @framecheck frame_before(joint) joint_transform.to
+    @framecheck frame_after(joint) joint_transform.from
     joint_type(joint)::QuaternionFloating
-    RigidBodyDynamics.rotation!(q, joint_type(joint), rotation(jointTransform))
-    RigidBodyDynamics.translation!(q, joint_type(joint), translation(jointTransform))
+    RigidBodyDynamics.rotation!(q, joint_type(joint), rotation(joint_transform))
+    RigidBodyDynamics.translation!(q, joint_type(joint), translation(joint_transform))
 end
 
-function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, jointTwist::Twist)
-    @framecheck frame_before(joint) jointTwist.base
-    @framecheck frame_after(joint) jointTwist.body
-    @framecheck frame_after(joint) jointTwist.frame
+function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, joint_twist::Twist)
+    @framecheck frame_before(joint) joint_twist.base
+    @framecheck frame_after(joint) joint_twist.body
+    @framecheck frame_after(joint) joint_twist.frame
     joint_type(joint)::QuaternionFloating
-    RigidBodyDynamics.angular_velocity!(v, joint_type(joint), jointTwist.angular)
-    RigidBodyDynamics.linear_velocity!(v, joint_type(joint), jointTwist.linear)
+    RigidBodyDynamics.angular_velocity!(v, joint_type(joint), joint_twist.angular)
+    RigidBodyDynamics.linear_velocity!(v, joint_type(joint), joint_twist.linear)
 end
 
 @testset "mechanism modification" begin
@@ -22,27 +22,27 @@ end
         nv = num_velocities(mechanism)
 
         mechanism2 = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 5]; QuaternionSpherical{Float64}; Planar{Float64}; [Prismatic{Float64} for i = 1 : 5]]...)
-        additionalFrames = Dict{CartesianFrame3D, RigidBody{Float64}}()
+        additional_frames = Dict{CartesianFrame3D, RigidBody{Float64}}()
         for body in bodies(mechanism2)
             for i = 1 : 5
                 frame = CartesianFrame3D("frame_$i")
                 tf = rand(Transform3D, frame, default_frame(body))
                 add_frame!(body, tf)
-                additionalFrames[frame] = body
+                additional_frames[frame] = body
             end
         end
 
-        parentBody = rand(collect(bodies(mechanism)))
-        attach!(mechanism, parentBody, mechanism2)
+        parent_body = rand(collect(bodies(mechanism)))
+        attach!(mechanism, parent_body, mechanism2)
 
         @test num_positions(mechanism) == nq + num_positions(mechanism2)
         @test num_velocities(mechanism) == nv + num_velocities(mechanism2)
 
         # make sure all of the frame definitions got copied over
-        for frame in keys(additionalFrames)
-            body = additionalFrames[frame]
+        for frame in keys(additional_frames)
+            body = additional_frames[frame]
             if body == root_body(mechanism2)
-                body = parentBody
+                body = parent_body
             end
             @test RigidBodyDynamics.is_fixed_to_body(body, frame)
         end
@@ -53,30 +53,30 @@ end
 
         # independent acrobots in the same configuration
         # make sure mass matrix is block diagonal, and that blocks on diagonal are the same
-        doubleAcrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
+        double_acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
         acrobot2 = parse_urdf(Float64, "urdf/Acrobot.urdf")
-        xSingle = MechanismState(acrobot2)
-        rand!(xSingle)
-        qSingle = configuration(xSingle)
-        nqSingle = length(qSingle)
-        parentBody = root_body(doubleAcrobot)
-        attach!(doubleAcrobot, parentBody, acrobot2)
-        x = MechanismState(doubleAcrobot)
-        set_configuration!(x, [qSingle; qSingle])
+        xsingle = MechanismState(acrobot2)
+        rand!(xsingle)
+        qsingle = configuration(xsingle)
+        nq_single = length(qsingle)
+        parent_body = root_body(double_acrobot)
+        attach!(double_acrobot, parent_body, acrobot2)
+        x = MechanismState(double_acrobot)
+        set_configuration!(x, [qsingle; qsingle])
         H = mass_matrix(x)
-        H11 = H[1 : nqSingle, 1 : nqSingle]
-        H12 = H[1 : nqSingle, nqSingle + 1 : end]
-        H21 = H[nqSingle + 1 : end, 1 : nqSingle]
-        H22 = H[nqSingle + 1 : end, nqSingle + 1 : end]
+        H11 = H[1 : nq_single, 1 : nq_single]
+        H12 = H[1 : nq_single, nq_single + 1 : end]
+        H21 = H[nq_single + 1 : end, 1 : nq_single]
+        H22 = H[nq_single + 1 : end, nq_single + 1 : end]
         @test isapprox(H11, H22)
         @test isapprox(H12, zeros(H12))
         @test isapprox(H21, zeros(H21))
     end
 
     @testset "remove fixed joints" begin
-        jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 10]]
-        shuffle!(jointTypes)
-        mechanism = rand_tree_mechanism(Float64, jointTypes...)
+        joint_types = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 10]]
+        shuffle!(joint_types)
+        mechanism = rand_tree_mechanism(Float64, joint_types...)
         state = MechanismState(mechanism)
         rand!(state)
         q = configuration(state)
@@ -109,26 +109,26 @@ end
 
     @testset "submechanism" begin
         for testnum = 1 : 100
-            # jointTypes = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 10]] # FIXME: use this
-            jointTypes = [Revolute{Float64} for i = 1 : 4]
-            shuffle!(jointTypes)
-            mechanism = rand_tree_mechanism(Float64, jointTypes...)
+            # joint_types = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 10]] # FIXME: use this
+            joint_types = [Revolute{Float64} for i = 1 : 4]
+            shuffle!(joint_types)
+            mechanism = rand_tree_mechanism(Float64, joint_types...)
             state = MechanismState(mechanism)
             rand!(state)
             M = mass_matrix(state)
 
-            submechanismRoot = rand(collect(bodies(mechanism)))
-            mechanismPart, bodymap, jointmap = submechanism(mechanism, submechanismRoot)
-            @test root_body(mechanismPart) == bodymap[submechanismRoot]
-            @test mechanism.gravitationalAcceleration.v == mechanismPart.gravitationalAcceleration.v
+            submechanism_root = rand(collect(bodies(mechanism)))
+            mechanism_part, bodymap, jointmap = submechanism(mechanism, submechanism_root)
+            @test root_body(mechanism_part) == bodymap[submechanism_root]
+            @test mechanism.gravitational_acceleration.v == mechanism_part.gravitational_acceleration.v
 
-            substate = MechanismState(mechanismPart)
+            substate = MechanismState(mechanism_part)
             for (oldjoint, newjoint) in jointmap
                 set_configuration!(substate, newjoint, configuration(state, oldjoint))
                 set_velocity!(substate, newjoint, velocity(state, oldjoint))
             end
             Msub = mass_matrix(substate)
-            if num_velocities(mechanismPart) > 0
+            if num_velocities(mechanism_part) > 0
                 indices = vcat([velocity_range(state, joint) for joint in tree_joints(mechanism) if joint ∈ keys(jointmap)]...)
                 @test isapprox(M[indices, indices], Msub, atol = 1e-10)
             end
@@ -138,9 +138,9 @@ end
     @testset "reattach" begin
         for testnum = 1 : 10
             # create random floating mechanism
-            jointTypes = [[Prismatic{Float64} for i = 1 : 10]; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
-            shuffle!(jointTypes)
-            mechanism1 = rand_floating_tree_mechanism(Float64, jointTypes...)
+            joint_types = [[Prismatic{Float64} for i = 1 : 10]; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
+            shuffle!(joint_types)
+            mechanism1 = rand_floating_tree_mechanism(Float64, joint_types...)
 
             # random state
             x1 = MechanismState(mechanism1)
@@ -160,7 +160,7 @@ end
             newfloatingbody = rand(collect(non_root_bodies(mechanism1)))
 
             # reroot mechanism2
-            newfloatingjoint = Joint("newFloating", QuaternionFloating{Float64}())
+            newfloatingjoint = Joint("new_floating", QuaternionFloating{Float64}())
             joint_to_world = eye(Transform3D, frame_before(newfloatingjoint), default_frame(world))
             body_to_joint = eye(Transform3D, default_frame(newfloatingbody), frame_after(newfloatingjoint))
             attach!(mechanism2, bodymap[world], newfloatingjoint, joint_to_world, bodymap[newfloatingbody], body_to_joint)
@@ -172,20 +172,20 @@ end
             x2 = MechanismState(mechanism2)
             for (joint1, joint2) in jointmap
                 if joint1 != floatingjoint
-                    joint2Rerooted = get(flipped_joint_map, joint2, joint2)
-                    set_configuration!(x2, joint2Rerooted, configuration(x1, joint1))
-                    set_velocity!(x2, joint2Rerooted, velocity(x1, joint1))
+                    joint2_rerooted = get(flipped_joint_map, joint2, joint2)
+                    set_configuration!(x2, joint2_rerooted, configuration(x1, joint1))
+                    set_velocity!(x2, joint2_rerooted, velocity(x1, joint1))
                 end
             end
 
             # set configuration and velocity of new floating joint
-            newfloatingjointTransform = inv(joint_to_world) * relative_transform(x1, body_to_joint.from, joint_to_world.to) * inv(body_to_joint)
-            floating_joint_transform_to_configuration!(newfloatingjoint, configuration(x2, newfloatingjoint), newfloatingjointTransform)
+            newfloatingjoint_transform = inv(joint_to_world) * relative_transform(x1, body_to_joint.from, joint_to_world.to) * inv(body_to_joint)
+            floating_joint_transform_to_configuration!(newfloatingjoint, configuration(x2, newfloatingjoint), newfloatingjoint_transform)
 
-            newfloatingjointTwist = transform(x1, relative_twist(x1, newfloatingbody, world), body_to_joint.from)
-            newfloatingjointTwist = transform(newfloatingjointTwist, body_to_joint)
-            newfloatingjointTwist = Twist(body_to_joint.to, joint_to_world.from, newfloatingjointTwist.frame, newfloatingjointTwist.angular, newfloatingjointTwist.linear)
-            floating_joint_twist_to_velocity!(newfloatingjoint, velocity(x2, newfloatingjoint), newfloatingjointTwist)
+            newfloatingjoint_twist = transform(x1, relative_twist(x1, newfloatingbody, world), body_to_joint.from)
+            newfloatingjoint_twist = transform(newfloatingjoint_twist, body_to_joint)
+            newfloatingjoint_twist = Twist(body_to_joint.to, joint_to_world.from, newfloatingjoint_twist.frame, newfloatingjoint_twist.angular, newfloatingjoint_twist.linear)
+            floating_joint_twist_to_velocity!(newfloatingjoint, velocity(x2, newfloatingjoint), newfloatingjoint_twist)
 
             # do dynamics and compute spatial accelerations
             result1 = DynamicsResult(mechanism1)
@@ -198,9 +198,9 @@ end
             # make sure that joint accelerations for non-floating joints are the same
             for (joint1, joint2) in jointmap
                 if joint1 != floatingjoint
-                    joint2Rerooted = get(flipped_joint_map, joint2, joint2)
+                    joint2_rerooted = get(flipped_joint_map, joint2, joint2)
                     v̇1 = view(result1.v̇, velocity_range(x1, joint1))
-                    v̇2 = view(result2.v̇, velocity_range(x2, joint2Rerooted))
+                    v̇2 = view(result2.v̇, velocity_range(x2, joint2_rerooted))
                     @test isapprox(v̇1, v̇2)
                 end
             end
@@ -217,41 +217,41 @@ end
 
     @testset "maximal coordinates" begin
         # create random tree mechanism and equivalent mechanism in maximal coordinates
-        treeMechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; QuaternionSpherical{Float64}; Planar{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
-        mcMechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(treeMechanism)
+        tree_mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; QuaternionSpherical{Float64}; Planar{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
+        mc_mechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(tree_mechanism)
 
         # randomize state of tree mechanism
-        treeState = MechanismState(treeMechanism)
-        rand!(treeState)
+        tree_state = MechanismState(tree_mechanism)
+        rand!(tree_state)
 
         # put maximal coordinate system in state that is equivalent to tree mechanism state
-        mcState = MechanismState(mcMechanism)
-        for oldbody in non_root_bodies(treeMechanism)
+        mc_state = MechanismState(mc_mechanism)
+        for oldbody in non_root_bodies(tree_mechanism)
             newbody = bodymap[oldbody]
             joint = newfloatingjoints[newbody]
 
-            tf = relative_transform(treeState, frame_after(joint), frame_before(joint))
-            floating_joint_transform_to_configuration!(joint, configuration(mcState, joint), tf)
+            tf = relative_transform(tree_state, frame_after(joint), frame_before(joint))
+            floating_joint_transform_to_configuration!(joint, configuration(mc_state, joint), tf)
 
-            twist = transform(relative_twist(treeState, frame_after(joint), frame_before(joint)), inv(tf))
-            floating_joint_twist_to_velocity!(joint, velocity(mcState, joint), twist)
+            twist = transform(relative_twist(tree_state, frame_after(joint), frame_before(joint)), inv(tf))
+            floating_joint_twist_to_velocity!(joint, velocity(mc_state, joint), twist)
         end
-        setdirty!(mcState)
+        setdirty!(mc_state)
 
         # do dynamics and compute spatial accelerations
-        treeDynamicsResult = DynamicsResult(treeMechanism);
-        dynamics!(treeDynamicsResult, treeState)
-        spatial_accelerations!(treeDynamicsResult, treeState)
+        tree_dynamics_result = DynamicsResult(tree_mechanism);
+        dynamics!(tree_dynamics_result, tree_state)
+        spatial_accelerations!(tree_dynamics_result, tree_state)
 
-        mcDynamicsResult = DynamicsResult(mcMechanism);
-        dynamics!(mcDynamicsResult, mcState)
-        spatial_accelerations!(mcDynamicsResult, mcState)
+        mc_dynamics_result = DynamicsResult(mc_mechanism);
+        dynamics!(mc_dynamics_result, mc_state)
+        spatial_accelerations!(mc_dynamics_result, mc_state)
 
         # compare spatial accelerations of bodies
         for (treebody, mcbody) in bodymap
-            treeAccel = relative_acceleration(treeDynamicsResult, treebody, root_body(treeMechanism))
-            mcAccel = relative_acceleration(mcDynamicsResult, mcbody, root_body(mcMechanism))
-            @test isapprox(treeAccel, mcAccel; atol = 1e-12)
+            tree_accel = relative_acceleration(tree_dynamics_result, treebody, root_body(tree_mechanism))
+            mc_accel = relative_acceleration(mc_dynamics_result, mcbody, root_body(mc_mechanism))
+            @test isapprox(tree_accel, mc_accel; atol = 1e-12)
         end
     end # maximal coordinates
 
@@ -259,20 +259,20 @@ end
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
         mechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(mechanism)
 
-        stateFloat64 = MechanismState(mechanism)
-        rand!(stateFloat64)
+        state_float64 = MechanismState(mechanism)
+        rand!(state_float64)
         NullDual = typeof(ForwardDiff.Dual(0., ()))
-        stateDual = MechanismState{NullDual}(mechanism)
-        configuration(stateDual)[:] = configuration(stateFloat64)
-        velocity(stateDual)[:] = velocity(stateFloat64)
+        state_dual = MechanismState{NullDual}(mechanism)
+        configuration(state_dual)[:] = configuration(state_float64)
+        velocity(state_dual)[:] = velocity(state_float64)
 
-        dynamicsResultFloat64 = DynamicsResult(mechanism)
-        dynamics!(dynamicsResultFloat64, stateFloat64)
+        dynamics_result_float64 = DynamicsResult(mechanism)
+        dynamics!(dynamics_result_float64, state_float64)
 
-        dynamicsResultDual = DynamicsResult{NullDual}(mechanism)
-        dynamics!(dynamicsResultDual, stateDual)
+        dynamics_result_dual = DynamicsResult{NullDual}(mechanism)
+        dynamics!(dynamics_result_dual, state_dual)
 
-        @test isapprox(dynamicsResultFloat64.v̇, dynamicsResultDual.v̇; atol = 1e-3)
-        @test isapprox(dynamicsResultFloat64.λ, dynamicsResultDual.λ; atol = 1e-3)
+        @test isapprox(dynamics_result_float64.v̇, dynamics_result_dual.v̇; atol = 1e-3)
+        @test isapprox(dynamics_result_float64.λ, dynamics_result_dual.λ; atol = 1e-3)
     end
 end # mechanism modification

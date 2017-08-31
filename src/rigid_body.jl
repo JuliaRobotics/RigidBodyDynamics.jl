@@ -10,7 +10,7 @@ a list of definitions of coordinate systems that are rigidly attached to it.
 mutable struct RigidBody{T}
     name::String
     inertia::Nullable{SpatialInertia{T}}
-    frameDefinitions::Vector{Transform3DS{T}}
+    frame_definitions::Vector{Transform3DS{T}}
     contact_points::Vector{DefaultContactPoint{T}} # TODO: allow different contact models
     id::Int64
 
@@ -66,7 +66,7 @@ Return the list of homogeneous transforms ([`Transform3D`](@ref)s) that define t
 coordinate systems attached to `body` with respect to a single common frame
 ([`default_frame(body)`](@ref)).
 """
-frame_definitions(body::RigidBody) = body.frameDefinitions
+frame_definitions(body::RigidBody) = body.frame_definitions
 
 """
 $(SIGNATURES)
@@ -84,7 +84,7 @@ to `body` are defined.
 
 See [`frame_definitions(body)`](@ref), [`frame_definition(body, frame)`](@ref).
 """
-default_frame(body::RigidBody) = body.frameDefinitions[1].to # allows standardization on a frame to reduce number of transformations required
+default_frame(body::RigidBody) = body.frame_definitions[1].to # allows standardization on a frame to reduce number of transformations required
 
 """
 $(SIGNATURES)
@@ -95,7 +95,7 @@ respect to [`default_frame(body)`](@ref).
 Throws an error if `frame` is not attached to `body`.
 """
 function frame_definition(body::RigidBody, frame::CartesianFrame3D)
-    for transform in body.frameDefinitions
+    for transform in body.frame_definitions
         transform.from == frame && return transform
     end
     error("$frame not found among body fixed frame definitions for $body")
@@ -125,7 +125,7 @@ attached to `body`.
 function add_frame!(body::RigidBody, transform::Transform3D)
     # note: overwrites any existing frame definition
     # transform.to needs to be among (transform.from for transform in frame_definitions(body))
-    definitions = body.frameDefinitions
+    definitions = body.frame_definitions
     if transform.to != default_frame(body)
         transform = frame_definition(body, transform.to) * transform
     end
@@ -140,15 +140,15 @@ $(SIGNATURES)
 Change the default frame of `body` to `frame` (which should already be among
 `body`'s frame definitions).
 """
-function change_default_frame!(body::RigidBody, newDefaultFrame::CartesianFrame3D)
-    if newDefaultFrame != default_frame(body)
-        oldToNew = inv(frame_definition(body, newDefaultFrame))
-        map!(tf -> oldToNew * tf, body.frameDefinitions, body.frameDefinitions)
+function change_default_frame!(body::RigidBody, new_default_frame::CartesianFrame3D)
+    if new_default_frame != default_frame(body)
+        old_to_new = inv(frame_definition(body, new_default_frame))
+        map!(tf -> old_to_new * tf, body.frame_definitions, body.frame_definitions)
         if has_defined_inertia(body)
-            body.inertia = Nullable(transform(spatial_inertia(body), oldToNew))
+            body.inertia = Nullable(transform(spatial_inertia(body), old_to_new))
         end
         for point in contact_points(body)
-            point.location = oldToNew * point.location
+            point.location = old_to_new * point.location
         end
     end
 end

@@ -743,10 +743,10 @@ v
 and returns a `Vector` ``\\dot{x}``.
 """
 function dynamics!(ẋ::StridedVector{X},
-        result::DynamicsResult{T, M}, state::MechanismState{X, M}, stateVec::AbstractVector{X},
+        result::DynamicsResult{T, M}, state::MechanismState{X, M}, state_vec::AbstractVector{X},
         torques::AbstractVector{Tau} = ConstVector(zero(T), num_velocities(state)),
         externalwrenches::Associative{RigidBody{M}, Wrench{W}} = NullDict{RigidBody{M}, Wrench{T}}()) where {T, X, M, Tau, W}
-    set!(state, stateVec)
+    set!(state, state_vec)
     nq = num_positions(state)
     nv = num_velocities(state)
     q̇ = view(ẋ, 1 : nq) # allocates

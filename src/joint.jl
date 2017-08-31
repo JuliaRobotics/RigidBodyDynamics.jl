@@ -73,31 +73,31 @@ See also:
 """
 struct Joint{T, JT<:JointType{T}}
     name::String
-    frameBefore::CartesianFrame3D
-    frameAfter::CartesianFrame3D
-    jointType::JT
+    frame_before::CartesianFrame3D
+    frame_after::CartesianFrame3D
+    joint_type::JT
     id::Base.RefValue{Int64}
     position_bounds::Vector{Bounds{T}}
     velocity_bounds::Vector{Bounds{T}}
     effort_bounds::Vector{Bounds{T}}
 
-    function Joint{T, JT}(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jointType::JT;
-                          position_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_positions(jointType)),
-                          velocity_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(jointType)),
-                          effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(jointType))) where {T, JT<:JointType{T}}
-        new{T, JointType{T}}(name, frameBefore, frameAfter, jointType, Ref(-1), position_bounds, velocity_bounds, effort_bounds)
+    function Joint{T, JT}(name::String, frame_before::CartesianFrame3D, frame_after::CartesianFrame3D, joint_type::JT;
+                          position_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_positions(joint_type)),
+                          velocity_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type)),
+                          effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type))) where {T, JT<:JointType{T}}
+        new{T, JointType{T}}(name, frame_before, frame_after, joint_type, Ref(-1), position_bounds, velocity_bounds, effort_bounds)
     end
 
     function Joint(other::Joint{T}) where T
-        JT = typeof(other.jointType)
-        new{T, JT}(other.name, other.frameBefore, other.frameAfter, other.jointType, other.id, deepcopy(other.position_bounds), deepcopy(other.velocity_bounds), deepcopy(other.effort_bounds))
+        JT = typeof(other.joint_type)
+        new{T, JT}(other.name, other.frame_before, other.frame_after, other.joint_type, other.id, deepcopy(other.position_bounds), deepcopy(other.velocity_bounds), deepcopy(other.effort_bounds))
     end
 end
 
 const GenericJoint{T} = Joint{T, JointType{T}}
 
-function Joint(name::String, frameBefore::CartesianFrame3D, frameAfter::CartesianFrame3D, jtype::JointType{T}; kw...) where T
-    GenericJoint{T}(name, frameBefore, frameAfter, jtype; kw...)
+function Joint(name::String, frame_before::CartesianFrame3D, frame_after::CartesianFrame3D, jtype::JointType{T}; kw...) where T
+    GenericJoint{T}(name, frame_before, frame_after, jtype; kw...)
 end
 
 function Joint(name::String, jtype::JointType; kw...)
@@ -106,9 +106,9 @@ end
 
 typedjoint(joint::Joint) = Joint(joint)
 
-frame_before(joint::Joint) = joint.frameBefore
-frame_after(joint::Joint) = joint.frameAfter
-joint_type(joint::Joint) = joint.jointType
+frame_before(joint::Joint) = joint.frame_before
+frame_after(joint::Joint) = joint.frame_after
+joint_type(joint::Joint) = joint.joint_type
 
 """
 $(SIGNATURES)
@@ -144,7 +144,7 @@ function RigidBodyDynamics.Graphs.flip_direction(joint::Joint)
         effort_bounds = joint.effort_bounds)
 end
 
-Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.jointType)")
+Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(joint.name)\": $(joint.joint_type)")
 Base.showcompact(io::IO, joint::Joint) = print(io, "$(joint.name)")
 
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
@@ -166,14 +166,14 @@ $(SIGNATURES)
 
 Return the length of the configuration vector of `joint`.
 """
-num_positions(joint::Joint) = num_positions(joint.jointType)
+num_positions(joint::Joint) = num_positions(joint.joint_type)
 
 """
 $(SIGNATURES)
 
 Return the length of the velocity vector of `joint`.
 """
-num_velocities(joint::Joint) = num_velocities(joint.jointType)
+num_velocities(joint::Joint) = num_velocities(joint.joint_type)
 
 """
 $(SIGNATURES)
@@ -190,7 +190,7 @@ after the joint to the frame before the joint for joint configuration vector ``q
 """
 function joint_transform(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    joint_transform(joint.jointType, frame_after(joint), frame_before(joint), q)
+    joint_transform(joint.joint_type, frame_after(joint), frame_before(joint), q)
 end
 
 """
@@ -205,14 +205,14 @@ the frame after the joint, which is attached to the joint's successor.
 """
 @inline function motion_subspace(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    motion_subspace(joint.jointType, frame_after(joint), frame_before(joint), q)
+    motion_subspace(joint.joint_type, frame_after(joint), frame_before(joint), q)
 end
 
 """
 $(SIGNATURES)
 
 Return a basis for the constraint wrench subspace of the joint, where
-`jointTransform` is the transform from the frame after the joint to the frame
+`joint_transform` is the transform from the frame after the joint to the frame
 before the joint.
 
 The constraint wrench subspace is a ``6 \\times (6 - k)`` matrix, where ``k``
@@ -222,10 +222,10 @@ its successor.
 
 The constraint wrench subspace is orthogonal to the motion subspace.
 """
-function constraint_wrench_subspace(joint::Joint, jointTransform::Transform3D)
-    @framecheck jointTransform.from frame_after(joint)
-    @framecheck jointTransform.to frame_before(joint)
-    constraint_wrench_subspace(joint.jointType, jointTransform)
+function constraint_wrench_subspace(joint::Joint, joint_transform::Transform3D)
+    @framecheck joint_transform.from frame_after(joint)
+    @framecheck joint_transform.to frame_before(joint)
+    constraint_wrench_subspace(joint.joint_type, joint_transform)
 end
 
 """
@@ -238,7 +238,7 @@ in configuration ``q`` and at velocity ``v``, when the joint acceleration
 function bias_acceleration(joint::Joint, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    bias_acceleration(joint.jointType, frame_after(joint), frame_before(joint), q, v)
+    bias_acceleration(joint.joint_type, frame_after(joint), frame_before(joint), q, v)
 end
 
 """
@@ -247,7 +247,7 @@ $(SIGNATURES)
 Whether the joint's motion subspace and constraint wrench subspace depend on
 ``q``.
 """
-has_fixed_subspaces(joint::Joint) = has_fixed_subspaces(joint.jointType)
+has_fixed_subspaces(joint::Joint) = has_fixed_subspaces(joint.joint_type)
 
 """
 $(SIGNATURES)
@@ -263,7 +263,7 @@ function configuration_derivative_to_velocity!(v::AbstractVector, joint::Joint, 
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q̇)
-    configuration_derivative_to_velocity!(v, joint.jointType, q, q̇)
+    configuration_derivative_to_velocity!(v, joint.joint_type, q, q̇)
 end
 Base.@deprecate configuration_derivative_to_velocity!(joint::Joint, v::AbstractVector, q::AbstractVector, q̇::AbstractVector) configuration_derivative_to_velocity!(v, joint, q, q̇)
 
@@ -309,7 +309,7 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, joint::Joint
     @boundscheck check_num_positions(joint, q̇)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    velocity_to_configuration_derivative!(q̇, joint.jointType, q, v)
+    velocity_to_configuration_derivative!(q̇, joint.joint_type, q, v)
 end
 Base.@deprecate velocity_to_configuration_derivative!(joint::Joint, q̇::AbstractVector, q::AbstractVector, v::AbstractVector) velocity_to_configuration_derivative!(q̇, joint, q, v)
 
@@ -321,7 +321,7 @@ transform.
 """
 function zero_configuration!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
-    zero_configuration!(q, joint.jointType)
+    zero_configuration!(q, joint.joint_type)
 end
 Base.@deprecate zero_configuration!(joint::Joint, q::AbstractVector) zero_configuration!(q, joint)
 
@@ -333,7 +333,7 @@ joint type.
 """
 function rand_configuration!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
-    rand_configuration!(q, joint.jointType)
+    rand_configuration!(q, joint.joint_type)
 end
 Base.@deprecate rand_configuration!(joint::Joint, q::AbstractVector) rand_configuration!(q, joint)
 
@@ -348,7 +348,7 @@ Note that this is the same as `Twist(motion_subspace(joint, q), v)`.
 function joint_twist(joint::Joint, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    joint_twist(joint.jointType, frame_after(joint), frame_before(joint), q, v)
+    joint_twist(joint.joint_type, frame_after(joint), frame_before(joint), q, v)
 end
 
 """
@@ -361,7 +361,7 @@ function joint_spatial_acceleration(joint::Joint, q::AbstractVector, v::Abstract
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_velocities(joint, vd)
-    joint_spatial_acceleration(joint.jointType, frame_after(joint), frame_before(joint), q, v, vd)
+    joint_spatial_acceleration(joint.joint_type, frame_after(joint), frame_before(joint), q, v, vd)
 end
 
 """
@@ -374,7 +374,7 @@ function joint_torque!(τ::AbstractVector, joint::Joint, q::AbstractVector, join
     @boundscheck check_num_velocities(joint, τ)
     @boundscheck check_num_positions(joint, q)
     @framecheck(joint_wrench.frame, frame_after(joint))
-    joint_torque!(τ, joint.jointType, q, joint_wrench)
+    joint_torque!(τ, joint.joint_type, q, joint_wrench)
 end
 
 Base.@deprecate joint_torque!(joint::Joint, τ::AbstractVector, q::AbstractVector, joint_wrench::Wrench) joint_torque!(τ, joint, q, joint_wrench)
@@ -403,7 +403,7 @@ function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
     @boundscheck check_num_positions(joint, q0)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    local_coordinates!(ϕ, ϕ̇, joint.jointType, q0, q, v)
+    local_coordinates!(ϕ, ϕ̇, joint.joint_type, q0, q, v)
 end
 Base.@deprecate local_coordinates!(joint::Joint, ϕ::AbstractVector, ϕ̇::AbstractVector, q0::AbstractVector, q::AbstractVector, v::AbstractVector) local_coordinates!(ϕ, ϕ̇, joint, q0, q, v)
 
@@ -420,7 +420,7 @@ function global_coordinates!(q::AbstractVector, joint::Joint, q0::AbstractVector
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q0)
     @boundscheck check_num_velocities(joint, ϕ)
-    global_coordinates!(q, joint.jointType, q0, ϕ)
+    global_coordinates!(q, joint.joint_type, q0, ϕ)
 end
 Base.@deprecate global_coordinates!(joint::Joint, q::AbstractVector, q0::AbstractVector, ϕ::AbstractVector) global_coordinates!(q, joint, q0, ϕ)
 
@@ -430,4 +430,4 @@ $(SIGNATURES)
 Whether the joint is a floating joint, i.e., whether it imposes no constraints
 on the relative motions of its successor and predecessor bodies.
 """
-isfloating(joint::Joint) = isfloating(typeof(joint.jointType))
+isfloating(joint::Joint) = isfloating(typeof(joint.joint_type))

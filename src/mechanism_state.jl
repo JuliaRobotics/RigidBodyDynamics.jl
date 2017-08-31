@@ -679,7 +679,7 @@ function gravitational_potential_energy(state::MechanismState, body::RigidBody)
     m = inertia.mass
     m > 0 || return zero(cache_eltype(state))
     com = transform_to_root(state, body) * center_of_mass(inertia)
-    -m * dot(state.mechanism.gravitationalAcceleration, FreeVector3D(com))
+    -m * dot(state.mechanism.gravitational_acceleration, FreeVector3D(com))
 end
 
 function configuration_derivative!(out::AbstractVector{X}, state::MechanismState{X}) where {X}
@@ -779,12 +779,12 @@ function relative_twist(state::MechanismState, body::RigidBody, base::RigidBody)
  """
  $(SIGNATURES)
 
- Return the twist of `bodyFrame` with respect to `baseFrame`, expressed in the
+ Return the twist of `body_frame` with respect to `base_frame`, expressed in the
  `Mechanism`'s root frame.
  """
-function relative_twist(state::MechanismState, bodyFrame::CartesianFrame3D, baseFrame::CartesianFrame3D)
-    twist = relative_twist(state, body_fixed_frame_to_body(state.mechanism, bodyFrame), body_fixed_frame_to_body(state.mechanism, baseFrame))
-    Twist(bodyFrame, baseFrame, twist.frame, twist.angular, twist.linear)
+function relative_twist(state::MechanismState, body_frame::CartesianFrame3D, base_frame::CartesianFrame3D)
+    twist = relative_twist(state, body_fixed_frame_to_body(state.mechanism, body_frame), body_fixed_frame_to_body(state.mechanism, base_frame))
+    Twist(body_frame, base_frame, twist.frame, twist.angular, twist.linear)
 end
 
 for VectorType in (:Point3D, :FreeVector3D, :Twist, :Momentum, :Wrench)
@@ -797,12 +797,12 @@ for VectorType in (:Point3D, :FreeVector3D, :Twist, :Momentum, :Wrench)
 end
 
 function transform(state::MechanismState, accel::SpatialAcceleration, to::CartesianFrame3D)
-    oldToRoot = transform_to_root(state, accel.frame)
-    rootToOld = inv(oldToRoot)
-    twistOfBodyWrtBase = transform(relative_twist(state, accel.body, accel.base), rootToOld)
-    twistOfOldWrtNew = transform(relative_twist(state, accel.frame, to), rootToOld)
-    oldToNew = inv(transform_to_root(state, to)) * oldToRoot
-    transform(accel, oldToNew, twistOfOldWrtNew, twistOfBodyWrtBase)
+    old_to_root = transform_to_root(state, accel.frame)
+    root_to_old = inv(old_to_root)
+    twist_of_body_wrt_base = transform(relative_twist(state, accel.body, accel.base), root_to_old)
+    twist_of_old_wrt_new = transform(relative_twist(state, accel.frame, to), root_to_old)
+    old_to_new = inv(transform_to_root(state, to)) * old_to_root
+    transform(accel, old_to_new, twist_of_old_wrt_new, twist_of_body_wrt_base)
 end
 
 """
