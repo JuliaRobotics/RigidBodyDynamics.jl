@@ -11,13 +11,13 @@ function parse_vector(::Type{T}, e::Union{XMLElement, Void}, name::String, defau
     [T(parse(str)) for str in split(usedefault ? default : attribute(e, name))]
 end
 
-function parse_inertia(::Type{T}, xmlInertia::XMLElement) where {T}
-    ixx = parse_scalar(T, xmlInertia, "ixx", "0")
-    ixy = parse_scalar(T, xmlInertia, "ixy", "0")
-    ixz = parse_scalar(T, xmlInertia, "ixz", "0")
-    iyy = parse_scalar(T, xmlInertia, "iyy", "0")
-    iyz = parse_scalar(T, xmlInertia, "iyz", "0")
-    izz = parse_scalar(T, xmlInertia, "izz", "0")
+function parse_inertia(::Type{T}, xml_inertia::XMLElement) where {T}
+    ixx = parse_scalar(T, xml_inertia, "ixx", "0")
+    ixy = parse_scalar(T, xml_inertia, "ixy", "0")
+    ixz = parse_scalar(T, xml_inertia, "ixz", "0")
+    iyy = parse_scalar(T, xml_inertia, "iyy", "0")
+    iyz = parse_scalar(T, xml_inertia, "iyz", "0")
+    izz = parse_scalar(T, xml_inertia, "izz", "0")
     @SMatrix [ixx ixy ixz; ixy iyy iyz; ixz iyz izz]
 end
 
@@ -35,19 +35,19 @@ function parse_pose(::Type{T}, xml_pose::XMLElement) where {T}
 end
 
 function parse_joint_type(::Type{T}, xml_joint::XMLElement) where {T}
-    jointType = attribute(xml_joint, "type")
-    if jointType == "revolute" || jointType == "continuous" # TODO: handle joint limits for revolute
+    joint_type = attribute(xml_joint, "type")
+    if joint_type == "revolute" || joint_type == "continuous" # TODO: handle joint limits for revolute
         axis = SVector{3}(parse_vector(T, find_element(xml_joint, "axis"), "xyz", "1 0 0"))
         return Revolute(axis)
-    elseif jointType == "prismatic"
+    elseif joint_type == "prismatic"
         axis = SVector{3}(parse_vector(T, find_element(xml_joint, "axis"), "xyz", "1 0 0"))
         return Prismatic(axis)
-    elseif jointType == "floating"
+    elseif joint_type == "floating"
         return QuaternionFloating{T}()
-    elseif jointType == "fixed"
+    elseif joint_type == "fixed"
         return Fixed{T}()
     else
-        error("joint type $jointType not recognized")
+        error("joint type $joint_type not recognized")
     end
 end
 
@@ -76,9 +76,9 @@ end
 
 function parse_joint(::Type{T}, xml_joint::XMLElement) where {T}
     name = attribute(xml_joint, "name")
-    jointType = parse_joint_type(T, xml_joint)
-    position_bounds, velocity_bounds, effort_bounds = parse_joint_bounds(jointType, xml_joint)
-    return Joint(name, jointType; position_bounds=position_bounds, velocity_bounds=velocity_bounds, effort_bounds=effort_bounds)
+    joint_type = parse_joint_type(T, xml_joint)
+    position_bounds, velocity_bounds, effort_bounds = parse_joint_bounds(joint_type, xml_joint)
+    return Joint(name, joint_type; position_bounds=position_bounds, velocity_bounds=velocity_bounds, effort_bounds=effort_bounds)
 end
 
 function parse_inertia(::Type{T}, xml_inertial::XMLElement, frame::CartesianFrame3D) where {T}

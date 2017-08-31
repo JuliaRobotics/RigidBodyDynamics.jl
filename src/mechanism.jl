@@ -9,7 +9,7 @@ mutable struct Mechanism{T}
     graph::DirectedGraph{RigidBody{T}, GenericJoint{T}}
     tree::SpanningTree{RigidBody{T}, GenericJoint{T}}
     environment::ContactEnvironment{T}
-    gravitationalAcceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
+    gravitational_acceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
 
     """
     $(SIGNATURES)
@@ -17,13 +17,13 @@ mutable struct Mechanism{T}
     Create a new `Mechanism` containing only a root body, to which other bodies can
     be attached with joints.
     """
-    function Mechanism(rootBody::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81))) where {T}
+    function Mechanism(root_body::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81))) where {T}
         graph = DirectedGraph{RigidBody{T}, GenericJoint{T}}()
-        add_vertex!(graph, rootBody)
-        tree = SpanningTree(graph, rootBody)
-        gravitationalAcceleration = FreeVector3D(default_frame(rootBody), gravity)
+        add_vertex!(graph, root_body)
+        tree = SpanningTree(graph, root_body)
+        gravitational_acceleration = FreeVector3D(default_frame(root_body), gravity)
         environment = ContactEnvironment{T}()
-        new{T}(graph, tree, environment, gravitationalAcceleration)
+        new{T}(graph, tree, environment, gravitational_acceleration)
     end
 end
 
@@ -245,8 +245,8 @@ function canonicalize_frame_definitions!(mechanism::Mechanism)
 end
 
 function gravitational_spatial_acceleration(mechanism::Mechanism)
-    frame = mechanism.gravitationalAcceleration.frame
-    SpatialAcceleration(frame, frame, frame, zeros(SVector{3, eltype(mechanism)}), mechanism.gravitationalAcceleration.v)
+    frame = mechanism.gravitational_acceleration.frame
+    SpatialAcceleration(frame, frame, frame, zeros(SVector{3, eltype(mechanism)}), mechanism.gravitational_acceleration.v)
 end
 
 findbody(mechanism::Mechanism, name::String) = findunique(b -> b.name == name, bodies(mechanism))

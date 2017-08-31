@@ -84,15 +84,15 @@ end
 # Cached download
 const module_tempdir = joinpath(Base.tempdir(), string(module_name(@__MODULE__)))
 
-function cached_download(url::String, localFileName::String, cacheDir::String = joinpath(module_tempdir, string(hash(url))))
-    if !ispath(cacheDir)
-        mkpath(cacheDir)
+function cached_download(url::String, local_file_name::String, cache_dir::String = joinpath(module_tempdir, string(hash(url))))
+    if !ispath(cache_dir)
+        mkpath(cache_dir)
     end
-    fullCachePath = joinpath(cacheDir, localFileName)
-    if !isfile(fullCachePath)
-        download(url, fullCachePath)
+    full_cache_path = joinpath(cache_dir, local_file_name)
+    if !isfile(full_cache_path)
+        download(url, full_cache_path)
     end
-    fullCachePath
+    full_cache_path
 end
 
 

@@ -74,7 +74,7 @@ mutable struct RingBufferStorage{T} <: OdeResultsSink
     ts::Vector{T}
     qs::Vector{Vector{T}}
     vs::Vector{Vector{T}}
-    lastIndex::Int64
+    last_index::Int64
 
     function RingBufferStorage{T}(n::Int64) where {T}
         ts = Vector{T}(n)
@@ -95,11 +95,11 @@ function initialize(storage::RingBufferStorage, t, state)
 end
 
 function process(storage::RingBufferStorage, t, state)
-    index = storage.lastIndex % length(storage) + 1
+    index = storage.last_index % length(storage) + 1
     storage.ts[index] = t
     copy!(storage.qs[index], configuration(state))
     copy!(storage.vs[index], velocity(state))
-    storage.lastIndex = index
+    storage.last_index = index
     nothing
 end
 
@@ -331,10 +331,10 @@ end
 """
 $(SIGNATURES)
 
-Integrate dynamics from the initial state `state0` at time ``0`` to `finalTime`
+Integrate dynamics from the initial state `state0` at time ``0`` to `final_time`
 using step size `Δt`.
 """
-function integrate(integrator::MuntheKaasIntegrator, state0, finalTime, Δt; maxRealtimeRate::Float64 = Inf)
+function integrate(integrator::MuntheKaasIntegrator, state0, final_time, Δt; max_realtime_rate::Float64 = Inf)
     T = eltype(integrator)
     t = zero(T)
     state = state0
@@ -342,9 +342,9 @@ function integrate(integrator::MuntheKaasIntegrator, state0, finalTime, Δt; max
     set_num_velocities!(integrator.stages, length(velocity(state)))
     set_num_additional_states!(integrator.stages, length(additional_state(state)))
     initialize(integrator.sink, t, state)
-    minSleepTime = 1. / 60. # based on visualizer fps
+    min_sleep_time = 1. / 60. # based on visualizer fps
 
-    @throttle t maxRealtimeRate minSleepTime while t < finalTime
+    @throttle t max_realtime_rate min_sleep_time while t < final_time
         step(integrator, t, state, Δt)
         t += Δt
         process(integrator.sink, t, state)

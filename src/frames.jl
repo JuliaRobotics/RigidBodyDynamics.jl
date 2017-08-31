@@ -124,9 +124,9 @@ end
 
 function Base.show(io::IO, t::Transform3D)
     println(io, "Transform3D from \"$(name(t.from))\" to \"$(name(t.to))\":")
-    angleAxis = AngleAxis(rotation(t))
-    angle = rotation_angle(angleAxis)
-    axis = rotation_axis(angleAxis)
+    angle_axis = AngleAxis(rotation(t))
+    angle = rotation_angle(angle_axis)
+    axis = rotation_axis(angle_axis)
     print(io, "rotation: $(angle) rad about $(axis), translation: $(translation(t))") # TODO: use fixed Quaternions.jl version once it's updated
 end
 

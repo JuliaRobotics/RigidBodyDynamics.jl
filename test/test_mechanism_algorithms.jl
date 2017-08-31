@@ -90,9 +90,9 @@ end
             qJoint = configuration(x, joint)
             q̇Joint = q̇[configuration_range(x, joint)]
             vJoint = velocity(x, joint)
-            vJointFromq̇ = similar(vJoint)
-            configuration_derivative_to_velocity!(vJointFromq̇, joint, qJoint, q̇Joint)
-            @test isapprox(vJoint, vJointFromq̇; atol = 1e-12)
+            vJoint_fromq̇ = similar(vJoint)
+            configuration_derivative_to_velocity!(vJoint_fromq̇, joint, qJoint, q̇Joint)
+            @test isapprox(vJoint, vJoint_fromq̇; atol = 1e-12)
         end
     end
 
@@ -178,15 +178,15 @@ end
     #         vjoint = velocity(x, joint)
     #         q̇joint = similar(qjoint)
     #         velocity_to_configuration_derivative!(joint, q̇joint, qjoint, vjoint)
-    #         qjointAutodiff = create_autodiff(qjoint, q̇joint)
-    #         TAutodiff = constraint_wrench_subspace(joint, qjointAutodiff)#::RigidBodyDynamics.WrenchSubspace{eltype(qjointAutodiff)} # TODO
+    #         qjoint_autodiff = create_autodiff(qjoint, q̇joint)
+    #         TAutodiff = constraint_wrench_subspace(joint, qjoint_autodiff)#::RigidBodyDynamics.WrenchSubspace{eltype(qjoint_autodiff)} # TODO
     #         angular = map(x -> ForwardDiff.partials(x, 1), TAutodiff.angular)
     #         linear = map(x -> ForwardDiff.partials(x, 1), TAutodiff.linear)
     #         Ṫ = WrenchMatrix(frame_after(joint), angular, linear)
-    #         jointTwist = transform(x, relative_twist(x, frame_after(joint), frame_before(joint)), frame_after(joint))
+    #         joint_twist = transform(x, relative_twist(x, frame_after(joint), frame_before(joint)), frame_after(joint))
     #         bias = fill(NaN, 6 - num_velocities(joint))
-    #         constraint_bias!(joint, bias, jointTwist)
-    #         @test isapprox(Ṫ.angular' * jointTwist.angular + Ṫ.linear' * jointTwist.linear, bias; atol = 1e-14)
+    #         constraint_bias!(joint, bias, joint_twist)
+    #         @test isapprox(Ṫ.angular' * joint_twist.angular + Ṫ.linear' * joint_twist.linear, bias; atol = 1e-14)
     #     end
     # end
 
@@ -227,8 +227,8 @@ end
         rand!(x)
         for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
-            parentBody = predecessor(joint, mechanism)
-            @test isapprox(relative_twist(x, body, parentBody), Twist(motion_subspace_in_world(x, joint), velocity(x, joint)); atol = 1e-12)
+            parent_body = predecessor(joint, mechanism)
+            @test isapprox(relative_twist(x, body, parent_body), Twist(motion_subspace_in_world(x, joint), velocity(x, joint)); atol = 1e-12)
         end
     end
 
@@ -423,7 +423,7 @@ end
         floatingjointwrench = Wrench(frame_after(floatingjoint), SVector{3}(τfloating[1 : 3]), SVector{3}(τfloating[4 : 6]))
         floatingjointwrench = transform(x, floatingjointwrench, root_frame(mechanism))
         ḣ = Wrench(momentum_matrix(x), v̇) + momentum_rate_bias(x) # momentum rate of change
-        gravitational_force = mass(mechanism) * mechanism.gravitationalAcceleration
+        gravitational_force = mass(mechanism) * mechanism.gravitational_acceleration
         com = center_of_mass(x)
         gravitational_wrench = Wrench(gravitational_force.frame, cross(com, gravitational_force).v, gravitational_force.v)
         total_wrench = floatingjointwrench + gravitational_wrench + sum((b) -> transform(x, externalwrenches[b], root_frame(mechanism)), non_root_bodies(mechanism))
@@ -434,11 +434,11 @@ end
         mechanism = rand_tree_mechanism()
         x = MechanismState(mechanism)
         rand!(x)
-        externalTorques = rand(num_velocities(mechanism))
+        external_torques = rand(num_velocities(mechanism))
         externalwrenches = Dict(body => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
         result = DynamicsResult(mechanism)
-        dynamics!(result, x, externalTorques, externalwrenches)
-        τ = inverse_dynamics(x, result.v̇, externalwrenches) - externalTorques
+        dynamics!(result, x, external_torques, externalwrenches)
+        τ = inverse_dynamics(x, result.v̇, externalwrenches) - external_torques
         @test isapprox(τ, zeros(num_velocities(mechanism)); atol = 1e-10)
     end
 
