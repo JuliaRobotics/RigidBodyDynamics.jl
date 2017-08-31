@@ -281,7 +281,7 @@ function Random.rand(::Type{Prismatic{T}}) where {T}
     Prismatic(axis)
 end
 
-flip_direction(jt::Prismatic) = Prismatic(-jt.axis)
+RigidBodyDynamics.flip_direction(jt::Prismatic) = Prismatic(-jt.axis)
 
 function joint_transform(jt::Prismatic, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
     translation = q[1] * jt.axis
@@ -350,7 +350,7 @@ function Random.rand(::Type{Revolute{T}}) where {T}
     Revolute(axis)
 end
 
-flip_direction(jt::Revolute) = Revolute(-jt.axis)
+RigidBodyDynamics.flip_direction(jt::Revolute) = Revolute(-jt.axis)
 
 function joint_transform(jt::Revolute, frameAfter::CartesianFrame3D, frameBefore::CartesianFrame3D, q::AbstractVector)
     @inbounds aa = AngleAxis(q[1], jt.axis[1], jt.axis[2], jt.axis[3], false)
@@ -403,7 +403,7 @@ struct Fixed{T} <: JointType{T}
 end
 Base.show(io::IO, jt::Fixed) = print(io, "Fixed joint")
 Random.rand(::Type{Fixed{T}}) where {T} = Fixed{T}()
-flip_direction(jt::Fixed) = deepcopy(jt)
+RigidBodyDynamics.flip_direction(jt::Fixed) = deepcopy(jt)
 
 num_positions(::Type{<:Fixed}) = 0
 num_velocities(::Type{<:Fixed}) = 0

@@ -134,8 +134,10 @@ $(SIGNATURES)
 
 Reconstruct the mechanism's spanning tree.
 """
-function rebuild_spanning_tree!(mechanism::Mechanism, next_edge = first #= breadth first =#)
-    mechanism.tree = SpanningTree(mechanism.graph, root_body(mechanism), next_edge)
+function rebuild_spanning_tree!(mechanism::Mechanism{M},
+        flipped_joint_map::Associative = Dict{GenericJoint{M}, GenericJoint{M}}();
+        next_edge = first #= breadth first =#) where {M}
+    mechanism.tree = SpanningTree(mechanism.graph, root_body(mechanism), flipped_joint_map; next_edge = next_edge)
     canonicalize_frame_definitions!(mechanism)
 end
 
@@ -144,11 +146,17 @@ $(SIGNATURES)
 
 Remove a joint from the mechanism. Rebuilds the spanning tree if the joint is
 part of the current spanning tree.
+
+Optionally, the `flipped_joint_map` keyword argument can be used to pass in an associative container
+that will be populated with a mapping from original joints to flipped joints, if removing `joint`
+requires rebuilding the spanning tree of `mechanism` and the polarity of some joints needed to be changed in the process.
 """
-function remove_joint!(mechanism::Mechanism, joint::Joint, spanning_tree_next_edge = first #= breadth first =#)
+function remove_joint!(mechanism::Mechanism{M}, joint::GenericJoint{M};
+        flipped_joint_map::Associative = Dict{GenericJoint{M}, GenericJoint{M}}(),
+        spanning_tree_next_edge = first #= breadth first =#) where {M}
     istreejoint = joint ∈ tree_joints(mechanism)
     remove_edge!(mechanism.graph, joint)
-    istreejoint && rebuild_spanning_tree!(mechanism, spanning_tree_next_edge)
+    istreejoint && rebuild_spanning_tree!(mechanism, flipped_joint_map; next_edge = spanning_tree_next_edge)
 end
 
 function replace_joint!(mechanism::Mechanism, oldjoint::Joint, newjoint::Joint)

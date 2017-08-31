@@ -15,7 +15,7 @@ function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, join
     RigidBodyDynamics.linear_velocity!(v, joint_type(joint), jointTwist.linear)
 end
 
-@testset "mechanism modification" begin # TODO: nested test set results in super slow tests for some reason
+@testset "mechanism modification" begin
     @testset "attach mechanism" begin
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...)
         nq = num_positions(mechanism)
@@ -164,14 +164,15 @@ end
             joint_to_world = eye(Transform3D, frame_before(newfloatingjoint), default_frame(world))
             body_to_joint = eye(Transform3D, default_frame(newfloatingbody), frame_after(newfloatingjoint))
             attach!(mechanism2, bodymap[world], newfloatingjoint, joint_to_world, bodymap[newfloatingbody], body_to_joint)
-            remove_joint!(mechanism2, jointmap[floatingjoint])
+            flipped_joint_map = Dict()
+            remove_joint!(mechanism2, jointmap[floatingjoint]; flipped_joint_map = flipped_joint_map)
 
             # mimic the same state for the rerooted mechanism
             # copy non-floating joint configurations and velocities
             x2 = MechanismState(mechanism2)
             for (joint1, joint2) in jointmap
                 if joint1 != floatingjoint
-                    joint2Rerooted = joint2 #get(flippedJointMapping, joint2, joint2)
+                    joint2Rerooted = get(flipped_joint_map, joint2, joint2)
                     set_configuration!(x2, joint2Rerooted, configuration(x1, joint1))
                     set_velocity!(x2, joint2Rerooted, velocity(x1, joint1))
                 end
@@ -197,7 +198,7 @@ end
             # make sure that joint accelerations for non-floating joints are the same
             for (joint1, joint2) in jointmap
                 if joint1 != floatingjoint
-                    joint2Rerooted = joint2 #get(flippedJointMapping, joint2, joint2)
+                    joint2Rerooted = get(flipped_joint_map, joint2, joint2)
                     v̇1 = view(result1.v̇, velocity_range(x1, joint1))
                     v̇2 = view(result2.v̇, velocity_range(x2, joint2Rerooted))
                     @test isapprox(v̇1, v̇2)
