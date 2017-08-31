@@ -55,14 +55,14 @@ end
         # make sure mass matrix is block diagonal, and that blocks on diagonal are the same
         double_acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
         acrobot2 = parse_urdf(Float64, "urdf/Acrobot.urdf")
-        xSingle = MechanismState(acrobot2)
-        rand!(xSingle)
-        qSingle = configuration(xSingle)
-        nq_single = length(qSingle)
+        xsingle = MechanismState(acrobot2)
+        rand!(xsingle)
+        qsingle = configuration(xsingle)
+        nq_single = length(qsingle)
         parent_body = root_body(double_acrobot)
         attach!(double_acrobot, parent_body, acrobot2)
         x = MechanismState(double_acrobot)
-        set_configuration!(x, [qSingle; qSingle])
+        set_configuration!(x, [qsingle; qsingle])
         H = mass_matrix(x)
         H11 = H[1 : nq_single, 1 : nq_single]
         H12 = H[1 : nq_single, nq_single + 1 : end]

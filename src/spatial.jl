@@ -245,8 +245,8 @@ function transform(inertia::SpatialInertia, t::Transform3D)
     Jnew = hat_squared(cnew)
     cnew += m * p
     Jnew -= hat_squared(cnew)
-    mInv = ifelse(m > 0, inv(m), zero(m))
-    Jnew *= mInv
+    minv = ifelse(m > 0, inv(m), zero(m))
+    Jnew *= minv
     Jnew += R * J * R'
     SpatialInertia(t.to, Jnew, cnew, convert(eltype(Jnew), m))
 end

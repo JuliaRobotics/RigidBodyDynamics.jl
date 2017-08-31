@@ -1,6 +1,6 @@
 function Ad(H::Transform3D)
-    pHat = RigidBodyDynamics.hat(translation(H))
-    [[rotation(H) zeros(SMatrix{3, 3, eltype(H)})]; [pHat * rotation(H) rotation(H)]]
+    p_hat = RigidBodyDynamics.hat(translation(H))
+    [[rotation(H) zeros(SMatrix{3, 3, eltype(H)})]; [p_hat * rotation(H) rotation(H)]]
 end
 
 @testset "spatial" begin

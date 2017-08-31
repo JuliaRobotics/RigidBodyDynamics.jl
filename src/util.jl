@@ -136,15 +136,15 @@ end
 const hat = vector_to_skew_symmetric
 
 @inline function vector_to_skew_symmetric_squared(a::SVector{3})
-    aSq1 = a[1] * a[1]
-    aSq2 = a[2] * a[2]
-    aSq3 = a[3] * a[3]
-    b11 = -aSq2 - aSq3
+    a1² = a[1] * a[1]
+    a2² = a[2] * a[2]
+    a3² = a[3] * a[3]
+    b11 = -a2² - a3²
     b12 = a[1] * a[2]
     b13 = a[1] * a[3]
-    b22 = -aSq1 - aSq3
+    b22 = -a1² - a3²
     b23 = a[2] * a[3]
-    b33 = -aSq1 - aSq2
+    b33 = -a1² - a2²
     @SMatrix [b11 b12 b13;
               b12 b22 b23;
               b13 b23 b33]
