@@ -98,8 +98,8 @@
     v̇ = rand(num_velocities(x_urdf))
     τ = inverse_dynamics(x_urdf, v̇)
     urdf_bodies = collect(bodies(double_pendulum_urdf))
-    urdf_upper_link = urdf_bodies[findfirst(b -> name(b) == name(body1), urdf_bodies)]
-    urdf_lower_link = urdf_bodies[findfirst(b -> name(b) == name(body2), urdf_bodies)]
+    urdf_upper_link = urdf_bodies[findfirst(b -> RigidBodyDynamics.name(b) == RigidBodyDynamics.name(body1), urdf_bodies)]
+    urdf_lower_link = urdf_bodies[findfirst(b -> RigidBodyDynamics.name(b) == RigidBodyDynamics.name(body2), urdf_bodies)]
     @test isapprox(T1, kinetic_energy(x_urdf, urdf_upper_link), atol = 1e-12)
     @test isapprox(T2, kinetic_energy(x_urdf, urdf_lower_link), atol = 1e-12)
     @test isapprox(M, mass_matrix(x_urdf), atol = 1e-12)
