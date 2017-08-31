@@ -41,7 +41,6 @@ export
     # functions
     rotation,
     translation,
-    name, # TODO: remove?
     has_defined_inertia,
     default_frame,
     frame_before,
