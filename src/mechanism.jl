@@ -249,5 +249,5 @@ function gravitational_spatial_acceleration(mechanism::Mechanism)
     SpatialAcceleration(frame, frame, frame, zeros(SVector{3, eltype(mechanism)}), mechanism.gravitational_acceleration.v)
 end
 
-findbody(mechanism::Mechanism, name::String) = findunique(b -> b.name == name, bodies(mechanism))
-findjoint(mechanism::Mechanism, name::String) = findunique(j -> j.name == name, joints(mechanism))
+findbody(mechanism::Mechanism, name::String) = findunique(b -> RigidBodyDynamics.name(b) == name, bodies(mechanism))
+findjoint(mechanism::Mechanism, name::String) = findunique(j -> RigidBodyDynamics.name(j) == name, joints(mechanism))
