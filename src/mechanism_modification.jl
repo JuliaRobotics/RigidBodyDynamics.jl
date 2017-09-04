@@ -23,6 +23,8 @@ function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::Gene
         successor_to_joint::Transform3D = eye(Transform3DS{T}, default_frame(successor), frame_after(joint))) where {T}
     @assert joint_to_predecessor.from == frame_before(joint)
     @assert successor_to_joint.to == frame_after(joint)
+    @assert predecessor ∈ bodies(mechanism)
+    @assert joint ∉ joints(mechanism)
 
     # define where joint is attached on predecessor
     add_frame!(predecessor, joint_to_predecessor)

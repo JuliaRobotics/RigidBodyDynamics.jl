@@ -16,7 +16,40 @@ function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, join
 end
 
 @testset "mechanism modification" begin
-    @testset "attach mechanism" begin
+    @testset "attach!" begin
+        body0 = RigidBody{Float64}("root")
+        mechanism = Mechanism(body0)
+        joint1 = Joint("joint1", rand(Revolute{Float64}))
+        joint1_pose = rand(RigidBodyDynamics.Transform3DS{Float64}, frame_before(joint1), default_frame(body0))
+        body1 = RigidBody(rand(SpatialInertia{Float64}, frame_after(joint1)))
+        joint2 = Joint("joint2", QuaternionFloating{Float64}())
+        joint2_pose = rand(RigidBodyDynamics.Transform3DS{Float64}, frame_before(joint2), default_frame(body1))
+        body2 = RigidBody(rand(SpatialInertia{Float64}, CartesianFrame3D("2")))
+
+        # can't attach if predecessor is not among bodies of mechanism
+        @test_throws AssertionError attach!(mechanism, body1, joint2, joint2_pose, body2)
+
+        # attach body1
+        attach!(mechanism, body0, joint1, joint1_pose, body1)
+        @test length(bodies(mechanism)) == 2
+        @test body1 ∈ bodies(mechanism)
+        @test length(joints(mechanism)) == 1
+        @test joint1 ∈ joints(mechanism)
+        @test isapprox(fixed_transform(mechanism, frame_before(joint1), joint1_pose.to), joint1_pose)
+
+        # can't use the same joint twice
+        @test_throws AssertionError attach!(mechanism, body0, joint1, joint1_pose, body1)
+
+        # attach body2
+        attach!(mechanism, body1, joint2, joint2_pose, body2)
+        @test length(bodies(mechanism)) == 3
+        @test body2 ∈ bodies(mechanism)
+        @test length(joints(mechanism)) == 2
+        @test joint2 ∈ joints(mechanism)
+        @test isapprox(fixed_transform(mechanism, frame_before(joint2), joint2_pose.to), joint2_pose)
+    end
+
+    @testset "attach! mechanism" begin
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...)
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
