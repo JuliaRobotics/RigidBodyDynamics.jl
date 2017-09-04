@@ -12,7 +12,7 @@ end
             pred = rand(bodies(mechanism_with_loops))
             succ = rand(bodies(mechanism_with_loops))
             joint = Joint("non-tree-$i", Fixed{Float64}())
-            attach!(mechanism_with_loops, pred, joint, eye(Transform3D, frame_before(joint), default_frame(pred)), succ)
+            attach!(mechanism_with_loops, pred, succ, joint)
         end
 
         show(DevNull, mechanism_with_loops)

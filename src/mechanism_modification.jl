@@ -1,14 +1,14 @@
 """
-    attach!(mechanism, predecessor, joint, joint_to_predecessor, successor, successor_to_joint)
+$(SIGNATURES)
 
 Attach `successor` to `predecessor` using `joint`.
 
 See [`Joint`](@ref) for definitions of the terms successor and predecessor.
 
-The `Transform3D`s `joint_to_predecessor` and `successor_to_joint` define where
-`joint` is attached to each body. `joint_to_predecessor` should define
+The `Transform3D`s `joint_pose` and `successor_pose` define where
+`joint` is attached to each body. `joint_pose` should define
 `frame_before(joint)` with respect to any frame fixed to `predecessor`, and likewise
-`successor_to_joint` should define any frame fixed to `successor` with respect to
+`successor_pose` should define any frame fixed to `successor` with respect to
 `frame_after(joint)`.
 
 `predecessor` is required to already be among the bodies of the `Mechanism`.
@@ -18,19 +18,19 @@ If `successor` is not yet a part of the `Mechanism`, it will be added to the
 `Mechanism`, effectively creating a loop constraint that will be enforced
 using Lagrange multipliers (as opposed to using recursive algorithms).
 """
-function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::GenericJoint{T},
-        joint_to_predecessor::Transform3D, successor::RigidBody{T},
-        successor_to_joint::Transform3D = eye(Transform3DS{T}, default_frame(successor), frame_after(joint))) where {T}
-    @assert joint_to_predecessor.from == frame_before(joint)
-    @assert successor_to_joint.to == frame_after(joint)
+function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, successor::RigidBody{T}, joint::GenericJoint{T};
+        joint_pose::Transform3D = eye(Transform3DS{T}, frame_before(joint), default_frame(predecessor)),
+        successor_pose::Transform3D = eye(Transform3DS{T}, default_frame(successor), frame_after(joint))) where {T}
+    @assert joint_pose.from == frame_before(joint)
+    @assert successor_pose.to == frame_after(joint)
     @assert predecessor ∈ bodies(mechanism)
     @assert joint ∉ joints(mechanism)
 
     # define where joint is attached on predecessor
-    add_frame!(predecessor, joint_to_predecessor)
+    add_frame!(predecessor, joint_pose)
 
     # define where child is attached to joint
-    add_frame!(successor, inv(successor_to_joint))
+    add_frame!(successor, inv(successor_pose))
 
     if successor ∈ bodies(mechanism)
         add_edge!(mechanism.graph, predecessor, successor, joint)
@@ -40,6 +40,13 @@ function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::Gene
     end
     mechanism
 end
+
+Base.@deprecate(
+        attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::GenericJoint{T},
+            joint_to_predecessor::Transform3D, successor::RigidBody{T},
+            successor_to_joint::Transform3D = eye(Transform3DS{T}, default_frame(successor), frame_after(joint))) where {T},
+        attach!(mechanism, predecessor, successor, joint;
+            joint_pose = joint_to_predecessor, successor_pose = successor_to_joint))
 
 function _copyjoint!(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::GenericJoint{T},
         bodymap::Dict{RigidBody{T}, RigidBody{T}}, jointmap::Dict{GenericJoint{T}, GenericJoint{T}}) where {T}
@@ -53,7 +60,7 @@ function _copyjoint!(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::GenericJoi
     destsuccessor = get!(() -> deepcopy(srcsuccessor), bodymap, srcsuccessor)
     destjoint = jointmap[srcjoint] = deepcopy(srcjoint)
 
-    attach!(dest, destpredecessor, destjoint, joint_to_predecessor, destsuccessor, successor_to_joint)
+    attach!(dest, destpredecessor, destsuccessor, destjoint; joint_pose = joint_to_predecessor, successor_pose = successor_to_joint)
 end
 
 """
@@ -67,8 +74,8 @@ belongs to `mechanism`).
 
 Note: gravitational acceleration for childmechanism is ignored.
 """
-function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechanism::Mechanism{T},
-        childroot_to_parent::Transform3D = eye(Transform3DS{T}, default_frame(root_body(childmechanism)), default_frame(parentbody))) where {T}
+function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechanism::Mechanism{T};
+        child_root_pose = eye(Transform3DS{T}, default_frame(root_body(childmechanism)), default_frame(parentbody))) where {T}
     # FIXME: test with cycles
 
     @assert mechanism != childmechanism # infinite loop otherwise
@@ -78,7 +85,7 @@ function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechani
 
     # Define where child root body is located w.r.t parent body and add frames that were attached to childroot to parentbody.
     childroot = root_body(childmechanism)
-    add_frame!(parentbody, childroot_to_parent)
+    add_frame!(parentbody, child_root_pose)
     for transform in frame_definitions(childroot)
         add_frame!(parentbody, transform)
     end
@@ -91,7 +98,6 @@ function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechani
     end
     bodymap, jointmap
 end
-
 
 """
 $(SIGNATURES)
@@ -263,7 +269,7 @@ function maximal_coordinates(mechanism::Mechanism)
         frameafter = default_frame(srcbody)
         body = bodymap[srcbody] = deepcopy(srcbody)
         floatingjoint = newfloatingjoints[body] = Joint(name(body), framebefore, frameafter, QuaternionFloating{T}())
-        attach!(ret, root, floatingjoint, eye(Transform3DS{T}, framebefore), body, eye(Transform3DS{T}, frameafter))
+        attach!(ret, root, body, floatingjoint, joint_pose = eye(Transform3DS{T}, framebefore), successor_pose = eye(Transform3DS{T}, frameafter))
     end
 
     # Copy input Mechanism's joints.
@@ -298,7 +304,7 @@ function rand_tree_mechanism(::Type{T}, parentselector::Function, jointtypes::Va
         joint_to_parent_body = rand(Transform3DS{T}, frame_before(joint), default_frame(parentbody))
         body = RigidBody(rand(SpatialInertia{T}, CartesianFrame3D("body$i")))
         body_to_joint = eye(Transform3DS{T}, default_frame(body), frame_after(joint))
-        attach!(mechanism, parentbody, joint, joint_to_parent_body, body, body_to_joint)
+        attach!(mechanism, parentbody, body, joint, joint_pose = joint_to_parent_body, successor_pose = body_to_joint)
         parentbody = parentselector(mechanism)
     end
     return mechanism

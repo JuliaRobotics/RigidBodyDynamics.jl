@@ -26,20 +26,20 @@
     #   link1 = RigidBody(inertia1)
     #   before_joint_1_to_world = eye(Transform3D, frame_before(joint1), default_frame(world))
     #   c1_to_joint = Transform3D(inertia1.frame, frame_after(joint1), SVector(lc1, 0, 0))
-    #   attach!(double_pendulum, world, joint1, before_joint_1_to_world, link1, c1_to_joint)
+    #   attach!(double_pendulum, world, joint1, link1, before_joint_1_to_world, joint_pose = c1_to_joint)
 
     # create first body and attach it to the world via a revolute joint
     inertia1 = SpatialInertia(CartesianFrame3D("upper_link"), I1 * axis * axis', m1 * SVector(0, 0, lc1), m1)
     body1 = RigidBody(inertia1)
     joint1 = Joint("shoulder", Revolute(axis))
     joint1_to_world = eye(Transform3D, joint1.frame_before, default_frame(world))
-    attach!(double_pendulum, world, joint1, joint1_to_world, body1)
+    attach!(double_pendulum, world, body1, joint1, joint_pose = joint1_to_world)
 
     inertia2 = SpatialInertia(CartesianFrame3D("lower_link"), I2 * axis * axis', m2 * SVector(0, 0, lc2), m2)
     body2 = RigidBody(inertia2)
     joint2 = Joint("elbow", Revolute(axis))
     joint2_to_body1 = Transform3D(joint2.frame_before, default_frame(body1), SVector(0, 0, l1))
-    attach!(double_pendulum, body1, joint2, joint2_to_body1, body2)
+    attach!(double_pendulum, body1, body2, joint2, joint_pose = joint2_to_body1)
 
     @test findbody(double_pendulum, RigidBodyDynamics.name(body1)) == body1
     @test_throws ErrorException findbody(double_pendulum, "bla")
