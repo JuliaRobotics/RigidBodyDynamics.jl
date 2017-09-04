@@ -1,5 +1,11 @@
 import RigidBodyDynamics: hat, rotation_vector_rate, colwise
 
+mutable struct EnsureNameUniqueTestType
+    name::String
+end
+RigidBodyDynamics.name(x::EnsureNameUniqueTestType) = x.name
+RigidBodyDynamics.setname!(x::EnsureNameUniqueTestType, name::AbstractString) = x.name = name
+
 @testset "util" begin
     @testset "rotation vector rate" begin
         for ϕ in (rand(SVector{3}), zeros(SVector{3})) # exponential coordinates (rotation vector)
@@ -53,5 +59,32 @@ import RigidBodyDynamics: hat, rotation_vector_rate, colwise
         d2 = RigidBodyDynamics.UnsafeFastDict{x -> round(Int64, x), Number}(i => 3 * i for i in 1 : 3)
         @test all(keys(d2) .== 1 : 3)
         @test all(values(d2) .== 3 * (1 : 3))
+    end
+
+    @testset "ensure_name_unique!" begin
+        T = EnsureNameUniqueTestType
+        ensure_name_unique! = RigidBodyDynamics.ensure_name_unique!
+        name = RigidBodyDynamics.name
+        collection = [T("foo"), T("bar1"), T("baz"), T("baz1"), T("baz2"), T("baz3asdf"), T("")]
+
+        element = T("bla")
+        ensure_name_unique!(element, collection)
+        @test name(element) == "bla"
+
+        element = T("foo")
+        ensure_name_unique!(element, collection)
+        @test name(element) == "foo1"
+
+        element = T("bar")
+        ensure_name_unique!(element, collection)
+        @test name(element) == "bar"
+
+        element = T("bar1")
+        ensure_name_unique!(element, collection)
+        @test name(element) == "bar2"
+
+        element = T("baz")
+        ensure_name_unique!(element, collection)
+        @test name(element) == "baz3"
     end
 end

@@ -125,6 +125,34 @@ walk(x, inner, outer) = outer(x)
 walk(x::Expr, inner, outer) = outer(Expr(x.head, map(inner, x.args)...))
 postwalk(f, x) = walk(x, x -> postwalk(f, x), f)
 
+function is_name_unique(element, collection)
+    elementname = name(element)
+    for x in collection
+        name(x) == elementname && return false
+    end
+    return true
+end
+
+function ensure_name_unique!(element, collection, renamedfunc = (element, originalname) -> nothing)
+    @assert element ∉ collection # possibility of infinite loop otherwise
+    originalname = name(element)
+    renamed = false
+    while !is_name_unique(element, collection)
+        renamed = true
+        elementname = name(element)
+        trailing_number_start = endof(elementname)
+        while trailing_number_start > 0 && isdigit(elementname[trailing_number_start])
+            trailing_number_start -= 1
+        end
+        basename = elementname[1 : trailing_number_start]
+        has_trailing_number = trailing_number_start != endof(elementname)
+        trailing_number = has_trailing_number ? parse(Int, elementname[trailing_number_start + 1 : end]) : 0
+        setname!(element, basename * string(trailing_number + 1))
+    end
+    renamed && renamedfunc(element, originalname)
+    element
+end
+
 
 ## Geometry utilities
 @inline function vector_to_skew_symmetric(v::SVector{3, T}) where {T}
