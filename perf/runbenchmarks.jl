@@ -8,8 +8,9 @@ function create_floating_atlas()
     url = "https://raw.githubusercontent.com/RobotLocomotion/drake/6e3ca768cbaabf15d0f2bed0fb5bd703fa022aa5/drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"
     urdf = RigidBodyDynamics.cached_download(url, "atlas.urdf")
     atlas = parse_urdf(ScalarType, urdf)
+    name = RigidBodyDynamics.name
     for joint in out_joints(root_body(atlas), atlas)
-        floatingjoint = Joint(joint.name, frame_before(joint), frame_after(joint), QuaternionFloating{ScalarType}())
+        floatingjoint = Joint(name(joint), frame_before(joint), frame_after(joint), QuaternionFloating{ScalarType}())
         replace_joint!(atlas, joint, floatingjoint)
     end
     atlas

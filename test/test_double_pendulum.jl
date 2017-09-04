@@ -41,9 +41,9 @@
     joint2_to_body1 = Transform3D(joint2.frame_before, default_frame(body1), SVector(0, 0, l1))
     attach!(double_pendulum, body1, joint2, joint2_to_body1, body2)
 
-    @test findbody(double_pendulum, body1.name) == body1
+    @test findbody(double_pendulum, RigidBodyDynamics.name(body1)) == body1
     @test_throws ErrorException findbody(double_pendulum, "bla")
-    @test findjoint(double_pendulum, joint2.name) == joint2
+    @test findjoint(double_pendulum, RigidBodyDynamics.name(joint2)) == joint2
     @test_throws ErrorException findjoint(double_pendulum, "bla")
 
     x = MechanismState(double_pendulum)
@@ -90,7 +90,7 @@
     x_urdf = MechanismState(double_pendulum_urdf)
     for (i, j) in enumerate(joints(double_pendulum))
         urdf_joints = collect(joints(double_pendulum_urdf))
-        index = findfirst(joint -> joint.name == j.name, urdf_joints)
+        index = findfirst(joint -> RigidBodyDynamics.name(joint) == RigidBodyDynamics.name(j), urdf_joints)
         j_urdf = urdf_joints[index]
         set_configuration!(x_urdf, j_urdf, configuration(x, j))
         set_velocity!(x_urdf, j_urdf, velocity(x, j))

@@ -139,7 +139,7 @@ RigidBodyDynamics.Graphs.edge_index(joint::Joint) = joint.id[]
 RigidBodyDynamics.Graphs.edge_index!(joint::Joint, id::Int64) = (joint.id[] = id)
 function RigidBodyDynamics.Graphs.flip_direction(joint::Joint)
     jtype = RigidBodyDynamics.flip_direction(joint_type(joint))
-    Joint(joint.name, frame_after(joint), frame_before(joint), jtype;
+    Joint(name(joint), frame_after(joint), frame_before(joint), jtype;
         position_bounds = joint.position_bounds,
         velocity_bounds = joint.velocity_bounds,
         effort_bounds = joint.effort_bounds)
