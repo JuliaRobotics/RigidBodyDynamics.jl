@@ -969,7 +969,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{Type{T},Vararg{Type{#s8} where #s8<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "Method",
@@ -977,7 +977,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s8} where #s8<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "Method",
@@ -985,7 +985,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Function,Vararg{Type{#s5} where #s5<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Function,Vararg{Type{#s6} where #s6<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
@@ -993,7 +993,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s8} where #s8<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
