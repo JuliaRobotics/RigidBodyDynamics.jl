@@ -365,7 +365,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.transform",
     "category": "Method",
-    "text": "transform(accel, oldToNew, twistOfCurrentWrtNew, twistOfBodyWrtBase)\n\n\nTransform the SpatialAcceleration to a different frame.\n\nThe transformation rule is obtained by differentiating the transformation rule for twists.\n\n\n\n"
+    "text": "transform(accel, old_to_new, twist_of_current_wrt_new, twist_of_body_wrt_base)\n\n\nTransform the SpatialAcceleration to a different frame.\n\nThe transformation rule is obtained by differentiating the transformation rule for twists.\n\n\n\n"
 },
 
 {
@@ -390,22 +390,6 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.transform",
     "category": "Method",
     "text": "transform(f, transform)\n\n\nTransform the Wrench to a different frame.\n\n\n\n"
-},
-
-{
-    "location": "spatial.html#RigidBodyDynamics.invtransform-Tuple{RigidBodyDynamics.FreeVector3D,RigidBodyDynamics.Transform3D}",
-    "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.invtransform",
-    "category": "Method",
-    "text": "invtransform(x, t)\n\n\nApply the inverse transform, i.e. return x, originally expressed in CartesianFrame3D t.from, transformed to t.to.\n\n\n\n"
-},
-
-{
-    "location": "spatial.html#RigidBodyDynamics.invtransform-Tuple{RigidBodyDynamics.Point3D,RigidBodyDynamics.Transform3D}",
-    "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.invtransform",
-    "category": "Method",
-    "text": "invtransform(x, t)\n\n\nApply the inverse transform, i.e. return x, originally expressed in CartesianFrame3D t.from, transformed to t.to.\n\n\n\n"
 },
 
 {
@@ -493,7 +477,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Joints",
     "title": "RigidBodyDynamics.Joint",
     "category": "Type",
-    "text": "type Joint{T, JT<:RigidBodyDynamics.JointType{T}}\n\nA joint represents a kinematic restriction of the relative twist between two rigid bodies to a linear subspace of dimension k.\n\nA joint has a direction. The rigid body before the joint is called the joint's predecessor, and the rigid body after the joint is its successor.\n\nThe state related to the joint is parameterized by two sets of variables, namely\n\na vector q in  mathcalQ, parameterizing the relative homogeneous transform.\na vector v in mathbbR^k, parameterizing the relative twist.\n\nThe twist of the successor with respect to the predecessor is a linear function of v.\n\nFor some joint types (notably those using a redundant representation of relative orientation, such as a unit quaternion), dotq, the time derivative of q, may not be the same as v. However, an invertible linear transformation exists between dotq and v.\n\nSee also:\n\nDefinition 2.9 in Duindam, \"Port-Based Modeling and Control for Efficient Bipedal Walking Robots\", 2006.\nSection 4.4 of Featherstone, \"Rigid Body Dynamics Algorithms\", 2008.\n\n\n\n"
+    "text": "struct Joint{T, JT<:RigidBodyDynamics.JointType{T}}\n\nA joint represents a kinematic restriction of the relative twist between two rigid bodies to a linear subspace of dimension k.\n\nA joint has a direction. The rigid body before the joint is called the joint's predecessor, and the rigid body after the joint is its successor.\n\nThe state related to the joint is parameterized by two sets of variables, namely\n\na vector q in  mathcalQ, parameterizing the relative homogeneous transform.\na vector v in mathbbR^k, parameterizing the relative twist.\n\nThe twist of the successor with respect to the predecessor is a linear function of v.\n\nFor some joint types (notably those using a redundant representation of relative orientation, such as a unit quaternion), dotq, the time derivative of q, may not be the same as v. However, an invertible linear transformation exists between dotq and v.\n\nSee also:\n\nDefinition 2.9 in Duindam, \"Port-Based Modeling and Control for Efficient Bipedal Walking Robots\", 2006.\nSection 4.4 of Featherstone, \"Rigid Body Dynamics Algorithms\", 2008.\n\n\n\n"
 },
 
 {
@@ -533,7 +517,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Joints",
     "title": "RigidBodyDynamics.constraint_wrench_subspace",
     "category": "Method",
-    "text": "constraint_wrench_subspace(joint, jointTransform)\n\n\nReturn a basis for the constraint wrench subspace of the joint, where jointTransform is the transform from the frame after the joint to the frame before the joint.\n\nThe constraint wrench subspace is a 6 times (6 - k) matrix, where k is the dimension of the velocity vector v, that maps a vector of Lagrange multipliers lambda to the constraint wrench exerted across the joint onto its successor.\n\nThe constraint wrench subspace is orthogonal to the motion subspace.\n\n\n\n"
+    "text": "constraint_wrench_subspace(joint, joint_transform)\n\n\nReturn a basis for the constraint wrench subspace of the joint, where joint_transform is the transform from the frame after the joint to the frame before the joint.\n\nThe constraint wrench subspace is a 6 times (6 - k) matrix, where k is the dimension of the velocity vector v, that maps a vector of Lagrange multipliers lambda to the constraint wrench exerted across the joint onto its successor.\n\nThe constraint wrench subspace is orthogonal to the motion subspace.\n\n\n\n"
 },
 
 {
@@ -541,7 +525,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Joints",
     "title": "RigidBodyDynamics.effort_bounds",
     "category": "Method",
-    "text": "effort_bounds(joint)\n\n\nReturn a VectorBoundsT giving the upper and lower bounds of the  effort for joint\n\n\n\n"
+    "text": "effort_bounds(joint)\n\n\nReturn a Vector{Bounds{T}} giving the upper and lower bounds of the effort for joint\n\n\n\n"
 },
 
 {
@@ -629,7 +613,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Joints",
     "title": "RigidBodyDynamics.position_bounds",
     "category": "Method",
-    "text": "position_bounds(joint)\n\n\nReturn a VectorBoundsT giving the upper and lower bounds of the  configuration for joint\n\n\n\n"
+    "text": "position_bounds(joint)\n\n\nReturn a Vector{Bounds{T}} giving the upper and lower bounds of the configuration for joint\n\n\n\n"
 },
 
 {
@@ -645,7 +629,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Joints",
     "title": "RigidBodyDynamics.velocity_bounds",
     "category": "Method",
-    "text": "velocity_bounds(joint)\n\n\nReturn a VectorBoundsT giving the upper and lower bounds of the  velocity for joint\n\n\n\n"
+    "text": "velocity_bounds(joint)\n\n\nReturn a Vector{Bounds{T}} giving the upper and lower bounds of the velocity for joint\n\n\n\n"
 },
 
 {
@@ -861,7 +845,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.change_default_frame!",
     "category": "Method",
-    "text": "change_default_frame!(body, newDefaultFrame)\n\n\nChange the default frame of body to frame (which should already be among body's frame definitions).\n\n\n\n"
+    "text": "change_default_frame!(body, new_default_frame)\n\n\nChange the default frame of body to frame (which should already be among body's frame definitions).\n\n\n\n"
 },
 
 {
@@ -945,19 +929,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.attach!-Union{Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}},RigidBodyDynamics.Transform3D,RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Transform3D}, Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}},RigidBodyDynamics.Transform3D,RigidBodyDynamics.RigidBody{T}}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.attach!-Union{Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Method",
-    "text": "attach!(mechanism, predecessor, joint, jointToPredecessor, successor, successorToJoint)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds jointToPredecessor and successorToJoint define where joint is attached to each body. jointToPredecessor should define frame_before(joint) with respect to any frame fixed to predecessor, and likewise successorToJoint should define any frame fixed to successor with respect to frame_after(joint).\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
+    "text": "attach!(mechanism, parentbody, childmechanism; child_root_pose)\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.attach!-Union{Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.Transform3D}, Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.attach!-Union{Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}}}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Method",
-    "text": "attach!(mechanism, parentbody, childmechanism)\nattach!(mechanism, parentbody, childmechanism, childroot_to_parent)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
+    "text": "attach!(mechanism, predecessor, successor, joint; joint_pose, successor_pose)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds joint_pose and successor_pose define where joint is attached to each body. joint_pose should define frame_before(joint) with respect to any frame fixed to predecessor, and likewise successor_pose should define any frame fixed to successor with respect to frame_after(joint).\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
 },
 
 {
@@ -1009,11 +993,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.remove_joint!",
+    "location": "mechanism.html#RigidBodyDynamics.remove_joint!-Union{Tuple{M}, Tuple{RigidBodyDynamics.Mechanism{M},RigidBodyDynamics.Joint{M,RigidBodyDynamics.JointType{M}}}} where M",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.remove_joint!",
-    "category": "Function",
-    "text": "remove_joint!(mechanism, joint)\nremove_joint!(mechanism, joint, spanning_tree_next_edge)\n\n\nRemove a joint from the mechanism. Rebuilds the spanning tree if the joint is part of the current spanning tree.\n\n\n\n"
+    "category": "Method",
+    "text": "remove_joint!(mechanism, joint; flipped_joint_map, spanning_tree_next_edge)\n\nRemove a joint from the mechanism. Rebuilds the spanning tree if the joint is part of the current spanning tree.\n\nOptionally, the flipped_joint_map keyword argument can be used to pass in an associative container that will be populated with a mapping from original joints to flipped joints, if removing joint requires rebuilding the spanning tree of mechanism and the polarity of some joints needed to be changed in the process.\n\nAlso optionally, spanning_tree_next_edge can be used to select which joints should become part of the new spanning tree, if rebuilding the spanning tree is required.\n\n\n\n"
 },
 
 {
@@ -1025,11 +1009,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rebuild_spanning_tree!",
+    "location": "mechanism.html#RigidBodyDynamics.rebuild_spanning_tree!-Union{Tuple{M}, Tuple{RigidBodyDynamics.Mechanism{M},Associative}, Tuple{RigidBodyDynamics.Mechanism{M}}} where M",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rebuild_spanning_tree!",
-    "category": "Function",
-    "text": "rebuild_spanning_tree!(mechanism)\nrebuild_spanning_tree!(mechanism, next_edge)\n\n\nReconstruct the mechanism's spanning tree.\n\n\n\n"
+    "category": "Method",
+    "text": "rebuild_spanning_tree!(mechanism; flipped_joint_map, next_edge)\n\nReconstruct the mechanism's spanning tree.\n\nOptionally, the flipped_joint_map keyword argument can be used to pass in an associative container that will be populated with a mapping from original joints to flipped joints, if the rebuilding process required the polarity of some joints to be flipped.\n\nAlso optionally, next_edge can be used to select which joints should become part of the new spanning tree.\n\n\n\n"
 },
 
 {
@@ -1389,7 +1373,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.relative_twist",
     "category": "Method",
-    "text": "relative_twist(state, bodyFrame, baseFrame)\n\n\nReturn the twist of bodyFrame with respect to baseFrame, expressed in the Mechanism's root frame.\n\n\n\n"
+    "text": "relative_twist(state, body_frame, base_frame)\n\n\nReturn the twist of body_frame with respect to base_frame, expressed in the Mechanism's root frame.\n\n\n\n"
 },
 
 {
@@ -1613,7 +1597,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Method",
-    "text": "dynamics!(ẋ, result, state, stateVec)\ndynamics!(ẋ, result, state, stateVec, torques)\ndynamics!(ẋ, result, state, stateVec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "text": "dynamics!(ẋ, result, state, state_vec)\ndynamics!(ẋ, result, state, state_vec, torques)\ndynamics!(ẋ, result, state, state_vec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
 },
 
 {
@@ -1781,7 +1765,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Simulation",
     "title": "RigidBodyDynamics.simulate",
     "category": "Function",
-    "text": "simulate(state0, finalTime; Δt)\n\n\nBasic Mechanism simulation: integrate the state from time 0 to finalTime starting from the initial state state0. Return a Vector of times, as well as Vectors of configuration vectors and velocity vectors at these times.\n\nUses MuntheKaasIntegrator. See RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator for a lower level interface with more options.\n\n\n\n"
+    "text": "simulate(state0, final_time; Δt)\n\n\nBasic Mechanism simulation: integrate the state from time 0 to final_time starting from the initial state state0. Return a Vector of times, as well as Vectors of configuration vectors and velocity vectors at these times.\n\nUses MuntheKaasIntegrator. See RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator for a lower level interface with more options.\n\n\n\n"
 },
 
 {
@@ -1837,7 +1821,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Simulation",
     "title": "RigidBodyDynamics.OdeIntegrators.integrate",
     "category": "Method",
-    "text": "integrate(integrator, state0, finalTime, Δt; maxRealtimeRate)\n\n\nIntegrate dynamics from the initial state state0 at time 0 to finalTime using step size Δt.\n\n\n\n"
+    "text": "integrate(integrator, state0, final_time, Δt; max_realtime_rate)\n\n\nIntegrate dynamics from the initial state state0 at time 0 to final_time using step size Δt.\n\n\n\n"
 },
 
 {
