@@ -47,7 +47,7 @@ change_base(jac::GeometricJacobian, base::CartesianFrame3D) = GeometricJacobian(
 Base.:-(jac::GeometricJacobian) = GeometricJacobian(jac.base, jac.body, jac.frame, -jac.angular, -jac.linear)
 
 function Base.show(io::IO, jac::GeometricJacobian)
-    print(io, "GeometricJacobian: body: \"$(name(jac.body))\", base: \"$(name(jac.base))\", expressed in \"$(name(jac.frame))\":\n$(Array(jac))")
+    print(io, "GeometricJacobian: body: \"$(string(jac.body))\", base: \"$(string(jac.base))\", expressed in \"$(string(jac.frame))\":\n$(Array(jac))")
 end
 
 """
@@ -129,7 +129,7 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
         StaticArrays.similar_type(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) where {T1, T2} = $MotionSpaceElement{T2} # FIXME: lose this
 
         function Base.show(io::IO, m::$MotionSpaceElement)
-            print(io, "$($(string(MotionSpaceElement))) of \"$(name(m.body))\" w.r.t \"$(name(m.base))\" in \"$(name(m.frame))\":\nangular: $(m.angular), linear: $(m.linear)")
+            print(io, "$($(string(MotionSpaceElement))) of \"$(string(m.body))\" w.r.t \"$(string(m.base))\" in \"$(string(m.frame))\":\nangular: $(m.angular), linear: $(m.linear)")
         end
 
         function Base.isapprox(x::$MotionSpaceElement, y::$MotionSpaceElement; atol = 1e-12)

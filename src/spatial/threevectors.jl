@@ -27,7 +27,7 @@ for VectorType in (:FreeVector3D, :Point3D)
         Base.:-(p::$VectorType) = $VectorType(p.frame, -p.v)
 
         Random.rand(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) where {T} = $VectorType(frame, rand(SVector{3, T}))
-        Base.show(io::IO, p::$VectorType) = print(io, "$($(string(VectorType))) in \"$(name(p.frame))\": $(p.v)")
+        Base.show(io::IO, p::$VectorType) = print(io, "$($(string(VectorType))) in \"$(string(p.frame))\": $(p.v)")
         Base.isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
 
         """

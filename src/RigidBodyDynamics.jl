@@ -146,7 +146,7 @@ export
     dynamics!,
     simulate
 
-function name end # TODO
+Base.@deprecate name(x) Base.string(x)
 
 include("custom_collections.jl")
 include("graphs.jl")

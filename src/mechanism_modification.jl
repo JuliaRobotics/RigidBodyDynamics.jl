@@ -282,7 +282,7 @@ function maximal_coordinates(mechanism::Mechanism)
         framebefore = default_frame(root)
         frameafter = default_frame(srcbody)
         body = bodymap[srcbody] = deepcopy(srcbody)
-        floatingjoint = newfloatingjoints[body] = Joint(name(body), framebefore, frameafter, QuaternionFloating{T}())
+        floatingjoint = newfloatingjoints[body] = Joint(string(body), framebefore, frameafter, QuaternionFloating{T}())
         attach!(ret, root, body, floatingjoint, joint_pose = eye(Transform3DS{T}, framebefore), successor_pose = eye(Transform3DS{T}, frameafter))
     end
 
