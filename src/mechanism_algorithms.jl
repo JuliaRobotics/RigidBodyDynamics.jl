@@ -75,7 +75,7 @@ subspaces of each of the joints to the frame in which `out` is expressed.
 $noalloc_doc
 """
 function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path::TreePath, transformfun)
-    @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
+    @boundscheck num_velocities(state) == size(out, 2) || error("size mismatch")
     @framecheck out.body default_frame(target(path))
     @framecheck out.base default_frame(source(path))
     update_motion_subspaces_in_world!(state)
@@ -230,7 +230,7 @@ momentum matrix blocks associated with each of the joints to the frame in which
 $noalloc_doc
 """
 function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformfun)
-    @boundscheck num_velocities(state) == num_cols(out) || error("size mismatch")
+    @boundscheck num_velocities(state) == size(out, 2) || error("size mismatch")
     update_motion_subspaces_in_world!(state)
     update_crb_inertias!(state)
     foreach_with_extra_args(out, state, state.type_sorted_tree_joints) do out, state, joint

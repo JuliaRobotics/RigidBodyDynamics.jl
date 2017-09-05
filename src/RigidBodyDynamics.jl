@@ -83,7 +83,6 @@ export
     velocity,
     velocity_range,
     additional_state,
-    num_cols,
     joint_transform,
     motion_subspace,
     motion_subspace_in_world,
@@ -160,12 +159,19 @@ include("custom_collections.jl")
 include("graphs.jl")
 
 using .CustomCollections # TODO
-include("util.jl")
 include("cache_element.jl")
 
-include("frames.jl")
-include("spatial.jl")
+function name end # TODO
+function translation end # TODO
+function rotation end # TODO
+function transform end # TODO
+function center_of_mass end # TODO
+function newton_euler end # TODO
+function kinetic_energy end # TODO
+include("spatial/Spatial.jl")
+using .Spatial # TODO
 
+include("util.jl")
 include("contact.jl")
 
 include("joint_types.jl")
@@ -183,7 +189,5 @@ include("mechanism_algorithms.jl")
 include("parse_urdf.jl")
 include("ode_integrators.jl")
 include("simulate.jl")
-
-
 
 end # module

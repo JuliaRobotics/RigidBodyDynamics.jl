@@ -106,7 +106,7 @@ end
 
 typedjoint(joint::Joint) = Joint(joint)
 
-name(joint::Joint) = joint.name
+RigidBodyDynamics.Spatial.name(joint::Joint) = joint.name
 frame_before(joint::Joint) = joint.frame_before
 frame_after(joint::Joint) = joint.frame_after
 joint_type(joint::Joint) = joint.joint_type

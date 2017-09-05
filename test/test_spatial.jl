@@ -1,5 +1,6 @@
 function Ad(H::Transform3D)
-    p_hat = RigidBodyDynamics.hat(translation(H))
+    hat = RigidBodyDynamics.Spatial.hat
+    p_hat = hat(translation(H))
     [[rotation(H) zeros(SMatrix{3, 3, eltype(H)})]; [p_hat * rotation(H) rotation(H)]]
 end
 
@@ -8,6 +9,41 @@ end
     f2 = CartesianFrame3D("2")
     f3 = CartesianFrame3D("3")
     f4 = CartesianFrame3D("4")
+
+    @testset "rotation vector rate" begin
+        hat = RigidBodyDynamics.Spatial.hat
+        rotation_vector_rate = RigidBodyDynamics.Spatial.rotation_vector_rate
+        for ϕ in (rand(SVector{3}), zeros(SVector{3})) # exponential coordinates (rotation vector)
+            ω = rand(SVector{3}) # angular velocity in body frame
+            R = RotMatrix(RodriguesVec(ϕ...))
+            Ṙ = R * hat(ω)
+            ϕ̇ = rotation_vector_rate(ϕ, ω)
+            Θ = norm(ϕ)
+            if Θ > eps(Θ)
+                ϕ_autodiff = SVector{3}(create_autodiff(ϕ, ϕ̇))
+                R_autodiff = RotMatrix(RodriguesVec(ϕ_autodiff...))
+                Ṙ_from_autodiff = map(x -> ForwardDiff.partials(x)[1], R_autodiff)
+                @test isapprox(Ṙ_from_autodiff, Ṙ)
+            else
+                @test isapprox(ϕ̇, ω) # limit case; hard to test using autodiff because of division by zero
+            end
+        end
+    end
+
+    @testset "colwise" begin
+        colwise = RigidBodyDynamics.Spatial.colwise
+        v = @SVector [2, 4, 6]
+        M = @SMatrix [1 2 3; 4 5 6; 7 8 9]
+        T = eltype(v)
+        vcross = @SMatrix [zero(T) -v[3] v[2];
+                    v[3] zero(T) -v[1];
+                    -v[2] v[1] zero(T)]
+        @test vcross * M == colwise(cross, v, M)
+        @test colwise(cross, M, v) == -colwise(cross, v, M)
+        @test colwise(+, M, v) == broadcast(+, M, v)
+        v2 = @SVector [1, 2, 3, 4]
+        @test_throws DimensionMismatch colwise(+, M, v2)
+    end
 
     @testset "show" begin
         show(DevNull, rand(SpatialInertia{Float64}, f1))
@@ -113,7 +149,7 @@ end
     @testset "geometric jacobian, power" begin
         n = 14
         J = GeometricJacobian(f2, f1, f3, rand(SMatrix{3, n}), rand(SMatrix{3, n}))
-        v = rand(num_cols(J))
+        v = rand(size(J, 2))
         W = rand(Wrench{Float64}, f3)
         T = Twist(J, v)
         H = rand(Transform3D, f3, f1)
@@ -133,7 +169,7 @@ end
     @testset "At_mul_B!" begin
         mat = WrenchMatrix(f1, rand(SMatrix{3, 4}), rand(SMatrix{3, 4}))
         vec = rand(SpatialAcceleration{Float64}, f2, f3, f1)
-        k = fill(NaN, num_cols(mat))
+        k = fill(NaN, size(mat, 2))
         At_mul_B!(k, mat, vec)
         @test isapprox(k, mat.angular' * vec.angular + mat.linear' * vec.linear, atol = 1e-14)
     end
@@ -141,7 +177,7 @@ end
     @testset "momentum matrix" begin
         n = 13
         A = MomentumMatrix(f3, rand(SMatrix{3, n}), rand(SMatrix{3, n}))
-        v = rand(num_cols(A))
+        v = rand(size(A, 2))
         h = Momentum(A, v)
         H = rand(Transform3D, f3, f1)
         @test h.frame == A.frame
@@ -168,6 +204,7 @@ end
     end
 
     @testset "log / exp" begin
+        hat = RigidBodyDynamics.Spatial.hat
         srand(1) # TODO: https://github.com/tkoolen/RigidBodyDynamics.jl/issues/135
         for θ in [linspace(0., 10 * eps(), 100); linspace(0., π - eps(), 100)]
             # have magnitude of parts of twist be bounded by θ to check for numerical issues
@@ -177,7 +214,7 @@ end
             H = exp(ξ)
             @test isapprox(ξ, log(H))
 
-            ξhat = [RigidBodyDynamics.hat(ϕrot) ϕtrans]
+            ξhat = [hat(ϕrot) ϕtrans]
             ξhat = [ξhat; zeros(1, 4)]
             H_mat = [rotation(H) translation(H)]
             H_mat = [H_mat; zeros(1, 3) 1.]
@@ -199,6 +236,7 @@ end
 
         # derivative
         for θ in linspace(1e-3, π - 1e-3, 100) # autodiff doesn't work close to the identity rotation
+            hat = RigidBodyDynamics.Spatial.hat
             ξ = Twist{Float64}(f2, f1, f1, θ * normalize(rand(SVector{3})), θ * normalize(rand(SVector{3})))
             H = exp(ξ)
             T = Twist{Float64}(f2, f1, f2, rand(SVector{3}), rand(SVector{3}))
