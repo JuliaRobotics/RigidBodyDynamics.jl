@@ -114,24 +114,24 @@ joint_type(joint::Joint) = joint.joint_type
 """
 $(SIGNATURES)
 
-Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the
-configuration for ``joint``
+Return a `Vector{Bounds{T}}` giving the upper and lower bounds of the
+configuration for `joint`
 """
 position_bounds(joint::Joint) = joint.position_bounds
 
 """
 $(SIGNATURES)
 
-Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the
-velocity for ``joint``
+Return a `Vector{Bounds{T}}` giving the upper and lower bounds of the
+velocity for `joint`
 """
 velocity_bounds(joint::Joint) = joint.velocity_bounds
 
 """
 $(SIGNATURES)
 
-Return a ``Vector{Bounds{T}}`` giving the upper and lower bounds of the
-effort for ``joint``
+Return a `Vector{Bounds{T}}` giving the upper and lower bounds of the
+effort for `joint`
 """
 effort_bounds(joint::Joint) = joint.effort_bounds
 
