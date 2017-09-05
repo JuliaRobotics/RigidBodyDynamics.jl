@@ -27,10 +27,10 @@ end
         body2 = RigidBody(rand(SpatialInertia{Float64}, CartesianFrame3D("2")))
 
         # can't attach if predecessor is not among bodies of mechanism
-        @test_throws AssertionError attach!(mechanism, body1, joint2, joint2_pose, body2)
+        @test_throws AssertionError attach!(mechanism, body1, body2, joint2, joint_pose = joint2_pose)
 
         # attach body1
-        attach!(mechanism, body0, joint1, joint1_pose, body1)
+        attach!(mechanism, body0, body1, joint1, joint_pose = joint1_pose)
         @test length(bodies(mechanism)) == 2
         @test body1 ∈ bodies(mechanism)
         @test length(joints(mechanism)) == 1
@@ -38,10 +38,10 @@ end
         @test isapprox(fixed_transform(mechanism, frame_before(joint1), joint1_pose.to), joint1_pose)
 
         # can't use the same joint twice
-        @test_throws AssertionError attach!(mechanism, body0, joint1, joint1_pose, body1)
+        @test_throws AssertionError attach!(mechanism, body0, body1, joint1, joint_pose = joint1_pose)
 
         # attach body2
-        attach!(mechanism, body1, joint2, joint2_pose, body2)
+        attach!(mechanism, body1, body2, joint2, joint_pose = joint2_pose)
         @test length(bodies(mechanism)) == 3
         @test body2 ∈ bodies(mechanism)
         @test length(joints(mechanism)) == 2
@@ -196,7 +196,7 @@ end
             newfloatingjoint = Joint("new_floating", QuaternionFloating{Float64}())
             joint_to_world = eye(Transform3D, frame_before(newfloatingjoint), default_frame(world))
             body_to_joint = eye(Transform3D, default_frame(newfloatingbody), frame_after(newfloatingjoint))
-            attach!(mechanism2, bodymap[world], newfloatingjoint, joint_to_world, bodymap[newfloatingbody], body_to_joint)
+            attach!(mechanism2, bodymap[world], bodymap[newfloatingbody], newfloatingjoint, joint_pose = joint_to_world, successor_pose = body_to_joint)
             flipped_joint_map = Dict()
             remove_joint!(mechanism2, jointmap[floatingjoint]; flipped_joint_map = flipped_joint_map)
 

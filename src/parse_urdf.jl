@@ -103,7 +103,7 @@ function parse_root_link(mechanism::Mechanism{T}, xml_link::XMLElement) where {T
     body = parse_body(T, xml_link)
     joint = Joint("$(name(body))_to_world", Fixed{T}())
     joint_to_parent = eye(Transform3DS{T}, frame_before(joint), default_frame(parent))
-    attach!(mechanism, parent, joint, joint_to_parent, body)
+    attach!(mechanism, parent, body, joint, joint_pose = joint_to_parent)
 end
 
 function parse_joint_and_link(mechanism::Mechanism{T}, xml_parent::XMLElement, xml_child::XMLElement, xml_joint::XMLElement) where {T}
@@ -115,7 +115,7 @@ function parse_joint_and_link(mechanism::Mechanism{T}, xml_parent::XMLElement, x
     pose = parse_pose(T, find_element(xml_joint, "origin"))
     joint_to_parent = Transform3D(frame_before(joint), default_frame(parent), pose...)
     body = parse_body(T, xml_child, frame_after(joint))
-    attach!(mechanism, parent, joint, joint_to_parent, body)
+    attach!(mechanism, parent, body, joint, joint_pose = joint_to_parent)
 end
 
 """
