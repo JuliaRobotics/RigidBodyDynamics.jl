@@ -137,9 +137,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.CartesianFrame3D",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.CartesianFrame3D",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.CartesianFrame3D",
+    "title": "RigidBodyDynamics.Spatial.CartesianFrame3D",
     "category": "Type",
     "text": "bitstype 64 CartesianFrame3D\n\nA CartesianFrame3D identifies a three-dimensional Cartesian coordinate system.\n\nCartesianFrame3Ds are typically used to annotate the frame in which certain quantities are expressed.\n\n\n\n"
 },
@@ -153,9 +153,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.Transform3D",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.Transform3D",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.Transform3D",
+    "title": "RigidBodyDynamics.Spatial.Transform3D",
     "category": "Type",
     "text": "struct Transform3D{A<:(AbstractArray{T,2} where T)}\n\nA homogeneous transformation matrix representing the transformation from one three-dimensional Cartesian coordinate system to another.\n\n\n\n"
 },
@@ -169,17 +169,17 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.Point3D",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.Point3D",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.Point3D",
+    "title": "RigidBodyDynamics.Spatial.Point3D",
     "category": "Type",
     "text": "struct Point3D{V<:(AbstractArray{T,1} where T)}\n\nA Point3D represents a position in a given coordinate system.\n\nA Point3D is a bound vector. Applying a Transform3D to a Point3D both rotates and translates the Point3D.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.FreeVector3D",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.FreeVector3D",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.FreeVector3D",
+    "title": "RigidBodyDynamics.Spatial.FreeVector3D",
     "category": "Type",
     "text": "struct FreeVector3D{V<:(AbstractArray{T,1} where T)}\n\nA FreeVector3D represents a free vector.\n\nExamples of free vectors include displacements and velocities of points.\n\nApplying a Transform3D to a FreeVector3D only rotates the FreeVector3D.\n\n\n\n"
 },
@@ -193,9 +193,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.SpatialInertia",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.SpatialInertia",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.SpatialInertia",
+    "title": "RigidBodyDynamics.Spatial.SpatialInertia",
     "category": "Type",
     "text": "struct SpatialInertia{T}\n\nA spatial inertia, or inertia matrix, represents the mass distribution of a rigid body.\n\nA spatial inertia expressed in frame i is defined as:\n\nI^i =\nint_Brholeft(xright)leftbeginarraycc\nhatp^Tleft(xright)hatpleft(xright)  hatpleft(xright)\nhatp^Tleft(xright)  I\nendarrayrightdx=leftbeginarraycc\nJ  hatc\nhatc^T  mI\nendarrayright\n\nwhere rho(x) is the density of point x, and p(x) are the coordinates of point x expressed in frame i. J is the mass moment of inertia, m is the total mass, and c is the 'cross part', center of mass position scaled by m.\n\n\n\n"
 },
@@ -209,17 +209,17 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.Twist",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.Twist",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.Twist",
+    "title": "RigidBodyDynamics.Spatial.Twist",
     "category": "Type",
     "text": "struct Twist{T}\n\nA twist represents the relative angular and linear motion between two bodies.\n\nThe twist of frame j with respect to frame i, expressed in frame k is defined as\n\nT_j^ki=left(beginarrayc\nomega_j^ki\nv_j^ki\nendarrayright)inmathbbR^6\n\nsuch that\n\nleftbeginarraycc\nhatomega_j^ki  v_j^ki\n0  0\nendarrayright=H_i^kdotH_j^iH_k^j\n\nwhere H^beta_alpha is the homogeneous transform from frame alpha to frame beta, and hatx is the 3 times 3 skew symmetric matrix that satisfies hatx y = x times y for all y in mathbbR^3.\n\nHere, omega_j^ki is the angular part and v_j^ki is the linear part. Note that the linear part is not in general the same as the linear velocity of the origin of frame j.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.SpatialAcceleration",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.SpatialAcceleration",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.SpatialAcceleration",
+    "title": "RigidBodyDynamics.Spatial.SpatialAcceleration",
     "category": "Type",
     "text": "struct SpatialAcceleration{T}\n\nA spatial acceleration is the time derivative of a twist.\n\nSee Twist.\n\n\n\n"
 },
@@ -233,17 +233,17 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.Momentum",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.Momentum",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.Momentum",
+    "title": "RigidBodyDynamics.Spatial.Momentum",
     "category": "Type",
     "text": "struct Momentum{T}\n\nA Momentum is the product of a SpatialInertia and a Twist, i.e.\n\nh^i =\nleft(beginarrayc\nk^i\nl^i\nendarrayright) =\nI^i T^i j_k\n\nwhere I^i is the spatial inertia of a given body expressed in frame i, and T^i j_k is the twist of frame k (attached to the body) with respect to inertial frame j, expressed in frame i. k^i is the angular momentum and l^i is the linear momentum.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.Wrench",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.Wrench",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.Wrench",
+    "title": "RigidBodyDynamics.Spatial.Wrench",
     "category": "Type",
     "text": "struct Wrench{T}\n\nA wrench represents a system of forces.\n\nThe wrench w^i expressed in frame i is defined as\n\nw^i =\nleft(beginarrayc\ntau^i\nf^i\nendarrayright) =\nsum_jleft(beginarrayc\nr_j^itimes f_j^i\nf_j^i\nendarrayright)\n\nwhere the f_j^i are forces expressed in frame i, exerted at positions r_j^i. tau^i is the total torque and f^i is the total force.\n\n\n\n"
 },
@@ -257,9 +257,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.GeometricJacobian",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.GeometricJacobian",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.GeometricJacobian",
+    "title": "RigidBodyDynamics.Spatial.GeometricJacobian",
     "category": "Type",
     "text": "struct GeometricJacobian{A<:(AbstractArray{T,2} where T)}\n\nA geometric Jacobian (also known as basic, or spatial Jacobian) maps a vector of joint velocities to a twist.\n\n\n\n"
 },
@@ -273,9 +273,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.MomentumMatrix",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.MomentumMatrix",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.MomentumMatrix",
+    "title": "RigidBodyDynamics.Spatial.MomentumMatrix",
     "category": "Type",
     "text": "struct MomentumMatrix{A<:(AbstractArray{T,2} where T)}\n\nA momentum matrix maps a joint velocity vector to momentum.\n\nThis is a slight generalization of the centroidal momentum matrix (Orin, Goswami, \"Centroidal momentum matrix of a humanoid robot: Structure and properties.\") in that the matrix (and hence the corresponding total momentum) need not be expressed in a centroidal frame.\n\n\n\n"
 },
@@ -289,9 +289,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.@framecheck",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.@framecheck",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.@framecheck",
+    "title": "RigidBodyDynamics.Spatial.@framecheck",
     "category": "Macro",
     "text": "@framecheck(f1, f2)\n\n\nCheck that CartesianFrame3Ds f1 and f2 are identical (when bounds checks are enabled).\n\nThrows an ArgumentError if f1 is not identical to f2 when bounds checks are enabled. @framecheck is a no-op when bounds checks are disabled.\n\n\n\n"
 },
@@ -305,111 +305,111 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.SpatialInertia}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.center_of_mass-Tuple{RigidBodyDynamics.Spatial.SpatialInertia}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.center_of_mass",
+    "title": "RigidBodyDynamics.Spatial.center_of_mass",
     "category": "Method",
     "text": "center_of_mass(inertia)\n\n\nReturn the center of mass of the SpatialInertia as a Point3D.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.kinetic_energy-Tuple{RigidBodyDynamics.SpatialInertia,RigidBodyDynamics.Twist}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.kinetic_energy-Tuple{RigidBodyDynamics.Spatial.SpatialInertia,RigidBodyDynamics.Spatial.Twist}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.kinetic_energy",
+    "title": "RigidBodyDynamics.Spatial.kinetic_energy",
     "category": "Method",
     "text": "kinetic_energy(inertia, twist)\n\n\nCompute the kinetic energy of a body with spatial inertia I, which has twist T with respect to an inertial frame.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.newton_euler-Tuple{RigidBodyDynamics.SpatialInertia,RigidBodyDynamics.SpatialAcceleration,RigidBodyDynamics.Twist}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.log_with_time_derivative-Tuple{RigidBodyDynamics.Spatial.Transform3D,RigidBodyDynamics.Spatial.Twist}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.newton_euler",
+    "title": "RigidBodyDynamics.Spatial.log_with_time_derivative",
+    "category": "Method",
+    "text": "log_with_time_derivative(t, twist)\n\n\nCompute exponential coordinates as well as their time derivatives in one shot. This mainly exists because ForwardDiff won't work at the singularity of log. It is also ~50% faster than ForwardDiff in this case.\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.Spatial.newton_euler-Tuple{RigidBodyDynamics.Spatial.SpatialInertia,RigidBodyDynamics.Spatial.SpatialAcceleration,RigidBodyDynamics.Spatial.Twist}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.Spatial.newton_euler",
     "category": "Method",
     "text": "newton_euler(inertia, spatial_accel, twist)\n\n\nApply the Newton-Euler equations to find the external wrench required to make a body with spatial inertia I, which has twist T with respect to an inertial frame, achieve spatial acceleration dotT.\n\nThis wrench is also equal to the rate of change of momentum of the body.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.num_cols-Tuple{RigidBodyDynamics.GeometricJacobian}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.point_velocity-Tuple{RigidBodyDynamics.Spatial.Twist,RigidBodyDynamics.Spatial.Point3D}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.num_cols",
-    "category": "Method",
-    "text": "num_cols(jac)\n\n\nReturn the number of columns of the GeometricJacobian.\n\n\n\n"
-},
-
-{
-    "location": "spatial.html#RigidBodyDynamics.point_velocity-Tuple{RigidBodyDynamics.Twist,RigidBodyDynamics.Point3D}",
-    "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.point_velocity",
+    "title": "RigidBodyDynamics.Spatial.point_velocity",
     "category": "Method",
     "text": "point_velocity(twist, point)\n\n\nGiven a twist T_j^ki of frame j with respect to frame i, expressed in frame k, and the location of a point fixed in frame j, also expressed in frame k, compute the velocity of the point relative to frame i.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.GeometricJacobian,RigidBodyDynamics.Transform3D}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.transform-Tuple{RigidBodyDynamics.Spatial.FreeVector3D,RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.transform",
+    "title": "RigidBodyDynamics.Spatial.transform",
     "category": "Method",
-    "text": "transform(jac, transform)\n\n\nTransform the GeometricJacobian to a different frame.\n\n\n\n"
+    "text": "transform(x, t)\n\n\nReturn x transformed to CartesianFrame3D t.from.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.Momentum,RigidBodyDynamics.Transform3D}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.transform-Tuple{RigidBodyDynamics.Spatial.GeometricJacobian,RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.transform",
+    "title": "RigidBodyDynamics.Spatial.transform",
     "category": "Method",
-    "text": "transform(f, transform)\n\n\nTransform the Momentum to a different frame.\n\n\n\n"
+    "text": "transform(jac, tf)\n\n\nTransform the GeometricJacobian to a different frame.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.SpatialAcceleration,RigidBodyDynamics.Transform3D,RigidBodyDynamics.Twist,RigidBodyDynamics.Twist}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.transform-Tuple{RigidBodyDynamics.Spatial.Momentum,RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.transform",
+    "title": "RigidBodyDynamics.Spatial.transform",
+    "category": "Method",
+    "text": "transform(f, tf)\n\n\nTransform the Momentum to a different frame.\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.Spatial.transform-Tuple{RigidBodyDynamics.Spatial.Point3D,RigidBodyDynamics.Spatial.Transform3D}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.Spatial.transform",
+    "category": "Method",
+    "text": "transform(x, t)\n\n\nReturn x transformed to CartesianFrame3D t.from.\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.Spatial.transform-Tuple{RigidBodyDynamics.Spatial.SpatialAcceleration,RigidBodyDynamics.Spatial.Transform3D,RigidBodyDynamics.Spatial.Twist,RigidBodyDynamics.Spatial.Twist}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.Spatial.transform",
     "category": "Method",
     "text": "transform(accel, old_to_new, twist_of_current_wrt_new, twist_of_body_wrt_base)\n\n\nTransform the SpatialAcceleration to a different frame.\n\nThe transformation rule is obtained by differentiating the transformation rule for twists.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.SpatialInertia,RigidBodyDynamics.Transform3D}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.transform-Tuple{RigidBodyDynamics.Spatial.SpatialInertia,RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.transform",
+    "title": "RigidBodyDynamics.Spatial.transform",
     "category": "Method",
     "text": "transform(inertia, t)\n\n\nTransform the SpatialInertia to a different frame.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.Twist,RigidBodyDynamics.Transform3D}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.transform-Tuple{RigidBodyDynamics.Spatial.Twist,RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.transform",
+    "title": "RigidBodyDynamics.Spatial.transform",
     "category": "Method",
-    "text": "transform(twist, transform)\n\n\nTransform the Twist to a different frame.\n\n\n\n"
+    "text": "transform(twist, tf)\n\n\nTransform the Twist to a different frame.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.Wrench,RigidBodyDynamics.Transform3D}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.transform-Tuple{RigidBodyDynamics.Spatial.Wrench,RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.transform",
+    "title": "RigidBodyDynamics.Spatial.transform",
     "category": "Method",
-    "text": "transform(f, transform)\n\n\nTransform the Wrench to a different frame.\n\n\n\n"
+    "text": "transform(f, tf)\n\n\nTransform the Wrench to a different frame.\n\n\n\n"
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.FreeVector3D,RigidBodyDynamics.Transform3D}",
-    "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.transform",
-    "category": "Method",
-    "text": "transform(x, t)\n\n\nReturn x transformed to CartesianFrame3D t.from.\n\n\n\n"
-},
-
-{
-    "location": "spatial.html#RigidBodyDynamics.transform-Tuple{RigidBodyDynamics.Point3D,RigidBodyDynamics.Transform3D}",
-    "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.transform",
-    "category": "Method",
-    "text": "transform(x, t)\n\n\nReturn x transformed to CartesianFrame3D t.from.\n\n\n\n"
-},
-
-{
-    "location": "spatial.html#Base.LinAlg.dot-Tuple{RigidBodyDynamics.Wrench,RigidBodyDynamics.Twist}",
+    "location": "spatial.html#Base.LinAlg.dot-Tuple{RigidBodyDynamics.Spatial.Wrench,RigidBodyDynamics.Spatial.Twist}",
     "page": "Spatial vector algebra",
     "title": "Base.LinAlg.dot",
     "category": "Method",
@@ -417,7 +417,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#Base.exp-Tuple{RigidBodyDynamics.Twist}",
+    "location": "spatial.html#Base.exp-Tuple{RigidBodyDynamics.Spatial.Twist}",
     "page": "Spatial vector algebra",
     "title": "Base.exp",
     "category": "Method",
@@ -425,7 +425,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#Base.log-Tuple{RigidBodyDynamics.Transform3D}",
+    "location": "spatial.html#Base.log-Tuple{RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Spatial vector algebra",
     "title": "Base.log",
     "category": "Method",
@@ -433,11 +433,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "spatial.html#RigidBodyDynamics.log_with_time_derivative-Tuple{RigidBodyDynamics.Transform3D,RigidBodyDynamics.Twist}",
+    "location": "spatial.html#RigidBodyDynamics.Spatial.colwise-Tuple{Any,AbstractArray{T,1} where T,AbstractArray{T,2} where T}",
     "page": "Spatial vector algebra",
-    "title": "RigidBodyDynamics.log_with_time_derivative",
+    "title": "RigidBodyDynamics.Spatial.colwise",
     "category": "Method",
-    "text": "log_with_time_derivative(t, twist)\n\n\nCompute exponential coordinates as well as their time derivatives in one shot. This mainly exists because ForwardDiff won't work at the singularity of log. It is also ~50% faster than ForwardDiff in this case.\n\n\n\n"
+    "text": "colwise(f, vec, mat) Return a matrix A such that A[:, i] == f(vec, mat[:, i]).\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.Spatial.colwise-Tuple{Any,StaticArrays.StaticArray,StaticArrays.StaticArray{Tuple{N},T,1} where T where N}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.Spatial.colwise",
+    "category": "Method",
+    "text": "colwise(f, mat, vec) Return a matrix A such that A[:, i] == f(mat[:, i], vec).\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.Spatial.colwise-Tuple{Any,StaticArrays.StaticArray{Tuple{N},T,1} where T where N,StaticArrays.StaticArray}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.Spatial.colwise",
+    "category": "Method",
+    "text": "colwise(f, vec, mat) Return a matrix A such that A[:, i] == f(vec, mat[:, i]).\n\n\n\n"
 },
 
 {
@@ -445,7 +461,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "Functions",
     "category": "section",
-    "text": "Modules = [RigidBodyDynamics]\nOrder   = [:function]\nPages   = [\"spatial.jl\", \"frames.jl\"]"
+    "text": "Modules = [RigidBodyDynamics.Spatial]\nOrder   = [:function]"
 },
 
 {
@@ -513,7 +529,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.constraint_wrench_subspace-Tuple{RigidBodyDynamics.Joint,RigidBodyDynamics.Transform3D}",
+    "location": "joints.html#RigidBodyDynamics.constraint_wrench_subspace-Tuple{RigidBodyDynamics.Joint,RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Joints",
     "title": "RigidBodyDynamics.constraint_wrench_subspace",
     "category": "Method",
@@ -553,7 +569,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.joint_torque!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,RigidBodyDynamics.Wrench}",
+    "location": "joints.html#RigidBodyDynamics.joint_torque!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,RigidBodyDynamics.Spatial.Wrench}",
     "page": "Joints",
     "title": "RigidBodyDynamics.joint_torque!",
     "category": "Method",
@@ -785,7 +801,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "rigidbody.html#RigidBodyDynamics.add_frame!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.Transform3D}",
+    "location": "rigidbody.html#RigidBodyDynamics.add_frame!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.add_frame!",
     "category": "Method",
@@ -809,7 +825,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "rigidbody.html#RigidBodyDynamics.fixed_transform-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}",
+    "location": "rigidbody.html#RigidBodyDynamics.fixed_transform-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.Spatial.CartesianFrame3D,RigidBodyDynamics.Spatial.CartesianFrame3D}",
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.fixed_transform",
     "category": "Method",
@@ -825,7 +841,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "rigidbody.html#RigidBodyDynamics.spatial_inertia!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.SpatialInertia}",
+    "location": "rigidbody.html#RigidBodyDynamics.spatial_inertia!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.Spatial.SpatialInertia}",
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.spatial_inertia!",
     "category": "Method",
@@ -841,7 +857,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "rigidbody.html#RigidBodyDynamics.change_default_frame!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}",
+    "location": "rigidbody.html#RigidBodyDynamics.change_default_frame!-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.Spatial.CartesianFrame3D}",
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.change_default_frame!",
     "category": "Method",
@@ -849,7 +865,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "rigidbody.html#RigidBodyDynamics.frame_definition-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}",
+    "location": "rigidbody.html#RigidBodyDynamics.frame_definition-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.Spatial.CartesianFrame3D}",
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.frame_definition",
     "category": "Method",
@@ -865,7 +881,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "rigidbody.html#RigidBodyDynamics.is_fixed_to_body-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.CartesianFrame3D}",
+    "location": "rigidbody.html#RigidBodyDynamics.is_fixed_to_body-Tuple{RigidBodyDynamics.RigidBody,RigidBodyDynamics.Spatial.CartesianFrame3D}",
     "page": "Rigid bodies",
     "title": "RigidBodyDynamics.is_fixed_to_body",
     "category": "Method",
@@ -1041,7 +1057,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.body_fixed_frame_to_body-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}",
+    "location": "mechanism.html#RigidBodyDynamics.body_fixed_frame_to_body-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.Spatial.CartesianFrame3D}",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.body_fixed_frame_to_body",
     "category": "Method",
@@ -1049,7 +1065,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.fixed_transform-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}",
+    "location": "mechanism.html#RigidBodyDynamics.fixed_transform-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.Spatial.CartesianFrame3D,RigidBodyDynamics.Spatial.CartesianFrame3D}",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.fixed_transform",
     "category": "Method",
@@ -1161,7 +1177,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.body_fixed_frame_definition-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.CartesianFrame3D}",
+    "location": "mechanism.html#RigidBodyDynamics.body_fixed_frame_definition-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.Spatial.CartesianFrame3D}",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.body_fixed_frame_definition",
     "category": "Method",
@@ -1361,19 +1377,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.relative_transform-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}",
+    "location": "mechanismstate.html#RigidBodyDynamics.relative_transform-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Spatial.CartesianFrame3D,RigidBodyDynamics.Spatial.CartesianFrame3D}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.relative_transform",
     "category": "Method",
     "text": "relative_transform(state, from, to)\n\n\nReturn the homogeneous transform from from to to.\n\n\n\n"
-},
-
-{
-    "location": "mechanismstate.html#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.CartesianFrame3D,RigidBodyDynamics.CartesianFrame3D}",
-    "page": "MechanismState",
-    "title": "RigidBodyDynamics.relative_twist",
-    "category": "Method",
-    "text": "relative_twist(state, body_frame, base_frame)\n\n\nReturn the twist of body_frame with respect to base_frame, expressed in the Mechanism's root frame.\n\n\n\n"
 },
 
 {
@@ -1382,6 +1390,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.relative_twist",
     "category": "Method",
     "text": "relative_twist(state, body, base)\n\n\nReturn the twist of body with respect to base, expressed in the Mechanism's root frame.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Spatial.CartesianFrame3D,RigidBodyDynamics.Spatial.CartesianFrame3D}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.relative_twist",
+    "category": "Method",
+    "text": "relative_twist(state, body_frame, base_frame)\n\n\nReturn the twist of body_frame with respect to base_frame, expressed in the Mechanism's root frame.\n\n\n\n"
 },
 
 {
@@ -1569,23 +1585,23 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState,Any}",
+    "location": "algorithms.html#RigidBodyDynamics.Spatial.center_of_mass-Tuple{RigidBodyDynamics.MechanismState,Any}",
     "page": "Kinematics/dynamics algorithms",
-    "title": "RigidBodyDynamics.center_of_mass",
+    "title": "RigidBodyDynamics.Spatial.center_of_mass",
     "category": "Method",
     "text": "center_of_mass(state, itr)\n\n\nCompute the center of mass of an iterable subset of a Mechanism's bodies in the given state. Ignores the root body of the mechanism.\n\n\n\n"
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.center_of_mass-Tuple{RigidBodyDynamics.MechanismState}",
+    "location": "algorithms.html#RigidBodyDynamics.Spatial.center_of_mass-Tuple{RigidBodyDynamics.MechanismState}",
     "page": "Kinematics/dynamics algorithms",
-    "title": "RigidBodyDynamics.center_of_mass",
+    "title": "RigidBodyDynamics.Spatial.center_of_mass",
     "category": "Method",
     "text": "center_of_mass(state)\n\n\nCompute the center of mass of the whole Mechanism in the given state.\n\n\n\n"
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{M}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{Tau,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{Tau,1}}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{Tau}, Tuple{T}, Tuple{W}, Tuple{X}} where W where Tau where M where X where T",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{M}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{Tau,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{Tau,1}}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{Tau}, Tuple{T}, Tuple{W}, Tuple{X}} where W where Tau where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Method",
@@ -1593,7 +1609,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{M}, Tuple{Tau}, Tuple{T}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1},AbstractArray{Tau,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1},AbstractArray{Tau,1}}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1}}, Tuple{W}, Tuple{X}} where W where Tau where M where X where T",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{M}, Tuple{Tau}, Tuple{T}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1},AbstractArray{Tau,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1},AbstractArray{Tau,1}}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:DenseArray where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1}}, Tuple{W}, Tuple{X}} where W where Tau where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Method",
@@ -1601,7 +1617,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.SpatialAcceleration{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.SpatialAcceleration{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{M}, Tuple{T}, Tuple{W}, Tuple{X}} where W where M where X where T",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{M}, Tuple{T}, Tuple{W}, Tuple{X}} where W where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias!",
     "category": "Method",
@@ -1609,7 +1625,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias-Union{Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{W}, Tuple{X}} where W where M where X",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias-Union{Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{W}, Tuple{X}} where W where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias",
     "category": "Method",
@@ -1617,7 +1633,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian!-Tuple{RigidBodyDynamics.GeometricJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath,Any}",
+    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian!-Tuple{RigidBodyDynamics.Spatial.GeometricJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath,Any}",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.geometric_jacobian!",
     "category": "Method",
@@ -1625,7 +1641,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian!-Tuple{RigidBodyDynamics.GeometricJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath,RigidBodyDynamics.Transform3D}",
+    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian!-Tuple{RigidBodyDynamics.Spatial.GeometricJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath,RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.geometric_jacobian!",
     "category": "Method",
@@ -1633,7 +1649,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian!-Tuple{RigidBodyDynamics.GeometricJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath}",
+    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian!-Tuple{RigidBodyDynamics.Spatial.GeometricJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath}",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.geometric_jacobian!",
     "category": "Method",
@@ -1649,7 +1665,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.SpatialAcceleration{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.SpatialAcceleration{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1}}, Tuple{M}, Tuple{T}, Tuple{V}, Tuple{W}, Tuple{X}} where W where V where M where X where T",
+    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1}}, Tuple{M}, Tuple{T}, Tuple{V}, Tuple{W}, Tuple{X}} where W where V where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "Method",
@@ -1657,7 +1673,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics-Union{Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Wrench{W}}}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1}}, Tuple{V}, Tuple{W}, Tuple{X}} where W where V where M where X",
+    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics-Union{Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1}}, Tuple{V}, Tuple{W}, Tuple{X}} where W where V where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics",
     "category": "Method",
@@ -1689,7 +1705,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState,Any}",
+    "location": "algorithms.html#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.Spatial.MomentumMatrix,RigidBodyDynamics.MechanismState,Any}",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.momentum_matrix!",
     "category": "Method",
@@ -1697,7 +1713,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Transform3D}",
+    "location": "algorithms.html#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.Spatial.MomentumMatrix,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Spatial.Transform3D}",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.momentum_matrix!",
     "category": "Method",
@@ -1705,7 +1721,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.MomentumMatrix,RigidBodyDynamics.MechanismState}",
+    "location": "algorithms.html#RigidBodyDynamics.momentum_matrix!-Tuple{RigidBodyDynamics.Spatial.MomentumMatrix,RigidBodyDynamics.MechanismState}",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.momentum_matrix!",
     "category": "Method",
