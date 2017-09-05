@@ -139,19 +139,19 @@ end
             T = relative_twist(x, body, base)
             @test isapprox(Twist(J, v), T; atol = 1e-12)
 
-            J1 = GeometricJacobian(J.body, J.base, J.frame, similar(J.angular), similar(J.linear))
+            J1 = GeometricJacobian(J.body, J.base, J.frame, similar(angular(J)), similar(linear(J)))
             geometric_jacobian!(J1, x, p)
             @test isapprox(Twist(J1, v), T; atol = 1e-12)
 
             H = rand(Transform3D, root_frame(mechanism), frame)
-            J2 = GeometricJacobian(J.body, J.base, frame, similar(J.angular), similar(J.linear))
+            J2 = GeometricJacobian(J.body, J.base, frame, similar(angular(J)), similar(linear(J)))
             if num_velocities(p) > 0
                 @test_throws ArgumentError geometric_jacobian!(J, x, p, H)
             end
             geometric_jacobian!(J2, x, p, H)
             @test isapprox(Twist(J2, v), transform(T, H); atol = 1e-12)
 
-            J3 = GeometricJacobian(J.body, J.base, default_frame(body), similar(J.angular), similar(J.linear))
+            J3 = GeometricJacobian(J.body, J.base, default_frame(body), similar(angular(J)), similar(linear(J)))
             geometric_jacobian!(J3, x, p)
             @test isapprox(Twist(J3, v), transform(x, T, default_frame(body)); atol = 1e-12)
         end
@@ -167,7 +167,7 @@ end
             S = motion_subspace_in_world(x, joint)
             tf = joint_transform(joint, qjoint)
             T = transform(constraint_wrench_subspace(joint, tf), transform_to_root(x, body))
-            @test isapprox(T.angular' * S.angular + T.linear' * S.linear, zeros(num_constraints(joint), num_velocities(joint)); atol = 1e-12)
+            @test isapprox(angular(T)' * angular(S) + linear(T)' * linear(S), zeros(num_constraints(joint), num_velocities(joint)); atol = 1e-12)
         end
     end
 
@@ -180,13 +180,13 @@ end
     #         velocity_to_configuration_derivative!(joint, q̇joint, qjoint, vjoint)
     #         qjoint_autodiff = create_autodiff(qjoint, q̇joint)
     #         TAutodiff = constraint_wrench_subspace(joint, qjoint_autodiff)#::RigidBodyDynamics.WrenchSubspace{eltype(qjoint_autodiff)} # TODO
-    #         angular = map(x -> ForwardDiff.partials(x, 1), TAutodiff.angular)
-    #         linear = map(x -> ForwardDiff.partials(x, 1), TAutodiff.linear)
-    #         Ṫ = WrenchMatrix(frame_after(joint), angular, linear)
+    #         ang = map(x -> ForwardDiff.partials(x, 1), angular(TAutodiff))
+    #         lin = map(x -> ForwardDiff.partials(x, 1), linear(TAutodiff))
+    #         Ṫ = WrenchMatrix(frame_after(joint), ang, lin)
     #         joint_twist = transform(x, relative_twist(x, frame_after(joint), frame_before(joint)), frame_after(joint))
     #         bias = fill(NaN, 6 - num_velocities(joint))
     #         constraint_bias!(joint, bias, joint_twist)
-    #         @test isapprox(Ṫ.angular' * joint_twist.angular + Ṫ.linear' * joint_twist.linear, bias; atol = 1e-14)
+    #         @test isapprox(angular(Ṫ)' * angular(joint_twist) + linear(Ṫ)' * linear(joint_twist), bias; atol = 1e-14)
     #     end
     # end
 
@@ -270,19 +270,19 @@ end
         hsum = sum(b -> spatial_inertia(x, b) * twist_wrt_world(x, b), non_root_bodies(mechanism))
         @test isapprox(Momentum(A, v), hsum; atol = 1e-12)
 
-        A1 = MomentumMatrix(A.frame, similar(A.angular), similar(A.linear))
+        A1 = MomentumMatrix(A.frame, similar(angular(A)), similar(linear(A)))
         momentum_matrix!(A1, x)
         @test isapprox(Momentum(A1, v), hsum; atol = 1e-12)
 
         frame = CartesianFrame3D()
-        A2 = MomentumMatrix(frame, similar(A.angular), similar(A.linear))
+        A2 = MomentumMatrix(frame, similar(angular(A)), similar(linear(A)))
         H = rand(Transform3D, root_frame(mechanism), frame)
         @test_throws ArgumentError momentum_matrix!(A, x, H)
         momentum_matrix!(A2, x, H)
         @test isapprox(Momentum(A2, v), transform(hsum, H); atol = 1e-12)
 
         body = rand(collect(bodies(mechanism)))
-        A3 = MomentumMatrix(default_frame(body), similar(A.angular), similar(A.linear))
+        A3 = MomentumMatrix(default_frame(body), similar(angular(A)), similar(linear(A)))
         momentum_matrix!(A3, x)
         @test isapprox(Momentum(A3, v), transform(x, hsum, default_frame(body)); atol = 1e-12)
     end

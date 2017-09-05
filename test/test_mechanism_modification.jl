@@ -11,8 +11,8 @@ function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, join
     @framecheck frame_after(joint) joint_twist.body
     @framecheck frame_after(joint) joint_twist.frame
     joint_type(joint)::QuaternionFloating
-    RigidBodyDynamics.angular_velocity!(v, joint_type(joint), joint_twist.angular)
-    RigidBodyDynamics.linear_velocity!(v, joint_type(joint), joint_twist.linear)
+    RigidBodyDynamics.angular_velocity!(v, joint_type(joint), angular(joint_twist))
+    RigidBodyDynamics.linear_velocity!(v, joint_type(joint), linear(joint_twist))
 end
 
 @testset "mechanism modification" begin
@@ -217,7 +217,7 @@ end
 
             newfloatingjoint_twist = transform(x1, relative_twist(x1, newfloatingbody, world), body_to_joint.from)
             newfloatingjoint_twist = transform(newfloatingjoint_twist, body_to_joint)
-            newfloatingjoint_twist = Twist(body_to_joint.to, joint_to_world.from, newfloatingjoint_twist.frame, newfloatingjoint_twist.angular, newfloatingjoint_twist.linear)
+            newfloatingjoint_twist = Twist(body_to_joint.to, joint_to_world.from, newfloatingjoint_twist.frame, angular(newfloatingjoint_twist), linear(newfloatingjoint_twist))
             floating_joint_twist_to_velocity!(newfloatingjoint, velocity(x2, newfloatingjoint), newfloatingjoint_twist)
 
             # do dynamics and compute spatial accelerations
@@ -242,8 +242,8 @@ end
             for (body1, body2) in bodymap
                 accel1 = relative_acceleration(result1, body1, world)
                 accel2 = relative_acceleration(result2, body2, bodymap[world])
-                @test isapprox(accel1.angular, accel2.angular)
-                @test isapprox(accel1.linear, accel2.linear)
+                @test isapprox(angular.((accel1, accel2))...)
+                @test isapprox(linear.((accel1, accel2))...)
             end
         end # for
     end # reattach

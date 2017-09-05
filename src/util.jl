@@ -18,20 +18,20 @@ for T in (:GeometricJacobian, :MomentumMatrix)
         @framecheck out.frame part.frame
         for col in 1 : size(part, 2)
             outcol = vrange[col]
-            out.angular[1, outcol] = part.angular[1, col]
-            out.angular[2, outcol] = part.angular[2, col]
-            out.angular[3, outcol] = part.angular[3, col]
-            out.linear[1, outcol] = part.linear[1, col]
-            out.linear[2, outcol] = part.linear[2, col]
-            out.linear[3, outcol] = part.linear[3, col]
+            angular(out)[1, outcol] = angular(part)[1, col]
+            angular(out)[2, outcol] = angular(part)[2, col]
+            angular(out)[3, outcol] = angular(part)[3, col]
+            linear(out)[1, outcol] = linear(part)[1, col]
+            linear(out)[2, outcol] = linear(part)[2, col]
+            linear(out)[3, outcol] = linear(part)[3, col]
         end
     end
 end
 
 @inline function zero_cols!(out::GeometricJacobian, vrange::UnitRange)
     for j in vrange # TODO: use higher level abstraction once it's as fast
-        out.angular[1, j] = out.angular[2, j] = out.angular[3, j] = 0;
-        out.linear[1, j] = out.linear[2, j] = out.linear[3, j] = 0;
+        angular(out)[1, j] = angular(out)[2, j] = angular(out)[3, j] = 0;
+        linear(out)[1, j] = linear(out)[2, j] = linear(out)[3, j] = 0;
     end
 end
 

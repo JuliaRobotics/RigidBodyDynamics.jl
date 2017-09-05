@@ -186,8 +186,8 @@ function joint_spatial_acceleration(jt::QuaternionFloating{T}, frame_after::Cart
 end
 
 function joint_torque!(τ::AbstractVector, jt::QuaternionFloating, q::AbstractVector, joint_wrench::Wrench)
-    angular_velocity!(τ, jt, joint_wrench.angular)
-    linear_velocity!(τ, jt, joint_wrench.linear)
+    angular_velocity!(τ, jt, angular(joint_wrench))
+    linear_velocity!(τ, jt, linear(joint_wrench))
     nothing
 end
 
@@ -205,11 +205,11 @@ function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
     twist = joint_twist(jt, frame_after, frame0, q, v) # (q_0 is assumed not to change)
     ξ, ξ̇ = log_with_time_derivative(relative_transform, twist)
 
-    @inbounds copy!(ϕ, 1, ξ.angular, 1, 3)
-    @inbounds copy!(ϕ, 4, ξ.linear, 1, 3)
+    @inbounds copy!(ϕ, 1, angular(ξ), 1, 3)
+    @inbounds copy!(ϕ, 4, linear(ξ), 1, 3)
 
-    @inbounds copy!(ϕ̇, 1, ξ̇.angular, 1, 3)
-    @inbounds copy!(ϕ̇, 4, ξ̇.linear, 1, 3)
+    @inbounds copy!(ϕ̇, 1, angular(ξ̇), 1, 3)
+    @inbounds copy!(ϕ̇, 4, linear(ξ̇), 1, 3)
 
     nothing
 end
@@ -318,7 +318,7 @@ function constraint_wrench_subspace(jt::Prismatic{T}, joint_transform::Transform
 end
 
 function joint_torque!(τ::AbstractVector, jt::Prismatic, q::AbstractVector, joint_wrench::Wrench)
-    @inbounds τ[1] = dot(joint_wrench.linear, jt.axis)
+    @inbounds τ[1] = dot(linear(joint_wrench), jt.axis)
     nothing
 end
 
@@ -388,7 +388,7 @@ function constraint_wrench_subspace(jt::Revolute{T}, joint_transform::Transform3
 end
 
 function joint_torque!(τ::AbstractVector, jt::Revolute, q::AbstractVector, joint_wrench::Wrench)
-    @inbounds τ[1] = dot(joint_wrench.angular, jt.axis)
+    @inbounds τ[1] = dot(angular(joint_wrench), jt.axis)
     nothing
 end
 
@@ -560,9 +560,9 @@ function bias_acceleration(jt::Planar{T}, frame_after::CartesianFrame3D, frame_b
 end
 
 function joint_torque!(τ::AbstractVector, jt::Planar, q::AbstractVector, joint_wrench::Wrench)
-    @inbounds τ[1] = dot(joint_wrench.linear, jt.x_axis)
-    @inbounds τ[2] = dot(joint_wrench.linear, jt.y_axis)
-    @inbounds τ[3] = dot(joint_wrench.angular, jt.rot_axis)
+    @inbounds τ[1] = dot(linear(joint_wrench), jt.x_axis)
+    @inbounds τ[2] = dot(linear(joint_wrench), jt.y_axis)
+    @inbounds τ[3] = dot(angular(joint_wrench), jt.rot_axis)
     nothing
 end
 
@@ -704,7 +704,7 @@ function joint_spatial_acceleration(jt::QuaternionSpherical{T}, frame_after::Car
 end
 
 function joint_torque!(τ::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, joint_wrench::Wrench)
-    τ .= joint_wrench.angular
+    τ .= angular(joint_wrench)
     nothing
 end
 

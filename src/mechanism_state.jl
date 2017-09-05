@@ -416,7 +416,7 @@ end
     update_motion_subspaces_in_world!(state)
     S = state.motion_subspaces_in_world.data[joint]
     N = num_velocities(JT)
-    GeometricJacobian(S.body, S.base, S.frame, SMatrix{3, N, C}(S.angular), SMatrix{3, N, C}(S.linear))
+    GeometricJacobian(S.body, S.base, S.frame, SMatrix{3, N, C}(angular(S)), SMatrix{3, N, C}(linear(S)))
 end
 
 """
@@ -433,7 +433,7 @@ end
     update_constraint_wrench_subspaces!(state)
     T = state.constraint_wrench_subspaces.data[joint]
     N = num_constraints(JT)
-    WrenchMatrix(T.frame, SMatrix{3, N, C}(T.angular), SMatrix{3, N, C}(T.linear))
+    WrenchMatrix(T.frame, SMatrix{3, N, C}(angular(T)), SMatrix{3, N, C}(linear(T)))
 end
 
 Base.@deprecate transform(state::MechanismState, joint::Joint) joint_transform(state, joint) # TODO: undeprecate?
@@ -784,7 +784,7 @@ function relative_twist(state::MechanismState, body::RigidBody, base::RigidBody)
  """
 function relative_twist(state::MechanismState, body_frame::CartesianFrame3D, base_frame::CartesianFrame3D)
     twist = relative_twist(state, body_fixed_frame_to_body(state.mechanism, body_frame), body_fixed_frame_to_body(state.mechanism, base_frame))
-    Twist(body_frame, base_frame, twist.frame, twist.angular, twist.linear)
+    Twist(body_frame, base_frame, twist.frame, angular(twist), linear(twist))
 end
 
 for VectorType in (:Point3D, :FreeVector3D, :Twist, :Momentum, :Wrench)
