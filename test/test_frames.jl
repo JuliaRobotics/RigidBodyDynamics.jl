@@ -1,10 +1,11 @@
 @testset "frames" begin
+    name = RigidBodyDynamics.name
     f1name = "1"
     f1 = CartesianFrame3D(f1name)
     f2 = CartesianFrame3D()
     f3 = CartesianFrame3D()
-    @test RigidBodyDynamics.name(f1) == f1name
-    RigidBodyDynamics.name(f2) # just to make sure it doesn't crash
+    @test name(f1) == f1name
+    name(f2) # just to make sure it doesn't crash
     @test f2 != f3
     @boundscheck begin
         # only throws when bounds checks are enabled:
