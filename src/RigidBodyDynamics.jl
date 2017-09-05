@@ -48,7 +48,6 @@ export
     joint_type,
     add_frame!,
     transform,
-    invtransform,
     newton_euler,
     torque,
     joint_torque!,
@@ -56,7 +55,6 @@ export
     local_coordinates!,
     global_coordinates!,
     root_frame,
-    tree,
     root_body,
     non_root_bodies,
     isroot,
@@ -101,20 +99,16 @@ export
     add_body_fixed_frame!,
     fixed_transform,
     attach!,
-    reattach!, # deprecated
     remove_joint!,
     replace_joint!,
     maximal_coordinates,
     submechanism,
-    remove_fixed_joints!, # deprecated
     remove_fixed_tree_joints!,
     add_environment_primitive!,
     rand_mechanism,
     rand_chain_mechanism,
     rand_tree_mechanism,
     rand_floating_tree_mechanism,
-    configuration_vector, # deprecated
-    velocity_vector, # deprecated
     state_vector, # TODO: Base.convert method to Vector?
     rand_configuration!,
     zero_configuration!,
