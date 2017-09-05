@@ -1,7 +1,7 @@
 module Graphs
 
+using RigidBodyDynamics.CustomCollections: UnsafeFastDict
 import Base.Iterators: flatten
-import RigidBodyDynamics: UnsafeFastDict
 
 export
     DirectedGraph,

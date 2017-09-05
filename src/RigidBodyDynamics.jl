@@ -158,20 +158,23 @@ const noalloc_doc = """This method does its computation in place, performing no 
 
 include("custom_collections.jl")
 include("graphs.jl")
+
+using .CustomCollections # TODO
 include("util.jl")
 include("cache_element.jl")
 
 include("frames.jl")
 include("spatial.jl")
+
 include("contact.jl")
 
 include("joint_types.jl")
 include("joint.jl")
 
-using .Contact
+using .Contact # TODO
 include("rigid_body.jl")
 
-using .Graphs
+using .Graphs # TODO
 include("mechanism.jl")
 include("mechanism_modification.jl")
 include("mechanism_state.jl")

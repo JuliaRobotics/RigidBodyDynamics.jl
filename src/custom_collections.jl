@@ -1,3 +1,17 @@
+module CustomCollections
+
+using TypeSortedCollections
+
+export
+    ConstVector,
+    NullDict,
+    UnsafeVectorView,
+    UnsafeFastDict
+
+export
+    fastview,
+    foreach_with_extra_args
+
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
 # heap-allocated variables. Hopefully this will not be necessary in a future version of Julia.
@@ -157,3 +171,5 @@ end
 @inline Base.keys(d::UnsafeFastDict) = d.keys
 @inline Base.values(d::UnsafeFastDict) = d.values
 @inline Base.setindex!(d::UnsafeFastDict{I, K, V}, value::V, key) where {I, K, V} = (d.values[I(key)] = value)
+
+end # module
