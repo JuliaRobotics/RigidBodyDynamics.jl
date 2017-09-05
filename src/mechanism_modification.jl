@@ -1,5 +1,6 @@
+# TODO: use $(SIGNATURES) again once it isn't broken anymore
 """
-$(SIGNATURES)
+attach!(mechanism, predecessor, successor, joint; joint_pose, successor_pose)
 
 Attach `successor` to `predecessor` using `joint`.
 
@@ -63,8 +64,9 @@ function _copyjoint!(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::GenericJoi
     attach!(dest, destpredecessor, destsuccessor, destjoint; joint_pose = joint_to_predecessor, successor_pose = successor_to_joint)
 end
 
+# TODO: use $(SIGNATURES) again once it isn't broken anymore
 """
-$(SIGNATURES)
+attach!(mechanism, parentbody, childmechanism; child_root_pose)
 
 Attach a copy of `childmechanism` to `mechanism`. Return mappings from the bodies and joints
 of the `childmechanism` to the bodies and joints that were added to `mechanism`.
@@ -137,10 +139,18 @@ function submechanism(mechanism::Mechanism{T}, submechanismroot::RigidBody{T}) w
     ret, bodymap, jointmap
 end
 
+# TODO: use $(SIGNATURES) again once it isn't broken anymore
 """
-$(SIGNATURES)
+rebuild_spanning_tree!(mechanism; flipped_joint_map, next_edge)
 
 Reconstruct the mechanism's spanning tree.
+
+Optionally, the `flipped_joint_map` keyword argument can be used to pass in an associative container
+that will be populated with a mapping from original joints to flipped joints, if the rebuilding process
+required the polarity of some joints to be flipped.
+
+Also optionally, `next_edge` can be used to select which joints should become part of the
+new spanning tree.
 """
 function rebuild_spanning_tree!(mechanism::Mechanism{M},
         flipped_joint_map::Associative = Dict{GenericJoint{M}, GenericJoint{M}}();
@@ -149,8 +159,9 @@ function rebuild_spanning_tree!(mechanism::Mechanism{M},
     canonicalize_frame_definitions!(mechanism)
 end
 
+# TODO: use $(SIGNATURES) again once it isn't broken anymore
 """
-$(SIGNATURES)
+remove_joint!(mechanism, joint; flipped_joint_map, spanning_tree_next_edge)
 
 Remove a joint from the mechanism. Rebuilds the spanning tree if the joint is
 part of the current spanning tree.
@@ -158,6 +169,9 @@ part of the current spanning tree.
 Optionally, the `flipped_joint_map` keyword argument can be used to pass in an associative container
 that will be populated with a mapping from original joints to flipped joints, if removing `joint`
 requires rebuilding the spanning tree of `mechanism` and the polarity of some joints needed to be changed in the process.
+
+Also optionally, `spanning_tree_next_edge` can be used to select which joints should become part of the
+new spanning tree, if rebuilding the spanning tree is required.
 """
 function remove_joint!(mechanism::Mechanism{M}, joint::GenericJoint{M};
         flipped_joint_map::Associative = Dict{GenericJoint{M}, GenericJoint{M}}(),
