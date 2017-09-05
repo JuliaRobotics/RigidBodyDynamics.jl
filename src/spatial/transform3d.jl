@@ -52,7 +52,7 @@ end
 @inline translation(t::Transform3D) = @inbounds return SVector(t.mat[13], t.mat[14], t.mat[15])
 
 function Base.show(io::IO, t::Transform3D)
-    println(io, "Transform3D from \"$(name(t.from))\" to \"$(name(t.to))\":")
+    println(io, "Transform3D from \"$(string(t.from))\" to \"$(string(t.to))\":")
     angle_axis = AngleAxis(rotation(t))
     angle = rotation_angle(angle_axis)
     axis = rotation_axis(angle_axis)

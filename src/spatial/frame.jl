@@ -44,8 +44,8 @@ struct CartesianFrame3D
     end
 end
 
-name(frame::CartesianFrame3D) = get(frame_names, frame.id, "anonymous")
-Base.show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(name(frame))\" (id = $(frame.id))")
+Base.string(frame::CartesianFrame3D) = get(frame_names, frame.id, "anonymous")
+Base.show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(string(frame))\" (id = $(frame.id))")
 
 """
 $(SIGNATURES)
@@ -64,5 +64,5 @@ macro framecheck(f1, f2)
 end
 
 @noinline function framecheck_fail(sym1, sym2, f1, f2)
-    throw(ArgumentError("$(string(sym1)) (\"$(name(f1))\", id = $(f1.id)) ≠ $(string(sym2)) (\"$(name(f2))\", id = $(f2.id))"))
+    throw(ArgumentError("$(string(sym1)) (\"$(string(f1))\", id = $(f1.id)) ≠ $(string(sym2)) (\"$(string(f2))\", id = $(f2.id))"))
 end

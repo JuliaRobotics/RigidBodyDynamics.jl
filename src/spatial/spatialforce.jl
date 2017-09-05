@@ -47,7 +47,7 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
         linear(mat::$ForceSpaceMatrix) = mat.linear
 
         function Base.show(io::IO, m::$ForceSpaceMatrix)
-            print(io, "$($(string(ForceSpaceMatrix))) expressed in \"$(name(m.frame))\":\n$(Array(m))")
+            print(io, "$($(string(ForceSpaceMatrix))) expressed in \"$(string(m.frame))\":\n$(Array(m))")
         end
 
         function transform(mat::$ForceSpaceMatrix, tf::Transform3D)
@@ -138,7 +138,7 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         StaticArrays.similar_type(::Type{$ForceSpaceElement{T1}}, ::Type{T2}) where {T1, T2} = $ForceSpaceElement{T2} # FIXME: lose this
 
         function Base.show(io::IO, f::$ForceSpaceElement)
-            print(io, "$($(string(ForceSpaceElement))) expressed in \"$(name(f.frame))\":\nangular: $(f.angular), linear: $(f.linear)")
+            print(io, "$($(string(ForceSpaceElement))) expressed in \"$(string(f.frame))\":\nangular: $(f.angular), linear: $(f.linear)")
         end
 
         function Base.zero(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) where {T}

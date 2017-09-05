@@ -5,8 +5,6 @@ using StaticArrays
 using Rotations
 using DocStringExtensions
 
-import ..RigidBodyDynamics: name # TODO
-
 # types
 export
     CartesianFrame3D,

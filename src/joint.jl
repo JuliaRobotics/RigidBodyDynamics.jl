@@ -106,7 +106,7 @@ end
 
 typedjoint(joint::Joint) = Joint(joint)
 
-RigidBodyDynamics.Spatial.name(joint::Joint) = joint.name
+Base.string(joint::Joint) = joint.name
 frame_before(joint::Joint) = joint.frame_before
 frame_after(joint::Joint) = joint.frame_after
 joint_type(joint::Joint) = joint.joint_type
@@ -139,14 +139,14 @@ RigidBodyDynamics.Graphs.edge_index(joint::Joint) = joint.id[]
 RigidBodyDynamics.Graphs.edge_index!(joint::Joint, id::Int64) = (joint.id[] = id)
 function RigidBodyDynamics.Graphs.flip_direction(joint::Joint)
     jtype = RigidBodyDynamics.flip_direction(joint_type(joint))
-    Joint(name(joint), frame_after(joint), frame_before(joint), jtype;
+    Joint(string(joint), frame_after(joint), frame_before(joint), jtype;
         position_bounds = joint.position_bounds,
         velocity_bounds = joint.velocity_bounds,
         effort_bounds = joint.effort_bounds)
 end
 
-Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(name(joint))\": $(joint.joint_type)")
-Base.showcompact(io::IO, joint::Joint) = print(io, "$(name(joint))")
+Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(string(joint))\": $(joint.joint_type)")
+Base.showcompact(io::IO, joint::Joint) = print(io, "$(string(joint))")
 
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
 num_velocities(itr) = reduce((val, joint) -> val + num_velocities(joint), 0, itr)

@@ -101,14 +101,14 @@ end
 function parse_root_link(mechanism::Mechanism{T}, xml_link::XMLElement) where {T}
     parent = root_body(mechanism)
     body = parse_body(T, xml_link)
-    joint = Joint("$(name(body))_to_world", Fixed{T}())
+    joint = Joint("$(string(body))_to_world", Fixed{T}())
     joint_to_parent = eye(Transform3DS{T}, frame_before(joint), default_frame(parent))
     attach!(mechanism, parent, body, joint, joint_pose = joint_to_parent)
 end
 
 function parse_joint_and_link(mechanism::Mechanism{T}, xml_parent::XMLElement, xml_child::XMLElement, xml_joint::XMLElement) where {T}
     parentname = attribute(xml_parent, "name")
-    candidate_parents = collect(filter(b -> RigidBodyDynamics.name(b) == parentname, bodies(mechanism)))
+    candidate_parents = collect(filter(b -> string(b) == parentname, bodies(mechanism)))
     length(candidate_parents) == 1 || error("Duplicate name: $(parentname)")
     parent = first(candidate_parents)
     joint = parse_joint(T, xml_joint)

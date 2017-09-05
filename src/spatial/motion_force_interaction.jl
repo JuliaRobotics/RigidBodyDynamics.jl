@@ -57,7 +57,7 @@ Return the center of mass of the `SpatialInertia` as a [`Point3D`](@ref).
 center_of_mass(inertia::SpatialInertia) = Point3D(inertia.frame, inertia.cross_part / inertia.mass)
 
 function Base.show(io::IO, inertia::SpatialInertia)
-    println(io, "SpatialInertia expressed in \"$(name(inertia.frame))\":")
+    println(io, "SpatialInertia expressed in \"$(string(inertia.frame))\":")
     println(io, "mass: $(inertia.mass)")
     println(io, "center of mass: $(center_of_mass(inertia))")
     print(io, "moment of inertia:\n$(inertia.moment)")

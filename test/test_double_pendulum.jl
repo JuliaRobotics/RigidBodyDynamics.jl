@@ -41,9 +41,9 @@
     joint2_to_body1 = Transform3D(joint2.frame_before, default_frame(body1), SVector(0, 0, l1))
     attach!(double_pendulum, body1, body2, joint2, joint_pose = joint2_to_body1)
 
-    @test findbody(double_pendulum, RigidBodyDynamics.name(body1)) == body1
+    @test findbody(double_pendulum, string(body1)) == body1
     @test_throws ErrorException findbody(double_pendulum, "bla")
-    @test findjoint(double_pendulum, RigidBodyDynamics.name(joint2)) == joint2
+    @test findjoint(double_pendulum, string(joint2)) == joint2
     @test_throws ErrorException findjoint(double_pendulum, "bla")
 
     x = MechanismState(double_pendulum)
@@ -90,7 +90,7 @@
     x_urdf = MechanismState(double_pendulum_urdf)
     for (i, j) in enumerate(joints(double_pendulum))
         urdf_joints = collect(joints(double_pendulum_urdf))
-        index = findfirst(joint -> RigidBodyDynamics.name(joint) == RigidBodyDynamics.name(j), urdf_joints)
+        index = findfirst(joint -> string(joint) == string(j), urdf_joints)
         j_urdf = urdf_joints[index]
         set_configuration!(x_urdf, j_urdf, configuration(x, j))
         set_velocity!(x_urdf, j_urdf, velocity(x, j))
@@ -98,8 +98,8 @@
     v̇ = rand(num_velocities(x_urdf))
     τ = inverse_dynamics(x_urdf, v̇)
     urdf_bodies = collect(bodies(double_pendulum_urdf))
-    urdf_upper_link = urdf_bodies[findfirst(b -> RigidBodyDynamics.name(b) == RigidBodyDynamics.name(body1), urdf_bodies)]
-    urdf_lower_link = urdf_bodies[findfirst(b -> RigidBodyDynamics.name(b) == RigidBodyDynamics.name(body2), urdf_bodies)]
+    urdf_upper_link = urdf_bodies[findfirst(b -> string(b) == string(body1), urdf_bodies)]
+    urdf_lower_link = urdf_bodies[findfirst(b -> string(b) == string(body2), urdf_bodies)]
     @test isapprox(T1, kinetic_energy(x_urdf, urdf_upper_link), atol = 1e-12)
     @test isapprox(T2, kinetic_energy(x_urdf, urdf_lower_link), atol = 1e-12)
     @test isapprox(M, mass_matrix(x_urdf), atol = 1e-12)

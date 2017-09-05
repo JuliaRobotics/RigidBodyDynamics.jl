@@ -28,10 +28,10 @@ end
 
 Base.eltype(::Type{RigidBody{T}}) where {T} = T
 Base.eltype(body::RigidBody) = eltype(typeof(body))
-RigidBody(inertia::SpatialInertia) = RigidBody(name(inertia.frame), inertia)
-name(b::RigidBody) = b.name
-Base.show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(name(b))\"")
-Base.showcompact(io::IO, b::RigidBody) = print(io, "$(name(b))")
+RigidBody(inertia::SpatialInertia) = RigidBody(string(inertia.frame), inertia)
+Base.string(b::RigidBody) = b.name
+Base.show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(string(b))\"")
+Base.showcompact(io::IO, b::RigidBody) = print(io, "$(string(b))")
 RigidBodyDynamics.Graphs.vertex_index(b::RigidBody) = b.id
 RigidBodyDynamics.Graphs.vertex_index!(b::RigidBody, id::Int64) = (b.id = id)
 
