@@ -58,7 +58,6 @@ MomentumMatrix
 
 ## Functions
 ```@autodocs
-Modules = [RigidBodyDynamics]
+Modules = [RigidBodyDynamics.Spatial]
 Order   = [:function]
-Pages   = ["spatial.jl", "frames.jl"]
 ```
