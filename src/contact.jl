@@ -1,9 +1,7 @@
 module Contact
 
-using RigidBodyDynamics # TODO: modularize more
+using RigidBodyDynamics.Spatial
 using StaticArrays
-
-import RigidBodyDynamics: VectorSegment
 
 # base types
 export SoftContactModel,
@@ -203,6 +201,9 @@ function dynamics!(ẋ::ViscoelasticCoulombStateDeriv, model::ViscoelasticCoulom
     @framecheck ẋ.deriv.frame x.frame
     ẋ.deriv.v .= (-k .* x.v .- ftangential.v) ./ b
 end
+
+## VectorSegment: type of a view of a vector
+const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # TODO: a bit too specific
 
 const DefaultContactPoint{T} = ContactPoint{T,SoftContactModel{HuntCrossleyModel{T},ViscoelasticCoulombModel{T}}}
 const DefaultSoftContactState{T} = SoftContactState{Void, ViscoelasticCoulombState{VectorSegment{T}}}

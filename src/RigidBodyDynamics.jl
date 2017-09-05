@@ -169,17 +169,15 @@ function center_of_mass end # TODO
 function newton_euler end # TODO
 function kinetic_energy end # TODO
 include("spatial/Spatial.jl")
-using .Spatial # TODO
 
-include("util.jl")
 include("contact.jl")
 
+using .Spatial # TODO
+include("util.jl")
 include("joint_types.jl")
 include("joint.jl")
-
 using .Contact # TODO
 include("rigid_body.jl")
-
 using .Graphs # TODO
 include("mechanism.jl")
 include("mechanism_modification.jl")
