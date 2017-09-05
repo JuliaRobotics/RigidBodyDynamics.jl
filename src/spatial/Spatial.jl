@@ -1,11 +1,11 @@
-module Spatial
+@reexport module Spatial
 
 using Base.Random
 using StaticArrays
 using Rotations
 using DocStringExtensions
 
-import ..RigidBodyDynamics: name, rotation, translation, transform, center_of_mass, newton_euler, kinetic_energy # TODO
+import ..RigidBodyDynamics: name # TODO
 
 # types
 export

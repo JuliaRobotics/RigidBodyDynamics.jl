@@ -9,51 +9,37 @@ using TypeSortedCollections
 using LightXML
 using DocStringExtensions
 using Compat
+using Reexport
 import Base.Iterators: filter, flatten
 
+# mechanism-related types
 export
-    # types
-    CartesianFrame3D,
-    Transform3D,
-    Point3D,
-    FreeVector3D,
-    SpatialInertia,
     RigidBody,
     Joint,
     GenericJoint,
     JointType,
+    Mechanism,
+    MechanismState,
+    DynamicsResult
+
+# specific joint types
+export
     QuaternionFloating,
     Revolute,
     Prismatic,
     Fixed,
     Planar,
-    QuaternionSpherical,
-    Twist,
-    GeometricJacobian,
-    Wrench,
-    WrenchMatrix,
-    Momentum,
-    MomentumMatrix,
-    SpatialAcceleration,
-    Mechanism,
-    MechanismState,
-    DynamicsResult,
-    # functions
-    rotation,
-    translation,
+    QuaternionSpherical
+
+# basic functionality related to mechanism structure
+export
     has_defined_inertia,
+    mass,
     default_frame,
     frame_before,
     frame_after,
     joint_type,
     add_frame!,
-    transform,
-    newton_euler,
-    torque,
-    joint_torque!,
-    point_velocity,
-    local_coordinates!,
-    global_coordinates!,
     root_frame,
     root_body,
     non_root_bodies,
@@ -68,46 +54,68 @@ export
     out_joints,
     joints_to_children,
     joint_to_parent,
-    configuration_derivative,
-    velocity_to_configuration_derivative!,
-    configuration_derivative_to_velocity!,
-    configuration_derivative_to_velocity_adjoint!,
+    num_bodies,
     num_positions,
     num_velocities,
+    num_additional_states,
     num_constraints,
     isfloating,
-    num_additional_states,
-    num_bodies,
-    configuration,
     configuration_range,
-    velocity,
     velocity_range,
-    additional_state,
-    joint_transform,
-    motion_subspace,
-    motion_subspace_in_world,
-    constraint_wrench_subspace,
     has_fixed_subspaces,
-    bias_acceleration,
-    spatial_inertia,
-    spatial_inertia!,
-    add_contact_point!,
-    contact_points,
-    crb_inertia,
-    setdirty!,
+    spatial_inertia!, # TODO: rename to set_spatial_inertia!
     add_body_fixed_frame!,
     fixed_transform,
+    findbody,
+    findjoint,
+    body_fixed_frame_to_body,
+    position_bounds,
+    velocity_bounds,
+    effort_bounds
+
+# mechanism creation and modification
+export
+    rand_mechanism,
+    rand_chain_mechanism,
+    rand_tree_mechanism,
+    rand_floating_tree_mechanism,
     attach!,
     remove_joint!,
     replace_joint!,
     maximal_coordinates,
     submechanism,
     remove_fixed_tree_joints!,
-    add_environment_primitive!,
-    rand_mechanism,
-    rand_chain_mechanism,
-    rand_tree_mechanism,
-    rand_floating_tree_mechanism,
+    parse_urdf
+
+# contact-related functionality
+export # note: contact-related functionality may be changed significantly in the future
+    contact_points,
+    add_contact_point!,
+    add_environment_primitive!
+
+# state-dependent functionality
+export
+    local_coordinates!,
+    global_coordinates!,
+    configuration_derivative,
+    velocity_to_configuration_derivative!,
+    configuration_derivative_to_velocity!,
+    configuration_derivative_to_velocity_adjoint!,
+    configuration,
+    velocity,
+    additional_state,
+    joint_transform,
+    motion_subspace,
+    motion_subspace_in_world, # TODO: remove, just call it motion_subspace
+    constraint_wrench_subspace,
+    bias_acceleration,
+    spatial_inertia,
+    crb_inertia,
+    twist_wrt_world,
+    relative_twist,
+    transform_to_root,
+    relative_transform,
+    setdirty!,
     state_vector, # TODO: Base.convert method to Vector?
     rand_configuration!,
     zero_configuration!,
@@ -116,14 +124,8 @@ export
     set_configuration!,
     set_velocity!,
     set_additional_state!,
-    set!,
-    zero!,
-    add_frame!,
-    twist_wrt_world,
-    relative_twist,
-    transform_to_root,
-    relative_transform,
-    mass,
+    set!, # TODO: remove
+    zero!, # TODO: remove
     center_of_mass,
     geometric_jacobian,
     geometric_jacobian!,
@@ -142,43 +144,27 @@ export
     dynamics_bias!,
     dynamics_bias,
     dynamics!,
-    parse_urdf,
-    simulate,
-    findbody,
-    findjoint,
-    body_fixed_frame_to_body,
-    position_bounds,
-    velocity_bounds,
-    effort_bounds,
-    # macros
-    @framecheck
+    simulate
 
-const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
+function name end # TODO
 
 include("custom_collections.jl")
 include("graphs.jl")
-
-using .CustomCollections # TODO
+include("spatial/Spatial.jl")
+include("contact.jl")
 include("cache_element.jl")
 
-function name end # TODO
-function translation end # TODO
-function rotation end # TODO
-function transform end # TODO
-function center_of_mass end # TODO
-function newton_euler end # TODO
-function kinetic_energy end # TODO
-include("spatial/Spatial.jl")
+using .Spatial # contains additional functions that are reexported
+using .CustomCollections
+using .Contact
+using .Graphs
 
-include("contact.jl")
+import .Spatial: rotation, translation, transform, center_of_mass, newton_euler, kinetic_energy
 
-using .Spatial # TODO
 include("util.jl")
 include("joint_types.jl")
 include("joint.jl")
-using .Contact # TODO
 include("rigid_body.jl")
-using .Graphs # TODO
 include("mechanism.jl")
 include("mechanism_modification.jl")
 include("mechanism_state.jl")

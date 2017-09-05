@@ -1,3 +1,5 @@
+const noalloc_doc = """This method does its computation in place, performing no dynamic memory allocation."""
+
 """
 $(SIGNATURES)
 
