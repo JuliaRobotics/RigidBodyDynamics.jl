@@ -134,7 +134,7 @@ $(SIGNATURES)
 
 Compute the mechanical power associated with a pairing of a wrench and a twist.
 """
-Base.dot(w::Wrench, t::Twist) = begin @framecheck(w.frame, t.frame); dot(w.angular, t.angular) + dot(w.linear, t.linear) end
+Base.dot(w::Wrench, t::Twist) = begin @framecheck(w.frame, t.frame); dot(angular(w), angular(t)) + dot(linear(w), linear(t)) end
 Base.dot(t::Twist, w::Wrench) = dot(w, t)
 
 
@@ -143,28 +143,26 @@ for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :Mom
     # MomentumMatrix * acceleration vector --> Wrench
     # WrenchMatrix * dimensionless multipliers --> Wrench
     @eval function $ForceSpaceElement(mat::$ForceSpaceMatrix, x::AbstractVector)
-        angular = convert(SVector{3}, mat.angular * x)
-        linear = convert(SVector{3}, mat.linear * x)
-        $ForceSpaceElement(mat.frame, angular, linear)
+        $ForceSpaceElement(mat.frame, convert(SVector{3}, angular(mat) * x), convert(SVector{3}, linear(mat) * x))
     end
 end
 
 function Base.:*(inertia::SpatialInertia, twist::Twist)
     @framecheck(inertia.frame, twist.frame)
-    angular, linear = mul_inertia(inertia.moment, inertia.cross_part, inertia.mass, twist.angular, twist.linear)
-    Momentum(inertia.frame, angular, linear)
+    ang, lin = mul_inertia(inertia.moment, inertia.cross_part, inertia.mass, angular(twist), linear(twist))
+    Momentum(inertia.frame, ang, lin)
 end
 
 function Base.:*(inertia::SpatialInertia, jac::GeometricJacobian)
     @framecheck(inertia.frame, jac.frame)
-    Jω = jac.angular
-    Jv = jac.linear
+    Jω = angular(jac)
+    Jv = linear(jac)
     J = inertia.moment
     m = inertia.mass
     c = inertia.cross_part
-    angular = J * Jω + colwise(cross, c, Jv)
-    linear = m * Jv - colwise(cross, c, Jω)
-    MomentumMatrix(inertia.frame, angular, linear)
+    ang = J * Jω + colwise(cross, c, Jv)
+    lin = m * Jv - colwise(cross, c, Jω)
+    MomentumMatrix(inertia.frame, ang, lin)
 end
 
 """
@@ -190,11 +188,11 @@ function newton_euler(inertia::SpatialInertia, spatial_accel::SpatialAcceleratio
     @framecheck(T.base, base)
     @framecheck(T.frame, frame)
 
-    angular, linear = mul_inertia(I.moment, I.cross_part, I.mass, Ṫ.angular, Ṫ.linear)
-    angular_momentum, linear_momentum = mul_inertia(I.moment, I.cross_part, I.mass, T.angular, T.linear)
-    angular += cross(T.angular, angular_momentum) + cross(T.linear, linear_momentum)
-    linear += cross(T.angular, linear_momentum)
-    Wrench(frame, angular, linear)
+    ang, lin = mul_inertia(I.moment, I.cross_part, I.mass, angular(Ṫ), linear(Ṫ))
+    angular_momentum, linear_momentum = mul_inertia(I.moment, I.cross_part, I.mass, angular(T), linear(T))
+    ang += cross(angular(T), angular_momentum) + cross(linear(T), linear_momentum)
+    lin += cross(angular(T), linear_momentum)
+    Wrench(frame, ang, lin)
 end
 
 torque!(τ::AbstractVector, jac::GeometricJacobian, wrench::Wrench) = At_mul_B!(τ, jac, wrench)
@@ -212,12 +210,12 @@ for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAccelera
         @simd for row in eachindex(x)
             @inbounds begin
                 x[row] =
-                mat.angular[1, row] * vec.angular[1] +
-                mat.angular[2, row] * vec.angular[2] +
-                mat.angular[3, row] * vec.angular[3] +
-                mat.linear[1, row] * vec.linear[1] +
-                mat.linear[2, row] * vec.linear[2] +
-                mat.linear[3, row] * vec.linear[3]
+                angular(mat)[1, row] * angular(vec)[1] +
+                angular(mat)[2, row] * angular(vec)[2] +
+                angular(mat)[3, row] * angular(vec)[3] +
+                linear(mat)[1, row] * linear(vec)[1] +
+                linear(mat)[2, row] * linear(vec)[2] +
+                linear(mat)[3, row] * linear(vec)[3]
             end
         end
     end
@@ -234,8 +232,8 @@ twist ``T`` with respect to an inertial frame.
 function kinetic_energy(inertia::SpatialInertia, twist::Twist)
     @framecheck(inertia.frame, twist.frame)
     # TODO: should assert that twist.base is an inertial frame somehow
-    ω = twist.angular
-    v = twist.linear
+    ω = angular(twist)
+    v = linear(twist)
     J = inertia.moment
     c = inertia.cross_part
     m = inertia.mass

@@ -31,6 +31,8 @@ export
     transform,
     rotation,
     translation,
+    angular,
+    linear,
     point_velocity,
     change_base,
     log_with_time_derivative,

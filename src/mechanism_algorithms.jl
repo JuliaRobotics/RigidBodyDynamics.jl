@@ -185,7 +185,7 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
             jrange = velocity_range(state, jointj)
             bodyj = successor(jointj, state.mechanism)
             Sj = motion_subspace_in_world(state, jointj)
-            block = F.angular' * Sj.angular + F.linear' * Sj.linear
+            block = angular(F)' * angular(Sj) + linear(F)' * linear(Sj)
             set_matrix_block!(out.data, irange, jrange, block)
         end
     end
@@ -532,7 +532,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
             vrange = velocity_range(state, treejoint)
             if Graphs.edge_index(treejoint) in path.indices
                 J = motion_subspace_in_world(state, treejoint)
-                part = T.angular' * J.angular + T.linear' * J.linear # TODO: At_mul_B
+                part = angular(T)' * angular(J) + linear(T)' * linear(J) # TODO: At_mul_B
                 direction(treejoint, path) == :up && (part = -part)
                 set_matrix_block!(constraintjacobian, rowrange, vrange, part)
             else

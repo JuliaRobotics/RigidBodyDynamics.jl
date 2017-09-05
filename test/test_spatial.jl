@@ -97,7 +97,7 @@ end
         T0 = log(H)
         Q0 = H * Qi
         Q̇0 = point_velocity(T0, Q0)
-        f = t -> Array((exp(Twist(T0.body, T0.base, T0.frame, t * T0.angular, t * T0.linear)) * Qi).v)
+        f = t -> Array((exp(Twist(T0.body, T0.base, T0.frame, t * angular(T0), t * linear(T0))) * Qi).v)
         Q̇0check = ForwardDiff.derivative(f, 1.)
         @test isapprox(Q̇0.v, Q̇0check)
     end
@@ -112,8 +112,8 @@ end
         point2 = Point3D(f2, zeros(SVector{3}))
         force2 = FreeVector3D(f2, rand(SVector{3}))
         W2 = Wrench(point2, force2)
-        @test isapprox(W2.angular, zeros(SVector{3}))
-        @test isapprox(W2.linear, force2.v)
+        @test isapprox(angular(W2), zeros(SVector{3}))
+        @test isapprox(linear(W2), force2.v)
         @test W2.frame == force2.frame
 
         point1 = H21 * point2
@@ -171,7 +171,7 @@ end
         vec = rand(SpatialAcceleration{Float64}, f2, f3, f1)
         k = fill(NaN, size(mat, 2))
         At_mul_B!(k, mat, vec)
-        @test isapprox(k, mat.angular' * vec.angular + mat.linear' * vec.linear, atol = 1e-14)
+        @test isapprox(k, angular(mat)' * angular(vec) + linear(mat)' * linear(vec), atol = 1e-14)
     end
 
     @testset "momentum matrix" begin
@@ -243,19 +243,15 @@ end
             ξ2, ξ̇ = RigidBodyDynamics.log_with_time_derivative(H, T)
             @test isapprox(ξ, ξ2)
             # autodiff log. Need time derivative of transform in ForwardDiff form, so need to basically v_to_qdot for quaternion floating joint
-
-            ω = SVector(T.angular[1], T.angular[2], T.angular[3])
-            linear = T.linear
-
-            rotdot = rotation(H) * hat(ω)
-            transdot = rotation(H) * linear
+            rotdot = rotation(H) * hat(angular(T))
+            transdot = rotation(H) * linear(T)
 
             trans_autodiff = @SVector [ForwardDiff.Dual(translation(H)[i], transdot[i]) for i in 1 : 3]
             rot_autodiff = RotMatrix(@SMatrix [ForwardDiff.Dual(rotation(H)[i, j], rotdot[i, j]) for i in 1 : 3, j in 1 : 3])
             H_autodiff = Transform3D(H.from, H.to, rot_autodiff, trans_autodiff)
             ξ_autodiff = log(H_autodiff)
-            ξ̇rot_from_autodiff = @SVector [ForwardDiff.partials(ξ_autodiff.angular[i])[1] for i in 1 : 3]
-            ξ̇trans_from_autodiff = @SVector [ForwardDiff.partials(ξ_autodiff.linear[i])[1] for i in 1 : 3]
+            ξ̇rot_from_autodiff = @SVector [ForwardDiff.partials(angular(ξ_autodiff)[i])[1] for i in 1 : 3]
+            ξ̇trans_from_autodiff = @SVector [ForwardDiff.partials(linear(ξ_autodiff)[i])[1] for i in 1 : 3]
             ξ̇_from_autodiff = SpatialAcceleration(ξ.body, ξ.base, ξ.frame, ξ̇rot_from_autodiff, ξ̇trans_from_autodiff)
             @test isapprox(ξ̇, ξ̇_from_autodiff)
         end
