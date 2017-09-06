@@ -432,3 +432,19 @@ Whether the joint is a floating joint, i.e., whether it imposes no constraints
 on the relative motions of its successor and predecessor bodies.
 """
 isfloating(joint::Joint) = isfloating(typeof(joint.joint_type))
+
+"""
+$(SIGNATURES)
+
+Renormalize the configuration vector ``q`` associated with `joint` so that it
+lies on the joint's configuration manifold.
+"""
+function normalize_configuration!(q::AbstractVector, joint::Joint)
+    @boundscheck check_num_positions(joint, q)
+    normalize_configuration!(q, joint.joint_type)
+end
+
+function is_configuration_normalized(joint::Joint, q::AbstractVector{X}; rtol::Real = sqrt(eps(X)), atol::Real = zero(X)) where {X}
+    @boundscheck check_num_positions(joint, q)
+    is_configuration_normalized(joint.joint_type, q, rtol, atol)
+end

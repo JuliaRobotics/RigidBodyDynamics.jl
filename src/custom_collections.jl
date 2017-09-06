@@ -23,7 +23,7 @@ for num_extra_args = 1 : 5
             expr = Expr(:block)
             push!(expr.args, :(Base.@_inline_meta)) # required to achieve zero allocation
             push!(expr.args, :(leading_tsc = A1))
-            push!(expr.args, :(@boundscheck TypeSortedCollections.lengths_match(length(leading_tsc), As...) || TypeSortedCollections.lengths_match_fail()))
+            push!(expr.args, :(@boundscheck TypeSortedCollections.lengths_match(A1, As...) || TypeSortedCollections.lengths_match_fail()))
             for i = 1 : N
                 vali = Val(i)
                 push!(expr.args, quote

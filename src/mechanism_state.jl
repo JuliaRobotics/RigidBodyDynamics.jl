@@ -363,6 +363,28 @@ end
 """
 $(SIGNATURES)
 
+Project the configuration vector ``q`` onto the configuration manifold.
+
+For example:
+* for a part of ``q`` corresponding to a revolute joint, this method is a no-op;
+* for a part of ``q`` corresponding to a spherical joint that uses a unit quaternion
+to parameterize the orientation of its successor with respect to its predecessor,
+`normalize_configuration!` will renormalize the quaternion so that it is indeed
+of unit length.
+
+!!! warning
+    This method does not ensure that the configuration or velocity satisfy joint
+    configuration or velocity limits/bounds.
+"""
+function normalize_configuration!(state::MechanismState)
+    foreach(state.type_sorted_tree_joints, values(state.qs)) do joint, qjoint
+        normalize_configuration!(qjoint, joint)
+    end
+end
+
+"""
+$(SIGNATURES)
+
 Return the range of indices into the joint configuration vector ``q`` corresponding to joint `joint`.
 """
 configuration_range(state::MechanismState, joint::Joint) = first(parentindexes(configuration(state, joint)))

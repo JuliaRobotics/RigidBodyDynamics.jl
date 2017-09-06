@@ -96,6 +96,24 @@ end
         end
     end
 
+    @testset "normalize_configuration!" begin
+        mechanism = rand_tree_mechanism()
+        let x = MechanismState(mechanism) # required to achieve zero allocations
+            configuration(x) .= 1
+            for joint in joints(mechanism)
+                qjoint = configuration(x, joint)
+                requires_normalization = num_positions(joint) != num_velocities(joint) # TODO: not quite the right thing to check for
+                @test requires_normalization != RigidBodyDynamics.is_configuration_normalized(joint, qjoint)
+            end
+            normalize_configuration!(x)
+            for joint in joints(mechanism)
+                @test RigidBodyDynamics.is_configuration_normalized(joint, configuration(x, joint))
+            end
+            allocs = @allocated normalize_configuration!(x)
+            @test allocs == 0
+        end
+    end
+
     @testset "joint_torque! / motion_subspace" begin
         mechanism = rand_tree_mechanism()
         x = MechanismState(mechanism)
