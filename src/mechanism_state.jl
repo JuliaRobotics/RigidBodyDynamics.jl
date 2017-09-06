@@ -360,8 +360,18 @@ function set!(state::MechanismState, x::AbstractVector)
     setdirty!(state)
 end
 
+"""
+$(SIGNATURES)
 
+Return the range of indices into the joint configuration vector ``q`` corresponding to joint `joint`.
+"""
 configuration_range(state::MechanismState, joint::Joint) = first(parentindexes(configuration(state, joint)))
+
+"""
+$(SIGNATURES)
+
+Return the range of indices into the joint velocity vector ``v`` corresponding to joint `joint`.
+"""
 velocity_range(state::MechanismState, joint::Joint) = first(parentindexes(velocity(state, joint)))
 
 
