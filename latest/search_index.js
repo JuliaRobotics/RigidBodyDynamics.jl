@@ -1281,6 +1281,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration_range-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.configuration_range",
+    "category": "Method",
+    "text": "configuration_range(state, joint)\n\n\nReturn the range of indices into the joint configuration vector q corresponding to joint joint.\n\n\n\n"
+},
+
+{
     "location": "mechanismstate.html#RigidBodyDynamics.constraint_wrench_subspace-Union{Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}}}, Tuple{T}} where T",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.constraint_wrench_subspace",
@@ -1486,6 +1494,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.velocity",
     "category": "Method",
     "text": "velocity(state)\n\n\nReturn the velocity vector v.\n\nNote that this function returns a read-write reference to a field in state. The user is responsible for calling setdirty! after modifying this vector to ensure that dependent cache variables are invalidated.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity_range-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.velocity_range",
+    "category": "Method",
+    "text": "velocity_range(state, joint)\n\n\nReturn the range of indices into the joint velocity vector v corresponding to joint joint.\n\n\n\n"
 },
 
 {
