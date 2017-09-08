@@ -40,6 +40,9 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, ::JointType,
     nothing
 end
 
+normalize_configuration!(q::AbstractVector, ::JointType) = nothing
+is_configuration_normalized(::JointType, q::AbstractVector, rtol, atol) = true
+
 
 """
 $(TYPEDEF)
@@ -231,6 +234,11 @@ function global_coordinates!(q::AbstractVector, jt::QuaternionFloating, q0::Abst
     nothing
 end
 
+normalize_configuration!(q::AbstractVector, jt::QuaternionFloating) = rotation!(q, jt, rotation(jt, q, true))
+
+function is_configuration_normalized(jt::QuaternionFloating, q::AbstractVector, rtol, atol)
+    isapprox(quatnorm(rotation(jt, q, false)), one(eltype(q)); rtol = rtol, atol = atol)
+end
 
 
 #=
@@ -724,4 +732,10 @@ function global_coordinates!(q::AbstractVector, jt::QuaternionSpherical, q0::Abs
     quat = quat0 * Quat(RodriguesVec(ϕ[1], ϕ[2], ϕ[3]))
     rotation!(q, jt, quat)
     nothing
+end
+
+normalize_configuration!(q::AbstractVector, jt::QuaternionSpherical) = rotation!(q, jt, rotation(jt, q, true))
+
+function is_configuration_normalized(jt::QuaternionSpherical, q::AbstractVector, rtol, atol)
+    isapprox(quatnorm(rotation(jt, q, false)), one(eltype(q)); rtol = rtol, atol = atol)
 end
