@@ -601,6 +601,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "joints.html#RigidBodyDynamics.normalize_configuration!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.normalize_configuration!",
+    "category": "Method",
+    "text": "normalize_configuration!(q, joint)\n\n\nRenormalize the configuration vector q associated with joint so that it lies on the joint's configuration manifold.\n\n\n\n"
+},
+
+{
     "location": "joints.html#RigidBodyDynamics.num_constraints-Tuple{RigidBodyDynamics.Joint}",
     "page": "Joints",
     "title": "RigidBodyDynamics.num_constraints",
@@ -1342,6 +1350,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.motion_subspace_in_world",
     "category": "Method",
     "text": "motion_subspace_in_world(state, joint)\n\n\nReturn the motion subspace of the given joint expressed in the root frame of the mechanism.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.normalize_configuration!-Tuple{RigidBodyDynamics.MechanismState}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.normalize_configuration!",
+    "category": "Method",
+    "text": "normalize_configuration!(state)\n\n\nProject the configuration vector q onto the configuration manifold.\n\nFor example:\n\nfor a part of q corresponding to a revolute joint, this method is a no-op;\nfor a part of q corresponding to a spherical joint that uses a unit quaternion\n\nto parameterize the orientation of its successor with respect to its predecessor, normalize_configuration! will renormalize the quaternion so that it is indeed of unit length.\n\nwarning: Warning\nThis method does not ensure that the configuration or velocity satisfy joint configuration or velocity limits/bounds.\n\n\n\n"
 },
 
 {
