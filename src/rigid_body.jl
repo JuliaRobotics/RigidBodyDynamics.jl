@@ -10,19 +10,19 @@ a list of definitions of coordinate systems that are rigidly attached to it.
 mutable struct RigidBody{T}
     name::String
     inertia::Nullable{SpatialInertia{T}}
-    frame_definitions::Vector{Transform3DS{T}}
+    frame_definitions::Vector{Transform3D{T}}
     contact_points::Vector{DefaultContactPoint{T}} # TODO: allow different contact models
     id::Int64
 
     # inertia undefined; can be used for the root of a kinematic tree
     function RigidBody{T}(name::String) where {T}
         frame = CartesianFrame3D(name)
-        new{T}(name, Nullable{SpatialInertia{T}}(), [eye(Transform3DS{T}, frame)], DefaultContactPoint{T}[], -1)
+        new{T}(name, Nullable{SpatialInertia{T}}(), [eye(Transform3D{T}, frame)], DefaultContactPoint{T}[], -1)
     end
 
     # other bodies
     function RigidBody(name::String, inertia::SpatialInertia{T}) where {T}
-        new{T}(name, Nullable(inertia), [eye(Transform3DS{T}, inertia.frame)], DefaultContactPoint{T}[], -1)
+        new{T}(name, Nullable(inertia), [eye(Transform3D{T}, inertia.frame)], DefaultContactPoint{T}[], -1)
     end
 end
 

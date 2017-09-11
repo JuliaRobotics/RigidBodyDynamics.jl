@@ -20,10 +20,10 @@ end
         body0 = RigidBody{Float64}("root")
         mechanism = Mechanism(body0)
         joint1 = Joint("joint1", rand(Revolute{Float64}))
-        joint1_pose = rand(RigidBodyDynamics.Transform3DS{Float64}, frame_before(joint1), default_frame(body0))
+        joint1_pose = rand(Transform3D{Float64}, frame_before(joint1), default_frame(body0))
         body1 = RigidBody(rand(SpatialInertia{Float64}, frame_after(joint1)))
         joint2 = Joint("joint2", QuaternionFloating{Float64}())
-        joint2_pose = rand(RigidBodyDynamics.Transform3DS{Float64}, frame_before(joint2), default_frame(body1))
+        joint2_pose = rand(Transform3D{Float64}, frame_before(joint2), default_frame(body1))
         body2 = RigidBody(rand(SpatialInertia{Float64}, CartesianFrame3D("2")))
 
         # can't attach if predecessor is not among bodies of mechanism

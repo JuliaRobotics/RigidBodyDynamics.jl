@@ -115,7 +115,7 @@ function motion_subspace(jt::QuaternionFloating{T}, frame_after::CartesianFrame3
     GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::QuaternionFloating{T}, joint_transform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
+function constraint_wrench_subspace(jt::QuaternionFloating{T}, joint_transform::Transform3D{X}) where {T, X}
     S = promote_type(T, X)
     WrenchMatrix(joint_transform.from, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
@@ -316,7 +316,7 @@ function motion_subspace(jt::Prismatic{T}, frame_after::CartesianFrame3D, frame_
     GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::Prismatic{T}, joint_transform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
+function constraint_wrench_subspace(jt::Prismatic{T}, joint_transform::Transform3D{X}) where {T, X}
     S = promote_type(T, X)
     R = convert(RotMatrix3{S}, jt.rotation_from_z_aligned)
     Rcols12 = R[:, SVector(1, 2)]
@@ -386,7 +386,7 @@ function motion_subspace(jt::Revolute{T}, frame_after::CartesianFrame3D, frame_b
     GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::Revolute{T}, joint_transform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
+function constraint_wrench_subspace(jt::Revolute{T}, joint_transform::Transform3D{X}) where {T, X}
     S = promote_type(T, X)
     R = convert(RotMatrix3{S}, jt.rotation_from_z_aligned)
     Rcols12 = R[:, SVector(1, 2)]
@@ -420,7 +420,7 @@ has_fixed_subspaces(jt::Fixed) = true
 function joint_transform(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
-    eye(Transform3DS{S}, frame_after, frame_before)
+    eye(Transform3D{S}, frame_after, frame_before)
 end
 
 function joint_twist(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
@@ -441,7 +441,7 @@ function motion_subspace(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_befo
     GeometricJacobian(frame_after, frame_before, frame_after, zeros(SMatrix{3, 0, S}), zeros(SMatrix{3, 0, S}))
 end
 
-function constraint_wrench_subspace(jt::Fixed{T}, joint_transform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
+function constraint_wrench_subspace(jt::Fixed{T}, joint_transform::Transform3D{X}) where {T, X}
     S = promote_type(T, X)
     angular = hcat(eye(SMatrix{3, 3, S}), zeros(SMatrix{3, 3, S}))
     linear = hcat(zeros(SMatrix{3, 3, S}), eye(SMatrix{3, 3, S}))
@@ -555,7 +555,7 @@ function motion_subspace(jt::Planar{T}, frame_after::CartesianFrame3D, frame_bef
     GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::Planar{T}, joint_transform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
+function constraint_wrench_subspace(jt::Planar{T}, joint_transform::Transform3D{X}) where {T, X}
     S = promote_type(T, X)
     angular = hcat(zeros(SVector{3, S}), jt.x_axis, jt.y_axis)
     linear = hcat(jt.rot_axis, zeros(SMatrix{3, 2, S}))
@@ -650,7 +650,7 @@ function motion_subspace(jt::QuaternionSpherical{T}, frame_after::CartesianFrame
     GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
 end
 
-function constraint_wrench_subspace(jt::QuaternionSpherical{T}, joint_transform::Transform3D{<:AbstractMatrix{X}}) where {T, X}
+function constraint_wrench_subspace(jt::QuaternionSpherical{T}, joint_transform::Transform3D{X}) where {T, X}
     S = promote_type(T, X)
     angular = zeros(SMatrix{3, 3, S})
     linear = eye(SMatrix{3, 3, S})
