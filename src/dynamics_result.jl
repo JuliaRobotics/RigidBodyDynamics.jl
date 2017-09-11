@@ -48,11 +48,11 @@ mutable struct DynamicsResult{T, M}
         ṡ = Vector{T}(num_additional_states(mechanism))
 
         rootframe = root_frame(mechanism)
-        contactwrenches = BodyDict{M}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-        totalwrenches = BodyDict{M}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-        accelerations = BodyDict{M}(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
-        jointwrenches = BodyDict{M}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-        contact_state_derivs = BodyDict{M}(b => Vector{Vector{DefaultSoftContactStateDeriv{T}}}() for b in bodies(mechanism))
+        contactwrenches = BodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+        totalwrenches = BodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+        accelerations = BodyDict{M, SpatialAcceleration{T}}(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+        jointwrenches = BodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+        contact_state_derivs = BodyDict{M, Vector{Vector{DefaultSoftContactStateDeriv{T}}}}(b => Vector{Vector{DefaultSoftContactStateDeriv{T}}}() for b in bodies(mechanism))
         startind = 1
         for body in bodies(mechanism), point in contact_points(body)
             model = contact_model(point)
