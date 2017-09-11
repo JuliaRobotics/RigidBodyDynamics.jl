@@ -574,4 +574,13 @@ end
         @test @inferred(clamp(0, RigidBodyDynamics.Bounds(-1, 1))) == 0
         @test @inferred(intersect(RigidBodyDynamics.Bounds(-1, 1), RigidBodyDynamics.Bounds(-0.5, 2.0))) == RigidBodyDynamics.Bounds(-0.5, 1.0)
     end
+
+    @testset "issue #330" begin
+        mechanism = rand_tree_mechanism(Revolute{Float64})
+        f330(x::AbstractArray{T}) where {T} = begin
+            result = DynamicsResult{T}(mechanism)
+            1.
+        end
+        @test ForwardDiff.hessian(f330, [1.]) == 0 * eye(1)
+    end
 end
