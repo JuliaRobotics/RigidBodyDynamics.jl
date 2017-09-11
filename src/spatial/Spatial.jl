@@ -22,7 +22,6 @@ export
 
 # aliases
 export
-    Transform3DS, # TODO: remove
     MotionSubspace, # TODO: remove
     WrenchSubspace # TODO: remove
 

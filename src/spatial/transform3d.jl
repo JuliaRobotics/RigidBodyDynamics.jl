@@ -4,19 +4,17 @@ $(TYPEDEF)
 A homogeneous transformation matrix representing the transformation from one
 three-dimensional Cartesian coordinate system to another.
 """
-struct Transform3D{A<:AbstractMatrix}
-    mat::A
+struct Transform3D{T}
+    mat::SMatrix{4, 4, T, 16}
     from::CartesianFrame3D
     to::CartesianFrame3D
 
-    @inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, mat::A) where {A}
-        @boundscheck size(mat) == (4, 4) || throw(DimensionMismatch())
-        new{A}(mat, from, to)
+    @inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, mat::AbstractMatrix{T}) where T
+        new{T}(mat, from, to)
     end
 end
 
-Base.eltype(::Type{Transform3D{A}}) where {A} = eltype(A)
-const Transform3DS{T} = Transform3D{SMatrix{4, 4, T, 16}}
+Base.eltype(::Type{Transform3D{T}}) where {T} = T
 
 @inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3}, trans::SVector{3})
     T = promote_type(eltype(typeof(rot)), eltype(typeof(trans)))
@@ -45,8 +43,8 @@ end
     Transform3D(from, to, mat)
 end
 
-@inline Base.convert(::Type{Transform3D{A}}, t::Transform3D{A}) where {A} = t
-@inline Base.convert(::Type{Transform3D{A}}, t::Transform3D) where{A} = Transform3D(t.from, t.to, convert(A, t.mat))
+@inline Base.convert(::Type{Transform3D{T}}, t::Transform3D{T}) where {T} = t
+@inline Base.convert(::Type{Transform3D{T}}, t::Transform3D) where {T} = Transform3D(t.from, t.to, similar_type(t.mat, T)(t.mat))
 
 @inline rotation(t::Transform3D) = @inbounds return RotMatrix(t.mat[1], t.mat[2], t.mat[3], t.mat[5], t.mat[6], t.mat[7], t.mat[9], t.mat[10], t.mat[11])
 @inline translation(t::Transform3D) = @inbounds return SVector(t.mat[13], t.mat[14], t.mat[15])
@@ -70,24 +68,17 @@ end
     Transform3D(t.to, t.from, rotinv, -(rotinv * translation(t)))
 end
 
-@inline function Base.eye(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D) where {A<:StaticArray}
-    Transform3D(from, to, eye(A))
-end
-@inline function Base.eye(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D) where {A<:AbstractMatrix}
-    T = eltype(A)
-    convert(Transform3D{A}, eye(Transform3DS{T}, from, to))
-end
-@inline Base.eye(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = eye(Transform3DS{Float64}, from, to)
+@inline Base.eye(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) where {T} = Transform3D(from, to, eye(SMatrix{4, 4, T}))
+@inline Base.eye(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = eye(Transform3D{Float64}, from, to)
 @inline Base.eye(::Type{T}, frame::CartesianFrame3D) where {T<:Transform3D} = eye(T, frame, frame)
 
-function Random.rand(::Type{Transform3D{A}}, from::CartesianFrame3D, to::CartesianFrame3D) where {A}
-    T = eltype(A)
+function Random.rand(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) where T
     rot = rand(RotMatrix3{T})
     trans = rand(SVector{3, T})
-    convert(Transform3D{A}, Transform3D(from, to, rot, trans))
+    Transform3D(from, to, rot, trans)
 end
 
-Random.rand(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = rand(Transform3DS{Float64}, from, to)
+Random.rand(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = rand(Transform3D{Float64}, from, to)
 
 function Base.isapprox(x::Transform3D, y::Transform3D; atol::Real = 1e-12)
     x.from == y.from && x.to == y.to && isapprox(rotation(x), rotation(y), atol = atol) && isapprox(translation(x), translation(y), atol = atol)

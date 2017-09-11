@@ -28,15 +28,15 @@ struct MechanismState{X, M, C, JointCollection}
     # joint-specific
     qs::JointDict{M, VectorSegment{X}}
     vs::JointDict{M, VectorSegment{X}}
-    joint_poses::JointDict{M, Transform3DS{M}} # TODO: remove, just use data in Joints
-    joint_transforms::CacheElement{JointDict{M, Transform3DS{C}}}
+    joint_poses::JointDict{M, Transform3D{M}} # TODO: remove, just use data in Joints
+    joint_transforms::CacheElement{JointDict{M, Transform3D{C}}}
     joint_twists::CacheElement{JointDict{M, Twist{C}}}
     joint_bias_accelerations::CacheElement{JointDict{M, SpatialAcceleration{C}}}
     motion_subspaces_in_world::CacheElement{JointDict{M, MotionSubspace{C}}}
     constraint_wrench_subspaces::CacheElement{JointDict{M, WrenchSubspace{C}}}
 
     # body-specific
-    transforms_to_root::CacheElement{BodyDict{M, Transform3DS{C}}}
+    transforms_to_root::CacheElement{BodyDict{M, Transform3D{C}}}
     twists_wrt_world::CacheElement{BodyDict{M, Twist{C}}}
     bias_accelerations_wrt_world::CacheElement{BodyDict{M, SpatialAcceleration{C}}}
     inertias::CacheElement{BodyDict{M, SpatialInertia{C}}}
@@ -61,15 +61,15 @@ struct MechanismState{X, M, C, JointCollection}
         qstart, vstart = 1, 1
         qs = JointDict{M, VectorSegment{X}}(j => view(q, qstart : (qstart += num_positions(j)) - 1) for j in tree_joints(mechanism))
         vs = JointDict{M, VectorSegment{X}}(j => view(v, vstart : (vstart += num_velocities(j)) - 1) for j in tree_joints(mechanism))
-        joint_poses = JointDict{M, Transform3DS{M}}(j => body_fixed_frame_definition(mechanism, frame_before(j)) for j in joints(mechanism))
-        joint_transforms = CacheElement(JointDict{M, Transform3DS{C}}(joints(mechanism)))
+        joint_poses = JointDict{M, Transform3D{M}}(j => body_fixed_frame_definition(mechanism, frame_before(j)) for j in joints(mechanism))
+        joint_transforms = CacheElement(JointDict{M, Transform3D{C}}(joints(mechanism)))
         joint_twists = CacheElement(JointDict{M, Twist{C}}(tree_joints(mechanism)))
         joint_bias_accelerations = CacheElement(JointDict{M, SpatialAcceleration{C}}(tree_joints(mechanism)))
         motion_subspaces_in_world = CacheElement(JointDict{M, MotionSubspace{C}}(tree_joints(mechanism)))
         constraint_wrench_subspaces = CacheElement(JointDict{M, WrenchSubspace{C}}(non_tree_joints(mechanism)))
 
         # body-specific
-        transforms_to_root = CacheElement(BodyDict{M, Transform3DS{C}}(bodies(mechanism)))
+        transforms_to_root = CacheElement(BodyDict{M, Transform3D{C}}(bodies(mechanism)))
         twists_wrt_world = CacheElement(BodyDict{M, Twist{C}}(bodies(mechanism)))
         bias_accelerations_wrt_world = CacheElement(BodyDict{M, SpatialAcceleration{C}}(bodies(mechanism)))
         inertias = CacheElement(BodyDict{M, SpatialInertia{C}}(bodies(mechanism)))
@@ -541,7 +541,7 @@ end
     map!(joint_transform, tree_joint_transforms, state.type_sorted_tree_joints, values(state.qs))
 
     # update transforms to root
-    transforms_to_root[root_body(mechanism)] = eye(Transform3DS{cache_eltype(state)}, root_frame(mechanism))
+    transforms_to_root[root_body(mechanism)] = eye(Transform3D{cache_eltype(state)}, root_frame(mechanism))
     for joint in tree_joints(mechanism)
         parentbody = predecessor(joint, mechanism)
         body = successor(joint, mechanism)
