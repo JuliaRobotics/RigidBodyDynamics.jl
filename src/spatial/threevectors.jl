@@ -3,21 +3,19 @@
 for VectorType in (:FreeVector3D, :Point3D)
     @eval begin
         # TODO: consider storing as a homogeneous vector
-        struct $VectorType{V<:AbstractVector}
-            v::V
+        struct $VectorType{T}
+            v::SVector{3, T}
             frame::CartesianFrame3D
 
-            @inline function $VectorType(frame::CartesianFrame3D, v::V) where {V}
-                @boundscheck length(v) == 3 || throw(DimensionMismatch())
-                new{V}(v, frame)
-            end
+            @inline $VectorType(frame::CartesianFrame3D, v::AbstractVector{T}) where {T} = new{T}(v, frame)
+            @inline $VectorType{T}(frame::CartesianFrame3D) where {T} = $VectorType(frame, zeros(SVector{3, T}))
         end
 
-        $VectorType(::Type{T}, frame::CartesianFrame3D) where {T} = $VectorType(frame, zeros(SVector{3, T}))
         $VectorType(frame::CartesianFrame3D, x::Number, y::Number, z::Number) = $VectorType(frame, SVector(x, y, z))
+        $VectorType(frame::CartesianFrame3D) = $VectorType{Float64}(frame)
 
-        Base.convert(::Type{$VectorType{V}}, p::$VectorType{V}) where {V} = p
-        Base.convert(::Type{$VectorType{V}}, p::$VectorType) where {V} = $VectorType(p.frame, convert(V, p.v))
+        Base.convert(::Type{$VectorType{T}}, p::$VectorType{T}) where {T} = p
+        Base.convert(::Type{$VectorType{T}}, p::$VectorType) where {T} = $VectorType(p.frame, similar_type(p.v, T)(p.v))
 
         Base.zero(p::$VectorType) = $VectorType(p.frame, zero(p.v))
 
@@ -26,7 +24,9 @@ for VectorType in (:FreeVector3D, :Point3D)
         Base.:*(s::Number, p::$VectorType) = $VectorType(p.frame, s * p.v)
         Base.:-(p::$VectorType) = $VectorType(p.frame, -p.v)
 
-        Random.rand(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) where {T} = $VectorType(frame, rand(SVector{3, T}))
+        Random.rand(::Type{$VectorType{T}}, frame::CartesianFrame3D) where {T} = $VectorType(frame, rand(SVector{3, T}))
+        Random.rand(::Type{$VectorType}, frame::CartesianFrame3D) = rand($VectorType{Float64}, frame)
+
         Base.show(io::IO, p::$VectorType) = print(io, "$($(string(VectorType))) in \"$(string(p.frame))\": $(p.v)")
         Base.isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
 
@@ -37,8 +37,7 @@ for VectorType in (:FreeVector3D, :Point3D)
         """
         transform(x::$VectorType, t::Transform3D) = t * x
 
-        Base.eltype(::Type{$VectorType{V}}) where {V} = eltype(V)
-        StaticArrays.similar_type(x::Type{$VectorType{V}}, ::Type{T}) where {V, T} = $VectorType{SVector{3, T}}
+        Base.eltype(::Type{$VectorType{T}}) where {T} = T
     end
 end
 

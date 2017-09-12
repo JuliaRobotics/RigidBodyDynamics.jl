@@ -6,7 +6,7 @@
         halfspace = HalfSpace3D(point, normal)
 
         for i = 1 : 100
-            x = Point3D(frame, randn(), randn(), randn())
+            x = rand(Point3D, frame)
             @test point_inside(halfspace, x) == (x.v[3] <= point.v[3])
             ϕ, normal = detect_contact(halfspace, x)
             @test ϕ == separation(halfspace, x)

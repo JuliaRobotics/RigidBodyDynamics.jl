@@ -17,16 +17,16 @@
     @test isapprox(t1 * inv(t1), eye(Transform3D, f1))
     @test isapprox(inv(t1) * t1, eye(Transform3D, f2))
 
-    @test isapprox(t1 * Point3D(Float64, f2), Point3D(f1, translation(t1)))
+    @test isapprox(t1 * Point3D{Float64}(f2), Point3D(f1, translation(t1)))
 
-    p = rand(Point3D, Float64, f2)
-    v = FreeVector3D(f2, p.v)
+    p = rand(Point3D{Float64}, f2)
+    v = FreeVector3D(p)
     @test isapprox(inv(t1) * (t1 * p), p)
     @test isapprox(inv(t1) * (t1 * v), v)
     @test isapprox(t1 * p - t1 * v, Point3D(f1, translation(t1)))
 
-    @test_throws DimensionMismatch Point3D(f2, rand(2))
-    @test_throws DimensionMismatch Point3D(f2, rand(4))
+    @test_throws ErrorException Point3D(f2, rand(2))
+    @test_throws ErrorException Point3D(f2, rand(4))
 
     @test isapprox(transform(p, t1), t1 * p)
     @test isapprox(t1 \ (t1 * p), p)

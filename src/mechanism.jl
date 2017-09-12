@@ -9,7 +9,7 @@ mutable struct Mechanism{T}
     graph::DirectedGraph{RigidBody{T}, GenericJoint{T}}
     tree::SpanningTree{RigidBody{T}, GenericJoint{T}}
     environment::ContactEnvironment{T}
-    gravitational_acceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
+    gravitational_acceleration::FreeVector3D{T} # TODO: consider removing
 
     """
     $(SIGNATURES)

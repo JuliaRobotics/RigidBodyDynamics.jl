@@ -92,7 +92,7 @@ end
         # 2.17 in Duindam:
         f0 = CartesianFrame3D("0")
         fi = CartesianFrame3D("i")
-        Qi = Point3D(fi, rand(SVector{3}))
+        Qi = rand(Point3D, fi)
         H = rand(Transform3D, fi, f0)
         T0 = log(H)
         Q0 = H * Qi
@@ -109,7 +109,7 @@ end
         @test_throws ArgumentError transform(W, inv(H21)) # wrong frame
         @test W + zero(W) == W
 
-        point2 = Point3D(f2, zeros(SVector{3}))
+        point2 = Point3D(f2)
         force2 = FreeVector3D(f2, rand(SVector{3}))
         W2 = Wrench(point2, force2)
         @test isapprox(angular(W2), zeros(SVector{3}))

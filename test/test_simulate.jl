@@ -47,7 +47,7 @@
         contactpoint = ContactPoint(com, model)
         add_contact_point!(body, contactpoint)
 
-        point = Point3D(root_frame(mechanism), zeros(SVector{3}))
+        point = Point3D(root_frame(mechanism))
         normal = FreeVector3D(root_frame(mechanism), 0., 0., 1.)
         halfspace = HalfSpace3D(point, normal)
         add_environment_primitive!(mechanism, halfspace)
@@ -97,14 +97,14 @@
         body = RigidBody("body", SpatialInertia(CartesianFrame3D("inertia"), eye(SMatrix{3, 3}), zeros(SVector{3}), 2.))
         attach!(mechanism, world, body, floatingjoint)
         worldframe = root_frame(mechanism)
-        inclinedplane = HalfSpace3D(Point3D(worldframe, zeros(SVector{3})), FreeVector3D(worldframe, sin(θ), 0., cos(θ)))
+        inclinedplane = HalfSpace3D(Point3D(worldframe), FreeVector3D(worldframe, sin(θ), 0., cos(θ)))
         add_environment_primitive!(mechanism, inclinedplane)
         irrelevantplane = HalfSpace3D(Point3D(worldframe, 0., 0., -100.), FreeVector3D(worldframe, 0., 0., 1.)) # #211
         add_environment_primitive!(mechanism, irrelevantplane)
 
         # simulate inclined plane friction experiments
         normalmodel = hunt_crossley_hertz(k = 50e3; α = 1.)
-        contactlocation = Point3D(default_frame(body), 0., 0., 0.)
+        contactlocation = Point3D(default_frame(body))
         for μ in (μcrit + 1e-2, μcrit - 1e-2)
             frictionmodel = ViscoelasticCoulombModel(μ, 50e3, 1e4)
             m, b = deepcopy((mechanism, body))
