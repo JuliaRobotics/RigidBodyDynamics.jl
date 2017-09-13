@@ -308,4 +308,19 @@ end
         @test isapprox(dynamics_result_float64.v̇, dynamics_result_dual.v̇; atol = 1e-3)
         @test isapprox(dynamics_result_float64.λ, dynamics_result_dual.λ; atol = 1e-3)
     end
+
+    @testset "modcount" begin
+        mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
+        state = MechanismState(mechanism)
+        attach!(mechanism, root_body(mechanism), RigidBody(rand(SpatialInertia{Float64}, CartesianFrame3D())), Joint("bla", QuaternionFloating{Float64}()))
+        @test_throws RigidBodyDynamics.ModificationCountMismatch mass_matrix(state)
+        state2 = MechanismState(mechanism)
+        mass_matrix(state2) # make sure this doesn't throw
+        @test_throws RigidBodyDynamics.ModificationCountMismatch mass_matrix(state) # make sure this still throws
+        try
+            mass_matrix(state)
+        catch e
+            showerror(DevNull, e)
+        end
+    end
 end # mechanism modification

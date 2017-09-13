@@ -63,3 +63,25 @@ end
 const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # TODO: a bit too specific
 
 quatnorm(quat::Quat) = sqrt(quat.w^2 + quat.x^2 + quat.y^2 + quat.z^2)
+
+
+## Modification count stuff
+function modcount end
+
+struct ModificationCountMismatch <: Exception
+    msg::String
+end
+Base.showerror(io::IO, ex::ModificationCountMismatch) = print(io, "ModificationCountMismatch: $(ex.msg)")
+
+macro modcountcheck(a, b)
+    quote
+        modcount($(esc(a))) == modcount($(esc(b))) || modcount_check_fail($(QuoteNode(a)), $(QuoteNode(b)), $(esc(a)), $(esc(b)))
+    end
+end
+
+@noinline function modcount_check_fail(asym, bsym, a, b)
+    amod = modcount(a)
+    bmod = modcount(b)
+    msg = "Modification count of '$(string(asym))' ($amod) does not match modification count of '$(string(bsym))' ($bmod)."
+    throw(ModificationCountMismatch(msg))
+end

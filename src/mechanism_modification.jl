@@ -39,6 +39,7 @@ function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, successor::
         add_edge!(mechanism.tree, predecessor, successor, joint)
         canonicalize_frame_definitions!(mechanism, successor)
     end
+    register_modification!(mechanism)
     mechanism
 end
 
@@ -156,6 +157,7 @@ function rebuild_spanning_tree!(mechanism::Mechanism{M},
         flipped_joint_map::Associative = Dict{GenericJoint{M}, GenericJoint{M}}();
         next_edge = first #= breadth first =#) where {M}
     mechanism.tree = SpanningTree(mechanism.graph, root_body(mechanism), flipped_joint_map; next_edge = next_edge)
+    register_modification!(mechanism)
     canonicalize_frame_definitions!(mechanism)
 end
 
@@ -178,6 +180,7 @@ function remove_joint!(mechanism::Mechanism{M}, joint::GenericJoint{M};
         spanning_tree_next_edge = first #= breadth first =#) where {M}
     istreejoint = joint ∈ tree_joints(mechanism)
     remove_edge!(mechanism.graph, joint)
+    register_modification!(mechanism)
     istreejoint && rebuild_spanning_tree!(mechanism, flipped_joint_map; next_edge = spanning_tree_next_edge)
 end
 
@@ -189,6 +192,7 @@ function replace_joint!(mechanism::Mechanism, oldjoint::Joint, newjoint::Joint)
     else
         replace_edge!(mechanism.graph, oldjoint, newjoint)
     end
+    register_modification!(mechanism)
     nothing
 end
 
@@ -247,6 +251,8 @@ function remove_fixed_tree_joints!(mechanism::Mechanism)
 
     # Recanonicalize frames
     canonicalize_frame_definitions!(mechanism)
+
+    register_modification!(mechanism)
 
     fixedjoints
 end
