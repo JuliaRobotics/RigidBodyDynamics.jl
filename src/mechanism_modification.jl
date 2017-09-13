@@ -20,8 +20,8 @@ If `successor` is not yet a part of the `Mechanism`, it will be added to the
 using Lagrange multipliers (as opposed to using recursive algorithms).
 """
 function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, successor::RigidBody{T}, joint::GenericJoint{T};
-        joint_pose::Transform3D = eye(Transform3DS{T}, frame_before(joint), default_frame(predecessor)),
-        successor_pose::Transform3D = eye(Transform3DS{T}, default_frame(successor), frame_after(joint))) where {T}
+        joint_pose::Transform3D = eye(Transform3D{T}, frame_before(joint), default_frame(predecessor)),
+        successor_pose::Transform3D = eye(Transform3D{T}, default_frame(successor), frame_after(joint))) where {T}
     @assert joint_pose.from == frame_before(joint)
     @assert successor_pose.to == frame_after(joint)
     @assert predecessor ∈ bodies(mechanism)
@@ -45,7 +45,7 @@ end
 Base.@deprecate(
         attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::GenericJoint{T},
             joint_to_predecessor::Transform3D, successor::RigidBody{T},
-            successor_to_joint::Transform3D = eye(Transform3DS{T}, default_frame(successor), frame_after(joint))) where {T},
+            successor_to_joint::Transform3D = eye(Transform3D{T}, default_frame(successor), frame_after(joint))) where {T},
         attach!(mechanism, predecessor, successor, joint;
             joint_pose = joint_to_predecessor, successor_pose = successor_to_joint))
 
@@ -77,7 +77,7 @@ belongs to `mechanism`).
 Note: gravitational acceleration for childmechanism is ignored.
 """
 function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechanism::Mechanism{T};
-        child_root_pose = eye(Transform3DS{T}, default_frame(root_body(childmechanism)), default_frame(parentbody))) where {T}
+        child_root_pose = eye(Transform3D{T}, default_frame(root_body(childmechanism)), default_frame(parentbody))) where {T}
     # FIXME: test with cycles
 
     @assert mechanism != childmechanism # infinite loop otherwise
@@ -212,7 +212,7 @@ function remove_fixed_tree_joints!(mechanism::Mechanism)
         succ = target(fixedjoint, graph)
 
         # Add identity joint transform as a body-fixed frame definition.
-        jointtransform = eye(Transform3DS{T}, frame_after(fixedjoint), frame_before(fixedjoint))
+        jointtransform = eye(Transform3D{T}, frame_after(fixedjoint), frame_before(fixedjoint))
         add_frame!(pred, jointtransform)
 
         # Migrate body fixed frames to parent body.
@@ -283,7 +283,7 @@ function maximal_coordinates(mechanism::Mechanism)
         frameafter = default_frame(srcbody)
         body = bodymap[srcbody] = deepcopy(srcbody)
         floatingjoint = newfloatingjoints[body] = Joint(string(body), framebefore, frameafter, QuaternionFloating{T}())
-        attach!(ret, root, body, floatingjoint, joint_pose = eye(Transform3DS{T}, framebefore), successor_pose = eye(Transform3DS{T}, frameafter))
+        attach!(ret, root, body, floatingjoint, joint_pose = eye(Transform3D{T}, framebefore), successor_pose = eye(Transform3D{T}, frameafter))
     end
 
     # Copy input Mechanism's joints.
@@ -315,9 +315,9 @@ function rand_tree_mechanism(::Type{T}, parentselector::Function, jointtypes::Va
     mechanism = Mechanism(parentbody)
     for (i, jointtype) in enumerate(jointtypes)
         joint = Joint("joint$i", rand(jointtype))
-        joint_to_parent_body = rand(Transform3DS{T}, frame_before(joint), default_frame(parentbody))
+        joint_to_parent_body = rand(Transform3D{T}, frame_before(joint), default_frame(parentbody))
         body = RigidBody(rand(SpatialInertia{T}, CartesianFrame3D("body$i")))
-        body_to_joint = eye(Transform3DS{T}, default_frame(body), frame_after(joint))
+        body_to_joint = eye(Transform3D{T}, default_frame(body), frame_after(joint))
         attach!(mechanism, parentbody, body, joint, joint_pose = joint_to_parent_body, successor_pose = body_to_joint)
         parentbody = parentselector(mechanism)
     end
