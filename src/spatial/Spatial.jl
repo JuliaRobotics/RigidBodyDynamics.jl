@@ -40,7 +40,6 @@ export
     torque,
     torque!,
     kinetic_energy,
-    angle_difference,
     rotation_vector_rate,
     quaternion_derivative,
     angular_velocity_in_body,

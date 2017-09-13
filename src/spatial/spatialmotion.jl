@@ -196,7 +196,7 @@ function _log(t::Transform3D)
     sθ_over_2 = sin(θ_over_2)
     cθ_over_2 = cos(θ_over_2)
     θ_squared = θ^2
-    if abs(angle_difference(θ, zero(θ))) < eps(θ)
+    if abs(rem2pi(θ, RoundNearest)) < eps(typeof(θ))
         α = one(θ_over_2)
         ϕtrans = p
     else
@@ -245,7 +245,7 @@ function log_with_time_derivative(t::Transform3D, twist::Twist)
 
     ψ̇ = ω
     q̇ = v
-    if abs(angle_difference(θ, zero(θ))) > eps(θ)
+    if abs(rem2pi(θ, RoundNearest)) > eps(typeof(θ))
         β = θ_over_2^2 / sθ_over_2^2
         A = (2 * (1 - α) + (α - β) / 2) / θ_squared
         B = ((1 - α) + (α - β) / 2) / θ_squared^2
@@ -272,7 +272,7 @@ function Base.exp(twist::Twist)
     ϕrot = angular(twist)
     ϕtrans = linear(twist)
     θ = norm(ϕrot)
-    if abs(angle_difference(θ, zero(θ))) < eps(θ)
+    if abs(rem2pi(θ, RoundNearest)) < eps(typeof(θ))
         # (2.32)
         rot = eye(RotMatrix3{typeof(θ)})
         trans = ϕtrans
