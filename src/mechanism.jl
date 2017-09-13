@@ -10,6 +10,7 @@ mutable struct Mechanism{T}
     tree::SpanningTree{RigidBody{T}, GenericJoint{T}}
     environment::ContactEnvironment{T}
     gravitational_acceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
+    modcount::Int
 
     """
     $(SIGNATURES)
@@ -23,7 +24,7 @@ mutable struct Mechanism{T}
         tree = SpanningTree(graph, root_body)
         gravitational_acceleration = FreeVector3D(default_frame(root_body), gravity)
         environment = ContactEnvironment{T}()
-        new{T}(graph, tree, environment, gravitational_acceleration)
+        new{T}(graph, tree, environment, gravitational_acceleration, 0)
     end
 end
 
@@ -80,6 +81,9 @@ kinematic tree.
 RigidBodyDynamics.path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = TreePath(from, to, mechanism.tree)
 
 has_loops(mechanism::Mechanism) = num_edges(mechanism.graph) > num_edges(mechanism.tree)
+
+@inline modcount(mechanism::Mechanism) = mechanism.modcount
+register_modification!(mechanism::Mechanism) = mechanism.modcount += 1
 
 function Base.show(io::IO, mechanism::Mechanism)
     println(io, "Spanning tree:")
