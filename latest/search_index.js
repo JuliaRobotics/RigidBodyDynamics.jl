@@ -157,7 +157,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.Spatial.Transform3D",
     "category": "Type",
-    "text": "struct Transform3D{A<:(AbstractArray{T,2} where T)}\n\nA homogeneous transformation matrix representing the transformation from one three-dimensional Cartesian coordinate system to another.\n\n\n\n"
+    "text": "struct Transform3D{T}\n\nA homogeneous transformation matrix representing the transformation from one three-dimensional Cartesian coordinate system to another.\n\n\n\n"
 },
 
 {
