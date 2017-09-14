@@ -150,7 +150,7 @@ export
 Base.@deprecate name(x) Base.string(x)
 
 include("custom_collections.jl")
-include("graphs.jl")
+include("graphs/Graphs.jl")
 include("spatial/Spatial.jl")
 include("contact.jl")
 include("cache_element.jl")
