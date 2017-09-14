@@ -197,14 +197,21 @@ end
 # uses exponential coordinates centered around q0
 function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
         jt::QuaternionFloating, q0::AbstractVector, q::AbstractVector, v::AbstractVector)
-    # anonymous helper frames
+    # anonymous helper frames # FIXME
     frame_before = CartesianFrame3D()
     frame0 = CartesianFrame3D()
     frame_after = CartesianFrame3D()
 
-    t0 = joint_transform(jt, frame0, frame_before, q0) # 0 to before
-    t = joint_transform(jt, frame_after, frame_before, q) # after to before
-    relative_transform = inv(t0) * t # relative to q0
+    quat0 = rotation(jt, q0, false)
+    quat = rotation(jt, q, false)
+    p0 = translation(jt, q0)
+    p = translation(jt, q)
+
+    quat0inv = inv(quat0)
+    δquat = quat0inv * quat
+    δp = quat0inv * (p - p0)
+    relative_transform = Transform3D(frame_after, frame0, δquat, δp)
+
     twist = joint_twist(jt, frame_after, frame0, q, v) # (q_0 is assumed not to change)
     ξ, ξ̇ = log_with_time_derivative(relative_transform, twist)
 
@@ -218,7 +225,7 @@ function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
 end
 
 function global_coordinates!(q::AbstractVector, jt::QuaternionFloating, q0::AbstractVector, ϕ::AbstractVector)
-    # anonymous helper frames
+    # anonymous helper frames #FIXME
     frame_before = CartesianFrame3D()
     frame0 = CartesianFrame3D()
     frame_after = CartesianFrame3D()
