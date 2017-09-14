@@ -825,9 +825,9 @@ end
 
 for VectorType in (:Point3D, :FreeVector3D, :Twist, :Momentum, :Wrench)
     @eval begin
-        function transform(state::MechanismState, v::$VectorType, to::CartesianFrame3D)::similar_type(typeof(v), promote_type(cache_eltype(state), eltype(v)))
+        function transform(state::MechanismState, v::$VectorType, to::CartesianFrame3D)
             # TODO: consider transforming in steps, so that computing the relative transform is not necessary
-            v.frame == to ? v : transform(v, relative_transform(state, v.frame, to))
+            transform(v, relative_transform(state, v.frame, to))
         end
     end
 end
