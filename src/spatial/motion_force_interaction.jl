@@ -143,7 +143,7 @@ for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :Mom
     # MomentumMatrix * acceleration vector --> Wrench
     # WrenchMatrix * dimensionless multipliers --> Wrench
     @eval function $ForceSpaceElement(mat::$ForceSpaceMatrix, x::AbstractVector)
-        $ForceSpaceElement(mat.frame, convert(SVector{3}, angular(mat) * x), convert(SVector{3}, linear(mat) * x))
+        $ForceSpaceElement(mat.frame, SVector{3}(angular(mat) * x), SVector{3}(linear(mat) * x))
     end
 end
 
