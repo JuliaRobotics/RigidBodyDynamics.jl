@@ -161,6 +161,10 @@ end
     nothing
 end
 
+@inline function check_num_constraints(joint::Joint, vec::AbstractVector)
+    length(vec) == num_constraints(joint) || error("wrong size")
+    nothing
+end
 
 """
 $(SIGNATURES)
@@ -447,4 +451,27 @@ end
 function is_configuration_normalized(joint::Joint, q::AbstractVector{X}; rtol::Real = sqrt(eps(X)), atol::Real = zero(X)) where {X}
     @boundscheck check_num_positions(joint, q)
     is_configuration_normalized(joint.joint_type, q, rtol, atol)
+end
+
+"""
+$(SIGNATURES)
+
+Compute a vector ``\\delta \\in \\mathbb{R}^{n_c}`` which measures the violation of the constraint
+imposed by the joint on the homogeneous transform across the joint. Here, ``n_c`` is the number of
+directions in which the joint constrains the relative motion between its successor and predecessor.
+
+The following properties are satisfied:
+* the mapping from the joint transform to ``\\delta`` is linear;
+* ``\\delta \\approx T^T e`` for small ``e``, where ``T \\in \\mathbb{R}^{6 \\times n_c}`` is the
+  joint's constraint wrench subspace, and ``e \\in \\mathbb{R}^6`` are the exponential coordinates
+  for any error transform relative to a
+  joint transform that satisfies the constraints imposed by the joint.
+
+See also section 8.3 in Featherstone (2008).
+"""
+function linearized_constraint_violation!(δ::AbstractVector, joint::Joint, joint_transform::Transform3D)
+    @boundscheck check_num_constraints(joint, δ)
+    @framecheck frame_after(joint) joint_transform.from
+    @framecheck frame_before(joint) joint_transform.to
+    linearized_constraint_violation!(δ, joint.joint_type, joint_transform)
 end

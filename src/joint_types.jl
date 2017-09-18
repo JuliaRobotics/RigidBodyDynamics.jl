@@ -247,6 +247,8 @@ function is_configuration_normalized(jt::QuaternionFloating, q::AbstractVector, 
     isapprox(quatnorm(rotation(jt, q, false)), one(eltype(q)); rtol = rtol, atol = atol)
 end
 
+linearized_constraint_violation!(δ::AbstractVector, jt::QuaternionFloating, joint_transform::Transform3D) = nothing
+
 
 #=
 OneDegreeOfFreedomFixedAxis
@@ -337,6 +339,20 @@ function joint_torque!(τ::AbstractVector, jt::Prismatic, q::AbstractVector, joi
     nothing
 end
 
+function linearized_constraint_violation!(δ::AbstractVector, jt::Prismatic, joint_transform::Transform3D)
+    R = rotation(joint_transform)
+    p = translation(joint_transform)
+    # FIXME: this is for translation along the z axis
+    @inbounds begin
+        δ[1] = (R[3, 2] - R[2, 3]) / 2
+        δ[2] = (R[1, 3] - R[3, 1]) / 2
+        δ[3] = (R[2, 1] - R[1, 2]) / 2
+        δ[4] = R[3, 3] * p[1] - R[1, 3] * p[3]
+        δ[5] = R[3, 3] * p[2] - R[2, 3] * p[3]
+    end
+    nothing
+end
+
 
 """
 $(TYPEDEF)
@@ -404,6 +420,20 @@ end
 
 function joint_torque!(τ::AbstractVector, jt::Revolute, q::AbstractVector, joint_wrench::Wrench)
     @inbounds τ[1] = dot(angular(joint_wrench), jt.axis)
+    nothing
+end
+
+function linearized_constraint_violation!(δ::AbstractVector, jt::Revolute, joint_transform::Transform3D)
+    R = rotation(joint_transform)
+    p = translation(joint_transform)
+    # FIXME: this is for rotation about the z axis
+    @inbounds begin
+        δ[1] = -R[2, 3]
+        δ[2] = R[1, 3]
+        δ[3] = R[3, 3] * p[1] - R[1, 3] * p[3]
+        δ[4] = R[3, 3] * p[2] - R[2, 3] * p[3]
+        δ[5] = R[2, 1] * (R[2, 1] * p[3] - R[3, 1] * p[2]) + R[2, 2] * (R[2, 2] * p[3] - R[3, 2] * p[2])
+    end
     nothing
 end
 
@@ -745,4 +775,18 @@ normalize_configuration!(q::AbstractVector, jt::QuaternionSpherical) = rotation!
 
 function is_configuration_normalized(jt::QuaternionSpherical, q::AbstractVector, rtol, atol)
     isapprox(quatnorm(rotation(jt, q, false)), one(eltype(q)); rtol = rtol, atol = atol)
+end
+
+function linearized_constraint_violation!(δ::AbstractVector, jt::Fixed, joint_transform::Transform3D)
+    R = rotation(joint_transform)
+    p = translation(joint_transform)
+    @inbounds begin
+        δ[1] = (R[3, 2] - R[2, 3]) / 2
+        δ[2] = (R[1, 3] - R[3, 1]) / 2
+        δ[3] = (R[2, 1] - R[1, 2]) / 2
+        δ[4] = -(R[1, 2] * p[2] + R[1, 3] * p[3] - R[2, 2] * p[1] - R[3, 3] * p[1]) / 2
+        δ[5] = -(R[2, 1] * p[1] - R[1, 1] * p[2] + R[2, 3] * p[3] - R[3, 3] * p[2]) / 2
+        δ[6] = -(R[3, 1] * p[1] - R[2, 2] * p[3] - R[1, 1] * p[3] + R[3, 2] * p[2]) / 2
+    end
+    nothing
 end

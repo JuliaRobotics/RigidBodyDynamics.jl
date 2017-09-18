@@ -208,6 +208,29 @@ end
     #     end
     # end
 
+    @testset "linearized_constraint_violation" begin
+        linearized_constraint_violation! = RigidBodyDynamics.linearized_constraint_violation!
+        mechanism = rand_tree_mechanism()
+        x = MechanismState(mechanism)
+        for joint in joints(mechanism)
+            δ = fill(NaN, num_constraints(joint))
+            tf = joint_transform(x, joint)
+
+            # Ensure that a joint transform without error results in zero constraint error.
+            linearized_constraint_violation!(δ, joint, tf)
+            @test isapprox(δ, zeros(num_constraints(joint)); atol = 1e-14)
+
+            # Ensure that the property δ = Tᵀd holds for small d, where d are the exponential coordinates of the error transform.
+            # Note that Featherstone defines d as the inverse of this error transform, corresponding to a sign flip in δ.
+            T = constraint_wrench_subspace(joint, tf)
+            e_angular = 1e-5 * normalize(randn(SVector{3}))
+            e_linear = 1e-5 * normalize(randn(SVector{3}))
+            e = Twist(frame_after(joint), frame_after(joint), frame_after(joint), e_angular, e_linear) # cheating a little with the frames here
+            linearized_constraint_violation!(δ, joint, tf * exp(e))
+            @test isapprox(angular(T)' * angular(e) + linear(T)' * linear(e), δ; atol = 1e-14)
+        end
+    end
+
     @testset "relative_acceleration" begin
         mechanism = rand_tree_mechanism()
         x = MechanismState(mechanism)
