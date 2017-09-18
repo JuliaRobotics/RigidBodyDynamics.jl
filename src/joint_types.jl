@@ -504,7 +504,7 @@ struct Planar{T} <: JointType{T}
     """
     function Planar{T}(x_axis::AbstractVector, y_axis::AbstractVector) where {T}
         x, y = map(axis -> normalize(SVector{3}(axis)), (x_axis, y_axis))
-        @assert isapprox(x ⋅ y, 0; atol = 10 * eps(T))
+        @assert isapprox(x ⋅ y, 0; atol = 100 * eps(T))
         z = cross(x, y)
         new{T}(x, y, z)
     end
