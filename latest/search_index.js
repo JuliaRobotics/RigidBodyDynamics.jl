@@ -1813,7 +1813,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Simulation",
     "title": "RigidBodyDynamics.simulate",
     "category": "Function",
-    "text": "simulate(state0, final_time; Δt)\n\n\nBasic Mechanism simulation: integrate the state from time 0 to final_time starting from the initial state state0. Return a Vector of times, as well as Vectors of configuration vectors and velocity vectors at these times.\n\nUses MuntheKaasIntegrator. See RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator for a lower level interface with more options.\n\n\n\n"
+    "text": "simulate(state0, final_time)\nsimulate(state0, final_time, control!; Δt)\n\n\nBasic Mechanism simulation: integrate the state from time 0 to final_time starting from the initial state state0. Return a Vector of times, as well as Vectors of configuration vectors and velocity vectors at these times.\n\nOptionally, a function (or other callable) can be passed in as the third argument (control!). control! will be called at each time step of the simulation and allows you to specify joint torques given the time and the state of the Mechanism. It should look like this:\n\nfunction control!(torques::AbstractVector, t, state::MechanismState)\n    rand!(torques) # for example\nend\n\nThe integration time step can be specified using the Δt keyword argument (defaults to 1e-4).\n\nUses MuntheKaasIntegrator. See RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator for a lower level interface with more options.\n\n\n\n"
 },
 
 {
