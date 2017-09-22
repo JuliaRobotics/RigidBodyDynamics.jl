@@ -3,6 +3,7 @@ using Base.Test
 using RigidBodyDynamics
 using RigidBodyDynamics.Graphs
 using RigidBodyDynamics.Contact
+using RigidBodyDynamics.PDControl
 using Rotations
 using StaticArrays
 using ForwardDiff
@@ -14,7 +15,6 @@ create_autodiff(x, dx) = [ForwardDiff.Dual(x[i], dx[i]) for i in 1 : length(x)]
 
 # TODO: https://github.com/JuliaDiff/DiffBase.jl/pull/19
 @inline Base.mod2pi(x::ForwardDiff.Dual) = ForwardDiff.Dual(mod2pi(ForwardDiff.value(x)), ForwardDiff.partials(x))
-@inline Base.rem(x::ForwardDiff.Dual, n::Real) = ForwardDiff.Dual(rem(ForwardDiff.value(x), n), ForwardDiff.partials(x))
 @inline Base.rem2pi(x::ForwardDiff.Dual, roundingmode::RoundingMode) = ForwardDiff.Dual(rem2pi(ForwardDiff.value(x), roundingmode), ForwardDiff.partials(x))
 
 include("test_graph.jl")
@@ -27,6 +27,7 @@ include("test_double_pendulum.jl")
 include("test_mechanism_algorithms.jl")
 include("test_simulate.jl")
 include("test_mechanism_modification.jl")
+include("test_pd_control.jl")
 
 # notebooks
 @testset "example notebooks" begin
