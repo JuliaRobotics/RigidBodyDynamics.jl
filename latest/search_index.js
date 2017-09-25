@@ -293,7 +293,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Spatial vector algebra",
     "title": "RigidBodyDynamics.Spatial.@framecheck",
     "category": "Macro",
-    "text": "@framecheck(f1, f2)\n\n\nCheck that CartesianFrame3Ds f1 and f2 are identical (when bounds checks are enabled).\n\nThrows an ArgumentError if f1 is not identical to f2 when bounds checks are enabled. @framecheck is a no-op when bounds checks are disabled.\n\n\n\n"
+    "text": "@framecheck(f1, f2s)\n\n\nCheck that CartesianFrame3D f1 is one of f2s.\n\nNote that if f2s is a CartesianFrame3D, then f1 and f2s are simply checked for equality.\n\nThrows an ArgumentError if f1 is not among f2s when bounds checks are enabled. @framecheck is a no-op when bounds checks are disabled.\n\n\n\n"
 },
 
 {
