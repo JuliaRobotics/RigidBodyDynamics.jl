@@ -44,25 +44,45 @@ struct CartesianFrame3D
     end
 end
 
-Base.string(frame::CartesianFrame3D) = get(frame_names, frame.id, "anonymous")
-Base.show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: \"$(string(frame))\" (id = $(frame.id))")
+Base.print(io::IO, frame::CartesianFrame3D) = print(io, get(frame_names, frame.id, "anonymous"))
+name_and_id(frame::CartesianFrame3D) = "\"$frame\" (id = $(frame.id))"
+Base.show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: $(name_and_id(frame))")
+
+Base.in(x::CartesianFrame3D, y::CartesianFrame3D) = x == y
 
 """
 $(SIGNATURES)
 
-Check that `CartesianFrame3D`s `f1` and `f2` are identical (when bounds checks are enabled).
+Check that `CartesianFrame3D` `f1` is one of `f2s`.
 
-Throws an `ArgumentError` if `f1` is not identical to `f2` when bounds checks
+Note that if `f2s` is a `CartesianFrame3D`, then `f1` and `f2s` are simply checked for equality.
+
+Throws an `ArgumentError` if `f1` is not among `f2s` when bounds checks
 are enabled. `@framecheck` is a no-op when bounds checks are disabled.
 """
-macro framecheck(f1, f2)
+macro framecheck(f1, f2s)
     quote
         @boundscheck begin
-            $(esc(f1)) != $(esc(f2)) && framecheck_fail($(QuoteNode(f1)), $(QuoteNode(f2)), $(esc(f1)), $(esc(f2)))
+            $(esc(f1)) ∉ $(esc(f2s)) && framecheck_fail($(QuoteNode(f1)), $(QuoteNode(f2s)), $(esc(f1)), $(esc(f2s)))
         end
     end
 end
 
-@noinline function framecheck_fail(sym1, sym2, f1, f2)
-    throw(ArgumentError("$(string(sym1)) (\"$(string(f1))\", id = $(f1.id)) ≠ $(string(sym2)) (\"$(string(f2))\", id = $(f2.id))"))
+framecheck_string(expr, frame::CartesianFrame3D) = "$expr: $(name_and_id(frame))"
+
+@noinline function framecheck_fail(expr1, expr2, f1::CartesianFrame3D, f2::CartesianFrame3D)
+    throw(ArgumentError("$(framecheck_string(expr1, f1)) ≠ $(framecheck_string(expr2, f2))"))
+end
+
+@noinline function framecheck_fail(expr1, expr2, f1::CartesianFrame3D, f2s)
+    buf = IOBuffer()
+    print(buf, '(')
+    first = true
+    for f2 in f2s
+        first || print(buf, ", ")
+        first = false
+        print(buf, name_and_id(f2))
+    end
+    print(buf, ')')
+    throw(ArgumentError("$(framecheck_string(expr1, f1)) ∉ $(expr2): $(String(buf))"))
 end
