@@ -12,24 +12,15 @@ export
 
 abstract type AbstractPDGains end
 
-struct PDGains{T} <: AbstractPDGains
-    k::T
-    d::T
+struct PDGains{K, D} <: AbstractPDGains
+    k::K
+    d::D
 end
-Base.eltype(::Type{PDGains{T}}) where {T} = eltype(T)
-Base.convert(::Type{T}, gains::T) where {T<:PDGains} = gains
-Base.convert(::Type{PDGains{S}}, gains::PDGains{T}) where {T, N, S<:SMatrix{N, N, T}} = PDGains(convert(S, eye(S) * gains.k), convert(S, eye(S) * gains.d))
 
-struct DoubleGeodesicPDGains{T} <: AbstractPDGains
+struct DoubleGeodesicPDGains{A<:PDGains, L<:PDGains} <: AbstractPDGains
     frame::CartesianFrame3D
-    angular::PDGains{SMatrix{3, 3, T, 9}}
-    linear::PDGains{SMatrix{3, 3, T, 9}}
-end
-
-function DoubleGeodesicPDGains(frame::CartesianFrame3D, angular::PDGains, linear::PDGains)
-    T = promote_type(eltype(angular), eltype(linear))
-    P = PDGains{SMatrix{3, 3, T, 9}}
-    DoubleGeodesicPDGains(frame, convert(P, angular), convert(P, linear))
+    angular::A
+    linear::L
 end
 
 Spatial.angular(gains::DoubleGeodesicPDGains) = gains.angular
@@ -48,6 +39,7 @@ group_error(x::Rotation, xdes::Rotation) = inv(xdes) * x
 group_error(x::Transform3D, xdes::Transform3D) = inv(xdes) * x
 
 pd(gains::AbstractPDGains, x, xdes, ẋ, ẋdes) = pd(gains, group_error(x, xdes), -ẋdes + ẋ) # TODO: ẋ - ẋdes, but doesn't work for Twists right now
+
 pd(gains::PDGains, e, ė) = -gains.k * e - gains.d * ė
 pd(gains::PDGains, e::RodriguesVec, ė::AbstractVector) = pd(gains, SVector(e.sx, e.sy, e.sz), ė)
 pd(gains::PDGains, e::Rotation{3}, ė::AbstractVector) = pd(gains, RodriguesVec(e), ė)
