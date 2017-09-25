@@ -10,9 +10,9 @@ export
     DoubleGeodesicPDGains,
     pd
 
-abstract type AbstractPDGains{T} end
+abstract type AbstractPDGains end
 
-struct PDGains{T} <: AbstractPDGains{T}
+struct PDGains{T} <: AbstractPDGains
     k::T
     d::T
 end
@@ -20,7 +20,7 @@ Base.eltype(::Type{PDGains{T}}) where {T} = eltype(T)
 Base.convert(::Type{T}, gains::T) where {T<:PDGains} = gains
 Base.convert(::Type{PDGains{S}}, gains::PDGains{T}) where {T, N, S<:SMatrix{N, N, T}} = PDGains(convert(S, eye(S) * gains.k), convert(S, eye(S) * gains.d))
 
-struct DoubleGeodesicPDGains{T<:Number} <: AbstractPDGains{T}
+struct DoubleGeodesicPDGains{T} <: AbstractPDGains
     frame::CartesianFrame3D
     angular::PDGains{SMatrix{3, 3, T, 9}}
     linear::PDGains{SMatrix{3, 3, T, 9}}
