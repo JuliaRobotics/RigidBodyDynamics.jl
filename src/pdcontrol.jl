@@ -32,12 +32,15 @@ function DoubleGeodesicPDGains(frame::CartesianFrame3D, angular::PDGains, linear
     DoubleGeodesicPDGains(frame, convert(P, angular), convert(P, linear))
 end
 
+Spatial.angular(gains::DoubleGeodesicPDGains) = gains.angular
+Spatial.linear(gains::DoubleGeodesicPDGains) = gains.linear
+
 function Spatial.transform(gains::DoubleGeodesicPDGains, t::Transform3D)
     @framecheck t.from gains.frame
     R = rotation(t)
-    angular = PDGains(R * gains.angular.k * R', R * gains.angular.d * R')
-    linear = PDGains(R * gains.linear.k * R', R * gains.linear.d * R')
-    DoubleGeodesicPDGains(t.to, angular, linear)
+    ang = PDGains(R * angular(gains).k * R', R * angular(gains).d * R')
+    lin = PDGains(R * linear(gains).k * R', R * linear(gains).d * R')
+    DoubleGeodesicPDGains(t.to, ang, lin)
 end
 
 group_error(x, xdes) = x - xdes
@@ -64,7 +67,7 @@ function pd(gains::DoubleGeodesicPDGains, e::Transform3D, ė::Twist)
     @framecheck gains.frame ė.body # gains should be expressed in actual body frame
     R = rotation(e)
     p = translation(e)
-    SpatialAcceleration(ė.body, ė.base, ė.frame, pd(gains.angular, R, ė.angular), pd(gains.linear, R' * p, ė.linear))
+    SpatialAcceleration(ė.body, ė.base, ė.frame, pd(angular(gains), R, ė.angular), pd(linear(gains), R' * p, ė.linear))
 end
 
 end # module
