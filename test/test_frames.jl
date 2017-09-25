@@ -10,8 +10,10 @@
         # only throws when bounds checks are enabled:
         @test_throws ArgumentError @framecheck(f1, f2)
         @test_throws ArgumentError @framecheck(f2, f3)
+        @test_throws ArgumentError @framecheck(f2, (f1, f3))
     end
     @framecheck(f1, f1)
+    @framecheck(f2, (f2, f3))
 
     t1 = rand(Transform3D, f2, f1)
     @test isapprox(t1 * inv(t1), eye(Transform3D, f1))
