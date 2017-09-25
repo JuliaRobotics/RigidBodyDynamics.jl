@@ -75,7 +75,7 @@
 
         xdes = rand(Transform3D, desiredframe, baseframe)
         vdes = zero(Twist{Float64}, desiredframe, baseframe, actualframe)
-        gains = DoubleGeodesicPDGains(baseframe, PDGains(100, 20), PDGains(100., 20.)) # world-fixed gains
+        gains = SE3PDGains(baseframe, PDGains(100 * eye(SMatrix{3, 3}), 20), PDGains(100., 20.)) # world-fixed gains
 
         control_dynamics_result = DynamicsResult(mechanism)
         function control!(torques::AbstractVector, t, state::MechanismState)
