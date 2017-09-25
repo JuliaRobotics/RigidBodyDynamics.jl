@@ -14,6 +14,10 @@ export
     PDGains,
     SE3PDGains
 
+# pd control methods
+export
+    SE3PDMethod
+
 abstract type AbstractPDGains end
 
 group_error(x, xdes) = x - xdes
@@ -51,13 +55,11 @@ function Spatial.transform(gains::SE3PDGains, t::Transform3D)
     SE3PDGains(t.to, ang, lin)
 end
 
-abstract type SE3PDControlMethod end
-struct DoubleGeodesic <: SE3PDControlMethod end
-struct Linearized <: SE3PDControlMethod end
+struct SE3PDMethod{T} end
 
-pd(gains::SE3PDGains, e::Transform3D, ė::Twist) = pd(gains, e, ė, DoubleGeodesic())
+pd(gains::SE3PDGains, e::Transform3D, ė::Twist) = pd(gains, e, ė, SE3PDMethod{:DoubleGeodesic}())
 
-function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::DoubleGeodesic)
+function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::SE3PDMethod{:DoubleGeodesic})
     # Theorem 12 in Bullo, Murray, "Proportional derivative (PD) control on the Euclidean group", 1995 (4.6 in the Technical Report).
     # Note: in Theorem 12, even though the twist and spatial acceleration are expressed in body frame, the gain Kv is expressed in base (or desired) frame,
     # since it acts on the translation part of the transform from body frame to base frame (i.e. the definition of body frame expressed in base frame),
@@ -72,25 +74,18 @@ function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::DoubleGeodesic)
     @framecheck gains.frame ė.body # gains should be expressed in actual body frame
     R = rotation(e)
     p = translation(e)
-    ang = pd(angular(gains), R, ė.angular)
-    lin = pd(linear(gains), R' * p, ė.linear)
+    ang = pd(angular(gains), R, angular(ė))
+    lin = pd(linear(gains), R' * p, linear(ė))
     SpatialAcceleration(ė.body, ė.base, ė.frame, ang, lin)
 end
 
-function linearized_rodrigues_vec(e::RotMatrix)
-    x = (e[3, 2] - e[2, 3]) / 2
-    y = (e[1, 3] - e[3, 1]) / 2
-    z = (e[2, 1] - e[1, 2]) / 2
-    RodriguesVec(x, y, z)
-end
-
-function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::Linearized)
+function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::SE3PDMethod{:Linearized})
     @framecheck ė.body e.from
     @framecheck ė.base e.to
     @framecheck ė.frame (ė.body, ė.base)
     @framecheck gains.frame (ė.body, ė.base)
-    ang = pd(angular(gains), linearized_rodrigues_vec(rotation(e), ė.angular))
-    lin = pd(linear(gains), translation(e))
+    ang = pd(angular(gains), linearized_rodrigues_vec(rotation(e)), angular(ė))
+    lin = pd(linear(gains), translation(e), linear(ė))
     SpatialAcceleration(ė.body, ė.base, ė.frame, ang, lin)
 end
 

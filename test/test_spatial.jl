@@ -256,4 +256,15 @@ end
             @test isapprox(ξ̇, ξ̇_from_autodiff)
         end
     end
+
+    @testset "RodriguesVec linearization" begin
+        ϵ = 1e-3
+        for i = 1 : 100
+            e = RotMatrix(AngleAxis(ϵ, randn(), randn(), randn()))
+            rv = RodriguesVec(e)
+            rv_lin = linearized_rodrigues_vec(e)
+            lin_error = AngleAxis(rv \ rv_lin)
+            @test rotation_angle(lin_error) ≈ 0 atol = 1e-8
+        end
+    end
 end

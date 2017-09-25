@@ -160,3 +160,10 @@ end
     @boundscheck length(quat_derivative) == 4 || error("size mismatch")
     quat_derivative_to_body_angular_velocity_jacobian(q) * quat_derivative
 end
+
+function linearized_rodrigues_vec(r::RotMatrix) # TODO: consider moving to Rotations
+    x = (r[3, 2] - r[2, 3]) / 2
+    y = (r[1, 3] - r[3, 1]) / 2
+    z = (r[2, 1] - r[1, 2]) / 2
+    RodriguesVec(x, y, z)
+end
