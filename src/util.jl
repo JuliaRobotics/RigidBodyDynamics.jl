@@ -85,3 +85,38 @@ end
     msg = "Modification count of '$(string(asym))' ($amod) does not match modification count of '$(string(bsym))' ($bmod)."
     throw(ModificationCountMismatch(msg))
 end
+
+
+# Bounds
+"""
+$(TYPEDEF)
+
+Bounds is a scalar-like type representing a closed interval from ``lower`` to
+``upper``. To indicate that a vector of values falls with some range, use a
+``Vector{Bounds{T}}``.
+"""
+struct Bounds{T}
+    lower::T
+    upper::T
+
+    function Bounds{T}(lower, upper) where T
+        @assert lower <= upper
+        new{T}(lower, upper)
+    end
+    Bounds{T}() where {T} = new{T}(typemin(T), typemax(T))
+end
+
+Bounds(lower::T1, upper::T2) where {T1, T2} = Bounds{promote_type(T1, T2)}(lower, upper)
+
+upper(b::Bounds) = b.upper
+lower(b::Bounds) = b.lower
+Base.:(==)(b1::Bounds, b2::Bounds) = b1.lower == b2.lower && b1.upper == b2.upper
+Base.show(io::IO, b::Bounds) = print(io, "(", lower(b), ", ", upper(b), ")")
+
+"""
+$(SIGNATURES)
+
+Return the closest value to ``x`` within the interval described by ``b``.
+"""
+Base.clamp(x, b::Bounds) = clamp(x, b.lower, b.upper)
+Base.intersect(b1::Bounds, b2::Bounds) = Bounds(max(b1.lower, b2.lower), min(b1.upper, b2.upper))
