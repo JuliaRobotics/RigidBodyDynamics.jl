@@ -673,14 +673,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#Base.Math.clamp-Tuple{Any,RigidBodyDynamics.Bounds}",
-    "page": "Joints",
-    "title": "Base.Math.clamp",
-    "category": "Method",
-    "text": "clamp(x, b)\n\n\nReturn the closest value to x within the interval described by b.\n\n\n\n"
-},
-
-{
     "location": "joints.html#RigidBodyDynamics.joint_spatial_acceleration-Tuple{RigidBodyDynamics.Joint,AbstractArray{T,1} where T,AbstractArray{T,1} where T,AbstractArray{T,1} where T}",
     "page": "Joints",
     "title": "RigidBodyDynamics.joint_spatial_acceleration",
