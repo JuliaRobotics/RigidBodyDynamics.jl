@@ -6,3 +6,4 @@ LightXML 0.4.0
 DocStringExtensions 0.4.0
 Compat 0.27 # for Val constructor
 Reexport 0.0.3
+LoopThrottle 0.0.1

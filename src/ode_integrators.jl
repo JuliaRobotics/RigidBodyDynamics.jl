@@ -3,6 +3,7 @@ module OdeIntegrators
 using RigidBodyDynamics
 using StaticArrays
 using DocStringExtensions
+using LoopThrottle
 
 export runge_kutta_4,
     MuntheKaasIntegrator,
@@ -301,33 +302,6 @@ function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
     nothing
 end
 
-# Throttle a loop by sleeping periodically (with minimum duration `minsleeptime`), so that `t` doesn't increase faster than `maxrate`.
-# Note: sleep function rounds to 1e-3. Decreasing minsleeptime makes throttling smoother (more frequent, shorter pauses), but reduces accuracy due to rounding error.
-macro throttle(t, maxrate, minsleeptime, loopexpr)
-    loopcondition = :($(esc(loopexpr.args[1])))
-    loopbody = quote
-        $(esc(loopexpr.args[2]))
-
-        if !isinf($(esc(maxrate)))
-            Δwalltime = time() - prev_walltime
-            Δt = $(esc(t)) - prev_t
-            sleeptime = Δt / $(esc(maxrate)) - Δwalltime
-            if sleeptime > $(esc(minsleeptime))
-                sleep(sleeptime)
-                prev_walltime = time()
-                prev_t = $(esc(t))
-            end
-        end
-    end
-    loop = Expr(loopexpr.head, loopcondition, loopbody)
-
-    quote
-        prev_walltime = time()
-        prev_t = $(esc(t))
-        $loop
-    end
-end
-
 """
 $(SIGNATURES)
 
@@ -335,20 +309,17 @@ Integrate dynamics from the initial state `state0` at time ``0`` to `final_time`
 using step size `Δt`.
 """
 function integrate(integrator::MuntheKaasIntegrator, state0, final_time, Δt; max_realtime_rate::Float64 = Inf)
-    T = eltype(integrator)
-    t = zero(T)
+    t = zero(eltype(integrator))
     state = state0
     set_num_positions!(integrator.stages, length(configuration(state)))
     set_num_velocities!(integrator.stages, length(velocity(state)))
     set_num_additional_states!(integrator.stages, length(additional_state(state)))
     initialize(integrator.sink, t, state)
-    min_sleep_time = 1. / 60. # based on visualizer fps
-
-    @throttle t max_realtime_rate min_sleep_time while t < final_time
+    @throttle t while t < final_time
         step(integrator, t, state, Δt)
         t += Δt
         process(integrator.sink, t, state)
-    end
+    end max_rate=max_realtime_rate min_sleep_time=1/60.
 end
 
 end # module
