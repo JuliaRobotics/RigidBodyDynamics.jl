@@ -1,6 +1,5 @@
-# TODO: use $(SIGNATURES) again once it isn't broken anymore
 """
-attach!(mechanism, predecessor, successor, joint; joint_pose, successor_pose)
+$(SIGNATURES)
 
 Attach `successor` to `predecessor` using `joint`.
 
@@ -65,9 +64,8 @@ function _copyjoint!(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::GenericJoi
     attach!(dest, destpredecessor, destsuccessor, destjoint; joint_pose = joint_to_predecessor, successor_pose = successor_to_joint)
 end
 
-# TODO: use $(SIGNATURES) again once it isn't broken anymore
 """
-attach!(mechanism, parentbody, childmechanism; child_root_pose)
+$(SIGNATURES)
 
 Attach a copy of `childmechanism` to `mechanism`. Return mappings from the bodies and joints
 of the `childmechanism` to the bodies and joints that were added to `mechanism`.
@@ -140,9 +138,8 @@ function submechanism(mechanism::Mechanism{T}, submechanismroot::RigidBody{T}) w
     ret, bodymap, jointmap
 end
 
-# TODO: use $(SIGNATURES) again once it isn't broken anymore
 """
-rebuild_spanning_tree!(mechanism; flipped_joint_map, next_edge)
+$(SIGNATURES)
 
 Reconstruct the mechanism's spanning tree.
 
@@ -161,9 +158,8 @@ function rebuild_spanning_tree!(mechanism::Mechanism{M},
     canonicalize_frame_definitions!(mechanism)
 end
 
-# TODO: use $(SIGNATURES) again once it isn't broken anymore
 """
-remove_joint!(mechanism, joint; flipped_joint_map, spanning_tree_next_edge)
+$(SIGNATURES)
 
 Remove a joint from the mechanism. Rebuilds the spanning tree if the joint is
 part of the current spanning tree.
