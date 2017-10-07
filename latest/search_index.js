@@ -949,7 +949,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Method",
-    "text": "attach!(mechanism, parentbody, childmechanism; child_root_pose)\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
+    "text": "attach!(mechanism, parentbody, childmechanism; child_root_pose)\n\n\nAttach a copy of childmechanism to mechanism. Return mappings from the bodies and joints of the childmechanism to the bodies and joints that were added to mechanism.\n\nEssentially replaces the root body of a copy of childmechanism with parentbody (which belongs to mechanism).\n\nNote: gravitational acceleration for childmechanism is ignored.\n\n\n\n"
 },
 
 {
@@ -957,7 +957,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Method",
-    "text": "attach!(mechanism, predecessor, successor, joint; joint_pose, successor_pose)\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds joint_pose and successor_pose define where joint is attached to each body. joint_pose should define frame_before(joint) with respect to any frame fixed to predecessor, and likewise successor_pose should define any frame fixed to successor with respect to frame_after(joint).\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
+    "text": "attach!(mechanism, predecessor, successor, joint; joint_pose, successor_pose)\n\n\nAttach successor to predecessor using joint.\n\nSee Joint for definitions of the terms successor and predecessor.\n\nThe Transform3Ds joint_pose and successor_pose define where joint is attached to each body. joint_pose should define frame_before(joint) with respect to any frame fixed to predecessor, and likewise successor_pose should define any frame fixed to successor with respect to frame_after(joint).\n\npredecessor is required to already be among the bodies of the Mechanism.\n\nIf successor is not yet a part of the Mechanism, it will be added to the Mechanism. Otherwise, the joint will be treated as a non-tree edge in the Mechanism, effectively creating a loop constraint that will be enforced using Lagrange multipliers (as opposed to using recursive algorithms).\n\n\n\n"
 },
 
 {
@@ -1013,7 +1013,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.remove_joint!",
     "category": "Method",
-    "text": "remove_joint!(mechanism, joint; flipped_joint_map, spanning_tree_next_edge)\n\nRemove a joint from the mechanism. Rebuilds the spanning tree if the joint is part of the current spanning tree.\n\nOptionally, the flipped_joint_map keyword argument can be used to pass in an associative container that will be populated with a mapping from original joints to flipped joints, if removing joint requires rebuilding the spanning tree of mechanism and the polarity of some joints needed to be changed in the process.\n\nAlso optionally, spanning_tree_next_edge can be used to select which joints should become part of the new spanning tree, if rebuilding the spanning tree is required.\n\n\n\n"
+    "text": "remove_joint!(mechanism, joint; flipped_joint_map, spanning_tree_next_edge)\n\n\nRemove a joint from the mechanism. Rebuilds the spanning tree if the joint is part of the current spanning tree.\n\nOptionally, the flipped_joint_map keyword argument can be used to pass in an associative container that will be populated with a mapping from original joints to flipped joints, if removing joint requires rebuilding the spanning tree of mechanism and the polarity of some joints needed to be changed in the process.\n\nAlso optionally, spanning_tree_next_edge can be used to select which joints should become part of the new spanning tree, if rebuilding the spanning tree is required.\n\n\n\n"
 },
 
 {
@@ -1029,7 +1029,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rebuild_spanning_tree!",
     "category": "Method",
-    "text": "rebuild_spanning_tree!(mechanism; flipped_joint_map, next_edge)\n\nReconstruct the mechanism's spanning tree.\n\nOptionally, the flipped_joint_map keyword argument can be used to pass in an associative container that will be populated with a mapping from original joints to flipped joints, if the rebuilding process required the polarity of some joints to be flipped.\n\nAlso optionally, next_edge can be used to select which joints should become part of the new spanning tree.\n\n\n\n"
+    "text": "rebuild_spanning_tree!(mechanism)\nrebuild_spanning_tree!(mechanism, flipped_joint_map; next_edge)\n\n\nReconstruct the mechanism's spanning tree.\n\nOptionally, the flipped_joint_map keyword argument can be used to pass in an associative container that will be populated with a mapping from original joints to flipped joints, if the rebuilding process required the polarity of some joints to be flipped.\n\nAlso optionally, next_edge can be used to select which joints should become part of the new spanning tree.\n\n\n\n"
 },
 
 {
