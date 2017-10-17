@@ -97,8 +97,9 @@ export # note: contact-related functionality may be changed significantly in the
 export
     local_coordinates!,
     global_coordinates!,
+    configuration_derivative!,
     configuration_derivative,
-    velocity_to_configuration_derivative!,
+    velocity_to_configuration_derivative!, # TODO: consider merging with configuration_derivative!
     configuration_derivative_to_velocity!,
     configuration_derivative_to_velocity_adjoint!,
     configuration,
