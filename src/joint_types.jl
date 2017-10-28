@@ -26,18 +26,22 @@ function global_coordinates!(q::AbstractVector, jt::JointType, q0::AbstractVecto
     q .= q0 .+ ϕ
 end
 
-function configuration_derivative_to_velocity_adjoint!(out, jt::JointType, q::AbstractVector, f)
-    out .= f
-end
-
 function configuration_derivative_to_velocity!(v::AbstractVector, ::JointType, q::AbstractVector, q̇::AbstractVector)
     v .= q̇
     nothing
 end
 
+function configuration_derivative_to_velocity_adjoint!(out, jt::JointType, q::AbstractVector, f)
+    out .= f
+end
+
 function velocity_to_configuration_derivative!(q̇::AbstractVector, ::JointType, q::AbstractVector, v::AbstractVector)
     q̇ .= v
     nothing
+end
+
+function velocity_to_configuration_derivative_adjoint!(out, jt::JointType, q::AbstractVector, f)
+    out .= f
 end
 
 normalize_configuration!(q::AbstractVector, ::JointType) = nothing
@@ -155,6 +159,17 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::Quaterni
     transdot = quat * linear
     rotation!(q̇, jt, quatdot)
     translation!(q̇, jt, transdot)
+    nothing
+end
+
+function velocity_to_configuration_derivative_adjoint!(fv, jt::QuaternionFloating, q::AbstractVector, fq)
+    # TODO: make this nicer
+    quatnorm = sqrt(q[1]^2 + q[2]^2 + q[3]^2 + q[4]^2)
+    quat = Quat(q[1] / quatnorm, q[2] / quatnorm, q[3] / quatnorm, q[4] / quatnorm, false)
+    fv_ω = (body_angular_velocity_to_quat_derivative_jacobian(quat)' * SVector(fq[1], fq[2], fq[3], fq[4])) ./ quatnorm
+    fv_v = quat * linear_velocity(jt, fv) # TODO
+    rotation!(fq, jt, rot)
+    translation!(fq, jt, trans)
     nothing
 end
 
