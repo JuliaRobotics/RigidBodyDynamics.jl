@@ -1,4 +1,5 @@
 using RigidBodyDynamics
+using Compat
 using BenchmarkTools
 
 const ScalarType = Float64
