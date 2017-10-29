@@ -119,6 +119,11 @@ end
 
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     @eval begin
+        function $MotionSpaceElement(body::CartesianFrame3D, base::CartesianFrame3D, angular::FreeVector3D, linear::FreeVector3D)
+            @framecheck angular.frame linear.frame
+            $MotionSpaceElement(body, base, angular.frame, angular.v, linear.v)
+        end
+
         Base.convert(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement{T}) where {T} = m
         function Base.convert(::Type{$MotionSpaceElement{T}}, m::$MotionSpaceElement) where {T}
             $MotionSpaceElement(m.body, m.base, m.frame, convert(SVector{3, T}, angular(m)), convert(SVector{3, T}, linear(m)))
@@ -126,6 +131,7 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
         Base.convert(::Type{Vector{T}}, m::$MotionSpaceElement{T}) where {T} = [angular(m)...; linear(m)...]
         Base.Array(m::$MotionSpaceElement{T}) where {T} = convert(Vector{T}, m)
         Base.eltype(::Type{$MotionSpaceElement{T}}) where {T} = T
+
         angular(m::$MotionSpaceElement) = m.angular
         linear(m::$MotionSpaceElement) = m.linear
         StaticArrays.similar_type(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) where {T1, T2} = $MotionSpaceElement{T2} # FIXME: lose this

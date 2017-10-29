@@ -12,6 +12,7 @@ export
 # gain types
 export
     PDGains,
+    FramePDGains,
     SE3PDGains
 
 # pd control methods
@@ -27,7 +28,6 @@ group_error(x::Transform3D, xdes::Transform3D) = inv(xdes) * x
 pd(gains::AbstractPDGains, x, xdes, ẋ, ẋdes) = pd(gains, group_error(x, xdes), -ẋdes + ẋ)
 pd(gains::AbstractPDGains, x, xdes, ẋ, ẋdes, method) = pd(gains, group_error(x, xdes), -ẋdes + ẋ, method)
 
-# Basic PD control
 struct PDGains{K, D} <: AbstractPDGains
     k::K
     d::D
@@ -37,22 +37,46 @@ pd(gains::PDGains, e, ė) = -gains.k * e - gains.d * ė
 pd(gains::PDGains, e::RodriguesVec, ė::AbstractVector) = pd(gains, SVector(e.sx, e.sy, e.sz), ė)
 pd(gains::PDGains, e::Rotation{3}, ė::AbstractVector) = pd(gains, RodriguesVec(e), ė)
 
-# PD control on the special Euclidean group
-struct SE3PDGains{A<:PDGains, L<:PDGains} <: AbstractPDGains
+rotategain(gain::Number, R::Rotation) = gain
+rotategain(gain::AbstractMatrix, R::Rotation) = R * gain * R'
+
+function Spatial.transform(gains::PDGains, tf::Transform3D)
+    R = rotation(tf)
+    PDGains(rotategain(gains.k, R), rotategain(gains.d, R))
+end
+
+# Gains with a frame annotation
+struct FramePDGains{K, D} <: AbstractPDGains
     frame::CartesianFrame3D
+    gains::PDGains{K, D}
+end
+
+function pd(fgains::FramePDGains, e::FreeVector3D, ė::FreeVector3D)
+    @framecheck fgains.frame e.frame
+    @framecheck fgains.frame ė.frame
+    FreeVector3D(fgains.frame, pd(fgains.gains, e.v, ė.v))
+end
+
+function Spatial.transform(fgains::FramePDGains, tf::Transform3D)
+    @framecheck tf.from fgains.frame
+    FramePDGains(tf.to, transform(fgains.gains, tf))
+end
+
+# PD control on the special Euclidean group
+struct SE3PDGains{A<:Union{PDGains, FramePDGains}, L<:Union{PDGains, FramePDGains}} <: AbstractPDGains
     angular::A
     linear::L
+end
+
+function SE3PDGains(frame::CartesianFrame3D, angular::PDGains, linear::PDGains)
+    SE3PDGains(FramePDGains(frame, angular), FramePDGains(frame, linear))
 end
 
 Spatial.angular(gains::SE3PDGains) = gains.angular
 Spatial.linear(gains::SE3PDGains) = gains.linear
 
 function Spatial.transform(gains::SE3PDGains, t::Transform3D)
-    @framecheck t.from gains.frame
-    R = rotation(t)
-    ang = PDGains(R * angular(gains).k * R', R * angular(gains).d * R')
-    lin = PDGains(R * linear(gains).k * R', R * linear(gains).d * R')
-    SE3PDGains(t.to, ang, lin)
+    SE3PDGains(transform(gains.angular, t), transform(gains.linear, t))
 end
 
 struct SE3PDMethod{T} end
@@ -68,25 +92,34 @@ function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::SE3PDMethod{:Double
     # This turns the linear and proportional part of the PD law into R' * R * Kv * R' * p = Kv * R' * p
     # Note also that in Theorem 12, the frame in which the orientation gain Kω must be expressed is ambiguous, since R' * log(R) = log(R).
     # This explains why the Kω used here is the same as the Kω in Theorem 12.
-    @framecheck ė.body e.from
+    # Gains should be expressed in actual body frame.
+    bodyframe = ė.body
+    @framecheck e.from bodyframe
     @framecheck ė.base e.to
-    @framecheck ė.frame ė.body
-    @framecheck gains.frame ė.body # gains should be expressed in actual body frame
+    @framecheck ė.frame bodyframe
+
     R = rotation(e)
     p = translation(e)
-    ang = pd(angular(gains), R, angular(ė))
-    lin = pd(linear(gains), R' * p, linear(ė))
-    SpatialAcceleration(ė.body, ė.base, ė.frame, ang, lin)
+    ψ = RodriguesVec(R)
+
+    ang = pd(angular(gains), FreeVector3D(bodyframe, ψ.sx, ψ.sy, ψ.sz), FreeVector3D(bodyframe, angular(ė)))
+    lin = pd(linear(gains), FreeVector3D(bodyframe, R' * p), FreeVector3D(bodyframe, linear(ė)))
+    SpatialAcceleration(ė.body, ė.base, ang, lin)
 end
 
 function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::SE3PDMethod{:Linearized})
-    @framecheck ė.body e.from
+    bodyframe = ė.body
+    @framecheck e.from bodyframe
     @framecheck ė.base e.to
-    @framecheck ė.frame (ė.body, ė.base)
-    @framecheck gains.frame (ė.body, ė.base)
-    ang = pd(angular(gains), linearized_rodrigues_vec(rotation(e)), angular(ė))
-    lin = pd(linear(gains), translation(e), linear(ė))
-    SpatialAcceleration(ė.body, ė.base, ė.frame, ang, lin)
+    @framecheck ė.frame bodyframe
+
+    R = rotation(e)
+    p = translation(e)
+    ψ = linearized_rodrigues_vec(R)
+
+    ang = pd(angular(gains), FreeVector3D(bodyframe, ψ.sx, ψ.sy, ψ.sz), FreeVector3D(bodyframe, angular(ė)))
+    lin = pd(linear(gains), FreeVector3D(bodyframe, p), FreeVector3D(bodyframe, linear(ė)))
+    SpatialAcceleration(ė.body, ė.base, ang, lin)
 end
 
 end # module
