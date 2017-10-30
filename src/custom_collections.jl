@@ -4,6 +4,7 @@ using TypeSortedCollections
 
 export
     ConstVector,
+    ConstDict,
     NullDict,
     UnsafeVectorView,
     UnsafeFastDict
@@ -58,6 +59,15 @@ Base.size(A::ConstVector) = (A.length, )
 @inline Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
 Base.IndexStyle(::Type{<:ConstVector}) = IndexLinear()
 
+## ConstDict
+"""
+An immutable `Associative` for which the value is the same, no matter what the key is.
+"""
+struct ConstDict{K, V} <: Associative{K, V}
+    val::V
+    ConstDict{K}(val::V) where {K, V} = new{K, V}(val)
+end
+Base.getindex(d::ConstDict{K}, key) where K = d.val
 
 ## NullDict
 """

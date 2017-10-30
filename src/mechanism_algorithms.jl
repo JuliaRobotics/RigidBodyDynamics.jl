@@ -509,8 +509,14 @@ function inverse_dynamics(
     torques
 end
 
-function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian::AbstractMatrix, constraintbias::AbstractVector)
-    has_loops(state.mechanism) || return # nothing to be done
+default_constraint_stabilization_gains(::Type{T}) where {T} =
+    SE3PDGains(PDGains(T(100), T(20)), PDGains(T(100), T(20)))
+default_constraint_stabilization_gains(state::MechanismState{X, M, C}) where {X, M, C} =
+    ConstDict{GenericJoint{M}}(default_constraint_stabilization_gains(C))
+
+function constraint_jacobian_and_bias!(state::MechanismState,
+        constraintjacobian::AbstractMatrix, constraintbias::AbstractVector,
+        stabilization_gains::Associative{<:Joint, <:SE3PDGains} = default_constraint_stabilization_gains(state))
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
     update_motion_subspaces_in_world!(state)
@@ -543,8 +549,20 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         # Constraint bias.
         has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
         kjoint = fastview(constraintbias, rowrange)
-        crossterm = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
-        biasaccel = crossterm + (-bias_acceleration(state, pred) + bias_acceleration(state, succ)) # 8.47 in Featherstone
+        jointtransform = joint_transform(state, nontreejoint)
+        jointtwist = relative_twist(state, jointtransform.from, jointtransform.to) # TODO: slow
+        jointtwist = transform(state, jointtwist, jointtwist.body) # TODO: slow
+        stabilization = pd(stabilization_gains[nontreejoint], jointtransform, jointtwist)
+        # @show cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred))
+        @show nontreejoint
+        @show pred
+        @show succ
+        @show stabilization
+        biasaccel = cross(twist_wrt_world(state, succ), twist_wrt_world(state, pred)) +
+            (-bias_acceleration(state, pred) + bias_acceleration(state, succ))  # 8.47 in Featherstone
+        @show biasaccel
+        println()
+
         At_mul_B!(kjoint, T, biasaccel)
         rowstart[] = nextrowstart
     end
@@ -725,7 +743,7 @@ function dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M},
     end
     dynamics_bias!(result, state)
     mass_matrix!(result, state)
-    constraint_jacobian_and_bias!(result, state)
+    hasloops(state.mechanism) && constraint_jacobian_and_bias!(result, state)
     dynamics_solve!(result, torques)
     nothing
 end
