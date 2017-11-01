@@ -55,15 +55,15 @@ Compute the center of mass of the whole `Mechanism` in the given state.
 center_of_mass(state::MechanismState) = center_of_mass(state, bodies(state.mechanism))
 
 const geometric_jacobian_doc = """Compute a geometric Jacobian (also known as a
-basic, or spatial Jacobian) associated with the joints that form a path in the
-`Mechanism`'s spanning tree, in the given state.
+basic, or spatial Jacobian) associated with a directed path in the `Mechanism`'s
+spanning tree, (a collection of `Joint`s and traversal directions) in the given state.
 
-A geometric Jacobian maps the vector of velocities associated with the joint path
-to the twist of the body succeeding the last joint in the path with respect to
-the body preceding the first joint in the path.
+A geometric Jacobian maps the `Mechanism`'s joint velocity vector ``v``
+to the twist of the target of the joint path (the body succeeding the last joint
+in the path) with respect to the source of the joint path (the body preceding the
+first joint in the path).
 
-See also [`path`](@ref), [`GeometricJacobian`](@ref), [`velocity(state, path)`](@ref),
-[`Twist`](@ref).
+See also [`path`](@ref), [`GeometricJacobian`](@ref), [`Twist`](@ref).
 """
 
 """
