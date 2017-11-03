@@ -1,4 +1,5 @@
 using RigidBodyDynamics
+using Compat
 using BenchmarkTools
 
 const ScalarType = Float64
@@ -97,13 +98,13 @@ end
 function runbenchmarks()
     suite = create_benchmark_suite()
 
-    paramspath = joinpath(dirname(@__FILE__), "benchmarkparams.jld")
-    if isfile(paramspath)
-        BenchmarkTools.loadparams!(suite, BenchmarkTools.load(paramspath, "suite"), :evals);
-    else
-        tune!(suite, verbose = true)
-        BenchmarkTools.save(paramspath, "suite", BenchmarkTools.params(suite))
-    end
+    # paramspath = joinpath(dirname(@__FILE__), "benchmarkparams.json")
+    # if isfile(paramspath)
+    #     BenchmarkTools.loadparams!(suite, BenchmarkTools.load(paramspath), :evals);
+    # else
+    #     tune!(suite, verbose = true)
+    #     BenchmarkTools.save(paramspath, BenchmarkTools.params(suite))
+    # end
 
     Profile.clear_malloc_data()
     results = run(suite, verbose = true)
