@@ -67,6 +67,9 @@ allocate any memory.
 struct NullDict{K, V} <: Associative{K, V}
 end
 Base.haskey(::NullDict, k) = false
+Base.length(::NullDict) = 0
+Base.start(::NullDict) = nothing
+Base.done(::NullDict, state) = true
 
 
 ## UnsafeVectorView

@@ -20,4 +20,14 @@
         @test all(keys(d2) .== 1 : 3)
         @test all(values(d2) .== 3 * (1 : 3))
     end
+
+    @testset "nulldict" begin
+        nd = RigidBodyDynamics.NullDict{Int, Int}()
+        @test isempty(nd)
+        @test length(nd) == 0
+        for element in nd
+            @test false # should never be reached, since the nulldict is always empty
+        end
+        show(IOBuffer(), nd)
+    end
 end
