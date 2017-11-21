@@ -315,8 +315,9 @@ end
         @test isapprox(1/2 * dot(v, M * v), Ek; atol = 1e-12)
 
         q = configuration(x)
-        kinetic_energy_fun = v -> begin
-            local x = MechanismState{eltype(v)}(mechanism)
+        cache = StateCache(mechanism)
+        kinetic_energy_fun = function (v)
+            local x = cache[eltype(v)]
             set_configuration!(x, q)
             set_velocity!(x, v)
             kinetic_energy(x)
@@ -355,8 +356,11 @@ end
         x = MechanismState{Float64}(mechanism)
         rand!(x)
 
+        cache = StateCache(mechanism)
         function q_to_M(q)
-            local x = MechanismState(mechanism, q, zeros(eltype(q), num_velocities(mechanism)))
+            local x = cache[eltype(q)]
+            set_configuration!(x, q)
+            zero_velocity!(x)
             vec(mass_matrix(x))
         end
         nv = num_velocities(mechanism)
@@ -368,8 +372,9 @@ end
 
         q = configuration(x)
         v̇ = zeros(num_velocities(mechanism))
+        cache = StateCache(mechanism)
         function v_to_c(v)
-            local x = MechanismState{eltype(v)}(mechanism)
+            local x = cache[eltype(v)]
             set_configuration!(x, q)
             set_velocity!(x, v)
             inverse_dynamics(x, v̇)
@@ -390,8 +395,9 @@ end
         zero_velocity!(x)
         g = inverse_dynamics(x, v̇)
 
+        cache = StateCache(mechanism)
         function q_to_potential(q)
-            x = MechanismState{eltype(q)}(mechanism)
+            local x = cache[eltype(q)]
             set_configuration!(x, q)
             zero_velocity!(x)
             return [gravitational_potential_energy(x)]

@@ -20,7 +20,8 @@ export
     JointType,
     Mechanism,
     MechanismState,
-    DynamicsResult
+    DynamicsResult,
+    StateCache
 
 # specific joint types
 export
@@ -171,6 +172,7 @@ include("rigid_body.jl")
 include("mechanism.jl")
 include("mechanism_modification.jl")
 include("mechanism_state.jl")
+include("state_cache.jl")
 include("dynamics_result.jl")
 include("mechanism_algorithms.jl")
 include("parse_urdf.jl")

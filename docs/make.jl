@@ -15,6 +15,7 @@ makedocs(
         "Mechanism" => "mechanism.md",
         "MechanismState" => "mechanismstate.md",
         "Kinematics/dynamics algorithms" => "algorithms.md",
+        "StateCache" => "statecache.md",
         "Simulation" => "simulation.md",
         "Benchmarks" => "benchmarks.md"
       ]
