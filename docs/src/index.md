@@ -74,6 +74,7 @@ Pages = [
   "mechanism.md",
   "mechanismstate.md",
   "algorithms.md",
+  "statecache.md",
   "simulation.md",
   "benchmarks.md"]
 Depth = 2
