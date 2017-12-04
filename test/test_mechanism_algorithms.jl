@@ -580,7 +580,7 @@ end
         @test @inferred(clamp(-3, RigidBodyDynamics.Bounds(-2, 1))) == RigidBodyDynamics.lower(RigidBodyDynamics.Bounds(-2, 1))
         @test @inferred(clamp(0, RigidBodyDynamics.Bounds(-1, 1))) == 0
         @test @inferred(intersect(RigidBodyDynamics.Bounds(-1, 1), RigidBodyDynamics.Bounds(-0.5, 2.0))) == RigidBodyDynamics.Bounds(-0.5, 1.0)
-        @test @inferred(convert(Bounds{Float64}, Bounds(1, 2))) == Bounds{Float64}(1.0, 2.0)
+        @test @inferred(convert(RigidBodyDynamics.Bounds{Float64}, RigidBodyDynamics.Bounds(1, 2))) == RigidBodyDynamics.Bounds{Float64}(1.0, 2.0)
     end
 
     @testset "issue #330" begin
