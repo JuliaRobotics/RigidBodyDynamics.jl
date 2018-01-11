@@ -569,14 +569,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.joint_torque!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,RigidBodyDynamics.Spatial.Wrench}",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.joint_torque!",
-    "category": "Method",
-    "text": "joint_torque!(τ, joint, q, joint_wrench)\n\n\nGiven the wrench exerted across the joint on the joint's successor, compute the vector of joint torques tau (in place), in configuration q.\n\n\n\n"
-},
-
-{
     "location": "joints.html#RigidBodyDynamics.joint_transform-Tuple{RigidBodyDynamics.Joint,AbstractArray{T,1} where T}",
     "page": "Joints",
     "title": "RigidBodyDynamics.joint_transform",
@@ -678,6 +670,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.joint_spatial_acceleration",
     "category": "Method",
     "text": "joint_spatial_acceleration(joint, q, v, vd)\n\n\nReturn the spatial acceleration of joint's  successor with respect to its predecessor, expressed in the frame after the joint.\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.joint_torque!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.Joint,AbstractArray{T,1} where T,RigidBodyDynamics.Spatial.Wrench}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.joint_torque!",
+    "category": "Method",
+    "text": "joint_torque!(τ, joint, q, joint_wrench)\n\n\nGiven the wrench exerted across the joint on the joint's successor, compute the vector of joint torques tau (in place), in configuration q.\n\n\n\n"
 },
 
 {
@@ -969,7 +969,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{Type{T},Vararg{Type{#s8} where #s8<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "Method",
@@ -977,7 +977,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s8} where #s8<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "Method",
@@ -985,7 +985,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Function,Vararg{Type{#s6} where #s6<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Function,Vararg{Type{#s5} where #s5<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
@@ -993,7 +993,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s8} where #s8<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
@@ -1038,14 +1038,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Creating and modifying Mechanisms",
     "category": "section",
     "text": "parse_urdfModules = [RigidBodyDynamics]\nOrder   = [:function]\nPages   = [\"mechanism_modification.jl\"]"
-},
-
-{
-    "location": "mechanism.html#RigidBodyDynamics.Graphs.path-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}",
-    "page": "Mechanism",
-    "title": "RigidBodyDynamics.Graphs.path",
-    "category": "Method",
-    "text": "path(mechanism, from, to)\n\n\nReturn the path from rigid body from to to along edges of the Mechanism's kinematic tree.\n\n\n\n"
 },
 
 {
@@ -1134,6 +1126,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.out_joints",
     "category": "Method",
     "text": "out_joints(body, mechanism)\n\n\nReturn the joints that have body as their predecessor.\n\n\n\n"
+},
+
+{
+    "location": "mechanism.html#RigidBodyDynamics.path-Tuple{RigidBodyDynamics.Mechanism,RigidBodyDynamics.RigidBody,RigidBodyDynamics.RigidBody}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.path",
+    "category": "Method",
+    "text": "path(mechanism, from, to)\n\n\nReturn the path from rigid body from to to along edges of the Mechanism's kinematic tree.\n\n\n\n"
 },
 
 {
