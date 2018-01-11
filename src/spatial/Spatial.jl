@@ -59,13 +59,4 @@ include("spatialmotion.jl")
 include("spatialforce.jl")
 include("motion_force_interaction.jl")
 
-# deprecations
-export
-    invtransform,
-    num_cols
-
-Base.@deprecate invtransform(x::Point3D, t::Transform3D) t \ x
-Base.@deprecate invtransform(x::FreeVector3D, t::Transform3D) t \ x
-Base.@deprecate num_cols(x::Union{<:GeometricJacobian, <:MomentumMatrix, <:WrenchMatrix}) size(x, 2)
-
 end # module

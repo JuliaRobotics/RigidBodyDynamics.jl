@@ -42,13 +42,6 @@ function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, successor::
     mechanism
 end
 
-Base.@deprecate(
-        attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, joint::GenericJoint{T},
-            joint_to_predecessor::Transform3D, successor::RigidBody{T},
-            successor_to_joint::Transform3D = eye(Transform3D{T}, default_frame(successor), frame_after(joint))) where {T},
-        attach!(mechanism, predecessor, successor, joint;
-            joint_pose = joint_to_predecessor, successor_pose = successor_to_joint))
-
 function _copyjoint!(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::GenericJoint{T},
         bodymap::Dict{RigidBody{T}, RigidBody{T}}, jointmap::Dict{GenericJoint{T}, GenericJoint{T}}) where {T}
     srcpredecessor = source(srcjoint, src.graph)

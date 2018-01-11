@@ -78,7 +78,7 @@ $(SIGNATURES)
 Return the path from rigid body `from` to `to` along edges of the `Mechanism`'s
 kinematic tree.
 """
-RigidBodyDynamics.path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = TreePath(from, to, mechanism.tree)
+path(mechanism::Mechanism, from::RigidBody, to::RigidBody) = TreePath(from, to, mechanism.tree)
 
 has_loops(mechanism::Mechanism) = num_edges(mechanism.graph) > num_edges(mechanism.tree)
 
@@ -104,7 +104,7 @@ function Base.show(io::IO, mechanism::Mechanism)
         end
     end
 end
-Base.@deprecate isroot(mechanism::Mechanism{T}, b::RigidBody{T}) where {T} isroot(b, mechanism)
+
 isroot(b::RigidBody{T}, mechanism::Mechanism{T}) where {T} = b == root_body(mechanism)
 non_root_bodies(mechanism::Mechanism) = (body for body in bodies(mechanism) if !isroot(body, mechanism))
 num_bodies(mechanism::Mechanism) = num_vertices(mechanism.graph)

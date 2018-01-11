@@ -52,5 +52,3 @@ function TreePath(src::V, target::V, tree::SpanningTree{V, E}) where {V, E}
     indices = IntSet(edge_index.(edges))
     TreePath(src, target, edges, directions, indices)
 end
-
-Base.@deprecate path(src::V, target::V, tree::SpanningTree{V, E}) where {V, E} TreePath(src, target, tree)

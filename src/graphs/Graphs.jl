@@ -34,7 +34,6 @@ export
     tree_index,
     ancestors,
     lowest_common_ancestor,
-    path, # deprecated
     direction
 
 using RigidBodyDynamics.CustomCollections: UnsafeFastDict

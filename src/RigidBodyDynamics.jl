@@ -149,8 +149,6 @@ export
     dynamics!,
     simulate
 
-Base.@deprecate name(x) Base.string(x)
-
 include("custom_collections.jl")
 include("graphs/Graphs.jl")
 include("spatial/Spatial.jl")
