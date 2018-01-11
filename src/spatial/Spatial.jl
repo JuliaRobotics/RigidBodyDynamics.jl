@@ -43,8 +43,7 @@ export
     rotation_vector_rate,
     quaternion_derivative,
     angular_velocity_in_body,
-    body_angular_velocity_to_quat_derivative_jacobian,
-    quat_derivative_to_body_angular_velocity_jacobian,
+    velocity_jacobian,
     linearized_rodrigues_vec
 
 # macros

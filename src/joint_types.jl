@@ -140,7 +140,7 @@ end
 function configuration_derivative_to_velocity_adjoint!(fq, jt::QuaternionFloating, q::AbstractVector, fv)
     quatnorm = sqrt(q[1]^2 + q[2]^2 + q[3]^2 + q[4]^2) # TODO: make this nicer
     quat = Quat(q[1] / quatnorm, q[2] / quatnorm, q[3] / quatnorm, q[4] / quatnorm, false)
-    rot = (quat_derivative_to_body_angular_velocity_jacobian(quat)' * angular_velocity(jt, fv)) ./ quatnorm
+    rot = (velocity_jacobian(angular_velocity_in_body, quat)' * angular_velocity(jt, fv)) ./ quatnorm
     trans = quat * linear_velocity(jt, fv)
     rotation!(fq, jt, rot)
     translation!(fq, jt, trans)
@@ -680,7 +680,7 @@ end
 function configuration_derivative_to_velocity_adjoint!(fq, jt::QuaternionSpherical, q::AbstractVector, fv)
     quatnorm = sqrt(q[1]^2 + q[2]^2 + q[3]^2 + q[4]^2) # TODO: make this nicer
     quat = Quat(q[1] / quatnorm, q[2] / quatnorm, q[3] / quatnorm, q[4] / quatnorm, false)
-    fq .= (quat_derivative_to_body_angular_velocity_jacobian(quat)' * fv) ./ quatnorm
+    fq .= (velocity_jacobian(angular_velocity_in_body, quat)' * fv) ./ quatnorm
     nothing
 end
 
