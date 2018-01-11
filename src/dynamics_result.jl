@@ -78,8 +78,6 @@ end
 
 DynamicsResult(mechanism::Mechanism{M}) where {M} = DynamicsResult{M}(mechanism)
 
-Base.@deprecate DynamicsResult(::Type{T}, mechanism::Mechanism{M}) where {T, M} DynamicsResult{T}(mechanism)
-
 contact_state_derivatives(result::DynamicsResult, body::RigidBody) = result.contact_state_derivatives[body]
 contact_wrench(result::DynamicsResult, body::RigidBody) = result.contactwrenches[body]
 set_contact_wrench!(result::DynamicsResult, body::RigidBody, wrench::Wrench) = (result.contactwrenches[body] = wrench)

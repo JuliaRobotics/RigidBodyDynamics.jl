@@ -123,7 +123,7 @@ end
             qjoint = configuration(x, joint)
             wrench = rand(Wrench{Float64}, frame_after(joint))
             τ = Vector{Float64}(num_velocities(joint))
-            joint_torque!(τ, joint, qjoint, wrench)
+            RigidBodyDynamics.joint_torque!(τ, joint, qjoint, wrench)
             S = motion_subspace_in_world(x, joint)
             @test isapprox(τ, torque(S, transform(wrench, transform_to_root(x, body))))
         end

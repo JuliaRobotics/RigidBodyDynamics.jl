@@ -111,8 +111,6 @@ end
 MechanismState(mechanism::Mechanism{M}) where {M} = MechanismState{M}(mechanism)
 MechanismState(mechanism::Mechanism, q::Vector{X}, v::Vector{X}) where {X} = MechanismState(mechanism, q, v, Vector{X}(0))
 
-Base.@deprecate MechanismState(::Type{X}, mechanism::Mechanism{M}) where {X, M} MechanismState{X}(mechanism)
-
 Base.show(io::IO, ::MechanismState{X, M, C}) where {X, M, C} = print(io, "MechanismState{$X, $M, $C, …}(…)")
 
 @inline modcount(state::MechanismState) = state.modcount
