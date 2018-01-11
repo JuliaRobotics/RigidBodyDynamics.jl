@@ -135,16 +135,18 @@ end
     angular, linear
 end
 
-@inline function body_angular_velocity_to_quat_derivative_jacobian(q::Quat)
-    mat = @SMatrix [
+function quaternion_derivative end
+function angular_velocity_in_body end
+
+@inline function velocity_jacobian(::typeof(quaternion_derivative), q::Quat)
+    (@SMatrix [
         -q.x -q.y -q.z;
         q.w -q.z  q.y;
         q.z  q.w -q.x;
-        -q.y  q.x  q.w]
-    mat / 2
+        -q.y  q.x  q.w]) / 2
 end
 
-@inline function quat_derivative_to_body_angular_velocity_jacobian(q::Quat)
+@inline function velocity_jacobian(::typeof(angular_velocity_in_body), q::Quat)
     2 * @SMatrix [
     -q.x  q.w  q.z -q.y;
     -q.y -q.z  q.w  q.x;
@@ -153,12 +155,12 @@ end
 
 @inline function quaternion_derivative(q::Quat, angular_velocity_in_body::AbstractVector)
     @boundscheck length(angular_velocity_in_body) == 3 || error("size mismatch")
-    body_angular_velocity_to_quat_derivative_jacobian(q) * angular_velocity_in_body
+    velocity_jacobian(quaternion_derivative, q) * angular_velocity_in_body
 end
 
 @inline function angular_velocity_in_body(q::Quat, quat_derivative::AbstractVector)
     @boundscheck length(quat_derivative) == 4 || error("size mismatch")
-    quat_derivative_to_body_angular_velocity_jacobian(q) * quat_derivative
+    velocity_jacobian(angular_velocity_in_body, q) * quat_derivative
 end
 
 function linearized_rodrigues_vec(r::RotMatrix) # TODO: consider moving to Rotations
