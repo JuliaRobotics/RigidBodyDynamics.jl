@@ -36,6 +36,13 @@ function create_benchmark_suite()
         mass_matrix!($(result.massmatrix), $state)
     end, setup = rand!($state))
 
+    suite["dynamics_bias"] = @benchmarkable(begin
+        setdirty!($state)
+        dynamics_bias!($result, $state)
+    end, setup = begin
+        rand!($state)
+    end)
+
     suite["inverse_dynamics"] = @benchmarkable(begin
         setdirty!($state)
         inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalwrenches)
@@ -63,6 +70,14 @@ function create_benchmark_suite()
         setdirty!($state)
         geometric_jacobian!($jac, $state, $p)
     end, setup = rand!($state))
+
+    suite["mass_matrix and geometric_jacobian"] = @benchmarkable(begin
+        setdirty!($state)
+        mass_matrix!($(result.massmatrix), $state)
+        geometric_jacobian!($jac, $state, $p)
+    end, setup = begin
+        rand!($state)
+    end)
 
     suite["momentum"] = @benchmarkable(begin
         setdirty!($state)
