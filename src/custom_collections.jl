@@ -10,7 +10,8 @@ export
 
 export
     fastview,
-    foreach_with_extra_args
+    foreach_with_extra_args,
+    map_with_extra_args!
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
@@ -41,9 +42,32 @@ for num_extra_args = 1 : 5
                 nothing
             end
         end
+
+        @generated function map_with_extra_args!(f, $(extra_arg_syms...), dest::TypeSortedCollections.TSCOrAbstractVector{N}, src1::TypeSortedCollection{<:Any, N}, srcs::TypeSortedCollections.TSCOrAbstractVector{N}...) where {N}
+            extra_args = $extra_arg_syms
+            expr = Expr(:block)
+            push!(expr.args, :(Base.@_inline_meta))
+            push!(expr.args, :(leading_tsc = TypeSortedCollections.first_tsc(dest, src1, srcs...)))
+            push!(expr.args, :(@boundscheck TypeSortedCollections.lengths_match(dest, src1, srcs...) || TypeSortedCollections.lengths_match_fail()))
+            for i = 1 : N
+                vali = Val(i)
+                push!(expr.args, quote
+                    let inds = leading_tsc.indices[$i]
+                        @boundscheck TypeSortedCollections.indices_match($vali, inds, dest, src1, srcs...) || indices_match_fail()
+                        @inbounds for j in linearindices(inds)
+                            vecindex = inds[j]
+                            TypeSortedCollections._setindex!($vali, j, vecindex, dest, f($(extra_args...), TypeSortedCollections._getindex_all($vali, j, vecindex, src1, srcs...)...))
+                        end
+                    end
+                end)
+            end
+            quote
+                $expr
+                dest
+            end
+        end
     end
 end
-
 
 ## ConstVector
 """

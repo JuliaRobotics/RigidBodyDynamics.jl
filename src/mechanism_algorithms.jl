@@ -80,11 +80,11 @@ function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path
     @boundscheck num_velocities(state) == size(out, 2) || error("size mismatch")
     @framecheck out.body default_frame(target(path))
     @framecheck out.base default_frame(source(path))
-    update_motion_subspaces_in_world!(state)
-    foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints) do out, state, path, joint # TODO: use closure once it doesn't allocate
+    update_motion_subspaces!(state)
+    foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints, state.motion_subspaces.data) do out, state, path, joint, motion_subspace # TODO: use closure once it doesn't allocate
         vrange = velocity_range(state, joint)
         if Graphs.edge_index(joint) in path.indices
-            part = transformfun(motion_subspace_in_world(state, joint))
+            part = transformfun(motion_subspace)
             direction(joint, path) == :up && (part = -part)
             set_cols!(out, vrange, part)
         else
@@ -170,21 +170,19 @@ velocity vector ``v``.
 function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C}) where {X, M, C}
     @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
     @boundscheck out.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
-    update_motion_subspaces_in_world!(state)
+    update_motion_subspaces!(state)
     update_crb_inertias!(state)
     fill!(out.data, 0)
     joints = state.type_sorted_tree_joints
-    foreach_with_extra_args(out, state, joints) do out, state, jointi # TODO: use closure once it doesn't allocate
+    foreach_with_extra_args(out, state, joints, state.motion_subspaces.data) do out, state, jointi, Si # TODO: use closure once it doesn't allocate
         irange = velocity_range(state, jointi)
-        Si = motion_subspace_in_world(state, jointi)
         Ici = crb_inertia(state, successor(jointi, state.mechanism))
         F = Ici * Si
         ancestor_joint_mask = state.ancestor_joint_masks[jointi]
-        foreach_with_extra_args(out, state, irange, F, ancestor_joint_mask, state.type_sorted_tree_joints) do out, state, irange, F, mask, jointj # TODO: use closure once it doesn't allocate
+        foreach_with_extra_args(out, state, irange, F, ancestor_joint_mask, state.type_sorted_tree_joints, state.motion_subspaces.data) do out, state, irange, F, mask, jointj, Sj # TODO: use closure once it doesn't allocate
             Base.@_inline_meta # currently required; try removing with 1.0
             if mask[jointj]
                 jrange = velocity_range(state, jointj)
-                Sj = motion_subspace_in_world(state, jointj)
                 block = angular(F)' * angular(Sj) + linear(F)' * linear(Sj)
                 set_matrix_block!(out.data, irange, jrange, block)
             end
@@ -234,14 +232,14 @@ $noalloc_doc
 """
 function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformfun)
     @boundscheck num_velocities(state) == size(out, 2) || error("size mismatch")
-    update_motion_subspaces_in_world!(state)
+    update_motion_subspaces!(state)
     update_crb_inertias!(state)
-    foreach_with_extra_args(out, state, state.type_sorted_tree_joints) do out, state, joint
+    foreach_with_extra_args(out, state, state.type_sorted_tree_joints, state.motion_subspaces.data) do out, state, joint, motion_subspace
         vrange = velocity_range(state, joint)
         mechanism = state.mechanism
         body = successor(joint, mechanism)
         inertia = crb_inertia(state, body)
-        part = transformfun(inertia * motion_subspace_in_world(state, joint)) # TODO: consider pure body frame implementation
+        part = transformfun(inertia * motion_subspace) # TODO: consider pure body frame implementation
         set_cols!(out, vrange, part)
     end
 end
@@ -514,7 +512,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
     has_loops(state.mechanism) || return # nothing to be done
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
-    update_motion_subspaces_in_world!(state)
+    update_motion_subspaces!(state)
     update_constraint_wrench_subspaces!(state)
     mechanism = state.mechanism
     rowstart = Ref(1) # TODO: allocation
@@ -529,10 +527,9 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         T = constraint_wrench_subspace(state, nontreejoint)
 
         # Jacobian.
-        foreach_with_extra_args(constraintjacobian, state, path, T, rowrange, state.type_sorted_tree_joints) do constraintjacobian, state, path, T, rowrange, treejoint # TODO: use closure once it doesn't allocate
+        foreach_with_extra_args(constraintjacobian, state, path, T, rowrange, state.type_sorted_tree_joints, state.motion_subspaces.data) do constraintjacobian, state, path, T, rowrange, treejoint, J # TODO: use closure once it doesn't allocate
             vrange = velocity_range(state, treejoint)
             if Graphs.edge_index(treejoint) in path.indices
-                J = motion_subspace_in_world(state, treejoint)
                 part = angular(T)' * angular(J) + linear(T)' * linear(J) # TODO: At_mul_B
                 direction(treejoint, path) == :up && (part = -part)
                 set_matrix_block!(constraintjacobian, rowrange, vrange, part)

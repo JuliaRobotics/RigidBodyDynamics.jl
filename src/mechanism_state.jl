@@ -20,7 +20,7 @@ Type parameters:
 * `M`: the scalar type of the `Mechanism`
 * `C`: the scalar type of the cache variables (`== promote_type(X, M)`)
 """
-struct MechanismState{X, M, C, JointCollection}
+struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     mechanism::Mechanism{M}
     modcount::Int
     type_sorted_tree_joints::JointCollection
@@ -39,7 +39,7 @@ struct MechanismState{X, M, C, JointCollection}
     joint_transforms::CacheElement{JointDict{M, Transform3D{C}}}
     joint_twists::CacheElement{JointDict{M, Twist{C}}}
     joint_bias_accelerations::CacheElement{JointDict{M, SpatialAcceleration{C}}}
-    motion_subspaces_in_world::CacheElement{JointDict{M, MotionSubspace{C}}}
+    motion_subspaces::CacheElement{MotionSubspaceCollection}
     constraint_wrench_subspaces::CacheElement{JointDict{M, WrenchSubspace{C}}}
 
     # body-specific
@@ -72,7 +72,7 @@ struct MechanismState{X, M, C, JointCollection}
         joint_transforms = CacheElement(JointDict{M, Transform3D{C}}(joints(mechanism)))
         joint_twists = CacheElement(JointDict{M, Twist{C}}(tree_joints(mechanism)))
         joint_bias_accelerations = CacheElement(JointDict{M, SpatialAcceleration{C}}(tree_joints(mechanism)))
-        motion_subspaces_in_world = CacheElement(JointDict{M, MotionSubspace{C}}(tree_joints(mechanism)))
+        motion_subspaces = CacheElement(TypeSortedCollection([motion_subspace(j, qs[j]) for j in tree_joints(mechanism)], indices(type_sorted_tree_joints)))
         constraint_wrench_subspaces = CacheElement(JointDict{M, WrenchSubspace{C}}(non_tree_joints(mechanism)))
 
         # body-specific
@@ -97,9 +97,10 @@ struct MechanismState{X, M, C, JointCollection}
         m = mechanism
         constraint_jacobian_structure = JointDict{M, TreePath{RigidBody{M}, GenericJoint{M}}}(j => path(m, predecessor(j, m), successor(j, m)) for j in non_tree_joints(m))
 
-        new{X, M, C, JointCollection}(mechanism, modcount(mechanism), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
+        new{X, M, C, JointCollection, typeof(motion_subspaces.data)}(
+            mechanism, modcount(mechanism), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
             constraint_jacobian_structure, q, v, s, qs, vs, joint_poses,
-            joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces_in_world, constraint_wrench_subspaces,
+            joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, constraint_wrench_subspaces,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
     end
@@ -170,7 +171,7 @@ function setdirty!(state::MechanismState)
     setdirty!(state.joint_transforms)
     setdirty!(state.joint_twists)
     setdirty!(state.joint_bias_accelerations)
-    setdirty!(state.motion_subspaces_in_world)
+    setdirty!(state.motion_subspaces)
     setdirty!(state.constraint_wrench_subspaces)
     setdirty!(state.transforms_to_root)
     setdirty!(state.twists_wrt_world)
@@ -443,24 +444,6 @@ end
 """
 $(SIGNATURES)
 
-Return the motion subspace of the given joint expressed in the root frame of
-the mechanism.
-"""
-@inline function motion_subspace_in_world(state::MechanismState, joint::GenericJoint{T}) where {T}
-    update_motion_subspaces_in_world!(state)
-    state.motion_subspaces_in_world.data[joint]
-end
-
-@inline function motion_subspace_in_world(state::MechanismState{X, M, C}, joint::Joint{M, JT}) where {X, M, C, JT}
-    update_motion_subspaces_in_world!(state)
-    S = state.motion_subspaces_in_world.data[joint]
-    N = num_velocities(JT)
-    GeometricJacobian(S.body, S.base, S.frame, SMatrix{3, N, C}(angular(S)), SMatrix{3, N, C}(linear(S)))
-end
-
-"""
-$(SIGNATURES)
-
 Return the constraint wrench subspace of the given joint expressed in the frame after the joint.
 """
 @inline function constraint_wrench_subspace(state::MechanismState, joint::GenericJoint{T}) where {T}
@@ -585,19 +568,20 @@ end
     nothing
 end
 
-@inline update_motion_subspaces_in_world!(state::MechanismState) = isdirty(state.motion_subspaces_in_world) && _update_motion_subspaces_in_world!(state)
-@noinline function _update_motion_subspaces_in_world!(state::MechanismState)
+@inline update_motion_subspaces!(state::MechanismState) = isdirty(state.motion_subspaces) && _update_motion_subspaces!(state)
+@noinline function _update_motion_subspaces!(state::MechanismState)
     update_transforms!(state)
-    foreach_with_extra_args(state.motion_subspaces_in_world.data, state, state.type_sorted_tree_joints) do results, state, joint
+    f = function (state, joint)
         mechanism = state.mechanism
         body = successor(joint, mechanism)
         parentbody = predecessor(joint, mechanism)
         parentframe = default_frame(parentbody)
         qjoint = configuration(state, joint)
         S = change_base(motion_subspace(joint, qjoint), parentframe) # to make frames line up
-        results[joint] = MotionSubspace(transform(S, transform_to_root(state, body)))
+        transform(S, transform_to_root(state, body))
     end
-    state.motion_subspaces_in_world.dirty = false
+    map_with_extra_args!(f, state, state.motion_subspaces.data, state.type_sorted_tree_joints)
+    state.motion_subspaces.dirty = false
     nothing
 end
 
