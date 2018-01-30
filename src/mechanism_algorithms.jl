@@ -322,18 +322,18 @@ function spatial_accelerations!(out::Associative{RigidBody{M}, SpatialAccelerati
     end
 
     # Recursive propagation
+    # TODO: manual frame changes. Find a way to not avoid the frame checks here.
     out[root] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
     for joint in tree_joints(mechanism)
         body = successor(joint, mechanism)
         parentbody = predecessor(joint, mechanism)
-        parentframe = default_frame(parentbody)
-
-            # TODO: awkward way of doing this (consider switching to body frame implementation):
         toroot = transform_to_root(state, body)
-        twistwrtworld = transform(twist_wrt_world(state, body), inv(toroot))
-        jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
-        jointaccel = change_base(out[body], parentframe) # to make frames line up
-        out[body] = out[parentbody] + transform(jointaccel, toroot, twistwrtworld, jointtwist)
+        parenttwist = twist_wrt_world(state, parentbody)
+        bodytwist = twist_wrt_world(state, body)
+        jointaccel = out[body]
+        jointaccel = SpatialAcceleration(jointaccel.body, parenttwist.body, toroot.to,
+            Spatial.transform_spatial_motion(jointaccel.angular, jointaccel.linear, rotation(toroot), translation(toroot))...)
+        out[body] = out[parentbody] + (-bodytwist) × parenttwist + jointaccel
     end
     nothing
 end
