@@ -1,3 +1,9 @@
+struct JointID
+    value::Int
+end
+Base.hash(i::JointID, h::UInt) = hash(i.value, h)
+Base.convert(::Type{Int}, i::JointID) = i.value
+
 # The constructor setup for Joint may look strange. The constructors are
 # designed so that e.g. a call to Joint("bla", QuaternionFloating{Float64}())
 # returns a Joint{T, JointType{T}}, not a JointType{T, QuaternionFloating{T}}.
@@ -43,7 +49,7 @@ struct Joint{T, JT<:JointType{T}}
     frame_before::CartesianFrame3D
     frame_after::CartesianFrame3D
     joint_type::JT
-    id::Base.RefValue{Int64}
+    id::Base.RefValue{JointID}
     position_bounds::Vector{Bounds{T}}
     velocity_bounds::Vector{Bounds{T}}
     effort_bounds::Vector{Bounds{T}}
@@ -52,7 +58,7 @@ struct Joint{T, JT<:JointType{T}}
                           position_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_positions(joint_type)),
                           velocity_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type)),
                           effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type))) where {T, JT<:JointType{T}}
-        new{T, JointType{T}}(name, frame_before, frame_after, joint_type, Ref(-1), position_bounds, velocity_bounds, effort_bounds)
+        new{T, JointType{T}}(name, frame_before, frame_after, joint_type, Ref(JointID(-1)), position_bounds, velocity_bounds, effort_bounds)
     end
 
     function Joint(other::Joint{T}) where T
@@ -102,8 +108,9 @@ effort for `joint`
 """
 effort_bounds(joint::Joint) = joint.effort_bounds
 
+RigidBodyDynamics.Graphs.edge_id_type(::Type{<:Joint}) = JointID
 RigidBodyDynamics.Graphs.edge_id(joint::Joint) = joint.id[]
-RigidBodyDynamics.Graphs.set_edge_id!(joint::Joint, id::Int64) = (joint.id[] = id)
+RigidBodyDynamics.Graphs.set_edge_id!(joint::Joint, id::JointID) = (joint.id[] = id)
 function RigidBodyDynamics.Graphs.flip_direction(joint::Joint)
     jtype = RigidBodyDynamics.flip_direction(joint_type(joint))
     Joint(string(joint), frame_after(joint), frame_before(joint), jtype;

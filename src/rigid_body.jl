@@ -1,3 +1,9 @@
+struct BodyID
+    value::Int
+end
+Base.hash(i::BodyID, h::UInt) = hash(i.value, h)
+Base.convert(::Type{Int}, i::BodyID) = i.value
+
 """
 $(TYPEDEF)
 
@@ -12,17 +18,17 @@ mutable struct RigidBody{T}
     inertia::Nullable{SpatialInertia{T}}
     frame_definitions::Vector{Transform3D{T}}
     contact_points::Vector{DefaultContactPoint{T}} # TODO: allow different contact models
-    id::Int64
+    id::BodyID
 
     # inertia undefined; can be used for the root of a kinematic tree
     function RigidBody{T}(name::String) where {T}
         frame = CartesianFrame3D(name)
-        new{T}(name, Nullable{SpatialInertia{T}}(), [eye(Transform3D{T}, frame)], DefaultContactPoint{T}[], -1)
+        new{T}(name, Nullable{SpatialInertia{T}}(), [eye(Transform3D{T}, frame)], DefaultContactPoint{T}[], BodyID(-1))
     end
 
     # other bodies
     function RigidBody(name::String, inertia::SpatialInertia{T}) where {T}
-        new{T}(name, Nullable(inertia), [eye(Transform3D{T}, inertia.frame)], DefaultContactPoint{T}[], -1)
+        new{T}(name, Nullable(inertia), [eye(Transform3D{T}, inertia.frame)], DefaultContactPoint{T}[], BodyID(-1))
     end
 end
 
@@ -32,8 +38,9 @@ RigidBody(inertia::SpatialInertia) = RigidBody(string(inertia.frame), inertia)
 Base.string(b::RigidBody) = b.name
 Base.show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(string(b))\"")
 Base.showcompact(io::IO, b::RigidBody) = print(io, "$(string(b))")
+RigidBodyDynamics.Graphs.vertex_id_type(::Type{<:RigidBody}) = BodyID
 RigidBodyDynamics.Graphs.vertex_id(b::RigidBody) = b.id
-RigidBodyDynamics.Graphs.set_vertex_id!(b::RigidBody, id::Int64) = (b.id = id)
+RigidBodyDynamics.Graphs.set_vertex_id!(b::RigidBody, id::BodyID) = (b.id = id)
 
 """
 $(SIGNATURES)
