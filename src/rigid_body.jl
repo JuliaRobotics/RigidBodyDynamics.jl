@@ -32,8 +32,8 @@ RigidBody(inertia::SpatialInertia) = RigidBody(string(inertia.frame), inertia)
 Base.string(b::RigidBody) = b.name
 Base.show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(string(b))\"")
 Base.showcompact(io::IO, b::RigidBody) = print(io, "$(string(b))")
-RigidBodyDynamics.Graphs.vertex_index(b::RigidBody) = b.id
-RigidBodyDynamics.Graphs.vertex_index!(b::RigidBody, id::Int64) = (b.id = id)
+RigidBodyDynamics.Graphs.vertex_id(b::RigidBody) = b.id
+RigidBodyDynamics.Graphs.set_vertex_id!(b::RigidBody, id::Int64) = (b.id = id)
 
 """
 $(SIGNATURES)

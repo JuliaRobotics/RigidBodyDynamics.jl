@@ -102,8 +102,8 @@ effort for `joint`
 """
 effort_bounds(joint::Joint) = joint.effort_bounds
 
-RigidBodyDynamics.Graphs.edge_index(joint::Joint) = joint.id[]
-RigidBodyDynamics.Graphs.edge_index!(joint::Joint, id::Int64) = (joint.id[] = id)
+RigidBodyDynamics.Graphs.edge_id(joint::Joint) = joint.id[]
+RigidBodyDynamics.Graphs.set_edge_id!(joint::Joint, id::Int64) = (joint.id[] = id)
 function RigidBodyDynamics.Graphs.flip_direction(joint::Joint)
     jtype = RigidBodyDynamics.flip_direction(joint_type(joint))
     Joint(string(joint), frame_after(joint), frame_before(joint), jtype;
