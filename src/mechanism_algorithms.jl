@@ -183,7 +183,7 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
         foreach_with_extra_args(out, state, irange, F, ancestor_joint_ids, state.type_sorted_tree_joints) do out, state, irange, F, ancestor_joint_ids, jointj # TODO: use closure once it doesn't allocate
             Base.@_inline_meta
             jrange = velocity_range(state, jointj)
-            if Graphs.edge_id(jointj) ∈ ancestor_joint_ids
+            if Int(Graphs.edge_id(jointj)) ∈ ancestor_joint_ids
                 Sj = motion_subspace_in_world(state, jointj)
                 block = angular(F)' * angular(Sj) + linear(F)' * linear(Sj)
                 set_matrix_block!(out.data, irange, jrange, block)
