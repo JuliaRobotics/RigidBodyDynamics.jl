@@ -1,6 +1,12 @@
 const BodyDict{T} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}}
 const JointDict{T} = UnsafeFastDict{Graphs.edge_index, GenericJoint{T}}
 
+struct JointMask
+    data::BitVector
+end
+@inline Base.getindex(mask::JointMask, id::JointID) = mask.data[Int(id)]
+@inline Base.getindex(mask::JointMask, joint::Joint) = mask[Graphs.edge_id(joint)]
+
 """
 $(TYPEDEF)
 
@@ -19,7 +25,7 @@ struct MechanismState{X, M, C, JointCollection}
     modcount::Int
     type_sorted_tree_joints::JointCollection
     type_sorted_non_tree_joints::JointCollection
-    ancestor_joint_ids::JointDict{M, BitVector}
+    ancestor_joint_masks::JointDict{M, JointMask}
     constraint_jacobian_structure::JointDict{M, TreePath{RigidBody{M}, GenericJoint{M}}}
 
     q::Vector{X} # configurations
@@ -55,8 +61,8 @@ struct MechanismState{X, M, C, JointCollection}
         JointCollection = typeof(type_sorted_joints)
         type_sorted_tree_joints = JointCollection(typedjoint.(tree_joints(mechanism)))
         type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)))
-        ancestor_joint_id_bitvec = joint -> BitArray(j ∈ path(mechanism, successor(joint, mechanism), root_body(mechanism)) for j in tree_joints(mechanism))
-        ancestor_joint_ids = JointDict{M, BitVector}(j => ancestor_joint_id_bitvec(j) for j in tree_joints(mechanism))
+        ancestor_joint_mask = joint -> JointMask(BitArray(j ∈ path(mechanism, successor(joint, mechanism), root_body(mechanism)) for j in tree_joints(mechanism)))
+        ancestor_joint_masks = JointDict{M, JointMask}(j => ancestor_joint_mask(j) for j in tree_joints(mechanism))
 
         # joint-specific
         qstart, vstart = 1, 1
@@ -91,7 +97,7 @@ struct MechanismState{X, M, C, JointCollection}
         m = mechanism
         constraint_jacobian_structure = JointDict{M, TreePath{RigidBody{M}, GenericJoint{M}}}(j => path(m, predecessor(j, m), successor(j, m)) for j in non_tree_joints(m))
 
-        new{X, M, C, JointCollection}(mechanism, modcount(mechanism), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_ids,
+        new{X, M, C, JointCollection}(mechanism, modcount(mechanism), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
             constraint_jacobian_structure, q, v, s, qs, vs, joint_poses,
             joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces_in_world, constraint_wrench_subspaces,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
