@@ -170,23 +170,26 @@ velocity vector ``v``.
 function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C}) where {X, M, C}
     @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
     @boundscheck out.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
-    fill!(out.data, 0)
     update_motion_subspaces_in_world!(state)
     update_crb_inertias!(state)
     joints = state.type_sorted_tree_joints
     foreach_with_extra_args(out, state, joints) do out, state, jointi # TODO: use closure once it doesn't allocate
+        Base.@_inline_meta
         irange = velocity_range(state, jointi)
-        bodyi = successor(jointi, state.mechanism)
         Si = motion_subspace_in_world(state, jointi)
-        Ici = crb_inertia(state, bodyi)
+        Ici = crb_inertia(state, successor(jointi, state.mechanism))
         F = Ici * Si
-        ancestor_joints = state.type_sorted_ancestor_joints[jointi]
-        foreach_with_extra_args(out, state, irange, F, ancestor_joints) do out, state, irange, F, jointj # TODO: use closure once it doesn't allocate
+        ancestor_joint_ids = state.ancestor_joint_ids[jointi]
+        foreach_with_extra_args(out, state, irange, F, ancestor_joint_ids, state.type_sorted_tree_joints) do out, state, irange, F, ancestor_joint_ids, jointj # TODO: use closure once it doesn't allocate
+            Base.@_inline_meta
             jrange = velocity_range(state, jointj)
-            bodyj = successor(jointj, state.mechanism)
-            Sj = motion_subspace_in_world(state, jointj)
-            block = angular(F)' * angular(Sj) + linear(F)' * linear(Sj)
-            set_matrix_block!(out.data, irange, jrange, block)
+            if Graphs.edge_id(jointj) ∈ ancestor_joint_ids
+                Sj = motion_subspace_in_world(state, jointj)
+                block = angular(F)' * angular(Sj) + linear(F)' * linear(Sj)
+                set_matrix_block!(out.data, irange, jrange, block)
+            else
+                zero_matrix_block!(out.data, irange, jrange)
+            end
         end
     end
     out
