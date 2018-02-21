@@ -10,7 +10,9 @@ export
 
 # functions
 export
-    data,
+    data, # TODO: remove
+    vertextype,
+    edgetype,
     vertices,
     edges,
     source,

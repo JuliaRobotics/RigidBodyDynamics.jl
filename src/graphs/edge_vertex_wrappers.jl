@@ -7,9 +7,8 @@ for typename in (:Edge, :Vertex)
         mutable struct $typename{T}
             data::T
             id::Int64
-
-            $typename(data::T) where {T} = new{T}(data, -1)
         end
+        $typename(data) = $typename(data, -1)
         data(x::$typename) = x.data
         $getid(x::$typename) = x.id
         $setid(x::$typename, index::Int64) = (x.id = index)
