@@ -13,13 +13,6 @@ import Base.Iterators: filter
 # useful utility function for computing time derivatives.
 create_autodiff(x, dx) = [ForwardDiff.Dual(x[i], dx[i]) for i in 1 : length(x)]
 
-# TODO: https://github.com/JuliaDiff/DiffBase.jl/pull/19
-@inline Base.mod2pi(x::ForwardDiff.Dual) = ForwardDiff.Dual(mod2pi(ForwardDiff.value(x)), ForwardDiff.partials(x))
-@inline Base.rem2pi(x::ForwardDiff.Dual, roundingmode::RoundingMode) = ForwardDiff.Dual(rem2pi(ForwardDiff.value(x), roundingmode), ForwardDiff.partials(x))
-if Pkg.installed("ForwardDiff") < v"0.6.0"
-    @inline Base.rem(x::ForwardDiff.Dual, n::Real) = ForwardDiff.Dual(rem(ForwardDiff.value(x), n), ForwardDiff.partials(x))
-end
-
 include("test_graph.jl")
 include("test_custom_collections.jl")
 include("test_frames.jl")
