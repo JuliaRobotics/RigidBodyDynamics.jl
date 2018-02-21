@@ -1,8 +1,6 @@
 # Copy block of matrix. TODO: use higher level abstraction once it's fast
-@inline function set_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange, part::AbstractMatrix)
-    for col in 1 : size(part, 2), row in 1 : size(part, 1)
-        out[irange[row], jrange[col]] = part[row, col]
-    end
+@inline function set_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange, part::StaticArray)
+    StaticArrays._setindex!(out, part, StaticArrays.index_sizes(Size(part), :, :), (irange, jrange))
 end
 
 # zero block of a matrix. TODO: use higher level abstraction once it's fast
