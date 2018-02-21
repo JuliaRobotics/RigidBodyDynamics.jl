@@ -335,4 +335,28 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
         @test all(Graphs.vertex_index.(vertices(graph)) .== 1 : num_vertices(graph))
         @test all(Graphs.edge_index.(edges(graph)) .== 1 : num_edges(graph))
     end
+
+    @testset "map-like constructor" begin
+        graph = DirectedGraph{Vertex{Int32}, Edge{Float32}}()
+        for i = Int32(1) : Int32(100)
+            add_vertex!(graph, Vertex(i))
+        end
+        for i = 1 : num_vertices(graph) - 1
+            add_edge!(graph, rand(vertices(graph)), rand(vertices(graph)), Edge(Float32(i)))
+        end
+        mappedgraph = DirectedGraph(x -> Vertex(Int64(x.data), x.id), x -> Edge(Float64(x.data), x.id), graph)
+
+        @test vertextype(mappedgraph) == Vertex{Int64}
+        @test edgetype(mappedgraph) == Edge{Float64}
+        @test all(v1.data == v2.data for (v1, v2) in zip(vertices(graph), vertices(mappedgraph)))
+        @test all(e1.data == e2.data for (e1, e2) in zip(edges(graph), edges(mappedgraph)))
+        @test all(source(e1, graph).data == source(e2, mappedgraph).data for (e1, e2) in zip(edges(graph), edges(mappedgraph)))
+        @test all(target(e1, graph).data == target(e2, mappedgraph).data for (e1, e2) in zip(edges(graph), edges(mappedgraph)))
+
+        inedgesmatch(v1, v2) = all(e1.data == e2.data for (e1, e2) in zip(in_edges(v1, graph), in_edges(v2, mappedgraph)))
+        @test all(inedgesmatch(v1, v2) for (v1, v2) in zip(vertices(graph), vertices(mappedgraph)))
+
+        outedgesmatch(v1, v2) = all(e1.data == e2.data for (e1, e2) in zip(out_edges(v1, graph), out_edges(v2, mappedgraph)))
+        @test all(outedgesmatch(v1, v2) for (v1, v2) in zip(vertices(graph), vertices(mappedgraph)))
+    end
 end

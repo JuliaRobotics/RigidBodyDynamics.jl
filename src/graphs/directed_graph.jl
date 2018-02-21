@@ -5,8 +5,20 @@ mutable struct DirectedGraph{V, E} <: AbstractGraph{V, E}
     targets::Vector{V}
     inedges::Vector{Vector{E}}
     outedges::Vector{Vector{E}}
+end
 
-    DirectedGraph{V, E}() where {V, E} = new{V, E}(V[], E[], V[], V[], Set{E}[], Set{E}[])
+(::Type{DirectedGraph{V, E}})() where {V, E} = DirectedGraph{V, E}(V[], E[], V[], V[], Set{E}[], Set{E}[])
+
+function DirectedGraph(vertexfun::Base.Callable, edgefun::Base.Callable, other::DirectedGraph)
+    vertices = map(vertexfun, other.vertices)
+    edges = map(edgefun, other.edges)
+    vertexmap = Dict(zip(other.vertices, vertices))
+    edgemap = Dict(zip(other.edges, edges))
+    sources = [vertexmap[v] for v in other.sources]
+    targets = [vertexmap[v] for v in other.targets]
+    inedges = [[edgemap[e] for e in vec] for vec in other.inedges]
+    outedges = [[edgemap[e] for e in vec] for vec in other.outedges]
+    DirectedGraph(vertices, edges, sources, targets, inedges, outedges)
 end
 
 # AbstractGraph interface
