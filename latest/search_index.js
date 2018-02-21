@@ -1229,7 +1229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.MechanismState",
     "category": "Type",
-    "text": "struct MechanismState{X, M, C, JointCollection}\n\nA MechanismState stores state information for an entire Mechanism. It contains the joint configuration and velocity vectors q and v, and a vector of additional states s. In addition, it stores cache variables that depend on q and v and are aimed at preventing double work.\n\nType parameters:\n\nX: the scalar type of the q, v, and s vectors.\nM: the scalar type of the Mechanism\nC: the scalar type of the cache variables (== promote_type(X, M))\n\n\n\n"
+    "text": "struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}\n\nA MechanismState stores state information for an entire Mechanism. It contains the joint configuration and velocity vectors q and v, and a vector of additional states s. In addition, it stores cache variables that depend on q and v and are aimed at preventing double work.\n\nType parameters:\n\nX: the scalar type of the q, v, and s vectors.\nM: the scalar type of the Mechanism\nC: the scalar type of the cache variables (== promote_type(X, M))\n\n\n\n"
 },
 
 {
@@ -1334,14 +1334,6 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.local_coordinates!",
     "category": "Method",
     "text": "local_coordinates!(ϕ, ϕd, state, q0)\n\n\nCompute local coordinates phi centered around (global) configuration vector q_0, as well as their time derivatives dotphi.\n\n\n\n"
-},
-
-{
-    "location": "mechanismstate.html#RigidBodyDynamics.motion_subspace_in_world-Union{Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}}}, Tuple{T}} where T",
-    "page": "MechanismState",
-    "title": "RigidBodyDynamics.motion_subspace_in_world",
-    "category": "Method",
-    "text": "motion_subspace_in_world(state, joint)\n\n\nReturn the motion subspace of the given joint expressed in the root frame of the mechanism.\n\n\n\n"
 },
 
 {
@@ -1625,7 +1617,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{M}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{Tau,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{Tau,1}}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{Tau}, Tuple{T}, Tuple{W}, Tuple{X}} where W where Tau where M where X where T",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{M}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,AbstractArray{Tau,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,AbstractArray{Tau,1}}, Tuple{RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C}, Tuple{Tau}, Tuple{T}, Tuple{W}, Tuple{X}} where W where Tau where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Method",
@@ -1633,7 +1625,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{M}, Tuple{Tau}, Tuple{T}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T}, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T} where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1},AbstractArray{Tau,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T}, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T} where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1},AbstractArray{Tau,1}}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T}, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T} where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{X,1}}, Tuple{W}, Tuple{X}} where W where Tau where M where X where T",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{M}, Tuple{Tau}, Tuple{T}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T}, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T} where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,AbstractArray{X,1},AbstractArray{Tau,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T}, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T} where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,AbstractArray{X,1},AbstractArray{Tau,1}}, Tuple{Union{Base.ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T}, DenseArray{X,1}, SubArray{X,1,A,I,L} where L} where I<:Tuple{Vararg{Union{Base.AbstractCartesianIndex, Int64, Range{Int64}},N} where N} where A<:Union{Base.ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{Base.MultiplicativeInverses.SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{DenseArray, SubArray{T,N,P,I,true} where I<:Tuple{Union{Base.Slice, UnitRange},Vararg{Any,N} where N} where P where N where T} where N where T, DenseArray},RigidBodyDynamics.DynamicsResult{T,M},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,AbstractArray{X,1}}, Tuple{W}, Tuple{X}} where W where Tau where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "Method",
@@ -1641,7 +1633,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{M}, Tuple{T}, Tuple{W}, Tuple{X}} where W where M where X where T",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C}, Tuple{M}, Tuple{T}, Tuple{W}, Tuple{X}} where W where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias!",
     "category": "Method",
@@ -1649,7 +1641,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias-Union{Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C}, Tuple{W}, Tuple{X}} where W where M where X",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias-Union{Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C}, Tuple{W}, Tuple{X}} where W where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias",
     "category": "Method",
@@ -1681,7 +1673,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian-Union{Tuple{C}, Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection,RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M,RigidBodyDynamics.JointType{M}}}}, Tuple{X}} where C where M where X",
+    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian-Union{Tuple{C}, Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection,RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M,RigidBodyDynamics.JointType{M}}}}, Tuple{X}} where C where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.geometric_jacobian",
     "category": "Method",
@@ -1689,7 +1681,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1}}, Tuple{M}, Tuple{T}, Tuple{V}, Tuple{W}, Tuple{X}} where W where V where M where X where T",
+    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,AbstractArray{V,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{AbstractArray{T,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{T}},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.SpatialAcceleration{T}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,AbstractArray{V,1}}, Tuple{M}, Tuple{T}, Tuple{V}, Tuple{W}, Tuple{X}} where W where V where M where X where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "Method",
@@ -1697,7 +1689,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics-Union{Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C,AbstractArray{V,1}}, Tuple{V}, Tuple{W}, Tuple{X}} where W where V where M where X",
+    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics-Union{Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,AbstractArray{V,1},Associative{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Spatial.Wrench{W}}}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection where C,AbstractArray{V,1}}, Tuple{V}, Tuple{W}, Tuple{X}} where W where V where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics",
     "category": "Method",
@@ -1713,7 +1705,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.mass_matrix!-Union{Tuple{C}, Tuple{M}, Tuple{Symmetric{C,Array{C,2}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection}, Tuple{X}} where C where M where X",
+    "location": "algorithms.html#RigidBodyDynamics.mass_matrix!-Union{Tuple{C}, Tuple{M}, Tuple{Symmetric{C,Array{C,2}},RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection}, Tuple{X}} where C where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.mass_matrix!",
     "category": "Method",
@@ -1721,7 +1713,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.mass_matrix-Union{Tuple{C}, Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection}, Tuple{X}} where C where M where X",
+    "location": "algorithms.html#RigidBodyDynamics.mass_matrix-Union{Tuple{C}, Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection}, Tuple{X}} where C where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.mass_matrix",
     "category": "Method",
