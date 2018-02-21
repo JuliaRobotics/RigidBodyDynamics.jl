@@ -2,7 +2,7 @@ const BodyDict{T} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}}
 const JointDict{T} = UnsafeFastDict{Graphs.edge_index, GenericJoint{T}}
 
 struct JointMask
-    data::BitVector
+    data::Vector{Bool}
 end
 @inline Base.getindex(mask::JointMask, id::JointID) = mask.data[Int(id)]
 @inline Base.getindex(mask::JointMask, joint::Joint) = mask[Graphs.edge_id(joint)]
@@ -61,7 +61,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         JointCollection = typeof(type_sorted_joints)
         type_sorted_tree_joints = JointCollection(typedjoint.(tree_joints(mechanism)))
         type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)))
-        ancestor_joint_mask = joint -> JointMask(BitArray(j ∈ path(mechanism, successor(joint, mechanism), root_body(mechanism)) for j in tree_joints(mechanism)))
+        ancestor_joint_mask = joint -> JointMask([j ∈ path(mechanism, successor(joint, mechanism), root_body(mechanism)) for j in tree_joints(mechanism)])
         ancestor_joint_masks = JointDict{M, JointMask}(j => ancestor_joint_mask(j) for j in tree_joints(mechanism))
 
         # joint-specific
