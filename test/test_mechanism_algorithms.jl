@@ -124,8 +124,8 @@ end
             wrench = rand(Wrench{Float64}, frame_after(joint))
             τ = Vector{Float64}(num_velocities(joint))
             RigidBodyDynamics.joint_torque!(τ, joint, qjoint, wrench)
-            S = motion_subspace_in_world(x, joint)
-            @test isapprox(τ, torque(S, transform(wrench, transform_to_root(x, body))))
+            S = motion_subspace(joint, configuration(x, joint))
+            @test isapprox(τ, torque(S, wrench))
         end
     end
 
@@ -134,7 +134,7 @@ end
         x = MechanismState(mechanism)
         rand!(x)
         for joint in joints(mechanism)
-            S = motion_subspace_in_world(x, joint)
+            S = motion_subspace(joint, configuration(x, joint))
             @test isfloating(joint) == (rank(Array(S)) == 6)
             @test isfloating(joint) == (num_constraints(joint) == 0)
         end
@@ -182,9 +182,9 @@ end
         for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             qjoint = configuration(x, joint)
-            S = motion_subspace_in_world(x, joint)
+            S = motion_subspace(joint, configuration(x, joint))
             tf = joint_transform(joint, qjoint)
-            T = transform(constraint_wrench_subspace(joint, tf), transform_to_root(x, body))
+            T = constraint_wrench_subspace(joint, tf)
             @test isapprox(angular(T)' * angular(S) + linear(T)' * linear(S), zeros(num_constraints(joint), num_velocities(joint)); atol = 1e-12)
         end
     end
@@ -246,7 +246,10 @@ end
         for joint in tree_joints(mechanism)
             body = successor(joint, mechanism)
             parent_body = predecessor(joint, mechanism)
-            @test isapprox(relative_twist(x, body, parent_body), Twist(motion_subspace_in_world(x, joint), velocity(x, joint)); atol = 1e-12)
+            toroot = transform_to_root(x, body)
+            S = transform(motion_subspace(joint, configuration(x, joint)), toroot)
+            S = RigidBodyDynamics.change_base(S, default_frame(parent_body)) # to make frames line up
+            @test isapprox(relative_twist(x, body, parent_body), Twist(S, velocity(x, joint)); atol = 1e-12)
         end
     end
 
@@ -280,7 +283,8 @@ end
             if num_velocities(joint) > 0 # TODO: Base.mapslices can't handle matrices with zero columns
                 body = successor(joint, mechanism)
                 Ajoint = Amat[:, velocity_range(x, joint)]
-                @test isapprox(Array(crb_inertia(x, body) * motion_subspace_in_world(x, joint)), Ajoint; atol = 1e-12)
+                S = transform(motion_subspace(joint, configuration(x, joint)), transform_to_root(x, body))
+                @test isapprox(Array(crb_inertia(x, body) * S), Ajoint; atol = 1e-12)
             end
         end
 

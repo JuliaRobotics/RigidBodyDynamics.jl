@@ -108,7 +108,6 @@ export
     additional_state,
     joint_transform,
     motion_subspace,
-    motion_subspace_in_world, # TODO: remove, just call it motion_subspace
     constraint_wrench_subspace,
     bias_acceleration,
     spatial_inertia,
