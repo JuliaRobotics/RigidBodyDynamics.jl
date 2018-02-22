@@ -92,13 +92,15 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         ancestor_joint_masks = JointDataVector([ancestor_joint_mask(j) for j in tree_joints(mechanism)])
 
         # joint-specific
-        jointids = JointIDOneTo(id(last(joints(mechanism))))
-        treejointids = JointIDOneTo(id(last(tree_joints(mechanism))))
-        nontreejointids = if isempty(non_tree_joints(mechanism))
-            JointID(0) : JointID(-1)
-        else
+        jointids = isempty(joints(mechanism)) ?
+            JointIDOneTo(JointID(0)) :
+            JointIDOneTo(id(last(joints(mechanism))))
+        treejointids = isempty(tree_joints(mechanism)) ?
+            JointIDOneTo(JointID(0)) :
+            JointIDOneTo(id(last(tree_joints(mechanism))))
+        nontreejointids = isempty(non_tree_joints(mechanism)) ?
+            (JointID(1) : JointID(0)) :
             id(first(non_tree_joints(mechanism))) : id(last(non_tree_joints(mechanism)))
-        end
         qstart, vstart = 1, 1
         qs = JointDataVector(VectorSegment{X}[view(q, qstart : (qstart += num_positions(j)) - 1) for j in tree_joints(mechanism)])
         vs = JointDataVector(VectorSegment{X}[view(v, vstart : (vstart += num_velocities(j)) - 1) for j in tree_joints(mechanism)])
@@ -160,6 +162,7 @@ Base.show(io::IO, ::MechanismState{X, M, C}) where {X, M, C} = print(io, "Mechan
 
 modcount(state::MechanismState) = state.modcount
 Base.@propagate_inbounds predsucc(id::JointID, state::MechanismState) = state.predecessor_and_successor_ids[id]
+Base.@propagate_inbounds successorid(id::JointID, state::MechanismState) = last(state.predecessor_and_successor_ids[id])
 
 """
 $(SIGNATURES)
@@ -570,8 +573,7 @@ end
     # update transforms to root
     transforms_to_root = state.transforms_to_root
     transforms_to_root[root_body(mechanism)] = eye(Transform3D{cache_eltype(state)}, root_frame(mechanism)) # TODO: do once and for all upon construction
-    for joint in tree_joints(mechanism) # TODO: directly loop over JointIDs
-        jointid = id(joint)
+    for jointid in state.treejointids
         parentid, bodyid = predsucc(jointid, state)
         parent_to_root = transforms_to_root[parentid]
         before_joint_to_parent = state.joint_poses[jointid]
@@ -650,7 +652,7 @@ end
     update_transforms!(state)
     foreach_with_extra_args(state.constraint_wrench_subspaces, state, state.type_sorted_non_tree_joints) do results, state, joint
         jointid = id(joint)
-        _, bodyid = predsucc(jointid, state)
+        bodyid = successorid(jointid, state)
         body = successor(joint, state.mechanism) # TODO
         tf = state.joint_transforms[jointid]
         T = constraint_wrench_subspace(joint, tf)
@@ -694,7 +696,7 @@ end
     mechanism = state.mechanism
     inertias = state.inertias
     inertias[root_body(mechanism)] = zero(SpatialInertia{cache_eltype(state)}, root_frame(mechanism)) # TODO: do once and for all in constructor
-    for joint in tree_joints(mechanism) # TODO: loop over bodyids
+    for joint in tree_joints(mechanism)
         body = successor(joint, mechanism)
         bodyid = id(body)
         inertias[bodyid] = transform(spatial_inertia(body), transform_to_root(state, bodyid))
@@ -705,16 +707,17 @@ end
 
 @inline update_crb_inertias!(state::MechanismState) = isdirty(state.crb_inertias) && _update_crb_inertias!(state)
 @noinline function _update_crb_inertias!(state::MechanismState)
+    update_spatial_inertias!(state)
     mechanism = state.mechanism
     crb_inertias = state.crb_inertias
-    for body in bodies(mechanism) # TODO: loop over bodyids, skip world
-        bodyid = id(body)
-        crb_inertias[bodyid] = spatial_inertia(state, bodyid)
+    rootbodyid = id(root_body(mechanism))
+    crb_inertias[rootbodyid] = state.inertias[rootbodyid]
+    for jointid in state.treejointids
+        bodyid = successorid(jointid, state)
+        crb_inertias[bodyid] = state.inertias[bodyid]
     end
-    joints = tree_joints(mechanism)
-    for i = length(joints) : -1 : 1 # TODO: loop over JointIDs
-        joint = joints[i]
-        jointid = id(joint)
+    for i = length(state.treejointids) : -1 : 1
+        jointid = state.treejointids[i]
         parentbodyid, bodyid = predsucc(jointid, state)
         crb_inertias[parentbodyid] += crb_inertias[bodyid]
     end

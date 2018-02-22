@@ -143,6 +143,7 @@ macro indextype(name)
         Base.start(r::$oneto) = start(r.oneto)
         Base.next(r::$oneto, state) = ((i, state) = next(r.oneto, state); ($name(i), state))
         Base.done(r::$oneto, i) = done(r.oneto, i)
+        @inline Base.getindex(r::$oneto, i::Integer) = $name(r.oneto[i])
 
         struct $unitrange <: Base.AbstractUnitRange{$name}
             range::UnitRange{Int}
@@ -154,6 +155,7 @@ macro indextype(name)
         Base.start(r::$unitrange) = start(r.range)
         Base.next(r::$unitrange, state) = ((i, state) = next(r.range, state); ($name(i), state))
         Base.done(r::$unitrange, i) = done(r.range, i)
+        @inline Base.getindex(r::$unitrange, i::Integer) = $name(r.range[i])
         Base.colon(start::$name, stop::$name) = $unitrange(start, stop)
     end)
 end
