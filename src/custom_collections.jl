@@ -274,6 +274,7 @@ isdirty(d::CacheIndexDict) = d.dirty
 @inline Base.done(d::AbstractIndexDict, i) = i == length(d) + 1
 @inline Base.keys(d::AbstractIndexDict{K}) where {K} = (K(i) for i in eachindex(d.values))
 @inline Base.values(d::AbstractIndexDict) = d.values
+@inline Base.haskey(d::AbstractIndexDict, key) = isassigned(d.values, Int(key))
 Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{K}, key::K) where {K} = d.values[Int(key)]
 Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) where {K} = d.values[Int(key)] = value
 
