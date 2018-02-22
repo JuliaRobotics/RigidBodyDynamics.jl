@@ -1,3 +1,7 @@
+#TODO:
+const BodyDict{T} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}}
+const JointDict{T} = UnsafeFastDict{Graphs.edge_index, GenericJoint{T}}
+
 """
 $(TYPEDEF)
 
