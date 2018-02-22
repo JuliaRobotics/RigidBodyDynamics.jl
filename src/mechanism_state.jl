@@ -706,7 +706,7 @@ end
     nothing
 end
 
-contact_states(state::MechanismState, body::RigidBody) = state.contact_states[body]
+contact_states(state::MechanismState, body::Union{<:RigidBody, BodyID}) = state.contact_states[body]
 
 function newton_euler(state::MechanismState, body::Union{<:RigidBody, BodyID}, accel::SpatialAcceleration)
     inertia = spatial_inertia(state, body)
