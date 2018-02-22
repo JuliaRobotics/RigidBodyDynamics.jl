@@ -34,9 +34,9 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     s::Vector{X} # additional state
 
     # joint-related fixed data
-    jointids::JointIDOneTo
-    treejointids::JointIDOneTo
-    nontreejointids::JointIDUnitRange
+    jointids::Base.OneTo{JointID}
+    treejointids::Base.OneTo{JointID}
+    nontreejointids::UnitRange{JointID}
     qs::JointDict{VectorSegment{X}}
     vs::JointDict{VectorSegment{X}}
     predecessor_and_successor_ids::JointDict{Pair{BodyID, BodyID}}
@@ -73,15 +73,12 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         ancestor_joint_masks = JointDict{JointDict{Bool}}(id(j) => ancestor_joint_mask(j) for j in tree_joints(mechanism))
 
         # joint-specific
-        jointids = isempty(joints(mechanism)) ?
-            JointIDOneTo(JointID(0)) :
-            JointIDOneTo(id(last(joints(mechanism))))
-        treejointids = isempty(tree_joints(mechanism)) ?
-            JointIDOneTo(JointID(0)) :
-            JointIDOneTo(id(last(tree_joints(mechanism))))
-        nontreejointids = isempty(non_tree_joints(mechanism)) ?
-            (JointID(1) : JointID(0)) :
-            id(first(non_tree_joints(mechanism))) : id(last(non_tree_joints(mechanism)))
+        lastjointid = isempty(joints(mechanism)) ? JointID(0) : id(last(joints(mechanism)))
+        jointids = Base.OneTo(lastjointid)
+        lasttreejointid = isempty(tree_joints(mechanism)) ? JointID(0) : id(last(tree_joints(mechanism)))
+        treejointids = Base.OneTo(lasttreejointid)
+        nontreejointids = lasttreejointid + 1 : lastjointid
+
         qstart, vstart = 1, 1
         qs = JointDict{VectorSegment{X}}(id(j) => view(q, qstart : (qstart += num_positions(j)) - 1) for j in tree_joints(mechanism))
         vs = JointDict{VectorSegment{X}}(id(j) => view(v, vstart : (vstart += num_velocities(j)) - 1) for j in tree_joints(mechanism))
@@ -697,8 +694,7 @@ end
         bodyid = successorid(jointid, state)
         crb_inertias[bodyid] = state.inertias[bodyid]
     end
-    for i = length(state.treejointids) : -1 : 1
-        jointid = state.treejointids[i]
+    for jointid = reverse(state.treejointids)
         parentbodyid, bodyid = predsucc(jointid, state)
         crb_inertias[parentbodyid] += crb_inertias[bodyid]
     end
