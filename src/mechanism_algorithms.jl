@@ -309,8 +309,8 @@ function spatial_accelerations!(out::Associative{RigidBody{M}, SpatialAccelerati
     mechanism = state.mechanism
     root = root_body(mechanism)
     joints = state.type_sorted_tree_joints
-    qs = state.qs.data
-    vs = state.vs.data
+    qs = values(state.qs)
+    vs = values(state.vs)
 
     # Compute joint accelerations
     foreach_with_extra_args(state, out, vd, joints, qs, vs) do state, accels, vd, joint, qjoint, vjoint # TODO: use closure once it doesn't allocate
@@ -446,8 +446,8 @@ function dynamics_bias(
     mechanism = state.mechanism
     torques = Vector{T}(num_velocities(state))
     rootframe = root_frame(mechanism)
-    jointwrenches = BodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-    accelerations = BodyDict{M, SpatialAcceleration{T}}(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+    jointwrenches = OldBodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+    accelerations = OldBodyDict{M, SpatialAcceleration{T}}(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
     dynamics_bias!(torques, accelerations, jointwrenches, state, externalwrenches)
     torques
 end
@@ -502,8 +502,8 @@ function inverse_dynamics(
     mechanism = state.mechanism
     torques = Vector{T}(num_velocities(state))
     rootframe = root_frame(mechanism)
-    jointwrenches = BodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-    accelerations = BodyDict{M, SpatialAcceleration{T}}(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+    jointwrenches = OldBodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+    accelerations = OldBodyDict{M, SpatialAcceleration{T}}(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
     inverse_dynamics!(torques, jointwrenches, accelerations, state, v̇, externalwrenches)
     torques
 end

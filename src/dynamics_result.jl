@@ -1,6 +1,5 @@
 #TODO:
-const BodyDict{T} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}}
-const JointDict{T} = UnsafeFastDict{Graphs.edge_index, GenericJoint{T}}
+const OldBodyDict{T} = UnsafeFastDict{Graphs.vertex_index, RigidBody{T}}
 
 """
 $(TYPEDEF)
@@ -24,11 +23,11 @@ mutable struct DynamicsResult{T, M}
     λ::Vector{T}
     ṡ::Vector{T}
 
-    contactwrenches::BodyDict{M, Wrench{T}}
-    totalwrenches::BodyDict{M, Wrench{T}}
-    accelerations::BodyDict{M, SpatialAcceleration{T}}
-    jointwrenches::BodyDict{M, Wrench{T}} # TODO: index by joint tree index?
-    contact_state_derivatives::BodyDict{M, Vector{Vector{DefaultSoftContactStateDeriv{T}}}}
+    contactwrenches::OldBodyDict{M, Wrench{T}}
+    totalwrenches::OldBodyDict{M, Wrench{T}}
+    accelerations::OldBodyDict{M, SpatialAcceleration{T}}
+    jointwrenches::OldBodyDict{M, Wrench{T}} # TODO: index by joint tree index?
+    contact_state_derivatives::OldBodyDict{M, Vector{Vector{DefaultSoftContactStateDeriv{T}}}}
 
     # see solve_dynamics! for meaning of the following variables:
     L::Matrix{T} # lower triangular
@@ -52,11 +51,11 @@ mutable struct DynamicsResult{T, M}
         ṡ = Vector{T}(num_additional_states(mechanism))
 
         rootframe = root_frame(mechanism)
-        contactwrenches = BodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-        totalwrenches = BodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-        accelerations = BodyDict{M, SpatialAcceleration{T}}(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
-        jointwrenches = BodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-        contact_state_derivs = BodyDict{M, Vector{Vector{DefaultSoftContactStateDeriv{T}}}}(b => Vector{Vector{DefaultSoftContactStateDeriv{T}}}() for b in bodies(mechanism))
+        contactwrenches = OldBodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+        totalwrenches = OldBodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+        accelerations = OldBodyDict{M, SpatialAcceleration{T}}(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+        jointwrenches = OldBodyDict{M, Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+        contact_state_derivs = OldBodyDict{M, Vector{Vector{DefaultSoftContactStateDeriv{T}}}}(b => Vector{Vector{DefaultSoftContactStateDeriv{T}}}() for b in bodies(mechanism))
         startind = 1
         for body in bodies(mechanism), point in contact_points(body)
             model = contact_model(point)

@@ -1,37 +1,12 @@
-macro datavector(DataVector, IDType, IDCarrier)
-    esc(quote
-        struct $DataVector{T}
-            data::Vector{T}
-        end
-        Base.@propagate_inbounds Base.getindex(v::$DataVector, id::$IDType) = v.data[Int(id)]
-        Base.@propagate_inbounds Base.setindex!(v::$DataVector, value, id::$IDType) = v.data[Int(id)] = value
-        Base.@propagate_inbounds Base.getindex(v::$DataVector, x::$IDCarrier) = v[id(x)]
-        Base.@propagate_inbounds Base.setindex!(v::$DataVector, value, x::$IDCarrier) = v[id(x)] = value
-    end)
-end
+const BodyDict{V} = IndexDict{BodyID, V}
+const BodyCacheDict{V} = CacheIndexDict{BodyID, V}
+Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{BodyID}, key::RigidBody) = d[id(key)]
+Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{BodyID}, value, key::RigidBody) = d[id(key)] = value
 
-@datavector JointDataVector JointID Joint
-@datavector BodyDataVector BodyID RigidBody
-
-macro vectorcache(DataCache, IDType, IDCarrier)
-    esc(quote
-        mutable struct $DataCache{T}
-            data::Vector{T}
-            dirty::Bool
-            $DataCache(data::Vector{T}) where {T} = new{T}(data, true)
-            $DataCache{T}(n::Int) where {T} = new{T}(Vector{T}(uninitialized, n), true)
-        end
-        Base.@propagate_inbounds Base.getindex(cache::$(DataCache), id::$IDType) = cache.data[Int(id)]
-        Base.@propagate_inbounds Base.setindex!(cache::$DataCache, value, id::$IDType) = cache.data[Int(id)] = value
-        Base.@propagate_inbounds Base.getindex(cache::$DataCache, x::$IDCarrier) = cache[id(x)]
-        Base.@propagate_inbounds Base.setindex!(cache::$DataCache, value, x::$IDCarrier) = cache[id(x)] = value
-        @inline isdirty(cache::$DataCache) = cache.dirty
-        @inline setdirty!(cache::$DataCache) = cache.dirty = true
-    end)
-end
-
-@vectorcache JointDataCache JointID Joint
-@vectorcache BodyDataCache BodyID RigidBody
+const JointDict{V} = IndexDict{JointID, V}
+const JointCacheDict{V} = CacheIndexDict{JointID, V}
+Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{JointID}, key::Joint) = d[id(key)]
+Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{JointID}, value, key::Joint) = d[id(key)] = value
 
 """
 $(TYPEDEF)
@@ -51,8 +26,8 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     modcount::Int
     type_sorted_tree_joints::JointCollection
     type_sorted_non_tree_joints::JointCollection
-    ancestor_joint_masks::JointDataVector{JointDataVector{Bool}}
-    constraint_jacobian_structure::JointDataVector{TreePath{RigidBody{M}, GenericJoint{M}}} # TODO: switch to JointDataVector{JointDataVector{Vector{Bool}}}
+    ancestor_joint_masks::JointDict{JointDict{Bool}}
+    constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, GenericJoint{M}}} # TODO: switch to JointDict{JointDict{Vector{Bool}}}
 
     q::Vector{X} # configurations
     v::Vector{X} # velocities
@@ -62,26 +37,26 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     jointids::JointIDOneTo
     treejointids::JointIDOneTo
     nontreejointids::JointIDUnitRange
-    qs::JointDataVector{VectorSegment{X}}
-    vs::JointDataVector{VectorSegment{X}}
-    predecessor_and_successor_ids::JointDataVector{Pair{BodyID, BodyID}}
-    joint_poses::JointDataVector{Transform3D{M}} # TODO: remove, just use data in Joints
+    qs::JointDict{VectorSegment{X}}
+    vs::JointDict{VectorSegment{X}}
+    predecessor_and_successor_ids::JointDict{Pair{BodyID, BodyID}}
+    joint_poses::JointDict{Transform3D{M}} # TODO: remove, just use data in Joints
 
     # joint-related cache
-    joint_transforms::JointDataCache{Transform3D{C}}
+    joint_transforms::JointCacheDict{Transform3D{C}}
     tree_joint_transforms::VectorSegment{Transform3D{C}}
-    joint_twists::JointDataCache{Twist{C}}
-    joint_bias_accelerations::JointDataCache{SpatialAcceleration{C}}
+    joint_twists::JointCacheDict{Twist{C}}
+    joint_bias_accelerations::JointCacheDict{SpatialAcceleration{C}}
     motion_subspaces::CacheElement{MotionSubspaceCollection} # TODO
-    constraint_wrench_subspaces::JointDataCache{WrenchSubspace{C}} # note: the ones corresponding to tree joints are never used (or set)
+    constraint_wrench_subspaces::JointCacheDict{WrenchSubspace{C}} # note: the ones corresponding to tree joints are never used (or set)
 
     # body-related cache
-    transforms_to_root::BodyDataCache{Transform3D{C}}
-    twists_wrt_world::BodyDataCache{Twist{C}}
-    bias_accelerations_wrt_world::BodyDataCache{SpatialAcceleration{C}}
-    inertias::BodyDataCache{SpatialInertia{C}}
-    crb_inertias::BodyDataCache{SpatialInertia{C}}
-    contact_states::BodyDataCache{Vector{Vector{DefaultSoftContactState{X}}}} # TODO: consider moving to separate type
+    transforms_to_root::BodyCacheDict{Transform3D{C}}
+    twists_wrt_world::BodyCacheDict{Twist{C}}
+    bias_accelerations_wrt_world::BodyCacheDict{SpatialAcceleration{C}}
+    inertias::BodyCacheDict{SpatialInertia{C}}
+    crb_inertias::BodyCacheDict{SpatialInertia{C}}
+    contact_states::BodyCacheDict{Vector{Vector{DefaultSoftContactState{X}}}} # TODO: consider moving to separate type
 
     function MechanismState(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M}
         @assert length(q) == num_positions(mechanism)
@@ -94,8 +69,8 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         JointCollection = typeof(type_sorted_joints)
         type_sorted_tree_joints = JointCollection(typedjoint.(tree_joints(mechanism)))
         type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)))
-        ancestor_joint_mask = joint -> JointDataVector([j ∈ path(mechanism, successor(joint, mechanism), root_body(mechanism)) for j in tree_joints(mechanism)])
-        ancestor_joint_masks = JointDataVector([ancestor_joint_mask(j) for j in tree_joints(mechanism)])
+        ancestor_joint_mask = joint -> JointDict{Bool}(id(j) => j ∈ path(mechanism, successor(joint, mechanism), root_body(mechanism)) for j in tree_joints(mechanism))
+        ancestor_joint_masks = JointDict{JointDict{Bool}}(id(j) => ancestor_joint_mask(j) for j in tree_joints(mechanism))
 
         # joint-specific
         jointids = isempty(joints(mechanism)) ?
@@ -108,47 +83,47 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
             (JointID(1) : JointID(0)) :
             id(first(non_tree_joints(mechanism))) : id(last(non_tree_joints(mechanism)))
         qstart, vstart = 1, 1
-        qs = JointDataVector(VectorSegment{X}[view(q, qstart : (qstart += num_positions(j)) - 1) for j in tree_joints(mechanism)])
-        vs = JointDataVector(VectorSegment{X}[view(v, vstart : (vstart += num_velocities(j)) - 1) for j in tree_joints(mechanism)])
-        predecessor_and_successor_ids = JointDataVector([id(predecessor(j, mechanism)) => id(successor(j, mechanism)) for j in joints(mechanism)])
-        joint_poses = JointDataVector([body_fixed_frame_definition(mechanism, frame_before(j)) for j in joints(mechanism)])
+        qs = JointDict{VectorSegment{X}}(id(j) => view(q, qstart : (qstart += num_positions(j)) - 1) for j in tree_joints(mechanism))
+        vs = JointDict{VectorSegment{X}}(id(j) => view(v, vstart : (vstart += num_velocities(j)) - 1) for j in tree_joints(mechanism))
+        predecessor_and_successor_ids = JointDict{Pair{BodyID, BodyID}}(id(j) => (id(predecessor(j, mechanism)) => id(successor(j, mechanism))) for j in joints(mechanism))
+        joint_poses = JointDict{Transform3D{M}}(id(j) => body_fixed_frame_definition(mechanism, frame_before(j)) for j in joints(mechanism))
 
-        joint_transforms = JointDataCache{Transform3D{C}}(length(joints(mechanism)))
-        tree_joint_transforms = view(joint_transforms.data, 1 : length(tree_joints(mechanism)))
-        joint_twists = JointDataCache{Twist{C}}(length(tree_joints(mechanism)))
-        joint_bias_accelerations = JointDataCache{SpatialAcceleration{C}}(length(tree_joints(mechanism)))
+        joint_transforms = JointCacheDict{Transform3D{C}}(length(joints(mechanism)))
+        tree_joint_transforms = view(values(joint_transforms), 1 : length(tree_joints(mechanism)))
+        joint_twists = JointCacheDict{Twist{C}}(length(tree_joints(mechanism)))
+        joint_bias_accelerations = JointCacheDict{SpatialAcceleration{C}}(length(tree_joints(mechanism)))
         motion_subspaces = CacheElement(TypeSortedCollection([motion_subspace(j, qs[j]) for j in tree_joints(mechanism)], indices(type_sorted_tree_joints)))
-        constraint_wrench_subspaces = JointDataCache{WrenchSubspace{C}}(length(joints(mechanism)))
+        constraint_wrench_subspaces = JointCacheDict{WrenchSubspace{C}}(length(joints(mechanism)))
 
         # body-specific
         nbodies = length(bodies(mechanism))
-        transforms_to_root = BodyDataCache{Transform3D{C}}(nbodies)
-        twists_wrt_world = BodyDataCache{Twist{C}}(nbodies)
-        bias_accelerations_wrt_world = BodyDataCache{SpatialAcceleration{C}}(nbodies)
-        inertias = BodyDataCache{SpatialInertia{C}}(nbodies)
-        crb_inertias = BodyDataCache{SpatialInertia{C}}(nbodies)
-        contact_states = BodyDataCache([Vector{Vector{DefaultSoftContactState{X}}}() for b in bodies(mechanism)])
+        transforms_to_root = BodyCacheDict{Transform3D{C}}(nbodies)
+        twists_wrt_world = BodyCacheDict{Twist{C}}(nbodies)
+        bias_accelerations_wrt_world = BodyCacheDict{SpatialAcceleration{C}}(nbodies)
+        inertias = BodyCacheDict{SpatialInertia{C}}(nbodies)
+        crb_inertias = BodyCacheDict{SpatialInertia{C}}(nbodies)
+        contact_states = BodyCacheDict(id(b) => Vector{Vector{DefaultSoftContactState{X}}}() for b in bodies(mechanism))
         startind = 1
         for body in bodies(mechanism), point in contact_points(body)
             model = contact_model(point)
             n = num_states(model)
             push!(contact_states[body], collect(begin
-                s_part = view(s, startind : startind + n - 1)
-                contact_state = SoftContactState(model, s_part, root_frame(mechanism))
-                startind += n
-                contact_state
-            end for j = 1 : length(mechanism.environment)))
+            s_part = view(s, startind : startind + n - 1)
+            contact_state = SoftContactState(model, s_part, root_frame(mechanism))
+            startind += n
+            contact_state
+        end for j = 1 : length(mechanism.environment)))
         end
 
         m = mechanism
-        constraint_jacobian_structure = JointDataVector([path(m, predecessor(j, m), successor(j, m))::TreePath{RigidBody{M}, GenericJoint{M}} for j in joints(m)])
+        constraint_jacobian_structure = JointDict(id(j) => path(m, predecessor(j, m), successor(j, m))::TreePath{RigidBody{M}, GenericJoint{M}} for j in joints(m))
 
         new{X, M, C, JointCollection, typeof(motion_subspaces.data)}(
-            mechanism, modcount(mechanism), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
-            constraint_jacobian_structure, q, v, s, jointids, treejointids, nontreejointids, qs, vs, predecessor_and_successor_ids, joint_poses,
-            joint_transforms, tree_joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, constraint_wrench_subspaces,
-            transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
-            contact_states)
+        mechanism, modcount(mechanism), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
+        constraint_jacobian_structure, q, v, s, jointids, treejointids, nontreejointids, qs, vs, predecessor_and_successor_ids, joint_poses,
+        joint_transforms, tree_joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, constraint_wrench_subspaces,
+        transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
+        contact_states)
     end
 
     function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
@@ -216,16 +191,16 @@ $(SIGNATURES)
 Invalidate all cache variables.
 """
 function setdirty!(state::MechanismState)
-    setdirty!(state.joint_transforms)
-    setdirty!(state.joint_twists)
-    setdirty!(state.joint_bias_accelerations)
-    setdirty!(state.motion_subspaces)
-    setdirty!(state.constraint_wrench_subspaces)
-    setdirty!(state.transforms_to_root)
-    setdirty!(state.twists_wrt_world)
-    setdirty!(state.bias_accelerations_wrt_world)
-    setdirty!(state.inertias)
-    setdirty!(state.crb_inertias)
+    CustomCollections.setdirty!(state.joint_transforms)
+    CustomCollections.setdirty!(state.joint_twists)
+    CustomCollections.setdirty!(state.joint_bias_accelerations)
+    CustomCollections.setdirty!(state.motion_subspaces)
+    CustomCollections.setdirty!(state.constraint_wrench_subspaces)
+    CustomCollections.setdirty!(state.transforms_to_root)
+    CustomCollections.setdirty!(state.twists_wrt_world)
+    CustomCollections.setdirty!(state.bias_accelerations_wrt_world)
+    CustomCollections.setdirty!(state.inertias)
+    CustomCollections.setdirty!(state.crb_inertias)
 end
 
 """
@@ -234,7 +209,7 @@ $(SIGNATURES)
 Reset all contact state variables.
 """
 function reset_contact_state!(state::MechanismState)
-    for states_for_body in state.contact_states.data
+    for states_for_body in values(state.contact_states)
         for states_for_point in states_for_body
             for contact_state in states_for_point
                 reset!(contact_state)
@@ -254,7 +229,7 @@ configuration vector would be set to identity. The contract is that each of the
 joint transforms should be an identity transform.
 """
 function zero_configuration!(state::MechanismState)
-    foreach((joint, q) -> zero_configuration!(q, joint), state.type_sorted_tree_joints, state.qs.data)
+    foreach((joint, q) -> zero_configuration!(q, joint), state.type_sorted_tree_joints, values(state.qs))
     reset_contact_state!(state)
     setdirty!(state)
 end
@@ -288,7 +263,7 @@ the particular joint types present in the associated `Mechanism`. The resulting
 Invalidates cache variables.
 """
 function rand_configuration!(state::MechanismState)
-    foreach((joint, q) -> rand_configuration!(q, joint), state.type_sorted_tree_joints, state.qs.data)
+    foreach((joint, q) -> rand_configuration!(q, joint), state.type_sorted_tree_joints, values(state.qs))
     reset_contact_state!(state)
     setdirty!(state)
 end
@@ -429,11 +404,11 @@ to parameterize the orientation of its successor with respect to its predecessor
 of unit length.
 
 !!! warning
-    This method does not ensure that the configuration or velocity satisfy joint
-    configuration or velocity limits/bounds.
+This method does not ensure that the configuration or velocity satisfy joint
+configuration or velocity limits/bounds.
 """
 function normalize_configuration!(state::MechanismState)
-    foreach(state.type_sorted_tree_joints, state.qs.data) do joint, qjoint
+    foreach(state.type_sorted_tree_joints, values(state.qs)) do joint, qjoint
         normalize_configuration!(qjoint, joint)
     end
 end
@@ -574,7 +549,7 @@ end
     mechanism = state.mechanism
 
     # update tree joint transforms
-    map!(joint_transform, state.tree_joint_transforms, state.type_sorted_tree_joints, state.qs.data)
+    map!(joint_transform, state.tree_joint_transforms, state.type_sorted_tree_joints, values(state.qs))
 
     # update transforms to root
     transforms_to_root = state.transforms_to_root
@@ -603,14 +578,14 @@ end
 
 @inline update_joint_twists!(state::MechanismState) = isdirty(state.joint_twists) && _update_joint_twists!(state)
 @noinline function _update_joint_twists!(state::MechanismState)
-    map!(joint_twist, state.joint_twists.data, state.type_sorted_tree_joints, state.qs.data, state.vs.data)
+    map!(joint_twist, values(state.joint_twists), state.type_sorted_tree_joints, values(state.qs), values(state.vs))
     state.joint_twists.dirty = false
     nothing
 end
 
 @inline update_joint_bias_accelerations!(state::MechanismState) = isdirty(state.joint_bias_accelerations) && _update_joint_bias_accelerations!(state)
 @noinline function _update_joint_bias_accelerations!(state::MechanismState)
-    map!(bias_acceleration, state.joint_bias_accelerations.data, state.type_sorted_tree_joints, state.qs.data, state.vs.data)
+    map!(bias_acceleration, values(state.joint_bias_accelerations), state.type_sorted_tree_joints, values(state.qs), values(state.vs))
     state.joint_bias_accelerations.dirty = false
     nothing
 end
@@ -686,7 +661,7 @@ end
         parentframe = default_frame(parentbody)
         jointbias = change_base(bias_acceleration(state, jointid), parentframe) # to make frames line up
 
-         # TODO: awkward way of doing this:
+        # TODO: awkward way of doing this:
         toroot = transform_to_root(state, bodyid)
         twistwrtworld = transform(twist_wrt_world(state, bodyid), inv(toroot))
         jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
@@ -764,12 +739,12 @@ function configuration_derivative!(out::AbstractVector{X}, state::MechanismState
         qdjoint = fastview(qd, first(parentindexes(qjoint)))
         velocity_to_configuration_derivative!(qdjoint, joint, qjoint, vjoint)
     end
-    foreach_with_extra_args(joint_configuration_derivative!, out, state.type_sorted_tree_joints, state.qs.data, state.vs.data)
+    foreach_with_extra_args(joint_configuration_derivative!, out, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
 function configuration_derivative_to_velocity_adjoint!(fq, state::MechanismState, fv)
     # TODO: replace with plain foreach and closure once that doesn't allocate
-    foreach_with_extra_args(fq, state, fv, state.type_sorted_tree_joints, state.qs.data) do fq, state, fv, joint, qjoint
+    foreach_with_extra_args(fq, state, fv, state.type_sorted_tree_joints, values(state.qs)) do fq, state, fv, joint, qjoint
         fqjoint = fastview(fq, configuration_range(state, joint))
         fvjoint = fastview(fv, velocity_range(state, joint))
         configuration_derivative_to_velocity_adjoint!(fqjoint, joint, qjoint, fvjoint)
@@ -850,14 +825,14 @@ Return the twist of `body` with respect to `base`, expressed in the
 """
 function relative_twist(state::MechanismState, body::Union{<:RigidBody, BodyID}, base::Union{<:RigidBody, BodyID})
     -twist_wrt_world(state, base) + twist_wrt_world(state, body)
- end
+end
 
- """
- $(SIGNATURES)
+"""
+$(SIGNATURES)
 
- Return the twist of `body_frame` with respect to `base_frame`, expressed in the
- `Mechanism`'s root frame.
- """
+Return the twist of `body_frame` with respect to `base_frame`, expressed in the
+`Mechanism`'s root frame.
+"""
 function relative_twist(state::MechanismState, body_frame::CartesianFrame3D, base_frame::CartesianFrame3D)
     twist = relative_twist(state, body_fixed_frame_to_body(state.mechanism, body_frame), body_fixed_frame_to_body(state.mechanism, base_frame))
     Twist(body_frame, base_frame, twist.frame, angular(twist), linear(twist))
@@ -897,7 +872,7 @@ function local_coordinates!(ϕ::StridedVector, ϕd::StridedVector, state::Mechan
         q0joint = fastview(q0, qrange)
         local_coordinates!(ϕjoint, ϕdjoint, joint, q0joint, qjoint, vjoint)
     end
-    foreach_with_extra_args(joint_local_coordinates!, ϕ, ϕd, q0, state.type_sorted_tree_joints, state.qs.data, state.vs.data)
+    foreach_with_extra_args(joint_local_coordinates!, ϕ, ϕd, q0, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
 
 """
@@ -915,5 +890,5 @@ function global_coordinates!(state::MechanismState, q0::StridedVector, ϕ::Strid
         ϕjoint = fastview(ϕ, vrange)
         global_coordinates!(qjoint, joint, q0joint, ϕjoint)
     end
-    foreach_with_extra_args(joint_global_coordinates!, q0, ϕ, state.type_sorted_tree_joints, state.qs.data, state.vs.data)
+    foreach_with_extra_args(joint_global_coordinates!, q0, ϕ, state.type_sorted_tree_joints, values(state.qs), values(state.vs))
 end
