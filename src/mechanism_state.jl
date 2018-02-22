@@ -1,10 +1,19 @@
-struct JointDataVector{T}
-    data::Vector{T}
+macro datavector(DataVector, IDType, IDCarrier)
+    esc(quote
+        struct $DataVector{T}
+            data::Vector{T}
+        end
+        Base.@propagate_inbounds Base.getindex(v::$DataVector, id::$IDType) = v.data[Int(id)]
+        Base.@propagate_inbounds Base.setindex!(v::$DataVector, value, id::$IDType) = v.data[Int(id)] = value
+        Base.@propagate_inbounds Base.getindex(v::$DataVector, x::$IDCarrier) = v[id(x)]
+        Base.@propagate_inbounds Base.setindex!(v::$DataVector, value, x::$IDCarrier) = v[id(x)] = value
+    end)
 end
-Base.@propagate_inbounds Base.getindex(v::JointDataVector, id::JointID) = v.data[Int(id)]
-Base.@propagate_inbounds Base.getindex(v::JointDataVector, joint::Joint) = v[id(joint)]
 
-macro vectorcache(DataCache, IDType)
+@datavector JointDataVector JointID Joint
+@datavector BodyDataVector BodyID RigidBody
+
+macro vectorcache(DataCache, IDType, IDCarrier)
     esc(quote
         mutable struct $DataCache{T}
             data::Vector{T}
@@ -14,18 +23,15 @@ macro vectorcache(DataCache, IDType)
         end
         Base.@propagate_inbounds Base.getindex(cache::$(DataCache), id::$IDType) = cache.data[Int(id)]
         Base.@propagate_inbounds Base.setindex!(cache::$DataCache, value, id::$IDType) = cache.data[Int(id)] = value
+        Base.@propagate_inbounds Base.getindex(cache::$DataCache, x::$IDCarrier) = cache[id(x)]
+        Base.@propagate_inbounds Base.setindex!(cache::$DataCache, value, x::$IDCarrier) = cache[id(x)] = value
         @inline isdirty(cache::$DataCache) = cache.dirty
         @inline setdirty!(cache::$DataCache) = cache.dirty = true
     end)
 end
 
-@vectorcache JointDataCache JointID
-Base.@propagate_inbounds Base.getindex(cache::JointDataCache, joint::Joint) = cache[id(joint)]
-Base.@propagate_inbounds Base.setindex!(cache::JointDataCache, value, joint::Joint) = cache[id(joint)] = value
-
-@vectorcache BodyDataCache BodyID
-Base.@propagate_inbounds Base.getindex(cache::BodyDataCache, body::RigidBody) = cache[id(body)]
-Base.@propagate_inbounds Base.setindex!(cache::BodyDataCache, value, body::RigidBody) = cache[id(body)] = value
+@vectorcache JointDataCache JointID Joint
+@vectorcache BodyDataCache BodyID RigidBody
 
 """
 $(TYPEDEF)
