@@ -1,8 +1,4 @@
-struct JointID
-    value::Int
-end
-Base.hash(i::JointID, h::UInt) = hash(i.value, h)
-Base.convert(::Type{Int}, i::JointID) = i.value
+@indextype JointID
 
 # The constructor setup for Joint may look strange. The constructors are
 # designed so that e.g. a call to Joint("bla", QuaternionFloating{Float64}())

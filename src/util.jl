@@ -121,3 +121,39 @@ Return the closest value to ``x`` within the interval described by ``b``.
 """
 Base.clamp(x, b::Bounds) = clamp(x, b.lower, b.upper)
 Base.intersect(b1::Bounds, b2::Bounds) = Bounds(max(b1.lower, b2.lower), min(b1.upper, b2.upper))
+
+# Create a new Int-backed index type that is not convertible to Int, as well as associated Base.OneTo and Base.UnitRange analogues.
+macro indextype(name)
+    oneto = Symbol(String(name) * "OneTo")
+    unitrange = Symbol(String(name) * "UnitRange")
+    esc(quote
+        struct $name
+            value::Int
+        end
+        Base.hash(i::$name, h::UInt) = hash(i.value, h)
+        Base.convert(::Type{Int}, i::$name) = i.value
+
+        struct $oneto <: Base.AbstractUnitRange{$name}
+            oneto::Base.OneTo{Int}
+            $oneto(stop::$name) = new(Base.OneTo(stop.value))
+        end
+        Base.first(r::$oneto) = $name(first(r.oneto))
+        Base.last(r::$oneto) = $name(last(r.oneto))
+        Base.length(r::$oneto) = length(r.oneto)
+        Base.start(r::$oneto) = start(r.oneto)
+        Base.next(r::$oneto, state) = ((i, state) = next(r.oneto, state); ($name(i), state))
+        Base.done(r::$oneto, i) = done(r.oneto, i)
+
+        struct $unitrange <: Base.AbstractUnitRange{$name}
+            range::UnitRange{Int}
+            $unitrange(start::$name, stop::$name) = new(UnitRange(start.value, stop.value))
+        end
+        Base.first(r::$unitrange) = $name(first(r.range))
+        Base.last(r::$unitrange) = $name(last(r.range))
+        Base.length(r::$unitrange) = length(r.range)
+        Base.start(r::$unitrange) = start(r.range)
+        Base.next(r::$unitrange, state) = ((i, state) = next(r.range, state); ($name(i), state))
+        Base.done(r::$unitrange, i) = done(r.range, i)
+        Base.colon(start::$name, stop::$name) = $unitrange(start, stop)
+    end)
+end
