@@ -174,15 +174,16 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
     update_crb_inertias!(state)
     fill!(out.data, 0)
     joints = state.type_sorted_tree_joints
-    foreach_with_extra_args(out, state, joints, state.motion_subspaces.data) do out, state, jointi, Si # TODO: use closure once it doesn't allocate
-        irange = velocity_range(state, jointi)
-        Ici = crb_inertia(state, successor(jointi, state.mechanism))
+    foreach_with_extra_args(out, state, state.motion_subspaces.data, state.treejointids) do out, state, Si, jointidi # TODO: use closure once it doesn't allocate
+        irange = velocity_range(state, jointidi)
+        bodyid = successorid(jointidi, state)
+        Ici = crb_inertia(state, bodyid)
         F = Ici * Si
-        ancestor_joint_mask = state.ancestor_joint_masks[jointi]
-        foreach_with_extra_args(out, state, irange, F, ancestor_joint_mask, state.type_sorted_tree_joints, state.motion_subspaces.data) do out, state, irange, F, mask, jointj, Sj # TODO: use closure once it doesn't allocate
+        ancestor_joint_mask = state.ancestor_joint_masks[jointidi]
+        foreach_with_extra_args(out, state, irange, F, ancestor_joint_mask, state.motion_subspaces.data, state.treejointids) do out, state, irange, F, mask, Sj, jointidj # TODO: use closure once it doesn't allocate
             Base.@_inline_meta # currently required; try removing with 1.0
-            if mask[jointj]
-                jrange = velocity_range(state, jointj)
+            if mask[jointidj]
+                jrange = velocity_range(state, jointidj)
                 block = angular(F)' * angular(Sj) + linear(F)' * linear(Sj)
                 set_matrix_block!(out.data, irange, jrange, block)
             end
@@ -234,12 +235,11 @@ function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformf
     @boundscheck num_velocities(state) == size(out, 2) || error("size mismatch")
     update_motion_subspaces!(state)
     update_crb_inertias!(state)
-    foreach_with_extra_args(out, state, state.type_sorted_tree_joints, state.motion_subspaces.data) do out, state, joint, motion_subspace
-        vrange = velocity_range(state, joint)
-        mechanism = state.mechanism
-        body = successor(joint, mechanism)
-        inertia = crb_inertia(state, body)
-        part = transformfun(inertia * motion_subspace) # TODO: consider pure body frame implementation
+    foreach_with_extra_args(out, state, state.motion_subspaces.data, state.treejointids) do out, state, motion_subspace, jointid
+        vrange = velocity_range(state, jointid)
+        bodyid = successorid(jointid, state)
+        inertia = crb_inertia(state, bodyid)
+        part = transformfun(inertia * motion_subspace)
         set_cols!(out, vrange, part)
     end
 end
