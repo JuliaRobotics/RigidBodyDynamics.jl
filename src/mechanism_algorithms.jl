@@ -309,8 +309,8 @@ function spatial_accelerations!(out::Associative{RigidBody{M}, SpatialAccelerati
     mechanism = state.mechanism
     root = root_body(mechanism)
     joints = state.type_sorted_tree_joints
-    qs = values(state.qs)
-    vs = values(state.vs)
+    qs = state.qs.data
+    vs = state.vs.data
 
     # Compute joint accelerations
     foreach_with_extra_args(state, out, vd, joints, qs, vs) do state, accels, vd, joint, qjoint, vjoint # TODO: use closure once it doesn't allocate
