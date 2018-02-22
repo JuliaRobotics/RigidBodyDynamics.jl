@@ -1,8 +1,4 @@
-struct BodyID
-    value::Int
-end
-Base.hash(i::BodyID, h::UInt) = hash(i.value, h)
-Base.convert(::Type{Int}, i::BodyID) = i.value
+@indextype BodyID
 
 """
 $(TYPEDEF)
