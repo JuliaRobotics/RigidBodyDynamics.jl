@@ -122,40 +122,30 @@ Return the closest value to ``x`` within the interval described by ``b``.
 Base.clamp(x, b::Bounds) = clamp(x, b.lower, b.upper)
 Base.intersect(b1::Bounds, b2::Bounds) = Bounds(max(b1.lower, b2.lower), min(b1.upper, b2.upper))
 
-# Create a new Int-backed index type that is not convertible to Int, as well as associated Base.OneTo and Base.UnitRange analogues.
-macro indextype(name)
-    oneto = Symbol(String(name) * "OneTo")
-    unitrange = Symbol(String(name) * "UnitRange")
+# Create a new Int-backed index type, along with range method specializations
+macro indextype(ID)
     esc(quote
-        struct $name
+        struct $ID <: Integer
             value::Int
         end
-        Base.hash(i::$name, h::UInt) = hash(i.value, h)
-        Base.convert(::Type{Int}, i::$name) = i.value
+        Base.hash(i::$ID, h::UInt) = hash(i.value, h)
+        Base.convert(::Type{Int}, i::$ID) = i.value
+        Base.Integer(i::$ID) = i.value
+        Base.convert(::Type{$ID}, i::Integer) = $ID(i)
+        Base.promote_type(::Type{Int}, ::Type{$ID}) = $ID
+        Base.promote_type(::Type{$ID}, ::Type{Int}) = $ID
+        Base.:<(x::$ID, y::$ID) = x.value < y.value
+        Base.:<=(x::$ID, y::$ID) = x.value <= y.value
+        Base.:-(x::$ID, y::$ID) = x.value - y.value
+        Base.:+(x::$ID, y::Int) = $ID(x.value + y)
 
-        struct $oneto <: Base.AbstractUnitRange{$name}
-            oneto::Base.OneTo{Int}
-            $oneto(stop::$name) = new(Base.OneTo(stop.value))
-        end
-        Base.first(r::$oneto) = $name(first(r.oneto))
-        Base.last(r::$oneto) = $name(last(r.oneto))
-        Base.length(r::$oneto) = length(r.oneto)
-        Base.start(r::$oneto) = start(r.oneto)
-        Base.next(r::$oneto, state) = ((i, state) = next(r.oneto, state); ($name(i), state))
-        Base.done(r::$oneto, i) = done(r.oneto, i)
-        @inline Base.getindex(r::$oneto, i::Integer) = $name(r.oneto[i])
-
-        struct $unitrange <: Base.AbstractUnitRange{$name}
-            range::UnitRange{Int}
-            $unitrange(start::$name, stop::$name) = new(UnitRange(start.value, stop.value))
-        end
-        Base.first(r::$unitrange) = $name(first(r.range))
-        Base.last(r::$unitrange) = $name(last(r.range))
-        Base.length(r::$unitrange) = length(r.range)
-        Base.start(r::$unitrange) = start(r.range)
-        Base.next(r::$unitrange, state) = ((i, state) = next(r.range, state); ($name(i), state))
-        Base.done(r::$unitrange, i) = done(r.range, i)
-        @inline Base.getindex(r::$unitrange, i::Integer) = $name(r.range[i])
-        Base.colon(start::$name, stop::$name) = $unitrange(start, stop)
+        # Want the state of the iterator to be a plain Int, not an $ID. Same for length. Some Base methods aren't designed for this, so:
+        Base.start(r::Base.OneTo{$ID}) = 1
+        Base.start(r::UnitRange{$ID}) = Int(r.start)
+        Base.start(r::StepRange{$ID}) = Int(r.start)
+        Base.next(r::AbstractUnitRange{$ID}, i) = (convert($ID, i), i + 1)
+        Base.done(r::AbstractUnitRange{$ID}, i) = i == oftype(i, r.stop) + 1
+        Base.colon(start::$ID, step::Int, stop::$ID) = StepRange(start, step, stop)
+        Base.steprange_last(start::$ID, step::Int, stop::$ID) = $ID(Base.steprange_last(Int(start), step, Int(stop)))
     end)
 end

@@ -312,7 +312,8 @@ function spatial_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}}
     vs = values(state.vs)
 
     # Compute joint accelerations
-    foreach_with_extra_args(state, out, vd, joints, state.treejointids, qs, vs) do state, accels, vd, joint, jointid, qjoint, vjoint # TODO: use closure once it doesn't allocate
+    foreach_with_extra_args(state, out, vd, joints, qs, vs) do state, accels, vd, joint, qjoint, vjoint # TODO: use closure once it doesn't allocate
+        jointid = id(joint)
         parentbodyid, bodyid = predsucc(jointid, state)
         vdjoint = fastview(vd, velocity_range(state, jointid))
         accels[bodyid] = joint_spatial_acceleration(joint, qjoint, vjoint, vdjoint)
@@ -371,9 +372,7 @@ function joint_wrenches_and_torques!(
     # Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
     @boundscheck length(torquesout) == num_velocities(state) || error("length of torque vector is wrong")
 
-    treejointids = state.treejointids
-    for i = length(treejointids) : -1 : 1
-        jointid = treejointids[i]
+    for jointid in reverse(state.treejointids)
         parentbodyid, bodyid = predsucc(jointid, state)
         jointwrench = net_wrenches_in_joint_wrenches_out[bodyid]
         if parentbodyid != BodyID(1) # TODO: ugly
@@ -382,7 +381,8 @@ function joint_wrenches_and_torques!(
         end
     end
 
-    foreach_with_extra_args(state, torquesout, net_wrenches_in_joint_wrenches_out, state.type_sorted_tree_joints, treejointids) do state, τ, wrenches, joint, jointid # TODO: use closure once it doesn't allocate
+    foreach_with_extra_args(state, torquesout, net_wrenches_in_joint_wrenches_out, state.type_sorted_tree_joints) do state, τ, wrenches, joint # TODO: use closure once it doesn't allocate
+        jointid = id(joint)
         bodyid = successorid(jointid, state)
         @inbounds τjoint = fastview(τ, velocity_range(state, jointid))
         # TODO: awkward to transform back to body frame; consider switching to body-frame implementation
