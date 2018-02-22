@@ -53,6 +53,9 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     s::Vector{X} # additional state
 
     # joint-related fixed data
+    jointids::JointIDOneTo
+    treejointids::JointIDOneTo
+    nontreejointids::JointIDUnitRange
     qs::JointDataVector{VectorSegment{X}}
     vs::JointDataVector{VectorSegment{X}}
     predecessor_and_successor_ids::JointDataVector{Pair{BodyID, BodyID}}
@@ -89,6 +92,13 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         ancestor_joint_masks = JointDataVector([ancestor_joint_mask(j) for j in tree_joints(mechanism)])
 
         # joint-specific
+        jointids = JointIDOneTo(id(last(joints(mechanism))))
+        treejointids = JointIDOneTo(id(last(tree_joints(mechanism))))
+        nontreejointids = if isempty(non_tree_joints(mechanism))
+            JointID(0) : JointID(-1)
+        else
+            id(first(non_tree_joints(mechanism))) : id(last(non_tree_joints(mechanism)))
+        end
         qstart, vstart = 1, 1
         qs = JointDataVector(VectorSegment{X}[view(q, qstart : (qstart += num_positions(j)) - 1) for j in tree_joints(mechanism)])
         vs = JointDataVector(VectorSegment{X}[view(v, vstart : (vstart += num_velocities(j)) - 1) for j in tree_joints(mechanism)])
@@ -127,7 +137,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
 
         new{X, M, C, JointCollection, typeof(motion_subspaces.data)}(
             mechanism, modcount(mechanism), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
-            constraint_jacobian_structure, q, v, s, qs, vs, predecessor_and_successor_ids, joint_poses,
+            constraint_jacobian_structure, q, v, s, jointids, treejointids, nontreejointids, qs, vs, predecessor_and_successor_ids, joint_poses,
             joint_transforms, tree_joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, constraint_wrench_subspaces,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
@@ -148,7 +158,7 @@ MechanismState(mechanism::Mechanism, q::Vector{X}, v::Vector{X}) where {X} = Mec
 
 Base.show(io::IO, ::MechanismState{X, M, C}) where {X, M, C} = print(io, "MechanismState{$X, $M, $C, …}(…)")
 
-@inline modcount(state::MechanismState) = state.modcount
+modcount(state::MechanismState) = state.modcount
 Base.@propagate_inbounds predsucc(id::JointID, state::MechanismState) = state.predecessor_and_successor_ids[id]
 
 """
