@@ -121,3 +121,31 @@ Return the closest value to ``x`` within the interval described by ``b``.
 """
 Base.clamp(x, b::Bounds) = clamp(x, b.lower, b.upper)
 Base.intersect(b1::Bounds, b2::Bounds) = Bounds(max(b1.lower, b2.lower), min(b1.upper, b2.upper))
+
+# Create a new Int-backed index type, along with range method specializations
+macro indextype(ID)
+    esc(quote
+        struct $ID <: Integer
+            value::Int
+        end
+        Base.hash(i::$ID, h::UInt) = hash(i.value, h)
+        Base.convert(::Type{Int}, i::$ID) = i.value
+        Base.Integer(i::$ID) = i.value
+        Base.convert(::Type{$ID}, i::Integer) = $ID(i)
+        Base.promote_type(::Type{Int}, ::Type{$ID}) = $ID
+        Base.promote_type(::Type{$ID}, ::Type{Int}) = $ID
+        Base.:<(x::$ID, y::$ID) = x.value < y.value
+        Base.:<=(x::$ID, y::$ID) = x.value <= y.value
+        Base.:-(x::$ID, y::$ID) = x.value - y.value
+        Base.:+(x::$ID, y::Int) = $ID(x.value + y)
+
+        # Want the state of the iterator to be a plain Int, not an $ID. Same for length. Some Base methods aren't designed for this, so:
+        Base.start(r::Base.OneTo{$ID}) = 1
+        Base.start(r::UnitRange{$ID}) = Int(r.start)
+        Base.start(r::StepRange{$ID}) = Int(r.start)
+        Base.next(r::AbstractUnitRange{$ID}, i) = (convert($ID, i), i + 1)
+        Base.done(r::AbstractUnitRange{$ID}, i) = i == oftype(i, r.stop) + 1
+        Base.colon(start::$ID, step::Int, stop::$ID) = StepRange(start, step, stop)
+        Base.steprange_last(start::$ID, step::Int, stop::$ID) = $ID(Base.steprange_last(Int(start), step, Int(stop)))
+    end)
+end

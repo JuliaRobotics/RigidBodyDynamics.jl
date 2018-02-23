@@ -152,7 +152,6 @@ include("custom_collections.jl")
 include("graphs/Graphs.jl")
 include("spatial/Spatial.jl")
 include("contact.jl")
-include("cache_element.jl")
 include("pdcontrol.jl")
 
 using .Spatial # contains additional functions that are reexported

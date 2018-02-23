@@ -1,17 +1,23 @@
 module CustomCollections
 
+using Compat
 using TypeSortedCollections
 
 export
     ConstVector,
     NullDict,
     UnsafeVectorView,
-    UnsafeFastDict
+    UnsafeFastDict, # TODO: remove
+    CacheElement,
+    AbstractIndexDict,
+    IndexDict,
+    CacheIndexDict
 
 export
     fastview,
     foreach_with_extra_args,
-    map_with_extra_args!
+    map_with_extra_args!,
+    isdirty
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
@@ -198,5 +204,66 @@ end
 @inline Base.keys(d::UnsafeFastDict) = d.keys
 @inline Base.values(d::UnsafeFastDict) = d.values
 @inline Base.setindex!(d::UnsafeFastDict{I, K, V}, value::V, key) where {I, K, V} = (d.values[I(key)] = value)
+
+
+# TODO: remove
+mutable struct CacheElement{T}
+    data::T
+    dirty::Bool
+    CacheElement(data::T) where {T} = new{T}(data, true)
+end
+
+@inline setdirty!(element::CacheElement) = (element.dirty = true; nothing)
+@inline isdirty(element::CacheElement) = element.dirty
+
+
+## IndexDicts
+abstract type AbstractIndexDict{K, V} <: Associative{K, V} end
+
+struct IndexDict{K, V} <: AbstractIndexDict{K, V}
+    values::Vector{V}
+    IndexDict{K, V}(values::Vector{V}) where {K, V} = new{K, V}(values)
+end
+
+mutable struct CacheIndexDict{K, V} <: AbstractIndexDict{K, V}
+    values::Vector{V}
+    dirty::Bool
+    CacheIndexDict{K, V}(values::Vector{V}) where {K, V} = new{K, V}(values, true)
+end
+
+setdirty!(d::CacheIndexDict) = (d.dirty = true)
+isdirty(d::CacheIndexDict) = d.dirty
+
+# Constructors
+for IDict in (:IndexDict, :CacheIndexDict)
+    @eval begin
+        (::Type{$IDict{K, V}})(n::Integer) where {K, V} = $IDict{K, V}(Vector{V}(uninitialized, n))
+        (::Type{$IDict{K}})(values::Vector{V}) where {K, V} = $IDict{K, V}(values)
+
+        function (::Type{$IDict{K, V}})(itr) where {K, V}
+            ret = $IDict{K, V}(length(itr))
+            for (k, v) in itr
+                ret[k] = v
+            end
+            ret
+        end
+
+        (::Type{$IDict{K}})(dict::Associative{<:Any, V}) where {K, V} = $IDict{K, V}(dict)
+        (::Type{$IDict})(dict::Associative{K, V}) where {K, V} = $IDict{K, V}(dict)
+        (::Type{$IDict{K}})(itr) where {K} = $IDict(Dict(itr))
+        (::Type{$IDict})(itr) = $IDict(Dict(itr))
+    end
+end
+
+@inline Base.isempty(d::AbstractIndexDict) = isempty(d.values)
+@inline Base.length(d::AbstractIndexDict) = length(d.values)
+@inline Base.start(d::AbstractIndexDict) = 1
+@inline Base.next(d::AbstractIndexDict{K}, i) where {K} = (K(i) => d.values[i], i + 1)
+@inline Base.done(d::AbstractIndexDict, i) = i == length(d) + 1
+@inline Base.keys(d::AbstractIndexDict{K}) where {K} = (K(i) for i in eachindex(d.values))
+@inline Base.values(d::AbstractIndexDict) = d.values
+@inline Base.haskey(d::AbstractIndexDict, key) = Int(key) ∈ 1 : length(d)
+Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{K}, key::K) where {K} = d.values[Int(key)]
+Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) where {K} = d.values[Int(key)] = value
 
 end # module
