@@ -4,7 +4,17 @@ abstract type JointType{T} end
 Base.eltype(::Type{JointType{T}}) where {T} = T
 num_velocities(::T) where {T<:JointType} = num_velocities(T)
 num_positions(::T) where {T<:JointType} = num_positions(T)
-Base.@pure num_constraints(t::Type{T}) where {T<:JointType} = 6 - num_velocities(t)
+
+num_constraints(::Type{T}) where {T<:JointType} = _num_constraints(num_velocities(T))
+Base.@pure _num_constraints(N::Int) = 6 - N
+
+function motionsubspacetype(::Type{JT}, ::Type{X}) where {T, JT<:JointType{T}, X}
+    N = num_velocities(JT)
+    L = _motionsubspacelength(N)
+    C = promote_type(T, X)
+    GeometricJacobian{SMatrix{3, N, C, L}}
+end
+Base.@pure _motionsubspacelength(N::Int) = 3 * N
 
 # Default implementations
 isfloating(::Type{<:JointType}) = false
