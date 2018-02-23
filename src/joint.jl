@@ -46,20 +46,29 @@ struct Joint{T, JT<:JointType{T}}
     frame_after::CartesianFrame3D
     joint_type::JT
     id::Base.RefValue{JointID}
+    before_joint_to_predecessor::Base.RefValue{Transform3D{T}}
+    after_joint_to_successor::Base.RefValue{Transform3D{T}}
     position_bounds::Vector{Bounds{T}}
     velocity_bounds::Vector{Bounds{T}}
     effort_bounds::Vector{Bounds{T}}
 
     function Joint{T, JT}(name::String, frame_before::CartesianFrame3D, frame_after::CartesianFrame3D, joint_type::JT;
-                          position_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_positions(joint_type)),
-                          velocity_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type)),
-                          effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type))) where {T, JT<:JointType{T}}
-        new{T, JointType{T}}(name, frame_before, frame_after, joint_type, Ref(JointID(-1)), position_bounds, velocity_bounds, effort_bounds)
+            position_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_positions(joint_type)),
+            velocity_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type)),
+            effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type))) where {T, JT<:JointType{T}}
+        id = Ref(JointID(-1))
+        before_joint_to_predecessor = Ref(eye(Transform3D{Float64}, frame_before))
+        after_joint_to_successor = Ref(eye(Transform3D{Float64}, frame_after))
+        new{T, JointType{T}}(name, frame_before, frame_after, joint_type, id,
+            before_joint_to_predecessor, after_joint_to_successor,
+            position_bounds, velocity_bounds, effort_bounds)
     end
 
     function Joint(other::Joint{T}) where T
         JT = typeof(other.joint_type)
-        new{T, JT}(other.name, other.frame_before, other.frame_after, other.joint_type, other.id, deepcopy(other.position_bounds), deepcopy(other.velocity_bounds), deepcopy(other.effort_bounds))
+        new{T, JT}(other.name, other.frame_before, other.frame_after, other.joint_type, other.id,
+            deepcopy(other.before_joint_to_predecessor), deepcopy(other.after_joint_to_successor),
+            deepcopy(other.position_bounds), deepcopy(other.velocity_bounds), deepcopy(other.effort_bounds))
     end
 end
 
@@ -79,6 +88,8 @@ Base.string(joint::Joint) = joint.name
 frame_before(joint::Joint) = joint.frame_before
 frame_after(joint::Joint) = joint.frame_after
 joint_type(joint::Joint) = joint.joint_type
+before_joint_to_predecessor(joint::Joint) = joint.before_joint_to_predecessor[]
+after_joint_to_successor(joint::Joint) = joint.after_joint_to_successor[]
 
 """
 $(SIGNATURES)
@@ -114,6 +125,18 @@ function RigidBodyDynamics.Graphs.flip_direction(joint::Joint)
         position_bounds = joint.position_bounds,
         velocity_bounds = joint.velocity_bounds,
         effort_bounds = joint.effort_bounds)
+end
+
+function set_before_joint_to_predecessor!(joint::Joint, tf::Transform3D)
+    @framecheck tf.from frame_before(joint)
+    joint.before_joint_to_predecessor[] = tf
+    joint
+end
+
+function set_after_joint_to_successor!(joint::Joint, tf::Transform3D)
+    @framecheck tf.from frame_after(joint)
+    joint.after_joint_to_successor[] = tf
+    joint
 end
 
 Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(string(joint))\": $(joint.joint_type)")
