@@ -102,9 +102,15 @@ function create_benchmark_suite()
     mcmechanism, _ = maximal_coordinates(mechanism)
     mcstate = MechanismState{ScalarType}(mcmechanism)
     mcresult = DynamicsResult{ScalarType}(mcmechanism)
-    suite["constraint_jacobian_and_bias!"] = @benchmarkable(begin
+
+    suite["constraint_jacobian!"] = @benchmarkable(begin
         setdirty!($mcstate)
-        RigidBodyDynamics.constraint_jacobian_and_bias!($mcstate, $(mcresult.constraintjacobian), $(mcresult.constraintbias))
+        RigidBodyDynamics.constraint_jacobian!($(mcresult.constraintjacobian), $mcstate)
+    end, setup = rand!($mcstate))
+
+    suite["constraint_bias!"] = @benchmarkable(begin
+        setdirty!($mcstate)
+        RigidBodyDynamics.constraint_bias!($(mcresult.constraintbias), $mcstate)
     end, setup = rand!($mcstate))
 
     suite
