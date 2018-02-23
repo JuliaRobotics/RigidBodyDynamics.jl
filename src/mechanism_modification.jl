@@ -27,11 +27,14 @@ function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, successor::
     @assert joint ∉ joints(mechanism)
 
     # define where joint is attached on predecessor
+    joint.joint_to_predecessor[] = joint_pose
     add_frame!(predecessor, joint_pose)
 
     # define where child is attached to joint
-    add_frame!(successor, inv(successor_pose))
+    joint.joint_to_successor[] = inv(successor_pose)
+    add_frame!(successor, joint.joint_to_successor[])
 
+    # update graph
     if successor ∈ bodies(mechanism)
         add_edge!(mechanism.graph, predecessor, successor, joint)
     else
@@ -83,13 +86,13 @@ function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechani
     for transform in frame_definitions(childroot)
         add_frame!(parentbody, transform)
     end
-    canonicalize_frame_definitions!(mechanism, parentbody)
     bodymap[childroot] = parentbody
 
     # Insert childmechanism's non-root vertices and joints, starting with the tree joints (to preserve order).
     for joint in flatten((tree_joints(childmechanism), non_tree_joints(childmechanism)))
         _copyjoint!(mechanism, childmechanism, joint, bodymap, jointmap)
     end
+    canonicalize_frame_definitions!(mechanism, parentbody)
     bodymap, jointmap
 end
 
@@ -174,8 +177,11 @@ function remove_joint!(mechanism::Mechanism{M}, joint::GenericJoint{M};
 end
 
 function replace_joint!(mechanism::Mechanism, oldjoint::Joint, newjoint::Joint)
+    # TODO: can hopefully remove this again once Joint is mutable again
     @assert frame_before(newjoint) == frame_before(oldjoint)
     @assert frame_after(newjoint) == frame_after(oldjoint)
+    set_joint_to_predecessor!(newjoint, oldjoint.joint_to_predecessor[])
+    set_joint_to_successor!(newjoint, oldjoint.joint_to_successor[])
     if oldjoint ∈ tree_joints(mechanism)
         replace_edge!(mechanism.tree, oldjoint, newjoint)
     else

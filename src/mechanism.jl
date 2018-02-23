@@ -237,8 +237,13 @@ end
 
 function canonicalize_frame_definitions!(mechanism::Mechanism{T}, body::RigidBody{T}) where {T}
     if !isroot(body, mechanism)
-        joint = joint_to_parent(body, mechanism)
-        change_default_frame!(body, frame_after(joint))
+        change_default_frame!(body, frame_after(joint_to_parent(body, mechanism)))
+    end
+    for joint in in_joints(body, mechanism)
+        set_joint_to_successor!(joint, frame_definition(body, frame_after(joint)))
+    end
+    for joint in out_joints(body, mechanism)
+        set_joint_to_predecessor!(joint, frame_definition(body, frame_before(joint)))
     end
 end
 
