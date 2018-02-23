@@ -10,9 +10,6 @@ using ForwardDiff
 
 import Base.Iterators: filter
 
-# useful utility function for computing time derivatives.
-create_autodiff(x, dx) = [ForwardDiff.Dual(x[i], dx[i]) for i in 1 : length(x)] # TODO: just use broadcast
-
 include("test_graph.jl")
 include("test_custom_collections.jl")
 include("test_frames.jl")
