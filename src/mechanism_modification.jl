@@ -27,12 +27,12 @@ function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, successor::
     @assert joint ∉ joints(mechanism)
 
     # define where joint is attached on predecessor
-    joint.before_joint_to_predecessor[] = joint_pose
+    joint.joint_to_predecessor[] = joint_pose
     add_frame!(predecessor, joint_pose)
 
     # define where child is attached to joint
-    joint.after_joint_to_successor[] = inv(successor_pose)
-    add_frame!(successor, joint.after_joint_to_successor[])
+    joint.joint_to_successor[] = inv(successor_pose)
+    add_frame!(successor, joint.joint_to_successor[])
 
     # update graph
     if successor ∈ bodies(mechanism)
@@ -180,8 +180,8 @@ function replace_joint!(mechanism::Mechanism, oldjoint::Joint, newjoint::Joint)
     # TODO: can hopefully remove this again once Joint is mutable again
     @assert frame_before(newjoint) == frame_before(oldjoint)
     @assert frame_after(newjoint) == frame_after(oldjoint)
-    set_before_joint_to_predecessor!(newjoint, oldjoint.before_joint_to_predecessor[])
-    set_after_joint_to_successor!(newjoint, oldjoint.after_joint_to_successor[])
+    set_joint_to_predecessor!(newjoint, oldjoint.joint_to_predecessor[])
+    set_joint_to_successor!(newjoint, oldjoint.joint_to_successor[])
     if oldjoint ∈ tree_joints(mechanism)
         replace_edge!(mechanism.tree, oldjoint, newjoint)
     else

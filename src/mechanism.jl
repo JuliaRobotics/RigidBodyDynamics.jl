@@ -240,10 +240,10 @@ function canonicalize_frame_definitions!(mechanism::Mechanism{T}, body::RigidBod
         change_default_frame!(body, frame_after(joint_to_parent(body, mechanism)))
     end
     for joint in in_joints(body, mechanism)
-        set_after_joint_to_successor!(joint, frame_definition(body, frame_after(joint)))
+        set_joint_to_successor!(joint, frame_definition(body, frame_after(joint)))
     end
     for joint in out_joints(body, mechanism)
-        set_before_joint_to_predecessor!(joint, frame_definition(body, frame_before(joint)))
+        set_joint_to_predecessor!(joint, frame_definition(body, frame_before(joint)))
     end
 end
 

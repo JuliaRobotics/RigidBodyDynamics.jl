@@ -552,7 +552,7 @@ end
     for joint in tree_joints(mechanism)
         jointid = id(joint)
         parentid, bodyid = predsucc(jointid, state)
-        transforms_to_root[bodyid] = transforms_to_root[parentid] * before_joint_to_predecessor(joint) * state.joint_transforms[jointid]
+        transforms_to_root[bodyid] = transforms_to_root[parentid] * joint_to_predecessor(joint) * state.joint_transforms[jointid]
     end
     state.transforms_to_root.dirty = false
 
@@ -561,8 +561,8 @@ end
         foreach_with_extra_args(state.joint_transforms, state, state.type_sorted_non_tree_joints) do joint_transforms, state, joint # TODO: use closure once it's fast
             pred = predecessor(joint, state.mechanism)
             succ = successor(joint, state.mechanism)
-            before_to_root = transform_to_root(state, pred) * before_joint_to_predecessor(joint)
-            after_to_root = transform_to_root(state, succ) * after_joint_to_successor(joint)
+            before_to_root = transform_to_root(state, pred) * joint_to_predecessor(joint)
+            after_to_root = transform_to_root(state, succ) * joint_to_successor(joint)
             joint_transforms[joint] = inv(before_to_root) * after_to_root
         end
     end

@@ -46,8 +46,8 @@ struct Joint{T, JT<:JointType{T}}
     frame_after::CartesianFrame3D
     joint_type::JT
     id::Base.RefValue{JointID}
-    before_joint_to_predecessor::Base.RefValue{Transform3D{T}}
-    after_joint_to_successor::Base.RefValue{Transform3D{T}}
+    joint_to_predecessor::Base.RefValue{Transform3D{T}}
+    joint_to_successor::Base.RefValue{Transform3D{T}}
     position_bounds::Vector{Bounds{T}}
     velocity_bounds::Vector{Bounds{T}}
     effort_bounds::Vector{Bounds{T}}
@@ -57,17 +57,17 @@ struct Joint{T, JT<:JointType{T}}
             velocity_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type)),
             effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type))) where {T, JT<:JointType{T}}
         id = Ref(JointID(-1))
-        before_joint_to_predecessor = Ref(eye(Transform3D{T}, frame_before))
-        after_joint_to_successor = Ref(eye(Transform3D{T}, frame_after))
+        joint_to_predecessor = Ref(eye(Transform3D{T}, frame_before))
+        joint_to_successor = Ref(eye(Transform3D{T}, frame_after))
         new{T, JointType{T}}(name, frame_before, frame_after, joint_type, id,
-            before_joint_to_predecessor, after_joint_to_successor,
+            joint_to_predecessor, joint_to_successor,
             position_bounds, velocity_bounds, effort_bounds)
     end
 
     function Joint(other::Joint{T}) where T
         JT = typeof(other.joint_type)
         new{T, JT}(other.name, other.frame_before, other.frame_after, other.joint_type, other.id,
-            deepcopy(other.before_joint_to_predecessor), deepcopy(other.after_joint_to_successor),
+            deepcopy(other.joint_to_predecessor), deepcopy(other.joint_to_successor),
             deepcopy(other.position_bounds), deepcopy(other.velocity_bounds), deepcopy(other.effort_bounds))
     end
 end
@@ -88,8 +88,8 @@ Base.string(joint::Joint) = joint.name
 frame_before(joint::Joint) = joint.frame_before
 frame_after(joint::Joint) = joint.frame_after
 joint_type(joint::Joint) = joint.joint_type
-before_joint_to_predecessor(joint::Joint) = joint.before_joint_to_predecessor[]
-after_joint_to_successor(joint::Joint) = joint.after_joint_to_successor[]
+joint_to_predecessor(joint::Joint) = joint.joint_to_predecessor[]
+joint_to_successor(joint::Joint) = joint.joint_to_successor[]
 
 """
 $(SIGNATURES)
@@ -127,15 +127,15 @@ function RigidBodyDynamics.Graphs.flip_direction(joint::Joint)
         effort_bounds = joint.effort_bounds)
 end
 
-function set_before_joint_to_predecessor!(joint::Joint, tf::Transform3D)
+function set_joint_to_predecessor!(joint::Joint, tf::Transform3D)
     @framecheck tf.from frame_before(joint)
-    joint.before_joint_to_predecessor[] = tf
+    joint.joint_to_predecessor[] = tf
     joint
 end
 
-function set_after_joint_to_successor!(joint::Joint, tf::Transform3D)
+function set_joint_to_successor!(joint::Joint, tf::Transform3D)
     @framecheck tf.from frame_after(joint)
-    joint.after_joint_to_successor[] = tf
+    joint.joint_to_successor[] = tf
     joint
 end
 
@@ -200,7 +200,7 @@ the frame after the joint, which is attached to the joint's successor.
 """
 @inline function motion_subspace(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    motion_subspace(joint.joint_type, frame_after(joint), before_joint_to_predecessor(joint).to, q)
+    motion_subspace(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q)
 end
 
 """
@@ -233,7 +233,7 @@ in configuration ``q`` and at velocity ``v``, when the joint acceleration
 function bias_acceleration(joint::Joint, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    bias_acceleration(joint.joint_type, frame_after(joint), before_joint_to_predecessor(joint).to, q, v)
+    bias_acceleration(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q, v)
 end
 
 """
@@ -339,7 +339,7 @@ Note that this is the same as `Twist(motion_subspace(joint, q), v)`.
 function joint_twist(joint::Joint, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    joint_twist(joint.joint_type, frame_after(joint), before_joint_to_predecessor(joint).to, q, v)
+    joint_twist(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q, v)
 end
 
 """
@@ -352,7 +352,7 @@ function joint_spatial_acceleration(joint::Joint, q::AbstractVector, v::Abstract
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_velocities(joint, vd)
-    joint_spatial_acceleration(joint.joint_type, frame_after(joint), before_joint_to_predecessor(joint).to, q, v, vd)
+    joint_spatial_acceleration(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q, v, vd)
 end
 
 """
