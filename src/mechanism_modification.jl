@@ -18,7 +18,7 @@ If `successor` is not yet a part of the `Mechanism`, it will be added to the
 `Mechanism`, effectively creating a loop constraint that will be enforced
 using Lagrange multipliers (as opposed to using recursive algorithms).
 """
-function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, successor::RigidBody{T}, joint::GenericJoint{T};
+function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, successor::RigidBody{T}, joint::Joint{T};
         joint_pose::Transform3D = eye(Transform3D{T}, frame_before(joint), default_frame(predecessor)),
         successor_pose::Transform3D = eye(Transform3D{T}, default_frame(successor), frame_after(joint))) where {T}
     @assert joint_pose.from == frame_before(joint)
@@ -45,8 +45,8 @@ function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, successor::
     mechanism
 end
 
-function _copyjoint!(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::GenericJoint{T},
-        bodymap::Dict{RigidBody{T}, RigidBody{T}}, jointmap::Dict{GenericJoint{T}, GenericJoint{T}}) where {T}
+function _copyjoint!(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::Joint{T},
+        bodymap::Dict{RigidBody{T}, RigidBody{T}}, jointmap::Dict{<:Joint{T}, <:Joint{T}}) where {T}
     srcpredecessor = source(srcjoint, src.graph)
     srcsuccessor = target(srcjoint, src.graph)
 
@@ -78,7 +78,7 @@ function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechani
     @assert mechanism != childmechanism # infinite loop otherwise
 
     bodymap = Dict{RigidBody{T}, RigidBody{T}}()
-    jointmap = Dict{GenericJoint{T}, GenericJoint{T}}()
+    jointmap = Dict{Joint{T}, Joint{T}}()
 
     # Define where child root body is located w.r.t parent body and add frames that were attached to childroot to parentbody.
     childroot = root_body(childmechanism)
@@ -111,7 +111,7 @@ function submechanism(mechanism::Mechanism{T}, submechanismroot::RigidBody{T}) w
     # FIXME: test with cycles
 
     bodymap = Dict{RigidBody{T}, RigidBody{T}}()
-    jointmap = Dict{GenericJoint{T}, GenericJoint{T}}()
+    jointmap = Dict{Joint{T}, Joint{T}}()
 
     # Create Mechanism
     root = bodymap[submechanismroot] = deepcopy(submechanismroot)
@@ -147,7 +147,7 @@ Also optionally, `next_edge` can be used to select which joints should become pa
 new spanning tree.
 """
 function rebuild_spanning_tree!(mechanism::Mechanism{M},
-        flipped_joint_map::Associative = Dict{GenericJoint{M}, GenericJoint{M}}();
+        flipped_joint_map::Associative = Dict{<:Joint{M}, <:Joint{M}}();
         next_edge = first #= breadth first =#) where {M}
     mechanism.tree = SpanningTree(mechanism.graph, root_body(mechanism), flipped_joint_map; next_edge = next_edge)
     register_modification!(mechanism)
@@ -167,8 +167,8 @@ requires rebuilding the spanning tree of `mechanism` and the polarity of some jo
 Also optionally, `spanning_tree_next_edge` can be used to select which joints should become part of the
 new spanning tree, if rebuilding the spanning tree is required.
 """
-function remove_joint!(mechanism::Mechanism{M}, joint::GenericJoint{M};
-        flipped_joint_map::Associative = Dict{GenericJoint{M}, GenericJoint{M}}(),
+function remove_joint!(mechanism::Mechanism{M}, joint::Joint{M};
+        flipped_joint_map::Associative = Dict{<:Joint{M}, <:Joint{M}}(),
         spanning_tree_next_edge = first #= breadth first =#) where {M}
     istreejoint = joint ∈ tree_joints(mechanism)
     remove_edge!(mechanism.graph, joint)
@@ -271,14 +271,14 @@ function maximal_coordinates(mechanism::Mechanism)
 
     # Body and joint mapping.
     bodymap = Dict{RigidBody{T}, RigidBody{T}}()
-    jointmap = Dict{GenericJoint{T}, GenericJoint{T}}()
+    jointmap = Dict{Joint{T}, Joint{T}}()
 
     # Copy root.
     root = bodymap[root_body(mechanism)] = deepcopy(root_body(mechanism))
     ret = Mechanism(root, gravity = mechanism.gravitational_acceleration.v)
 
     # Copy non-root bodies and attach them to the root with a floating joint.
-    newfloatingjoints = Dict{RigidBody{T}, GenericJoint{T}}()
+    newfloatingjoints = Dict{RigidBody{T}, Joint{T}}()
     for srcbody in non_root_bodies(mechanism)
         framebefore = default_frame(root)
         frameafter = default_frame(srcbody)

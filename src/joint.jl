@@ -1,18 +1,5 @@
 @indextype JointID
 
-# The constructor setup for Joint may look strange. The constructors are
-# designed so that e.g. a call to Joint("bla", QuaternionFloating{Float64}())
-# returns a Joint{T, JointType{T}}, not a JointType{T, QuaternionFloating{T}}.
-#
-# This was done because we want a collection of joints with different joint
-# types to be storable in a type-homogeneous container. If that were not the
-# case, then e.g. iterating over the collection and calling frame_after on each
-# joint would not be type-stable.
-#
-# If JointType-dependent functions need to be called in a type-stable fashion,
-# a joint with a concrete joint type may be constructed from a
-# Joint{T, JointType{T}}.
-
 """
 $(TYPEDEF)
 
@@ -52,37 +39,23 @@ struct Joint{T, JT<:JointType{T}}
     velocity_bounds::Vector{Bounds{T}}
     effort_bounds::Vector{Bounds{T}}
 
-    function Joint{T, JT}(name::String, frame_before::CartesianFrame3D, frame_after::CartesianFrame3D, joint_type::JT;
+    function Joint(name::String, frame_before::CartesianFrame3D, frame_after::CartesianFrame3D, joint_type::JointType{T};
             position_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_positions(joint_type)),
             velocity_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type)),
-            effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type))) where {T, JT<:JointType{T}}
+            effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type))) where {T}
+        JT = typeof(joint_type)
         id = Ref(JointID(-1))
         joint_to_predecessor = Ref(eye(Transform3D{T}, frame_before))
         joint_to_successor = Ref(eye(Transform3D{T}, frame_after))
-        new{T, JointType{T}}(name, frame_before, frame_after, joint_type, id,
+        new{T, JT}(name, frame_before, frame_after, joint_type, id,
             joint_to_predecessor, joint_to_successor,
             position_bounds, velocity_bounds, effort_bounds)
     end
-
-    function Joint(other::Joint{T}) where T
-        JT = typeof(other.joint_type)
-        new{T, JT}(other.name, other.frame_before, other.frame_after, other.joint_type, other.id,
-            deepcopy(other.joint_to_predecessor), deepcopy(other.joint_to_successor),
-            deepcopy(other.position_bounds), deepcopy(other.velocity_bounds), deepcopy(other.effort_bounds))
-    end
-end
-
-const GenericJoint{T} = Joint{T, JointType{T}}
-
-function Joint(name::String, frame_before::CartesianFrame3D, frame_after::CartesianFrame3D, jtype::JointType{T}; kw...) where T
-    GenericJoint{T}(name, frame_before, frame_after, jtype; kw...)
 end
 
 function Joint(name::String, jtype::JointType; kw...)
     Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jtype; kw...)
 end
-
-typedjoint(joint::Joint) = Joint(joint)
 
 Base.string(joint::Joint) = joint.name
 frame_before(joint::Joint) = joint.frame_before

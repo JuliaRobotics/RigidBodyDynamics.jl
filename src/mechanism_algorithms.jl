@@ -83,9 +83,10 @@ function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path
     update_motion_subspaces!(state)
     foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints, state.motion_subspaces.data) do out, state, path, joint, motion_subspace # TODO: use closure once it doesn't allocate
         vrange = velocity_range(state, joint)
-        if Graphs.edge_index(joint) in path.indices
+        pathindex = findfirst(joint, path)
+        if pathindex > 0
             part = transformfun(motion_subspace)
-            direction(joint, path) == :up && (part = -part)
+            directions(path)[pathindex] == :up && (part = -part)
             set_cols!(out, vrange, part)
         else
             zero_cols!(out, vrange)
@@ -136,7 +137,7 @@ The Jacobian is computed in the `Mechanism`'s root frame.
 
 See [`geometric_jacobian!(out, state, path)`](@ref).
 """
-function geometric_jacobian(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, GenericJoint{M}}) where {X, M, C}
+function geometric_jacobian(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}}) where {X, M, C}
     nv = num_velocities(state)
     angular = Matrix{C}(3, nv)
     linear = Matrix{C}(3, nv)
@@ -522,9 +523,10 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         # Jacobian.
         foreach_with_extra_args(constraintjacobian, state, path, T, rowrange, state.type_sorted_tree_joints, state.motion_subspaces.data) do constraintjacobian, state, path, T, rowrange, treejoint, J # TODO: use closure once it doesn't allocate
             vrange = velocity_range(state, treejoint)
-            if Graphs.edge_index(treejoint) in path.indices
+            pathindex = findfirst(treejoint, path)
+            if pathindex > 0
                 part = angular(T)' * angular(J) + linear(T)' * linear(J) # TODO: At_mul_B
-                direction(treejoint, path) == :up && (part = -part)
+                directions(path)[pathindex] == :up && (part = -part)
                 set_matrix_block!(constraintjacobian, rowrange, vrange, part)
             else
                 zero_matrix_block!(constraintjacobian, rowrange, vrange)

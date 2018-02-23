@@ -27,7 +27,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     type_sorted_tree_joints::JointCollection
     type_sorted_non_tree_joints::JointCollection
     ancestor_joint_masks::JointDict{JointDict{Bool}}
-    constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, GenericJoint{M}}} # TODO: switch to JointDict{JointDict{Vector{Bool}}}
+    constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: switch to JointDict{JointDict{Vector{Bool}}}
 
     q::Vector{X} # configurations
     v::Vector{X} # velocities
@@ -64,10 +64,10 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
 
         C = promote_type(X, M)
         canonicalize_graph!(mechanism)
-        type_sorted_joints = TypeSortedCollection(typedjoint.(joints(mechanism))) # just to get the type...
+        type_sorted_joints = TypeSortedCollection(joints(mechanism)) # just to get the type...
         JointCollection = typeof(type_sorted_joints)
-        type_sorted_tree_joints = JointCollection(typedjoint.(tree_joints(mechanism)))
-        type_sorted_non_tree_joints = JointCollection(typedjoint.(non_tree_joints(mechanism)))
+        type_sorted_tree_joints = JointCollection(tree_joints(mechanism))
+        type_sorted_non_tree_joints = JointCollection(non_tree_joints(mechanism))
         ancestor_joint_mask = joint -> JointDict{Bool}(id(j) => j ∈ path(mechanism, successor(joint, mechanism), root_body(mechanism)) for j in tree_joints(mechanism))
         ancestor_joint_masks = JointDict{JointDict{Bool}}(id(j) => ancestor_joint_mask(j) for j in tree_joints(mechanism))
 
@@ -111,7 +111,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         end
 
         m = mechanism
-        constraint_jacobian_structure = JointDict(id(j) => path(m, predecessor(j, m), successor(j, m))::TreePath{RigidBody{M}, GenericJoint{M}} for j in joints(m))
+        constraint_jacobian_structure = JointDict(id(j) => path(m, predecessor(j, m), successor(j, m))::TreePath{RigidBody{M}, Joint{M}} for j in joints(m))
 
         new{X, M, C, JointCollection, typeof(motion_subspaces.data)}(
         mechanism, modcount(mechanism), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
@@ -315,7 +315,7 @@ additional_state(state::MechanismState) = state.s
 state_vector(state::MechanismState) = [configuration(state); velocity(state); additional_state(state)]
 
 for fun in (:num_velocities, :num_positions)
-    @eval function $fun(p::TreePath{RigidBody{T}, GenericJoint{T}} where {T})
+    @eval function $fun(p::TreePath{RigidBody{T}, <:Joint{T}} where {T})
         mapreduce($fun, +, 0, p)
     end
 end
@@ -464,7 +464,7 @@ $(SIGNATURES)
 
 Return the constraint wrench subspace of the given joint expressed in the frame after the joint.
 """
-@inline function constraint_wrench_subspace(state::MechanismState, joint::GenericJoint{T}) where {T}
+@inline function constraint_wrench_subspace(state::MechanismState, joint::Joint{T}) where {T}
     update_constraint_wrench_subspaces!(state)
     state.constraint_wrench_subspaces[joint]
 end

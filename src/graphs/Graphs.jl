@@ -36,9 +36,9 @@ export
     tree_index,
     ancestors,
     lowest_common_ancestor,
-    direction
+    direction,
+    directions
 
-using RigidBodyDynamics.CustomCollections: UnsafeFastDict
 using Base.Iterators: flatten
 
 include("abstract.jl")
