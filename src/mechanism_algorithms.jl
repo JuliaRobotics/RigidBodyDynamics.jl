@@ -180,9 +180,9 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
         Ici = crb_inertia(state, bodyid)
         F = Ici * Si
         ancestor_joint_mask = state.ancestor_joint_masks[jointidi]
-        foreach_with_extra_args(out, state, irange, F, ancestor_joint_mask, state.motion_subspaces.data, state.treejointids) do out, state, irange, F, mask, Sj, jointidj # TODO: use closure once it doesn't allocate
+        foreach_with_extra_args(out, state, irange, F, ancestor_joint_mask, state.motion_subspaces.data, state.treejointids) do out, state, irange, F, ancestor_joint_mask, Sj, jointidj # TODO: use closure once it doesn't allocate
             Base.@_inline_meta # currently required; try removing with 1.0
-            if mask[jointidj]
+            if ancestor_joint_mask[jointidj]
                 jrange = velocity_range(state, jointidj)
                 block = angular(F)' * angular(Sj) + linear(F)' * linear(Sj)
                 set_matrix_block!(out.data, irange, jrange, block)
