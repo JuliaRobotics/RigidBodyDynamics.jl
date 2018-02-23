@@ -9,9 +9,10 @@ end
 source(path::TreePath) = path.source
 target(path::TreePath) = path.target
 
-path_edge_index(edge::E, path::TreePath{<:Any, E}) where {E} = path.indexmap[edge_index(edge)]
-Base.in(edge::E, path::TreePath{<:Any, E}) where {E} = path_edge_index(edge, path) != 0
-direction(edge::E, path::TreePath{<:Any, E}) where {E} = path.directions[path_edge_index(edge, path)]
+@inline Base.findfirst(edge::E, path::TreePath{<:Any, E}) where {E} = path.indexmap[edge_index(edge)]
+@inline Base.in(edge::E, path::TreePath{<:Any, E}) where {E} = findfirst(edge, path) != 0
+@inline directions(path::TreePath) = path.directions
+@inline direction(edge::E, path::TreePath{<:Any, E}) where {E} = path.directions[findfirst(edge, path)]
 
 Base.start(path::TreePath) = start(path.edges)
 Base.next(path::TreePath, state) = next(path.edges, state)
