@@ -34,7 +34,7 @@ end
 Base.show(io::IO, ::StateCache) = print(io, "StateCache{…}(…)")
 
 function StateCache(mechanism::Mechanism{M}) where M
-    JointCollection = typeof(TypeSortedCollection(typedjoint.(joints(mechanism))))
+    JointCollection = typeof(TypeSortedCollection(joints(mechanism)))
     StateCache{M, JointCollection}(mechanism, [], [])
 end
 

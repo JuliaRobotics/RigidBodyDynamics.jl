@@ -16,7 +16,6 @@ import Base.Iterators: filter, flatten
 export
     RigidBody,
     Joint,
-    GenericJoint,
     JointType,
     Mechanism,
     MechanismState,

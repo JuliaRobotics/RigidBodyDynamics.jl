@@ -48,7 +48,7 @@ function TreePath(src::V, target::V, tree::SpanningTree{V, E}) where {V, E}
     reverse!(lca_to_target)
 
     edges = collect(flatten((source_to_lca, lca_to_target)))
-    directions = UnsafeFastDict{edge_index}(flatten(((e => :up for e in source_to_lca), (e => :down for e in lca_to_target))))
+    directions = UnsafeFastDict{edge_index, E, Symbol}(flatten(((e => :up for e in source_to_lca), (e => :down for e in lca_to_target))))
     indices = IntSet(edge_index.(edges))
-    TreePath(src, target, edges, directions, indices)
+    TreePath{V, E}(src, target, edges, directions, indices)
 end
