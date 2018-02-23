@@ -124,7 +124,7 @@ end
             wrench = rand(Wrench{Float64}, frame_after(joint))
             τ = Vector{Float64}(num_velocities(joint))
             RigidBodyDynamics.joint_torque!(τ, joint, qjoint, wrench)
-            S = motion_subspace(joint, configuration(x, joint))
+            S = motion_subspace(joint, configuration(x, joint))::RigidBodyDynamics.motionsubspacetype(typeof(joint), Float64)
             @test isapprox(τ, torque(S, wrench))
         end
     end

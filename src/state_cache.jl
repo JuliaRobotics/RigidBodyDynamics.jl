@@ -38,9 +38,29 @@ function StateCache(mechanism::Mechanism{M}) where M
     StateCache{M, JointCollection}(mechanism, [], [])
 end
 
+function eltypes(TupleOfVectors) # TODO: consider moving to TSC
+    Base.tuple_type_cons(eltype(Base.tuple_type_head(TupleOfVectors)), eltypes(Base.tuple_type_tail(TupleOfVectors)))
+end
+eltypes(::Type{Tuple{}}) = Tuple{}
+
+function motionsubspacetypes(JointTypes, ::Type{X}) where X
+    Base.tuple_type_cons(motionsubspacetype(Base.tuple_type_head(JointTypes), X), motionsubspacetypes(Base.tuple_type_tail(JointTypes), X))
+end
+motionsubspacetypes(::Type{Tuple{}}, ::Type) = Tuple{}
+
+function vectortypes(Eltypes) # TODO: consider moving to TSC
+    Base.tuple_type_cons(Vector{Base.tuple_type_head(Eltypes)}, vectortypes(Base.tuple_type_tail(Eltypes)))
+end
+vectortypes(::Type{Tuple{}}) = Tuple{}
+
+function motionsubspacecollectiontype(::Type{TypeSortedCollection{D, N}}, ::Type{X}) where {D, N, X}
+    TypeSortedCollection{vectortypes(motionsubspacetypes(eltypes(D), X)), N}
+end
+
 @inline function Base.getindex(c::StateCache{M, JC}, ::Type{X}) where {M, JC, X}
     C = promote_type(X, M)
-    ReturnType = MechanismState{X, M, C, JC}
+    MSC = motionsubspacecollectiontype(JC, X)
+    ReturnType = MechanismState{X, M, C, JC, MSC}
     key = (object_id(X), Threads.threadid())
     @inbounds for i = 1 : length(c.keys)
         if c.keys[i] === key

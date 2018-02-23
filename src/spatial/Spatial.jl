@@ -22,7 +22,6 @@ export
 
 # aliases
 export
-    MotionSubspace, # TODO: remove
     WrenchSubspace # TODO: remove
 
 # functions

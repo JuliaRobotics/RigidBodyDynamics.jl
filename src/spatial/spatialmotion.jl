@@ -19,15 +19,6 @@ struct GeometricJacobian{A<:AbstractMatrix}
     end
 end
 
-# MotionSubspace is the return type of motion_subspace(::Joint, ...)
-const MotionSubspace{T} = GeometricJacobian{ContiguousSMatrixColumnView{3, 6, T, 18}}
-
-function MotionSubspace(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular, linear)
-    GeometricJacobian(body, base, frame, smatrix3x6view(angular), smatrix3x6view(linear))
-end
-
-MotionSubspace(jac::GeometricJacobian) = MotionSubspace(jac.body, jac.base, jac.frame, angular(jac), linear(jac))
-
 # GeometricJacobian-specific functions
 Base.convert(::Type{GeometricJacobian{A}}, jac::GeometricJacobian{A}) where {A} = jac
 

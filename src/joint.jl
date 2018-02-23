@@ -63,6 +63,7 @@ frame_after(joint::Joint) = joint.frame_after
 joint_type(joint::Joint) = joint.joint_type
 joint_to_predecessor(joint::Joint) = joint.joint_to_predecessor[]
 joint_to_successor(joint::Joint) = joint.joint_to_successor[]
+motionsubspacetype(::Type{J}, ::Type{X}) where {JT, J<:Joint{<:Any, JT}, X} = motionsubspacetype(JT, X)
 
 """
 $(SIGNATURES)

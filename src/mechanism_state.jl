@@ -47,7 +47,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     joint_twists::JointCacheDict{Twist{C}}
     joint_bias_accelerations::JointCacheDict{SpatialAcceleration{C}}
     motion_subspaces::CacheElement{MotionSubspaceCollection} # TODO
-    constraint_wrench_subspaces::JointCacheDict{WrenchSubspace{C}} # note: the ones corresponding to tree joints are never used (or set)
+    constraint_wrench_subspaces::JointCacheDict{WrenchSubspace{C}} # TODO: use a TSC. note: the ones corresponding to tree joints are never used (or set)
 
     # body-related cache
     transforms_to_root::BodyCacheDict{Transform3D{C}}
