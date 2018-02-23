@@ -953,7 +953,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.attach!-Union{Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}}}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.attach!-Union{Tuple{RigidBodyDynamics.Mechanism{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Joint{T,JT} where JT<:RigidBodyDynamics.JointType{T}}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
     "category": "Method",
@@ -969,7 +969,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{Type{T},Vararg{Type{#s20} where #s20<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "Method",
@@ -977,7 +977,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s20} where #s20<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "Method",
@@ -985,7 +985,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Function,Vararg{Type{#s5} where #s5<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Function,Vararg{Type{#s8} where #s8<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
@@ -993,7 +993,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s7} where #s7<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{Type{T},Vararg{Type{#s20} where #s20<:RigidBodyDynamics.JointType{T},N} where N}, Tuple{T}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "Method",
@@ -1009,7 +1009,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.remove_joint!-Union{Tuple{M}, Tuple{RigidBodyDynamics.Mechanism{M},RigidBodyDynamics.Joint{M,RigidBodyDynamics.JointType{M}}}} where M",
+    "location": "mechanism.html#RigidBodyDynamics.remove_joint!-Union{Tuple{M}, Tuple{RigidBodyDynamics.Mechanism{M},RigidBodyDynamics.Joint{M,JT} where JT<:RigidBodyDynamics.JointType{M}}} where M",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.remove_joint!",
     "category": "Method",
@@ -1249,7 +1249,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.bias_acceleration-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.BodyID} where #s7<:RigidBodyDynamics.RigidBody}",
+    "location": "mechanismstate.html#RigidBodyDynamics.bias_acceleration-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.BodyID} where #s20<:RigidBodyDynamics.RigidBody}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "Method",
@@ -1257,7 +1257,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.bias_acceleration-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.JointID} where #s7<:RigidBodyDynamics.Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.bias_acceleration-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.JointID} where #s20<:RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "Method",
@@ -1265,7 +1265,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.JointID} where #s7<:RigidBodyDynamics.Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.JointID} where #s20<:RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration",
     "category": "Method",
@@ -1281,7 +1281,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.configuration_range-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.JointID} where #s7<:RigidBodyDynamics.Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration_range-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.JointID} where #s20<:RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration_range",
     "category": "Method",
@@ -1289,7 +1289,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.constraint_wrench_subspace-Union{Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint{T,RigidBodyDynamics.JointType{T}}}, Tuple{T}} where T",
+    "location": "mechanismstate.html#RigidBodyDynamics.constraint_wrench_subspace-Union{Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint{T,JT} where JT<:RigidBodyDynamics.JointType{T}}, Tuple{T}} where T",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.constraint_wrench_subspace",
     "category": "Method",
@@ -1297,7 +1297,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.crb_inertia-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.BodyID} where #s7<:RigidBodyDynamics.RigidBody}",
+    "location": "mechanismstate.html#RigidBodyDynamics.crb_inertia-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.BodyID} where #s20<:RigidBodyDynamics.RigidBody}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.crb_inertia",
     "category": "Method",
@@ -1313,7 +1313,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.gravitational_potential_energy-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.BodyID} where #s7<:RigidBodyDynamics.RigidBody}",
+    "location": "mechanismstate.html#RigidBodyDynamics.gravitational_potential_energy-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.BodyID} where #s20<:RigidBodyDynamics.RigidBody}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.gravitational_potential_energy",
     "category": "Method",
@@ -1321,7 +1321,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.joint_transform-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.JointID} where #s7<:RigidBodyDynamics.Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.joint_transform-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.JointID} where #s20<:RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.joint_transform",
     "category": "Method",
@@ -1401,7 +1401,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,Union{#s6, RigidBodyDynamics.BodyID} where #s6<:RigidBodyDynamics.RigidBody,Union{#s5, RigidBodyDynamics.BodyID} where #s5<:RigidBodyDynamics.RigidBody}",
+    "location": "mechanismstate.html#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,Union{#s19, RigidBodyDynamics.BodyID} where #s19<:RigidBodyDynamics.RigidBody,Union{#s8, RigidBodyDynamics.BodyID} where #s8<:RigidBodyDynamics.RigidBody}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.relative_twist",
     "category": "Method",
@@ -1457,7 +1457,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.spatial_inertia-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.BodyID} where #s7<:RigidBodyDynamics.RigidBody}",
+    "location": "mechanismstate.html#RigidBodyDynamics.spatial_inertia-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.BodyID} where #s20<:RigidBodyDynamics.RigidBody}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.spatial_inertia",
     "category": "Method",
@@ -1465,7 +1465,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.transform_to_root-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.BodyID} where #s7<:RigidBodyDynamics.RigidBody}",
+    "location": "mechanismstate.html#RigidBodyDynamics.transform_to_root-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.BodyID} where #s20<:RigidBodyDynamics.RigidBody}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.transform_to_root",
     "category": "Method",
@@ -1473,7 +1473,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.twist_wrt_world-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.BodyID} where #s7<:RigidBodyDynamics.RigidBody}",
+    "location": "mechanismstate.html#RigidBodyDynamics.twist_wrt_world-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.BodyID} where #s20<:RigidBodyDynamics.RigidBody}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.twist_wrt_world",
     "category": "Method",
@@ -1481,7 +1481,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.JointID} where #s7<:RigidBodyDynamics.Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.JointID} where #s20<:RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity",
     "category": "Method",
@@ -1497,7 +1497,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.velocity_range-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.JointID} where #s7<:RigidBodyDynamics.Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity_range-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.JointID} where #s20<:RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity_range",
     "category": "Method",
@@ -1545,7 +1545,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.twist-Tuple{RigidBodyDynamics.MechanismState,Union{#s7, RigidBodyDynamics.JointID} where #s7<:RigidBodyDynamics.Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.twist-Tuple{RigidBodyDynamics.MechanismState,Union{#s20, RigidBodyDynamics.JointID} where #s20<:RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.twist",
     "category": "Method",
@@ -1673,7 +1673,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian-Union{Tuple{C}, Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection,RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M,RigidBodyDynamics.JointType{M}}}}, Tuple{X}} where C where M where X",
+    "location": "algorithms.html#RigidBodyDynamics.geometric_jacobian-Union{Tuple{C}, Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection,MotionSubspaceCollection} where MotionSubspaceCollection where JointCollection,RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M,JT} where JT<:RigidBodyDynamics.JointType{M}}}, Tuple{X}} where C where M where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.geometric_jacobian",
     "category": "Method",
