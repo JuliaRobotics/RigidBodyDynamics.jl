@@ -7,7 +7,6 @@ export
     ConstVector,
     NullDict,
     UnsafeVectorView,
-    UnsafeFastDict, # TODO: remove
     CacheElement,
     AbstractIndexDict,
     IndexDict,
@@ -138,72 +137,6 @@ From https://github.com/rdeits/NNLS.jl/blob/0a9bf56774595b5735bc738723bd3cb94138
         view(parent, range)
     end
 end
-
-
-# UnsafeFastDict
-struct UnsafeFastDict{I, K, V} <: Associative{K, V}
-    keys::Vector{K}
-    values::Vector{V}
-
-    # specify index function, key type, and value type
-    function UnsafeFastDict{I, K, V}(kv) where {I, K, V}
-        keys = K[]
-        values = V[]
-        for (k, v) in kv
-            index = I(k)
-            if index > length(keys)
-                resize!(keys, index)
-                resize!(values, index)
-            end
-            keys[index] = k
-            values[index] = v
-        end
-        new(keys, values)
-    end
-
-    # infer value type
-    function UnsafeFastDict{I, K}(kv) where {I, K}
-        T = Core.Inference.return_type(first, Tuple{typeof(kv)})
-        V = Core.Inference.return_type(last, Tuple{T})
-        UnsafeFastDict{I, K, V}(kv)
-    end
-
-    # infer key type and value type
-    function UnsafeFastDict{I}(kv) where {I}
-        T = Core.Inference.return_type(first, Tuple{typeof(kv)})
-        K = Core.Inference.return_type(first, Tuple{T})
-        V = Core.Inference.return_type(last, Tuple{T})
-        UnsafeFastDict{I, K, V}(kv)
-    end
-
-    # specify all types, but leave values uninitialized
-    function UnsafeFastDict{I, K, V}(keys::AbstractVector{K}) where {I, K, V}
-        sortedkeys = K[]
-        for k in keys
-            index = I(k)
-            if index > length(sortedkeys)
-                resize!(sortedkeys, index)
-            end
-            sortedkeys[index] = k
-        end
-        values = Vector{V}(length(sortedkeys))
-        new(sortedkeys, values)
-    end
-end
-
-# Iteration
-@inline Base.start(d::UnsafeFastDict) = 1
-@inline Base.done(d::UnsafeFastDict, state) = state > length(d)
-@inline Base.next(d::UnsafeFastDict, state) = (d.keys[state] => d.values[state], state + 1)
-
-# Associative
-@inline Base.length(d::UnsafeFastDict) = length(d.values)
-@inline Base.haskey(d::UnsafeFastDict{I, K, V}, key) where {I, K, V} = (1 <= I(key) <= length(d)) && (@inbounds return d.keys[I(key)] === key)
-@inline Base.getindex(d::UnsafeFastDict, key) = get(d, key)
-@inline Base.get(d::UnsafeFastDict{I, K, V}, key) where {I, K, V} = d.values[I(key)]
-@inline Base.keys(d::UnsafeFastDict) = d.keys
-@inline Base.values(d::UnsafeFastDict) = d.values
-@inline Base.setindex!(d::UnsafeFastDict{I, K, V}, value::V, key) where {I, K, V} = (d.values[I(key)] = value)
 
 
 # TODO: remove

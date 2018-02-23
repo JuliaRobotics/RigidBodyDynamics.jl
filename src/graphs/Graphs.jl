@@ -38,7 +38,6 @@ export
     lowest_common_ancestor,
     direction
 
-using RigidBodyDynamics.CustomCollections: UnsafeFastDict
 using Base.Iterators: flatten
 
 include("abstract.jl")
