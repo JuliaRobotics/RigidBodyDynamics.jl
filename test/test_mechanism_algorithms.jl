@@ -248,7 +248,6 @@ end
             parent_body = predecessor(joint, mechanism)
             toroot = transform_to_root(x, body)
             S = transform(motion_subspace(joint, configuration(x, joint)), toroot)
-            S = RigidBodyDynamics.change_base(S, default_frame(parent_body)) # to make frames line up
             @test isapprox(relative_twist(x, body, parent_body), Twist(S, velocity(x, joint)); atol = 1e-12)
         end
     end

@@ -40,7 +40,6 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     qs::JointDict{VectorSegment{X}}
     vs::JointDict{VectorSegment{X}}
     predecessor_and_successor_ids::JointDict{Pair{BodyID, BodyID}}
-    joint_poses::JointDict{Transform3D{M}} # TODO: remove, just use data in Joints
 
     # joint-related cache
     joint_transforms::JointCacheDict{Transform3D{C}}
@@ -83,7 +82,6 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         qs = JointDict{VectorSegment{X}}(id(j) => view(q, qstart : (qstart += num_positions(j)) - 1) for j in tree_joints(mechanism))
         vs = JointDict{VectorSegment{X}}(id(j) => view(v, vstart : (vstart += num_velocities(j)) - 1) for j in tree_joints(mechanism))
         predecessor_and_successor_ids = JointDict{Pair{BodyID, BodyID}}(id(j) => (id(predecessor(j, mechanism)) => id(successor(j, mechanism))) for j in joints(mechanism))
-        joint_poses = JointDict{Transform3D{M}}(id(j) => body_fixed_frame_definition(mechanism, frame_before(j)) for j in joints(mechanism))
 
         joint_transforms = JointCacheDict{Transform3D{C}}(length(joints(mechanism)))
         tree_joint_transforms = view(values(joint_transforms), 1 : length(tree_joints(mechanism)))
@@ -117,7 +115,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
 
         new{X, M, C, JointCollection, typeof(motion_subspaces.data)}(
         mechanism, modcount(mechanism), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
-        constraint_jacobian_structure, q, v, s, jointids, treejointids, nontreejointids, qs, vs, predecessor_and_successor_ids, joint_poses,
+        constraint_jacobian_structure, q, v, s, jointids, treejointids, nontreejointids, qs, vs, predecessor_and_successor_ids,
         joint_transforms, tree_joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, constraint_wrench_subspaces,
         transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
         contact_states)
@@ -551,11 +549,10 @@ end
     # update transforms to root
     transforms_to_root = state.transforms_to_root
     transforms_to_root[root_body(mechanism)] = eye(Transform3D{cache_eltype(state)}, root_frame(mechanism)) # TODO: do once and for all upon construction
-    for jointid in state.treejointids
+    for joint in tree_joints(mechanism)
+        jointid = id(joint)
         parentid, bodyid = predsucc(jointid, state)
-        parent_to_root = transforms_to_root[parentid]
-        before_joint_to_parent = state.joint_poses[jointid]
-        transforms_to_root[bodyid] = parent_to_root * before_joint_to_parent * state.joint_transforms[jointid]
+        transforms_to_root[bodyid] = transforms_to_root[parentid] * before_joint_to_predecessor(joint) * state.joint_transforms[jointid]
     end
     state.transforms_to_root.dirty = false
 
@@ -564,8 +561,8 @@ end
         foreach_with_extra_args(state.joint_transforms, state, state.type_sorted_non_tree_joints) do joint_transforms, state, joint # TODO: use closure once it's fast
             pred = predecessor(joint, state.mechanism)
             succ = successor(joint, state.mechanism)
-            before_to_root = transform_to_root(state, pred) * frame_definition(pred, frame_before(joint)) # TODO: slow!
-            after_to_root = transform_to_root(state, succ) * frame_definition(succ, frame_after(joint)) # TODO: slow!
+            before_to_root = transform_to_root(state, pred) * before_joint_to_predecessor(joint)
+            after_to_root = transform_to_root(state, succ) * after_joint_to_successor(joint)
             joint_transforms[joint] = inv(before_to_root) * after_to_root
         end
     end
@@ -590,16 +587,11 @@ end
 @inline update_motion_subspaces!(state::MechanismState) = isdirty(state.motion_subspaces) && _update_motion_subspaces!(state)
 @noinline function _update_motion_subspaces!(state::MechanismState)
     update_transforms!(state)
-    f = function (state, joint) # TODO: just handle changing base frame in motion_subspace Joint method
-        mechanism = state.mechanism
-        body = successor(joint, mechanism)
-        parentbody = predecessor(joint, mechanism)
-        parentframe = default_frame(parentbody)
-        qjoint = configuration(state, joint)
-        S = change_base(motion_subspace(joint, qjoint), parentframe) # to make frames line up
-        transform(S, transform_to_root(state, body))
+    map_with_extra_args!(state, state.motion_subspaces.data, state.type_sorted_tree_joints, values(state.qs)) do state, joint, qjoint
+        jointid = id(joint)
+        bodyid = successorid(jointid, state)
+        transform(motion_subspace(joint, qjoint), transform_to_root(state, bodyid))
     end
-    map_with_extra_args!(f, state, state.motion_subspaces.data, state.type_sorted_tree_joints)
     state.motion_subspaces.dirty = false
     nothing
 end
@@ -612,13 +604,9 @@ end
     rootframe = root_frame(mechanism)
     twists = state.twists_wrt_world
     twists[root_body(mechanism)] = zero(Twist{cache_eltype(state)}, rootframe, rootframe, rootframe) # TODO: do this once and for all in the constructor
-    for joint in tree_joints(mechanism) # TODO: just handle changing base frame in motion_subspace Joint method
-        jointid = id(joint)
+    for jointid in state.treejointids
         parentbodyid, bodyid = predsucc(jointid, state)
-        parentbody = predecessor(joint, mechanism)
-        parentframe = default_frame(parentbody)
         jointtwist = state.joint_twists[jointid]
-        jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
         twists[bodyid] = twists[parentbodyid] + transform(jointtwist, transform_to_root(state, bodyid))
     end
     state.twists_wrt_world.dirty = false
@@ -650,18 +638,13 @@ end
     rootframe = root_frame(mechanism)
     biasaccels = state.bias_accelerations_wrt_world
     biasaccels[root_body(mechanism)] = zero(SpatialAcceleration{cache_eltype(state)}, rootframe, rootframe, rootframe) # TODO: do once and for all in constructor
-    for joint in tree_joints(mechanism)
-        jointid = id(joint)
+    for jointid in state.treejointids
         parentbodyid, bodyid = predsucc(jointid, state)
-
-        parentbody = predecessor(joint, mechanism)
-        parentframe = default_frame(parentbody)
-        jointbias = change_base(bias_acceleration(state, jointid), parentframe) # to make frames line up
-
+        jointbias = bias_acceleration(state, jointid)
         # TODO: awkward way of doing this:
         toroot = transform_to_root(state, bodyid)
         twistwrtworld = transform(twist_wrt_world(state, bodyid), inv(toroot))
-        jointtwist = change_base(twist(state, joint), parentframe) # to make frames line up
+        jointtwist = twist(state, jointid)
         biasaccels[bodyid] = biasaccels[parentbodyid] + transform(jointbias, toroot, twistwrtworld, jointtwist)
     end
     state.bias_accelerations_wrt_world.dirty = false

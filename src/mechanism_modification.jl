@@ -86,13 +86,13 @@ function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechani
     for transform in frame_definitions(childroot)
         add_frame!(parentbody, transform)
     end
-    canonicalize_frame_definitions!(mechanism, parentbody)
     bodymap[childroot] = parentbody
 
     # Insert childmechanism's non-root vertices and joints, starting with the tree joints (to preserve order).
     for joint in flatten((tree_joints(childmechanism), non_tree_joints(childmechanism)))
         _copyjoint!(mechanism, childmechanism, joint, bodymap, jointmap)
     end
+    canonicalize_frame_definitions!(mechanism, parentbody)
     bodymap, jointmap
 end
 
