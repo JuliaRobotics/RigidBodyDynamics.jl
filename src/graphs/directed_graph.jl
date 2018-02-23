@@ -7,7 +7,7 @@ mutable struct DirectedGraph{V, E} <: AbstractGraph{V, E}
     outedges::Vector{Vector{E}}
 end
 
-(::Type{DirectedGraph{V, E}})() where {V, E} = DirectedGraph{V, E}(V[], E[], V[], V[], Set{E}[], Set{E}[])
+DirectedGraph{V, E}() where {V, E} = DirectedGraph{V, E}(V[], E[], V[], V[], Set{E}[], Set{E}[])
 
 function DirectedGraph(vertexfun::Base.Callable, edgefun::Base.Callable, other::DirectedGraph)
     vertices = map(vertexfun, other.vertices)

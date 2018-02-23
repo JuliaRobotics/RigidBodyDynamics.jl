@@ -155,15 +155,15 @@ isdirty(d::CacheIndexDict) = d.dirty
 # Constructors
 for IDict in (:IndexDict, :CacheIndexDict)
     @eval begin
-        function (::Type{$IDict{K, KeyRange, V}})(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
+        function $IDict{K, KeyRange, V}(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
             $IDict(keys, Vector{V}(uninitialized, length(keys)))
         end
 
-        function (::Type{$IDict{K, KeyRange, V}})(keys::KeyRange, values::Vector{V}) where {K, KeyRange<:AbstractUnitRange{K}, V}
+        function $IDict{K, KeyRange, V}(keys::KeyRange, values::Vector{V}) where {K, KeyRange<:AbstractUnitRange{K}, V}
             $IDict(keys, values)
         end
 
-        function (::Type{$IDict{K, KeyRange, V}})(kv::Vector{Pair{K, V}}) where {K, KeyRange<:AbstractUnitRange{K}, V}
+        function $IDict{K, KeyRange, V}(kv::Vector{Pair{K, V}}) where {K, KeyRange<:AbstractUnitRange{K}, V}
             if !issorted(kv, by = first)
                 sort!(kv; by = first)
             end
@@ -180,16 +180,16 @@ for IDict in (:IndexDict, :CacheIndexDict)
             $IDict(keys, values)
         end
 
-        function (::Type{$IDict{K, KeyRange}})(kv::Vector{Pair{K, V}}) where {K, KeyRange<:AbstractUnitRange{K}, V}
+        function $IDict{K, KeyRange}(kv::Vector{Pair{K, V}}) where {K, KeyRange<:AbstractUnitRange{K}, V}
             $IDict{K, KeyRange, V}(kv)
         end
 
-        function (::Type{$IDict{K, KeyRange, V}})(itr) where {K, KeyRange<:AbstractUnitRange{K}, V}
+        function $IDict{K, KeyRange, V}(itr) where {K, KeyRange<:AbstractUnitRange{K}, V}
             kv = map(x -> K(first(x)) => last(x)::V, itr)
             $IDict{K, KeyRange, V}(kv)
         end
 
-        function (::Type{$IDict{K, KeyRange}})(itr) where {K, KeyRange<:AbstractUnitRange{K}}
+        function $IDict{K, KeyRange}(itr) where {K, KeyRange<:AbstractUnitRange{K}}
             kv = map(x -> K(first(x)) => last(x), itr)
             $IDict{K, KeyRange}(kv)
         end
@@ -284,7 +284,7 @@ struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <
     end
 end
 
-function (::Type{SegmentedVector{K, T, KeyRange}})(parent::AbstractVector{T}, keys, viewlengthfun) where {K, T, KeyRange<:AbstractRange{K}}
+function SegmentedVector{K, T, KeyRange}(parent::AbstractVector{T}, keys, viewlengthfun) where {K, T, KeyRange<:AbstractRange{K}}
     views = Vector{Pair{K, VectorSegment{T}}}()
     start = 1
     for key in keys
@@ -295,7 +295,7 @@ function (::Type{SegmentedVector{K, T, KeyRange}})(parent::AbstractVector{T}, ke
     SegmentedVector(parent, IndexDict{K, KeyRange, VectorSegment{T}}(views))
 end
 
-function (::Type{SegmentedVector{K}})(parent::AbstractVector{T}, keys, viewlengthfun) where {K, T}
+function SegmentedVector{K}(parent::AbstractVector{T}, keys, viewlengthfun) where {K, T}
     SegmentedVector{K, T, Base.OneTo{K}}(parent, keys, viewlengthfun)
 end
 
