@@ -20,7 +20,7 @@ end
             ϕ̇ = rotation_vector_rate(ϕ, ω)
             Θ = norm(ϕ)
             if Θ > eps(Θ)
-                ϕ_autodiff = SVector{3}(create_autodiff(ϕ, ϕ̇))
+                ϕ_autodiff = ForwardDiff.Dual.(ϕ, ϕ̇)
                 R_autodiff = RotMatrix(RodriguesVec(ϕ_autodiff...))
                 Ṙ_from_autodiff = map(x -> ForwardDiff.partials(x)[1], R_autodiff)
                 @test isapprox(Ṙ_from_autodiff, Ṙ)
