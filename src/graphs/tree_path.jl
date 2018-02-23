@@ -2,14 +2,16 @@ struct TreePath{V, E}
     source::V
     target::V
     edges::Vector{E} # in order
-    directions::UnsafeFastDict{edge_index, E, Symbol} # Symbol: :up if going from source to LCA, :down if going from LCA to target
-    indices::IntSet
+    directions::Vector{Symbol} # Symbol: :up if going from source to LCA, :down if going from LCA to target
+    indexmap::SparseVector{Int}
 end
 
 source(path::TreePath) = path.source
 target(path::TreePath) = path.target
 
-direction(edge, path::TreePath) = path.directions[edge]
+path_edge_index(edge::E, path::TreePath{<:Any, E}) where {E} = path.indexmap[edge_index(edge)]
+Base.in(edge::E, path::TreePath{<:Any, E}) where {E} = path_edge_index(edge, path) != 0
+direction(edge::E, path::TreePath{<:Any, E}) where {E} = path.directions[path_edge_index(edge, path)]
 
 Base.start(path::TreePath) = start(path.edges)
 Base.next(path::TreePath, state) = next(path.edges, state)
@@ -47,8 +49,8 @@ function TreePath(src::V, target::V, tree::SpanningTree{V, E}) where {V, E}
     end
     reverse!(lca_to_target)
 
-    edges = collect(flatten((source_to_lca, lca_to_target)))
-    directions = UnsafeFastDict{edge_index, E, Symbol}(flatten(((e => :up for e in source_to_lca), (e => :down for e in lca_to_target))))
-    indices = IntSet(edge_index.(edges))
-    TreePath{V, E}(src, target, edges, directions, indices)
+    edges = collect(E, flatten((source_to_lca, lca_to_target)))
+    directions = collect(Symbol, flatten(((:up for e in source_to_lca), (:down for e in lca_to_target))))
+    indexmap = sparsevec(Dict(edge_index(e) => i for (i, e) in enumerate(edges)), num_edges(tree))
+    TreePath{V, E}(src, target, edges, directions, indexmap)
 end

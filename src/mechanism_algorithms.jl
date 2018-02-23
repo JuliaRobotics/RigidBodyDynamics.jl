@@ -83,7 +83,7 @@ function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path
     update_motion_subspaces!(state)
     foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints, state.motion_subspaces.data) do out, state, path, joint, motion_subspace # TODO: use closure once it doesn't allocate
         vrange = velocity_range(state, joint)
-        if Graphs.edge_index(joint) in path.indices
+        if joint in path
             part = transformfun(motion_subspace)
             direction(joint, path) == :up && (part = -part)
             set_cols!(out, vrange, part)
@@ -522,7 +522,7 @@ function constraint_jacobian_and_bias!(state::MechanismState, constraintjacobian
         # Jacobian.
         foreach_with_extra_args(constraintjacobian, state, path, T, rowrange, state.type_sorted_tree_joints, state.motion_subspaces.data) do constraintjacobian, state, path, T, rowrange, treejoint, J # TODO: use closure once it doesn't allocate
             vrange = velocity_range(state, treejoint)
-            if Graphs.edge_index(treejoint) in path.indices
+            if treejoint in path
                 part = angular(T)' * angular(J) + linear(T)' * linear(J) # TODO: At_mul_B
                 direction(treejoint, path) == :up && (part = -part)
                 set_matrix_block!(constraintjacobian, rowrange, vrange, part)
