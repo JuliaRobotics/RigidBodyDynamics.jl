@@ -38,15 +38,6 @@ function StateCache(mechanism::Mechanism{M}) where M
     StateCache{M, JointCollection}(mechanism, [], [])
 end
 
-function motionsubspacetypes(JointTypes, ::Type{X}) where X
-    Base.tuple_type_cons(motionsubspacetype(Base.tuple_type_head(JointTypes), X), motionsubspacetypes(Base.tuple_type_tail(JointTypes), X))
-end
-motionsubspacetypes(::Type{Tuple{}}, ::Type) = Tuple{}
-
-function motionsubspacecollectiontype(::Type{TypeSortedCollection{D, N}}, ::Type{X}) where {D, N, X}
-    TypeSortedCollection{vectortypes(motionsubspacetypes(eltypes(D), X)), N}
-end
-
 @inline function Base.getindex(c::StateCache{M, JC}, ::Type{X}) where {M, JC, X}
     C = promote_type(X, M)
     MSC = motionsubspacecollectiontype(JC, X)

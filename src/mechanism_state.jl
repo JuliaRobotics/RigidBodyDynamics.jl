@@ -8,6 +8,15 @@ const JointCacheDict{V} = CacheIndexDict{JointID, V}
 Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{JointID}, key::Joint) = d[id(key)]
 Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{JointID}, value, key::Joint) = d[id(key)] = value
 
+function motionsubspacetypes(JointTypes, ::Type{X}) where X
+    Base.tuple_type_cons(motionsubspacetype(Base.tuple_type_head(JointTypes), X), motionsubspacetypes(Base.tuple_type_tail(JointTypes), X))
+end
+motionsubspacetypes(::Type{Tuple{}}, ::Type) = Tuple{}
+
+function motionsubspacecollectiontype(::Type{TypeSortedCollection{D, N}}, ::Type{X}) where {D, N, X}
+    TypeSortedCollection{vectortypes(motionsubspacetypes(eltypes(D), X)), N}
+end
+
 """
 $(TYPEDEF)
 
@@ -57,15 +66,12 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     crb_inertias::BodyCacheDict{SpatialInertia{C}}
     contact_states::BodyCacheDict{Vector{Vector{DefaultSoftContactState{X}}}} # TODO: consider moving to separate type
 
-    function MechanismState(m::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M}
+    function MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}(m::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M, C, JointCollection, MotionSubspaceCollection}
         @assert length(q) == num_positions(m)
         @assert length(v) == num_velocities(m)
         @assert length(s) == num_additional_states(m)
 
-        C = promote_type(X, M)
         canonicalize_graph!(m)
-        type_sorted_joints = TypeSortedCollection(joints(m)) # just to get the type...
-        JointCollection = typeof(type_sorted_joints)
         type_sorted_tree_joints = JointCollection(tree_joints(m))
         type_sorted_non_tree_joints = JointCollection(non_tree_joints(m))
         ancestor_joint_mask = joint -> JointDict{Bool}(id(j) => j ∈ path(m, successor(joint, m), root_body(m)) for j in tree_joints(m))
@@ -88,7 +94,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         tree_joint_transforms = view(values(joint_transforms), 1 : length(tree_joints(m)))
         joint_twists = JointCacheDict{Twist{C}}(length(tree_joints(m)))
         joint_bias_accelerations = JointCacheDict{SpatialAcceleration{C}}(length(tree_joints(m)))
-        motion_subspaces = CacheElement(TypeSortedCollection([motion_subspace(j, qs[j]) for j in tree_joints(m)], indices(type_sorted_tree_joints)))
+        motion_subspaces = CacheElement(MotionSubspaceCollection(indices(type_sorted_tree_joints)))
         constraint_wrench_subspaces = JointCacheDict{WrenchSubspace{C}}(length(joints(m)))
 
         # body-specific
@@ -119,26 +125,41 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         bias_accelerations_wrt_world[root] = zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe)
         inertias[root] = zero(SpatialInertia{C}, rootframe)
 
-        new{X, M, C, JointCollection, typeof(motion_subspaces.data)}(
-        m, modcount(m), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
-        constraint_jacobian_structure, q, v, s, jointids, treejointids, nontreejointids, qs, vs, predecessor_and_successor_ids,
-        joint_transforms, tree_joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, constraint_wrench_subspaces,
-        transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
-        contact_states)
+        new{X, M, C, JointCollection, MotionSubspaceCollection}(
+            m, modcount(m), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
+            constraint_jacobian_structure, q, v, s, jointids, treejointids, nontreejointids, qs, vs, predecessor_and_successor_ids,
+            joint_transforms, tree_joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, constraint_wrench_subspaces,
+            transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
+            contact_states)
+    end
+
+    function MechanismState{X, M, C, JointCollection}(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M, C, JointCollection}
+        MotionSubspaceCollection = motionsubspacecollectiontype(JointCollection, X)
+        MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}(mechanism, q, v, s)
+    end
+
+    function MechanismState{X, M, C}(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M, C}
+        JointCollection = typeof(TypeSortedCollection(joints(mechanism)))
+        MechanismState{X, M, C, JointCollection}(mechanism, q, v, s)
+    end
+
+    function MechanismState{X, M}(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M}
+        C = promote_type(X, M)
+        MechanismState{X, M, C}(mechanism, q, v, s)
     end
 
     function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
         q = Vector{X}(num_positions(mechanism))
         v = Vector{X}(num_velocities(mechanism))
         s = Vector{X}(num_additional_states(mechanism))
-        state = MechanismState(mechanism, q, v, s)
+        state = MechanismState{X, M}(mechanism, q, v, s)
         zero!(state)
         state
     end
 end
 
+MechanismState(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}) where {X, M} = MechanismState{X, M}(mechanism, q, v, zeros(X, num_additional_states(mechanism)))
 MechanismState(mechanism::Mechanism{M}) where {M} = MechanismState{M}(mechanism)
-MechanismState(mechanism::Mechanism, q::Vector{X}, v::Vector{X}) where {X} = MechanismState(mechanism, q, v, Vector{X}(0))
 
 Base.show(io::IO, ::MechanismState{X, M, C}) where {X, M, C} = print(io, "MechanismState{$X, $M, $C, …}(…)")
 
