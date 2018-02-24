@@ -740,7 +740,10 @@ function dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M},
     end
     dynamics_bias!(result, state)
     mass_matrix!(result, state)
-    has_loops(state.mechanism) && constraint_jacobian_and_bias!(result, state)
+    if has_loops(state.mechanism)
+        constraint_jacobian!(result, state)
+        constraint_bias!(result, state)
+    end
     dynamics_solve!(result, torques)
     nothing
 end
