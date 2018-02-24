@@ -41,7 +41,8 @@ end
 @inline function Base.getindex(c::StateCache{M, JC}, ::Type{X}) where {M, JC, X}
     C = promote_type(X, M)
     MSC = motionsubspacecollectiontype(JC, X)
-    ReturnType = MechanismState{X, M, C, JC, MSC}
+    WSC = wrenchsubspacecollectiontype(JC, X)
+    ReturnType = MechanismState{X, M, C, JC, MSC, WSC}
     key = (object_id(X), Threads.threadid())
     @inbounds for i = 1 : length(c.keys)
         if c.keys[i] === key

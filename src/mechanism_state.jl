@@ -8,14 +8,22 @@ const JointCacheDict{V} = CacheIndexDict{JointID, V}
 Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{JointID}, key::Joint) = d[id(key)]
 Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{JointID}, value, key::Joint) = d[id(key)] = value
 
+
+function motionsubspacecollectiontype(::Type{TypeSortedCollection{D, N}}, ::Type{X}) where {D, N, X}
+    TypeSortedCollection{vectortypes(motionsubspacetypes(eltypes(D), X)), N}
+end
 function motionsubspacetypes(JointTypes, ::Type{X}) where X
     Base.tuple_type_cons(motionsubspacetype(Base.tuple_type_head(JointTypes), X), motionsubspacetypes(Base.tuple_type_tail(JointTypes), X))
 end
 motionsubspacetypes(::Type{Tuple{}}, ::Type) = Tuple{}
 
-function motionsubspacecollectiontype(::Type{TypeSortedCollection{D, N}}, ::Type{X}) where {D, N, X}
-    TypeSortedCollection{vectortypes(motionsubspacetypes(eltypes(D), X)), N}
+function wrenchsubspacecollectiontype(::Type{TypeSortedCollection{D, N}}, ::Type{X}) where {D, N, X}
+    TypeSortedCollection{vectortypes(wrenchsubspacetypes(eltypes(D), X)), N}
 end
+function wrenchsubspacetypes(JointTypes, ::Type{X}) where X
+    Base.tuple_type_cons(wrenchsubspacetype(Base.tuple_type_head(JointTypes), X), wrenchsubspacetypes(Base.tuple_type_tail(JointTypes), X))
+end
+wrenchsubspacetypes(::Type{Tuple{}}, ::Type) = Tuple{}
 
 """
 $(TYPEDEF)
@@ -30,7 +38,7 @@ Type parameters:
 * `M`: the scalar type of the `Mechanism`
 * `C`: the scalar type of the cache variables (`== promote_type(X, M)`)
 """
-struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
+struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}
     mechanism::Mechanism{M}
     modcount::Int
     type_sorted_tree_joints::JointCollection
@@ -55,8 +63,8 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     tree_joint_transforms::VectorSegment{Transform3D{C}}
     joint_twists::JointCacheDict{Twist{C}}
     joint_bias_accelerations::JointCacheDict{SpatialAcceleration{C}}
-    motion_subspaces::CacheElement{MotionSubspaceCollection} # TODO
-    constraint_wrench_subspaces::JointCacheDict{WrenchSubspace{C}} # TODO: use a TSC. note: the ones corresponding to tree joints are never used (or set)
+    motion_subspaces::CacheElement{MotionSubspaceCollection}
+    constraint_wrench_subspaces::CacheElement{WrenchSubspaceCollection}
 
     # body-related cache
     transforms_to_root::BodyCacheDict{Transform3D{C}}
@@ -66,7 +74,8 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
     crb_inertias::BodyCacheDict{SpatialInertia{C}}
     contact_states::BodyCacheDict{Vector{Vector{DefaultSoftContactState{X}}}} # TODO: consider moving to separate type
 
-    function MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}(m::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M, C, JointCollection, MotionSubspaceCollection}
+    function MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}(
+            m::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}
         @assert length(q) == num_positions(m)
         @assert length(v) == num_velocities(m)
         @assert length(s) == num_additional_states(m)
@@ -95,7 +104,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         joint_twists = JointCacheDict{Twist{C}}(length(tree_joints(m)))
         joint_bias_accelerations = JointCacheDict{SpatialAcceleration{C}}(length(tree_joints(m)))
         motion_subspaces = CacheElement(MotionSubspaceCollection(indices(type_sorted_tree_joints)))
-        constraint_wrench_subspaces = JointCacheDict{WrenchSubspace{C}}(length(joints(m)))
+        constraint_wrench_subspaces = CacheElement(WrenchSubspaceCollection(indices(type_sorted_non_tree_joints)))
 
         # body-specific
         nbodies = length(bodies(m))
@@ -125,7 +134,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
         bias_accelerations_wrt_world[root] = zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe)
         inertias[root] = zero(SpatialInertia{C}, rootframe)
 
-        new{X, M, C, JointCollection, MotionSubspaceCollection}(
+        new{X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}(
             m, modcount(m), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
             constraint_jacobian_structure, q, v, s, jointids, treejointids, nontreejointids, qs, vs, predecessor_and_successor_ids,
             joint_transforms, tree_joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, constraint_wrench_subspaces,
@@ -135,7 +144,8 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}
 
     function MechanismState{X, M, C, JointCollection}(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M, C, JointCollection}
         MotionSubspaceCollection = motionsubspacecollectiontype(JointCollection, X)
-        MechanismState{X, M, C, JointCollection, MotionSubspaceCollection}(mechanism, q, v, s)
+        WrenchSubspaceCollection = wrenchsubspacecollectiontype(JointCollection, X)
+        MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}(mechanism, q, v, s)
     end
 
     function MechanismState{X, M, C}(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M, C}
@@ -486,23 +496,6 @@ root frame of the mechanism when all joint accelerations are zero.
     state.joint_bias_accelerations[joint]
 end
 
-"""
-$(SIGNATURES)
-
-Return the constraint wrench subspace of the given joint expressed in the frame after the joint.
-"""
-@inline function constraint_wrench_subspace(state::MechanismState, joint::Joint{T}) where {T}
-    update_constraint_wrench_subspaces!(state)
-    state.constraint_wrench_subspaces[joint]
-end
-
-@inline function constraint_wrench_subspace(state::MechanismState{X, M, C}, joint::Joint{M, JT}) where {X, M, C, JT}
-    update_constraint_wrench_subspaces!(state)
-    T = state.constraint_wrench_subspaces[joint]
-    N = num_constraints(JT)
-    WrenchMatrix(T.frame, SMatrix{3, N, C}(angular(T)), SMatrix{3, N, C}(linear(T)))
-end
-
 Base.@deprecate transform(state::MechanismState, joint::Joint) joint_transform(state, joint) # TODO: undeprecate?
 
 
@@ -638,14 +631,12 @@ end
 @inline update_constraint_wrench_subspaces!(state::MechanismState) = isdirty(state.constraint_wrench_subspaces) && _update_constraint_wrench_subspaces!(state)
 @noinline function _update_constraint_wrench_subspaces!(state::MechanismState)
     update_transforms!(state)
-    foreach_with_extra_args(state.constraint_wrench_subspaces, state, state.type_sorted_non_tree_joints) do results, state, joint
+    map_with_extra_args!(state, state.constraint_wrench_subspaces.data, state.type_sorted_non_tree_joints) do state, joint
         jointid = id(joint)
         bodyid = successorid(jointid, state)
-        body = successor(joint, state.mechanism) # TODO
         tf = state.joint_transforms[jointid]
-        T = constraint_wrench_subspace(joint, tf)
-        toroot = state.transforms_to_root[bodyid] * frame_definition(body, T.frame) # TODO: expensive
-        results[jointid] = WrenchSubspace(transform(T, toroot))
+        toroot = state.transforms_to_root[bodyid] * joint_to_successor(joint)
+        transform(constraint_wrench_subspace(joint, tf), toroot)
     end
     state.constraint_wrench_subspaces.dirty = false
     nothing

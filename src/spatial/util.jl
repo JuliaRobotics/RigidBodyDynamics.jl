@@ -50,25 +50,6 @@ Return a matrix `A` such that `A[:, i] == f(mat[:, i], vec)`.
     end
 end
 
-## Functionality related to turning a 3xN SMatrix into a view of a 3x6 SMatrix
-const ContiguousSMatrixColumnView{S1, S2, T, L} = SubArray{T,2,SMatrix{S1, S2, T, L},Tuple{Base.Slice{Base.OneTo{Int}},UnitRange{Int}},true}
-
-@inline smatrix3x6view(mat::StaticMatrix) = _smatrix3x6view(Size(mat), mat)
-
-@generated function _smatrix3x6view(::Size{S}, mat::StaticMatrix) where {S}
-    Snew = (S[1], 6)
-    S[1] == 3 || error()
-    (0 <= S[2] <= Snew[2]) || error()
-    fillercols = Snew[2] - S[2]
-    fillerlength = S[1] * fillercols
-    T = eltype(mat)
-    exprs = vcat([:(mat[$i]) for i = 1 : prod(S)], [:(zero($T)) for i = 1 : fillerlength])
-    return quote
-        Base.@_inline_meta
-        @inbounds return view(similar_type(mat, Size($Snew))(tuple($(exprs...))), :, 1 : $S[2])
-    end
-end
-
 @inline function vector_to_skew_symmetric(v::SVector{3, T}) where {T}
     @SMatrix [zero(T) -v[3] v[2];
             v[3] zero(T) -v[1];

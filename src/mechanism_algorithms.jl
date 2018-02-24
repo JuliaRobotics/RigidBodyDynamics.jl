@@ -511,12 +511,11 @@ function constraint_jacobian!(constraintjacobian::AbstractMatrix, state::Mechani
     # TODO: use closure once it doesn't allocate
     rowstart = Ref(1) # TODO: allocation
     # TODO: traversing constraintjacobian in the wrong order
-    foreach_with_extra_args(constraintjacobian, state, state.mechanism, rowstart, state.type_sorted_non_tree_joints) do constraintjacobian, state, mechanism, rowstart, nontreejoint
+    foreach_with_extra_args(constraintjacobian, state, state.mechanism, rowstart, state.type_sorted_non_tree_joints, state.constraint_wrench_subspaces.data) do constraintjacobian, state, mechanism, rowstart, nontreejoint, T
         nontreejointid = id(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
         nextrowstart = rowstart[] + num_constraints(nontreejoint)
         rowrange = rowstart[] : nextrowstart - 1
-        T = constraint_wrench_subspace(state, nontreejoint) # TODO: use ID
 
         foreach_with_extra_args(constraintjacobian, state, path, T, rowrange, state.type_sorted_tree_joints, state.motion_subspaces.data) do constraintjacobian, state, path, T, rowrange, treejoint, S # TODO: use closure once it doesn't allocate
             Base.@_inline_meta
@@ -542,7 +541,7 @@ function constraint_bias!(constraintbias::AbstractVector, state::MechanismState)
     rowstart = Ref(1) # TODO: allocation
     # note: order of rows of Jacobian and bias term is determined by iteration order of state.type_sorted_non_tree_joints
      # TODO: use closure once it doesn't allocate
-    foreach_with_extra_args(constraintbias, state, state.mechanism, rowstart, state.type_sorted_non_tree_joints) do constraintbias, state, mechanism, rowstart, nontreejoint
+    foreach_with_extra_args(constraintbias, state, state.mechanism, rowstart, state.type_sorted_non_tree_joints, state.constraint_wrench_subspaces.data) do constraintbias, state, mechanism, rowstart, nontreejoint, T
         has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
         nontreejointid = id(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
@@ -552,7 +551,6 @@ function constraint_bias!(constraintbias::AbstractVector, state::MechanismState)
         predid, succid = predsucc(nontreejointid, state)
         crossterm = cross(twist_wrt_world(state, succid), twist_wrt_world(state, predid))
         biasaccel = crossterm + (-bias_acceleration(state, predid) + bias_acceleration(state, succid)) # 8.47 in Featherstone
-        T = constraint_wrench_subspace(state, nontreejoint) # TODO: use nontreejointid
         At_mul_B!(kjoint, T, biasaccel)
         rowstart[] = nextrowstart
     end
