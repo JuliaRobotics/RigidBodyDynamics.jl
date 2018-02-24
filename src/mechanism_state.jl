@@ -603,13 +603,14 @@ end
 end
 
 @inline update_motion_subspaces!(state::MechanismState) = isdirty(state.motion_subspaces) && _update_motion_subspaces!(state)
+@inline function _motion_subspace(state::MechanismState, joint::Joint, qjoint::AbstractVector)
+    jointid = id(joint)
+    bodyid = successorid(jointid, state)
+    transform(motion_subspace(joint, qjoint), transform_to_root(state, bodyid))
+end
 @noinline function _update_motion_subspaces!(state::MechanismState)
     update_transforms!(state)
-    map_with_extra_args!(state, state.motion_subspaces.data, state.type_sorted_tree_joints, values(state.qs)) do state, joint, qjoint
-        jointid = id(joint)
-        bodyid = successorid(jointid, state)
-        transform(motion_subspace(joint, qjoint), transform_to_root(state, bodyid))
-    end
+    state.motion_subspaces.data .= _motion_subspace.(state, state.type_sorted_tree_joints, values(state.qs))
     state.motion_subspaces.dirty = false
     nothing
 end
@@ -629,15 +630,18 @@ end
 end
 
 @inline update_constraint_wrench_subspaces!(state::MechanismState) = isdirty(state.constraint_wrench_subspaces) && _update_constraint_wrench_subspaces!(state)
+@inline function _constraint_wrench_subspace(state::MechanismState, joint::Joint)
+    jointid = id(joint)
+    tf = state.joint_transforms[jointid]
+    T = constraint_wrench_subspace(joint, tf)
+    bodyid = successorid(jointid, state)
+    toroot = state.transforms_to_root[bodyid] * joint_to_successor(joint)
+    transform(T, toroot)
+end
+
 @noinline function _update_constraint_wrench_subspaces!(state::MechanismState)
     update_transforms!(state)
-    map_with_extra_args!(state, state.constraint_wrench_subspaces.data, state.type_sorted_non_tree_joints) do state, joint
-        jointid = id(joint)
-        bodyid = successorid(jointid, state)
-        tf = state.joint_transforms[jointid]
-        toroot = state.transforms_to_root[bodyid] * joint_to_successor(joint)
-        transform(constraint_wrench_subspace(joint, tf), toroot)
-    end
+    state.constraint_wrench_subspaces.data .= _constraint_wrench_subspace.(state, state.type_sorted_non_tree_joints)
     state.constraint_wrench_subspaces.dirty = false
     nothing
 end
