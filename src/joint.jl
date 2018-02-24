@@ -64,6 +64,7 @@ joint_type(joint::Joint) = joint.joint_type
 joint_to_predecessor(joint::Joint) = joint.joint_to_predecessor[]
 joint_to_successor(joint::Joint) = joint.joint_to_successor[]
 motionsubspacetype(::Type{J}, ::Type{X}) where {JT, J<:Joint{<:Any, JT}, X} = motionsubspacetype(JT, X)
+wrenchsubspacetype(::Type{J}, ::Type{X}) where {JT, J<:Joint{<:Any, JT}, X} = wrenchsubspacetype(JT, X)
 
 """
 $(SIGNATURES)

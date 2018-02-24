@@ -20,10 +20,6 @@ export
     Wrench,
     SpatialInertia
 
-# aliases
-export
-    WrenchSubspace # TODO: remove
-
 # functions
 export
     transform,

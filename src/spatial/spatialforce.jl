@@ -25,13 +25,6 @@ expressed in a centroidal frame.
 """
 MomentumMatrix
 
-# WrenchSubspace is the return type of e.g. constraint_wrench_subspace(::Joint, ...)
-const WrenchSubspace{T} = WrenchMatrix{ContiguousSMatrixColumnView{3, 6, T, 18}}
-function WrenchSubspace(frame::CartesianFrame3D, angular, linear)
-    WrenchMatrix(frame, smatrix3x6view(angular), smatrix3x6view(linear))
-end
-WrenchSubspace(mat::WrenchMatrix) = WrenchSubspace(mat.frame, angular(mat), linear(mat))
-
 for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
     @eval begin
         Base.convert(::Type{$ForceSpaceMatrix{A}}, mat::$ForceSpaceMatrix{A}) where {A} = mat

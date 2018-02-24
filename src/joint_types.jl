@@ -10,11 +10,20 @@ Base.@pure _num_constraints(N::Int) = 6 - N
 
 function motionsubspacetype(::Type{JT}, ::Type{X}) where {T, JT<:JointType{T}, X}
     N = num_velocities(JT)
-    L = _motionsubspacelength(N)
+    L = _3x(N)
     C = promote_type(T, X)
     GeometricJacobian{SMatrix{3, N, C, L}}
 end
-Base.@pure _motionsubspacelength(N::Int) = 3 * N
+
+function wrenchsubspacetype(::Type{JT}, ::Type{X}) where {T, JT<:JointType{T}, X}
+    N = num_constraints(JT)
+    L = _3x(N)
+    C = promote_type(T, X)
+    WrenchMatrix{SMatrix{3, N, C, L}}
+end
+
+Base.@pure _3x(N::Int) = 3 * N
+
 
 # Default implementations
 isfloating(::Type{<:JointType}) = false
