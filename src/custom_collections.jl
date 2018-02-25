@@ -10,7 +10,8 @@ export
     CacheElement,
     AbstractIndexDict,
     IndexDict,
-    CacheIndexDict
+    CacheIndexDict,
+    SegmentedVector
 
 export
     fastview,
@@ -49,6 +50,7 @@ for num_extra_args = 1 : 5
     end
 end
 
+
 ## ConstVector
 """
 An immutable `AbstractVector` for which all elements are the same, represented
@@ -77,6 +79,7 @@ Base.done(::NullDict, state) = true
 
 
 ## UnsafeVectorView
+# TODO: remove
 """
 Views in Julia still allocate some memory (since they need to keep
 a reference to the original array). This type allocates no memory
@@ -114,6 +117,7 @@ From https://github.com/rdeits/NNLS.jl/blob/0a9bf56774595b5735bc738723bd3cb94138
 end
 
 
+## CacheElement
 mutable struct CacheElement{T}
     data::T
     dirty::Bool
@@ -172,5 +176,32 @@ end
 @inline Base.haskey(d::AbstractIndexDict, key) = Int(key) ∈ 1 : length(d)
 Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{K}, key::K) where {K} = d.values[Int(key)]
 Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) where {K} = d.values[Int(key)] = value
+
+
+## SegmentedVector
+const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # type of a n:m view into a Vector
+
+struct SegmentedVector{I, T} <: AbstractVector{T}
+    data::Vector{T}
+    segments::IndexDict{I, VectorSegment{T}}
+
+    function SegmentedVector(data::Vector{T}, indices::AbstractVector{I}, viewlengthfun) where {I, T}
+        start = Ref(1)
+        makeview = function (data, index)
+            stop = start[] + viewlengthfun(index) - 1
+            ret = view(data, start[] : stop)
+            start[] = stop + 1
+            ret
+        end
+        segments = IndexDict{I, VectorSegment{T}}(index => makeview(data, index) for index in indices)
+        start[] == endof(data) + 1 || error("Constructed segments do not cover input data.")
+        new{I, T}(data, segments)
+    end
+end
+
+Base.size(v::SegmentedVector) = size(v.data)
+Base.@propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.data[i]
+Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.data[i] = value
+Base.length(v::SegmentedVector) = length(v.data)
 
 end # module
