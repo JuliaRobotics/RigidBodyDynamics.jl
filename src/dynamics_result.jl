@@ -50,9 +50,11 @@ mutable struct DynamicsResult{T, M}
         rootframe = root_frame(mechanism)
         contactwrenches = BodyDict{Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
         totalwrenches = BodyDict{Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-        accelerations = BodyDict{SpatialAcceleration{T}}(b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+        accelerations = BodyDict{SpatialAcceleration{T}}(
+            b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
         jointwrenches = BodyDict{Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-        contact_state_derivs = BodyDict{Vector{Vector{DefaultSoftContactStateDeriv{T}}}}(b => Vector{Vector{DefaultSoftContactStateDeriv{T}}}() for b in bodies(mechanism))
+        contact_state_derivs = BodyDict{Vector{Vector{DefaultSoftContactStateDeriv{T}}}}(
+            b => Vector{Vector{DefaultSoftContactStateDeriv{T}}}() for b in bodies(mechanism))
         startind = 1
         for body in bodies(mechanism), point in contact_points(body)
             model = contact_model(point)
@@ -78,10 +80,17 @@ end
 
 DynamicsResult(mechanism::Mechanism{M}) where {M} = DynamicsResult{M}(mechanism)
 
-contact_state_derivatives(result::DynamicsResult, body::Union{<:RigidBody, BodyID}) = result.contact_state_derivatives[body]
-contact_wrench(result::DynamicsResult, body::Union{<:RigidBody, BodyID}) = result.contactwrenches[body]
-set_contact_wrench!(result::DynamicsResult, body::Union{<:RigidBody, BodyID}, wrench::Wrench) = (result.contactwrenches[body] = wrench)
-acceleration(result::DynamicsResult, body::Union{<:RigidBody, BodyID}) = result.accelerations[body]
-set_acceleration!(result::DynamicsResult, body::Union{<:RigidBody, BodyID}, accel::SpatialAcceleration) = (result.accelerations[body] = accel)
-joint_wrench(result::DynamicsResult, body::Union{<:RigidBody, BodyID}) = result.jointwrenches[body]
-set_joint_wrench!(result::DynamicsResult, body::Union{<:RigidBody, BodyID}, wrench::Wrench) = (result.jointwrenches[body] = wrench)
+contact_state_derivatives(result::DynamicsResult, body::Union{<:RigidBody, BodyID}) =
+    result.contact_state_derivatives[body]
+contact_wrench(result::DynamicsResult, body::Union{<:RigidBody, BodyID}) =
+    result.contactwrenches[body]
+set_contact_wrench!(result::DynamicsResult, body::Union{<:RigidBody, BodyID}, wrench::Wrench) =
+    (result.contactwrenches[body] = wrench)
+acceleration(result::DynamicsResult, body::Union{<:RigidBody, BodyID}) =
+    result.accelerations[body]
+set_acceleration!(result::DynamicsResult, body::Union{<:RigidBody, BodyID}, accel::SpatialAcceleration) =
+    (result.accelerations[body] = accel)
+joint_wrench(result::DynamicsResult, body::Union{<:RigidBody, BodyID}) =
+    result.jointwrenches[body]
+set_joint_wrench!(result::DynamicsResult, body::Union{<:RigidBody, BodyID}, wrench::Wrench) =
+    (result.jointwrenches[body] = wrench)

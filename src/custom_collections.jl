@@ -114,7 +114,6 @@ From https://github.com/rdeits/NNLS.jl/blob/0a9bf56774595b5735bc738723bd3cb94138
 end
 
 
-# TODO: remove
 mutable struct CacheElement{T}
     data::T
     dirty::Bool
