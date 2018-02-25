@@ -10,12 +10,14 @@ export
     CacheElement,
     AbstractIndexDict,
     IndexDict,
-    CacheIndexDict
+    CacheIndexDict,
+    SegmentedVector
 
 export
     fastview,
     foreach_with_extra_args,
-    isdirty
+    isdirty,
+    segments
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
@@ -49,6 +51,7 @@ for num_extra_args = 1 : 5
     end
 end
 
+
 ## ConstVector
 """
 An immutable `AbstractVector` for which all elements are the same, represented
@@ -77,6 +80,7 @@ Base.done(::NullDict, state) = true
 
 
 ## UnsafeVectorView
+# TODO: remove
 """
 Views in Julia still allocate some memory (since they need to keep
 a reference to the original array). This type allocates no memory
@@ -114,7 +118,7 @@ From https://github.com/rdeits/NNLS.jl/blob/0a9bf56774595b5735bc738723bd3cb94138
 end
 
 
-# TODO: remove
+## CacheElement
 mutable struct CacheElement{T}
     data::T
     dirty::Bool
@@ -173,5 +177,34 @@ end
 @inline Base.haskey(d::AbstractIndexDict, key) = Int(key) ∈ 1 : length(d)
 Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{K}, key::K) where {K} = d.values[Int(key)]
 Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) where {K} = d.values[Int(key)] = value
+
+
+## SegmentedVector
+const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # type of a n:m view into a Vector
+
+struct SegmentedVector{I, T, P<:AbstractVector{T}} <: AbstractVector{T}
+    parent::P
+    segments::IndexDict{I, VectorSegment{T}}
+
+    function SegmentedVector(parent::P, indices::AbstractVector{I}, viewlengthfun) where {I, T, P<:AbstractVector{T}}
+        start = Ref(1)
+        makeview = function (parent, index)
+            stop = start[] + viewlengthfun(index) - 1
+            ret = view(parent, start[] : stop)
+            start[] = stop + 1
+            ret
+        end
+        segments = IndexDict{I, VectorSegment{T}}(index => makeview(parent, index) for index in indices)
+        start[] == endof(parent) + 1 || error("Segments do not cover input data.")
+        new{I, T, P}(parent, segments)
+    end
+end
+
+Base.size(v::SegmentedVector) = size(v.parent)
+Base.@propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.parent[i]
+Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.parent[i] = value
+
+Base.parent(v::SegmentedVector) = v.parent
+segments(v::SegmentedVector) = v.segments
 
 end # module
