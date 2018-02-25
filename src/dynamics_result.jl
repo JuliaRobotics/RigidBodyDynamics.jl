@@ -14,9 +14,9 @@ mutable struct DynamicsResult{T, M}
     massmatrix::Symmetric{T, Matrix{T}}
     dynamicsbias::Vector{T}
     constraintjacobian::Matrix{T}
-    constraintbias::Vector{T}
+    constraintbias::Vector{T} # TODO: SegmentedVector
 
-    v̇::Vector{T}
+    v̇::SegmentedVector{JointID, T, Vector{T}}
     λ::Vector{T}
     ṡ::Vector{T}
 
@@ -43,7 +43,7 @@ mutable struct DynamicsResult{T, M}
         constraintjacobian = Matrix{T}(nconstraints, nv)
         constraintbias = Vector{T}(nconstraints)
 
-        v̇ = Vector{T}(nv)
+        v̇ = SegmentedVector(Vector{T}(nv), tree_joints(mechanism), num_velocities)
         λ = Vector{T}(nconstraints)
         ṡ = Vector{T}(num_additional_states(mechanism))
 

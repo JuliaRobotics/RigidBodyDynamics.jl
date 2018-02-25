@@ -781,7 +781,7 @@ function gravitational_potential_energy(state::MechanismState, body::Union{<:Rig
     -m * dot(state.mechanism.gravitational_acceleration, FreeVector3D(com))
 end
 
-function configuration_derivative!(out::AbstractVector{X}, state::MechanismState{X}) where {X}
+function configuration_derivative!(out::SegmentedVector{JointID}, state::MechanismState)
     # TODO: replace with plain foreach and closure once that doesn't allocate
     joint_configuration_derivative! = (qd, joint, qjoint, vjoint) -> begin
         qdjoint = fastview(qd, first(parentindexes(qjoint)))
@@ -792,7 +792,7 @@ function configuration_derivative!(out::AbstractVector{X}, state::MechanismState
     foreach_with_extra_args(joint_configuration_derivative!, out, tree_joints, values(segments(state.q)), values(segments(state.v)))
 end
 
-function configuration_derivative_to_velocity_adjoint!(fq, state::MechanismState, fv)
+function configuration_derivative_to_velocity_adjoint!(fq::SegmentedVector{JointID}, state::MechanismState, fv::SegmentedVector{JointID})
     # TODO: broadcast!:
     foreach_with_extra_args(fq, state, fv, state.type_sorted_tree_joints, values(segments(state.q))) do fq, state, fv, joint, qjoint
         fqjoint = fastview(fq, configuration_range(state, joint))
@@ -914,7 +914,7 @@ $(SIGNATURES)
 Compute local coordinates ``\\phi`` centered around (global) configuration vector
 ``q_0``, as well as their time derivatives ``\\dot{\\phi}``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
-function local_coordinates!(ϕ::StridedVector, ϕd::StridedVector, state::MechanismState, q0::StridedVector)
+function local_coordinates!(ϕ::SegmentedVector{JointID}, ϕd::SegmentedVector{JointID}, state::MechanismState, q0::SegmentedVector{JointID})
     # TODO: broadcast!
     joint_local_coordinates! = (ϕ, ϕd, q0, joint, qjoint, vjoint) -> begin
         qrange = first(parentindexes(qjoint))
@@ -935,7 +935,7 @@ $(SIGNATURES)
 Convert local coordinates ``\\phi`` centered around ``q_0`` to (global)
 configuration vector ``q``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
-function global_coordinates!(state::MechanismState, q0::StridedVector, ϕ::StridedVector)
+function global_coordinates!(state::MechanismState, q0::SegmentedVector{JointID}, ϕ::SegmentedVector{JointID})
     joint_global_coordinates! = (q0, ϕ, joint, qjoint, vjoint) -> begin
         qrange = first(parentindexes(qjoint))
         vrange = first(parentindexes(vjoint))
