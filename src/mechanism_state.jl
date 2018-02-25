@@ -14,8 +14,7 @@ Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{JointID}, value, ke
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector{JointID}, id::JointID) = v.segments[id]
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector{JointID}, joint::Joint) = v[id(joint)]
 function SegmentedVector(parent::AbstractVector, joints::AbstractVector{<:Joint}, viewlengthfun)
-    id_to_joint = Dict(id(j) => j for j in joints)
-    SegmentedVector(parent, id.(joints), id -> viewlengthfun(id_to_joint[id]))
+    SegmentedVector{JointID}(parent, id(joint) => viewlengthfun(joint) for joint in joints)
 end
 
 
@@ -61,8 +60,8 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
     ancestor_joint_masks::JointDict{JointDict{Bool}}
     constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: switch to JointDict{JointDict{Bool}}
 
-    q::SegmentedVector{JointID, X} # configurations
-    v::SegmentedVector{JointID, X} # velocities
+    q::SegmentedVector{JointID, X, Vector{X}} # configurations
+    v::SegmentedVector{JointID, X, Vector{X}} # velocities
     s::Vector{X} # additional state
 
     # joint-related fixed data

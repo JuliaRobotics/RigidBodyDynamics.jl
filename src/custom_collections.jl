@@ -186,18 +186,31 @@ struct SegmentedVector{I, T, P<:AbstractVector{T}} <: AbstractVector{T}
     parent::P
     segments::IndexDict{I, VectorSegment{T}}
 
-    function SegmentedVector(parent::P, indices::AbstractVector{I}, viewlengthfun) where {I, T, P<:AbstractVector{T}}
-        start = Ref(1)
-        makeview = function (parent, index)
-            stop = start[] + viewlengthfun(index) - 1
-            ret = view(parent, start[] : stop)
-            start[] = stop + 1
-            ret
+    function SegmentedVector(p::P, segments::IndexDict{I, VectorSegment{T}}) where {I, T, P}
+        @boundscheck begin
+            start = 1
+            for segment in values(segments)
+                parent(segment) === p || error()
+                indices = first(parentindexes(segment))
+                first(indices) === start || error()
+                start = last(indices) + 1
+            end
+            start === endof(p) + 1 || error("Segments do not cover input data.")
         end
-        segments = IndexDict{I, VectorSegment{T}}(index => makeview(parent, index) for index in indices)
-        start[] == endof(parent) + 1 || error("Segments do not cover input data.")
-        new{I, T, P}(parent, segments)
+        new{I, T, P}(p, segments)
     end
+end
+
+function (::Type{SegmentedVector{I}})(parent::AbstractVector{T}, viewlengths) where {T, I}
+    start = Ref(1)
+    makeview = function (parent, viewlength)
+        stop = start[] + viewlength - 1
+        ret = view(parent, start[] : stop)
+        start[] = stop + 1
+        ret
+    end
+    segments = IndexDict{I, VectorSegment{T}}(i => makeview(parent, viewlength) for (i, viewlength) in viewlengths)
+    SegmentedVector(parent, segments)
 end
 
 Base.size(v::SegmentedVector) = size(v.parent)
