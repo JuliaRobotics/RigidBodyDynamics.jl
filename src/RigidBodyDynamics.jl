@@ -147,6 +147,10 @@ export
     dynamics!,
     simulate
 
+# Utility
+export
+    SegmentedVector
+
 include("custom_collections.jl")
 include("graphs/Graphs.jl")
 include("spatial/Spatial.jl")

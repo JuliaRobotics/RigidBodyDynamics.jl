@@ -16,7 +16,8 @@ export
 export
     fastview,
     foreach_with_extra_args,
-    isdirty
+    isdirty,
+    segments
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
@@ -181,27 +182,29 @@ Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) 
 ## SegmentedVector
 const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # type of a n:m view into a Vector
 
-struct SegmentedVector{I, T} <: AbstractVector{T}
-    data::Vector{T}
+struct SegmentedVector{I, T, P<:AbstractVector{T}} <: AbstractVector{T}
+    parent::P
     segments::IndexDict{I, VectorSegment{T}}
 
-    function SegmentedVector(data::Vector{T}, indices::AbstractVector{I}, viewlengthfun) where {I, T}
+    function SegmentedVector(parent::P, indices::AbstractVector{I}, viewlengthfun) where {I, T, P<:AbstractVector{T}}
         start = Ref(1)
-        makeview = function (data, index)
+        makeview = function (parent, index)
             stop = start[] + viewlengthfun(index) - 1
-            ret = view(data, start[] : stop)
+            ret = view(parent, start[] : stop)
             start[] = stop + 1
             ret
         end
-        segments = IndexDict{I, VectorSegment{T}}(index => makeview(data, index) for index in indices)
-        start[] == endof(data) + 1 || error("Constructed segments do not cover input data.")
-        new{I, T}(data, segments)
+        segments = IndexDict{I, VectorSegment{T}}(index => makeview(parent, index) for index in indices)
+        start[] == endof(parent) + 1 || error("Segments do not cover input data.")
+        new{I, T, P}(parent, segments)
     end
 end
 
-Base.size(v::SegmentedVector) = size(v.data)
-Base.@propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.data[i]
-Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.data[i] = value
-Base.length(v::SegmentedVector) = length(v.data)
+Base.size(v::SegmentedVector) = size(v.parent)
+Base.@propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.parent[i]
+Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.parent[i] = value
+
+Base.parent(v::SegmentedVector) = v.parent
+segments(v::SegmentedVector) = v.segments
 
 end # module
