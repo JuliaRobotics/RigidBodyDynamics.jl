@@ -25,7 +25,7 @@ function create_benchmark_suite()
     result = DynamicsResult{ScalarType}(mechanism)
     nv = num_velocities(state)
     mat = MomentumMatrix(root_frame(mechanism), Matrix{ScalarType}(3, nv), Matrix{ScalarType}(3, nv))
-    torques = Vector{ScalarType}(num_velocities(mechanism))
+    torques = similar(velocity(state))
     rfoot = findbody(mechanism, "r_foot")
     lhand = findbody(mechanism, "l_hand")
     p = path(mechanism, rfoot, lhand)
@@ -47,7 +47,8 @@ function create_benchmark_suite()
         setdirty!($state)
         inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalwrenches)
     end, setup = begin
-        v̇ = rand(ScalarType, num_velocities($mechanism))
+        v̇ = similar(velocity($state))
+        rand!(v̇)
         externalwrenches = RigidBodyDynamics.BodyDict(RigidBodyDynamics.id(body) => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
         rand!($state)
     end)
@@ -57,7 +58,8 @@ function create_benchmark_suite()
         dynamics!($result, $state, τ, externalwrenches)
     end, setup = begin
         rand!($state)
-        τ = rand(ScalarType, num_velocities($mechanism))
+        τ = similar(velocity($state))
+        rand!(τ)
         externalwrenches = RigidBodyDynamics.BodyDict(RigidBodyDynamics.id(body) => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
     end)
 
@@ -105,7 +107,7 @@ function create_benchmark_suite()
 
     suite["constraint_jacobian!"] = @benchmarkable(begin
         setdirty!($mcstate)
-        RigidBodyDynamics.constraint_jacobian!($(mcresult.constraintjacobian), $mcstate)
+        RigidBodyDynamics.constraint_jacobian!($(mcresult.constraintjacobian), $(mcresult.constraintrowranges), $mcstate)
     end, setup = rand!($mcstate))
 
     suite["constraint_bias!"] = @benchmarkable(begin

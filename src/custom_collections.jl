@@ -2,6 +2,7 @@ module CustomCollections
 
 using Compat
 using TypeSortedCollections
+using DocStringExtensions
 
 export
     ConstVector,
@@ -11,13 +12,14 @@ export
     AbstractIndexDict,
     IndexDict,
     CacheIndexDict,
-    SegmentedVector
+    SegmentedVector,
+    DiscardVector
 
 export
-    fastview,
     foreach_with_extra_args,
     isdirty,
-    segments
+    segments,
+    ranges
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
@@ -54,6 +56,8 @@ end
 
 ## ConstVector
 """
+$(TYPEDEF)
+
 An immutable `AbstractVector` for which all elements are the same, represented
 compactly and as an isbits type if the element type is `isbits`.
 """
@@ -68,6 +72,8 @@ Base.IndexStyle(::Type{<:ConstVector}) = IndexLinear()
 
 ## NullDict
 """
+$(TYPEDEF)
+
 An immutable associative type that signifies an empty dictionary and does not
 allocate any memory.
 """
@@ -77,45 +83,6 @@ Base.haskey(::NullDict, k) = false
 Base.length(::NullDict) = 0
 Base.start(::NullDict) = nothing
 Base.done(::NullDict, state) = true
-
-
-## UnsafeVectorView
-# TODO: remove
-"""
-Views in Julia still allocate some memory (since they need to keep
-a reference to the original array). This type allocates no memory
-and does no bounds checking. Use it with caution.
-
-Originally from https://github.com/mlubin/ReverseDiffSparse.jl/commit/8e3ade867581aad6ade7c898ada2ed58e0ad42bb.
-"""
-struct UnsafeVectorView{T} <: AbstractVector{T}
-    offset::Int
-    len::Int
-    ptr::Ptr{T}
-end
-
-@inline UnsafeVectorView(parent::Union{Vector, Base.FastContiguousSubArray}, range::UnitRange) = UnsafeVectorView(start(range) - 1, length(range), pointer(parent))
-@inline Base.size(v::UnsafeVectorView) = (v.len,)
-@inline Base.getindex(v::UnsafeVectorView, idx::Int) = unsafe_load(v.ptr, idx + v.offset)
-@inline Base.setindex!(v::UnsafeVectorView, value, idx::Int) = unsafe_store!(v.ptr, value, idx + v.offset)
-@inline Base.length(v::UnsafeVectorView) = v.len
-Base.IndexStyle(::Type{<:UnsafeVectorView}) = IndexLinear()
-
-"""
-UnsafeVectorView only works for isbits types. For other types, we're already
-allocating lots of memory elsewhere, so creating a new SubArray is fine.
-This function looks type-unstable, but the isbits(T) test can be evaluated
-by the compiler, so the result is actually type-stable.
-
-From https://github.com/rdeits/NNLS.jl/blob/0a9bf56774595b5735bc738723bd3cb94138c5bd/src/NNLS.jl#L218.
-"""
-@inline function fastview(parent::Union{Vector{T}, Base.FastContiguousSubArray{T}}, range::UnitRange) where {T}
-    if isbits(T)
-        UnsafeVectorView(parent, range)
-    else
-        view(parent, range)
-    end
-end
 
 
 ## CacheElement
@@ -132,15 +99,54 @@ end
 ## IndexDicts
 abstract type AbstractIndexDict{K, V} <: Associative{K, V} end
 
-struct IndexDict{K, V} <: AbstractIndexDict{K, V}
-    values::Vector{V}
-    IndexDict{K, V}(values::Vector{V}) where {K, V} = new{K, V}(values)
+makekeys(::Type{UnitRange{K}}, start::K, stop::K) where {K} = start : stop
+function makekeys(::Type{Base.OneTo{K}}, start::K, stop::K) where {K}
+    @boundscheck start === K(1) || error()
+    Base.OneTo(stop)
 end
 
-mutable struct CacheIndexDict{K, V} <: AbstractIndexDict{K, V}
+"""
+$(TYPEDEF)
+
+An associative type whose keys are an `AbstractUnitRange`, and whose values are stored in
+a `Vector`. `IndexDict` is an ordered associative collection, with the order determined by key range.
+The nature of the keys enables very fast lookups and stores.
+
+# Examples
+```julia-repl
+julia> IndexDict(2 : 4, [4, 5, 6])
+RigidBodyDynamics.CustomCollections.IndexDict{Int64,UnitRange{Int64},Int64} with 3 entries:
+  2 => 4
+  3 => 5
+  4 => 6
+
+julia> IndexDict{Int32, UnitRange{Int32}}(i => 3 * i for i in Int32[4, 2, 3])
+RigidBodyDynamics.CustomCollections.IndexDict{Int32,UnitRange{Int32},Int64} with 3 entries:
+  2 => 6
+  3 => 9
+  4 => 12
+```
+"""
+struct IndexDict{K, KeyRange<:AbstractUnitRange{K}, V} <: AbstractIndexDict{K, V}
+    keys::KeyRange
+    values::Vector{V}
+    IndexDict(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}} = new{K, KeyRange, V}(keys, values)
+end
+
+
+"""
+$(TYPEDEF)
+
+Like [`IndexDict`](@ref), but contains an additional `Bool` dirty bit to be used in algorithms involving cached data.
+"""
+mutable struct CacheIndexDict{K, KeyRange<:AbstractUnitRange{K}, V} <: AbstractIndexDict{K, V}
+    keys::KeyRange
     values::Vector{V}
     dirty::Bool
-    CacheIndexDict{K, V}(values::Vector{V}) where {K, V} = new{K, V}(values, true)
+    function CacheIndexDict(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}}
+        @boundscheck length(keys) == length(values) || error("Mismatch between keys and values.")
+        new{K, KeyRange, V}(keys, values, true)
+    end
 end
 
 setdirty!(d::CacheIndexDict) = (d.dirty = true)
@@ -149,55 +155,148 @@ isdirty(d::CacheIndexDict) = d.dirty
 # Constructors
 for IDict in (:IndexDict, :CacheIndexDict)
     @eval begin
-        (::Type{$IDict{K, V}})(n::Integer) where {K, V} = $IDict{K, V}(Vector{V}(uninitialized, n))
-        (::Type{$IDict{K}})(values::Vector{V}) where {K, V} = $IDict{K, V}(values)
-
-        function (::Type{$IDict{K, V}})(itr) where {K, V}
-            ret = $IDict{K, V}(length(itr))
-            for (k, v) in itr
-                ret[k] = v
-            end
-            ret
+        function (::Type{$IDict{K, KeyRange, V}})(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
+            $IDict(keys, Vector{V}(uninitialized, length(keys)))
         end
 
-        (::Type{$IDict{K}})(dict::Associative{<:Any, V}) where {K, V} = $IDict{K, V}(dict)
-        (::Type{$IDict})(dict::Associative{K, V}) where {K, V} = $IDict{K, V}(dict)
-        (::Type{$IDict{K}})(itr) where {K} = $IDict(Dict(itr))
-        (::Type{$IDict})(itr) = $IDict(Dict(itr))
+        function (::Type{$IDict{K, KeyRange, V}})(keys::KeyRange, values::Vector{V}) where {K, KeyRange<:AbstractUnitRange{K}, V}
+            $IDict(keys, values)
+        end
+
+        function (::Type{$IDict{K, KeyRange, V}})(kv::Vector{Pair{K, V}}) where {K, KeyRange<:AbstractUnitRange{K}, V}
+            if !issorted(kv, by = first)
+                sort!(kv; by = first)
+            end
+            start, stop = if isempty(kv)
+                K(1), K(0)
+            else
+                first(first(kv)), first(last(kv))
+            end
+            keys = makekeys(KeyRange, start, stop)
+            for i in eachindex(kv)
+                keys[i] === first(kv[i]) || error()
+            end
+            values = map(last, kv)
+            $IDict(keys, values)
+        end
+
+        function (::Type{$IDict{K, KeyRange}})(kv::Vector{Pair{K, V}}) where {K, KeyRange<:AbstractUnitRange{K}, V}
+            $IDict{K, KeyRange, V}(kv)
+        end
+
+        function (::Type{$IDict{K, KeyRange, V}})(itr) where {K, KeyRange<:AbstractUnitRange{K}, V}
+            kv = map(x -> K(first(x)) => last(x)::V, itr)
+            $IDict{K, KeyRange, V}(kv)
+        end
+
+        function (::Type{$IDict{K, KeyRange}})(itr) where {K, KeyRange<:AbstractUnitRange{K}}
+            kv = map(x -> K(first(x)) => last(x), itr)
+            $IDict{K, KeyRange}(kv)
+        end
     end
 end
 
 @inline Base.isempty(d::AbstractIndexDict) = isempty(d.values)
 @inline Base.length(d::AbstractIndexDict) = length(d.values)
 @inline Base.start(d::AbstractIndexDict) = 1
-@inline Base.next(d::AbstractIndexDict{K}, i) where {K} = (K(i) => d.values[i], i + 1)
+@inline Base.next(d::AbstractIndexDict{K}, i) where {K} = (d.keys[i] => d.values[i], i + 1)
 @inline Base.done(d::AbstractIndexDict, i) = i == length(d) + 1
-@inline Base.keys(d::AbstractIndexDict{K}) where {K} = (K(i) for i in eachindex(d.values))
+@inline Base.keys(d::AbstractIndexDict{K}) where {K} = d.keys
 @inline Base.values(d::AbstractIndexDict) = d.values
-@inline Base.haskey(d::AbstractIndexDict, key) = Int(key) ∈ 1 : length(d)
-Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{K}, key::K) where {K} = d.values[Int(key)]
-Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) where {K} = d.values[Int(key)] = value
+@inline Base.haskey(d::AbstractIndexDict, key) = key ∈ d.keys
+@inline keyindex(key::K, keyrange::Base.OneTo{K}) where {K} = Int(key)
+@inline keyindex(key::K, keyrange::UnitRange{K}) where {K} = Int(key - first(keyrange) + 1)
+Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{K}, key::K) where {K} = d.values[keyindex(key, d.keys)]
+Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) where {K} = d.values[keyindex(key, d.keys)] = value
 
 
 ## SegmentedVector
 const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # type of a n:m view into a Vector
 
-struct SegmentedVector{I, T, P<:AbstractVector{T}} <: AbstractVector{T}
-    parent::P
-    segments::IndexDict{I, VectorSegment{T}}
+"""
+$(TYPEDEF)
 
-    function SegmentedVector(parent::P, indices::AbstractVector{I}, viewlengthfun) where {I, T, P<:AbstractVector{T}}
-        start = Ref(1)
-        makeview = function (parent, index)
-            stop = start[] + viewlengthfun(index) - 1
-            ret = view(parent, start[] : stop)
-            start[] = stop + 1
-            ret
+`SegmentedVector` is an `AbstractVector` backed by another `AbstractVector` (its parent), which additionally stores an [`IndexDict`](@ref)
+containing views into the parent. Together, these views cover the parent.
+
+# Examples
+
+```julia-repl
+julia> x = [1., 2., 3., 4.]
+4-element Array{Float64,1}:
+ 1.0
+ 2.0
+ 3.0
+ 4.0
+
+julia> viewlength(i) = 2
+viewlength (generic function with 1 method)
+
+julia> xseg = SegmentedVector{Int}(x, 1 : 2, viewlength)
+4-element RigidBodyDynamics.CustomCollections.SegmentedVector{Int64,Float64,Base.OneTo{Int64},Array{Float64,1}}:
+ 1.0
+ 2.0
+ 3.0
+ 4.0
+
+julia> segments(xseg)[1]
+2-element SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}:
+ 1.0
+ 2.0
+
+julia> yseg = similar(xseg, Int32); yseg .= 1 : 4 # same view ranges, different element type
+4-element RigidBodyDynamics.CustomCollections.SegmentedVector{Int64,Int32,Base.OneTo{Int64},Array{Int32,1}}:
+ 1
+ 2
+ 3
+ 4
+
+julia> segments(yseg)[2]
+2-element SubArray{Int32,1,Array{Int32,1},Tuple{UnitRange{Int64}},true}:
+ 3
+ 4
+```
+"""
+struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <: AbstractVector{T}
+    parent::P
+    segments::IndexDict{K, KeyRange, VectorSegment{T}}
+
+    function SegmentedVector(p::P, segments::IndexDict{K, KeyRange, VectorSegment{T}}) where {T, K, KeyRange, P}
+        @boundscheck begin
+            firstsegment = true
+            start = 0
+            l = 0
+            for segment in values(segments)
+                parent(segment) === parent(p) || error()
+                indices = first(parentindexes(segment))
+                if firstsegment
+                    start = first(indices)
+                    firstsegment = false
+                else
+                    first(indices) === start || error()
+                end
+                start = last(indices) + 1
+                l += length(indices)
+            end
+            l == length(p) || error("Segments do not cover input data.")
         end
-        segments = IndexDict{I, VectorSegment{T}}(index => makeview(parent, index) for index in indices)
-        start[] == endof(parent) + 1 || error("Segments do not cover input data.")
-        new{I, T, P}(parent, segments)
+        new{K, T, KeyRange, P}(p, segments)
     end
+end
+
+function (::Type{SegmentedVector{K, T, KeyRange}})(parent::AbstractVector{T}, keys, viewlengthfun) where {K, T, KeyRange<:AbstractRange{K}}
+    views = Vector{Pair{K, VectorSegment{T}}}()
+    start = 1
+    for key in keys
+        stop = start[] + viewlengthfun(key) - 1
+        push!(views, K(key) => view(parent, start : stop))
+        start = stop + 1
+    end
+    SegmentedVector(parent, IndexDict{K, KeyRange, VectorSegment{T}}(views))
+end
+
+function (::Type{SegmentedVector{K}})(parent::AbstractVector{T}, keys, viewlengthfun) where {K, T}
+    SegmentedVector{K, T, Base.OneTo{K}}(parent, keys, viewlengthfun)
 end
 
 Base.size(v::SegmentedVector) = size(v.parent)
@@ -206,5 +305,28 @@ Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.p
 
 Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
+ranges(v::SegmentedVector) = IndexDict(v.segments.keys, [first(parentindexes(view)) for view in v.segments.values])
+
+function Base.similar(v::SegmentedVector{K, T, KeyRange}, ::Type{S} = T) where {K, T, KeyRange, S}
+    p = similar(parent(v), S)
+    segs = IndexDict{K, KeyRange, VectorSegment{S}}(keys(segments(v)),
+        [view(p, first(parentindexes(segment))) for segment in values(segments(v))])
+    SegmentedVector(p, segs)
+end
+
+
+"""
+$(TYPEDEF)
+
+`DiscardVector` is an `AbstractVector` whose `setindex!` simply discards the value.
+This is useful for `broadcast!` calls where the output of the broadcasted function is not interesting,
+specifically when the broadcasted function is in-place and there are arguments that need to be treated
+as scalars, so that a simple foreach doesn't do the job.
+"""
+struct DiscardVector <: AbstractVector{Any}
+    length::Int
+end
+@inline Base.setindex!(v::DiscardVector, value, i::Int) = nothing
+@inline Base.size(v::DiscardVector) = (v.length,)
 
 end # module

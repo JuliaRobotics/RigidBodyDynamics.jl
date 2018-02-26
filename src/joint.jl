@@ -90,7 +90,8 @@ effort for `joint`
 """
 effort_bounds(joint::Joint) = joint.effort_bounds
 
-@inline id(joint::Joint) = joint.id[]
+@inline JointID(joint::Joint) = joint.id[]
+@inline id(joint::Joint) = JointID(joint)
 @inline RigidBodyDynamics.Graphs.edge_id_type(::Type{<:Joint}) = JointID
 @inline RigidBodyDynamics.Graphs.edge_id(joint::Joint) = id(joint)
 @inline RigidBodyDynamics.Graphs.set_edge_id!(joint::Joint, id::JointID) = (joint.id[] = id)
