@@ -271,6 +271,7 @@ struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <
                 indices = first(parentindexes(segment))
                 if firstsegment
                     start = first(indices)
+                    firstsegment = false
                 else
                     first(indices) === start || error()
                 end
