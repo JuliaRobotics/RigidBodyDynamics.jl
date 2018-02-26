@@ -81,7 +81,7 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
     @framecheck jac.body default_frame(target(path))
     @framecheck jac.base default_frame(source(path))
     update_motion_subspaces!(state)
-    joints = state.type_sorted_tree_joints
+    joints = state.treejoints
     motion_subspaces = state.motion_subspaces.data
     discard = DiscardVector(length(joints))
     broadcast!(discard, jac, state, path, joints, motion_subspaces) do jac, state, path, joint, motion_subspace
@@ -320,7 +320,7 @@ function spatial_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}}
     update_twists_wrt_world!(state)
 
     # Compute joint accelerations
-    joints = state.type_sorted_tree_joints
+    joints = state.treejoints
     qs = values(segments(state.q))
     vs = values(segments(state.v))
     v̇s = values(segments(v̇))
@@ -394,7 +394,7 @@ function joint_wrenches_and_torques!(
         end
     end
 
-    joints = state.type_sorted_tree_joints
+    joints = state.treejoints
     qs = values(segments(state.q))
     τs = values(segments(torquesout))
     discard = DiscardVector(length(qs))
@@ -519,12 +519,12 @@ function inverse_dynamics(
 end
 
 function constraint_jacobian!(jac::AbstractMatrix, state::MechanismState)
-    # note: order of rows of Jacobian is determined by iteration order of state.type_sorted_non_tree_joints
+    # note: order of rows of Jacobian is determined by iteration order of state.nontreejoints
     # TODO: traversing jac in the wrong order
     update_motion_subspaces!(state)
     update_constraint_wrench_subspaces!(state)
     rowstart = Ref(1) # TODO: allocation
-    nontreejoints = state.type_sorted_non_tree_joints
+    nontreejoints = state.nontreejoints
     wrenchsubspaces = state.constraint_wrench_subspaces.data
     discard = DiscardVector(length(nontreejoints))
     broadcast!(discard, jac, state, rowstart, nontreejoints, wrenchsubspaces) do jac, state, rowstart, nontreejoint, T
@@ -532,7 +532,7 @@ function constraint_jacobian!(jac::AbstractMatrix, state::MechanismState)
         path = state.constraint_jacobian_structure[nontreejointid]
         nextrowstart = rowstart[] + num_constraints(nontreejoint)
         rowrange = rowstart[] : nextrowstart - 1
-        nontreejoints = state.type_sorted_tree_joints
+        nontreejoints = state.treejoints
         motionsubspaces = state.motion_subspaces.data
         broadcast!(constraint_jacobian_inner!, DiscardVector(length(nontreejoints)), jac, rowrange, state, path, T, nontreejoints, motionsubspaces)
         rowstart[] = nextrowstart
@@ -554,12 +554,12 @@ end
 constraint_jacobian!(result::DynamicsResult, state::MechanismState) = constraint_jacobian!(result.constraintjacobian, state)
 
 function constraint_bias!(bias::SegmentedVector, state::MechanismState)
-    # note: order of rows of Jacobian and bias term is determined by iteration order of state.type_sorted_non_tree_joints
+    # note: order of rows of Jacobian and bias term is determined by iteration order of state.nontreejoints
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
     update_constraint_wrench_subspaces!(state)
     rowstart = Ref(1) # TODO: allocation
-    nontreejoints = state.type_sorted_non_tree_joints
+    nontreejoints = state.nontreejoints
     wrenchsubspaces = state.constraint_wrench_subspaces.data
     discard = DiscardVector(length(nontreejoints))
     broadcast!(discard, bias, state, rowstart,

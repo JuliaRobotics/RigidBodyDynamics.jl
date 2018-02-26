@@ -34,7 +34,8 @@ RigidBody(inertia::SpatialInertia) = RigidBody(string(inertia.frame), inertia)
 Base.string(b::RigidBody) = b.name
 Base.show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(string(b))\"")
 Base.showcompact(io::IO, b::RigidBody) = print(io, "$(string(b))")
-@inline id(b::RigidBody) = b.id
+@inline BodyID(b::RigidBody) = b.id
+@inline id(b::RigidBody) = BodyID(b)
 @inline RigidBodyDynamics.Graphs.vertex_id_type(::Type{<:RigidBody}) = BodyID
 @inline RigidBodyDynamics.Graphs.vertex_id(b::RigidBody) = id(b)
 @inline RigidBodyDynamics.Graphs.set_vertex_id!(b::RigidBody, id::BodyID) = (b.id = id)

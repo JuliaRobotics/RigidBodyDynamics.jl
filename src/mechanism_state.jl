@@ -1,11 +1,11 @@
 ## BodyDict, JointDict
-const BodyDict{V} = IndexDict{BodyID, V}
-const BodyCacheDict{V} = CacheIndexDict{BodyID, V}
+const BodyDict{V} = IndexDict{BodyID, Base.OneTo{BodyID}, V}
+const BodyCacheDict{V} = CacheIndexDict{BodyID, Base.OneTo{BodyID}, V}
 Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{BodyID}, key::RigidBody) = d[id(key)]
 Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{BodyID}, value, key::RigidBody) = d[id(key)] = value
 
-const JointDict{V} = IndexDict{JointID, V}
-const JointCacheDict{V} = CacheIndexDict{JointID, V}
+const JointDict{V} = IndexDict{JointID, Base.OneTo{JointID}, V}
+const JointCacheDict{V} = CacheIndexDict{JointID, Base.OneTo{JointID}, V}
 Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{JointID}, key::Joint) = d[id(key)]
 Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{JointID}, value, key::Joint) = d[id(key)] = value
 
@@ -13,8 +13,18 @@ Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{JointID}, value, ke
 ## SegmentedVector method overloads
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector{JointID}, id::JointID) = v.segments[id]
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector{JointID}, joint::Joint) = v[id(joint)]
-function SegmentedVector(parent::AbstractVector, joints::AbstractVector{<:Joint}, viewlengthfun)
-    SegmentedVector{JointID}(parent, id(joint) => viewlengthfun(joint) for joint in joints)
+function SegmentedVector(parent::AbstractVector{T}, joints::AbstractVector{<:Joint}, viewlengthfun) where T
+    idrange = Base.OneTo(JointID(length(joints)))
+    start = Ref(1)
+    views = Vector{VectorSegment{T}}(uninitialized, length(joints))
+    for i in eachindex(joints)
+        joint = joints[i]
+        id(joint) === idrange[i] || error()
+        stop = start[] + viewlengthfun(joint) - 1
+        views[i] = view(parent, start[] : stop)
+        start[] = stop + 1
+    end
+    SegmentedVector(parent, IndexDict(idrange, views))
 end
 
 
@@ -57,8 +67,8 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
 
     # mechanism layout
     mechanism::Mechanism{M}
-    type_sorted_tree_joints::JointCollection
-    type_sorted_non_tree_joints::JointCollection
+    treejoints::JointCollection
+    nontreejoints::JointCollection
     jointids::Base.OneTo{JointID}
     treejointids::Base.OneTo{JointID}
     nontreejointids::UnitRange{JointID}
@@ -99,8 +109,8 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
 
         # mechanism layout
         canonicalize_graph!(m)
-        type_sorted_tree_joints = JointCollection(tree_joints(m))
-        type_sorted_non_tree_joints = JointCollection(non_tree_joints(m))
+        treejoints = JointCollection(tree_joints(m))
+        nontreejoints = JointCollection(non_tree_joints(m))
         lastjointid = isempty(joints(m)) ? JointID(0) : id(last(joints(m)))
         jointids = Base.OneTo(lastjointid)
         lasttreejointid = isempty(tree_joints(m)) ? JointID(0) : id(last(tree_joints(m)))
@@ -119,24 +129,25 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
         vranges = ranges(vsegmented)
 
         # joint-related cache
-        joint_transforms = JointCacheDict{Transform3D{C}}(length(joints(m)))
+        joint_transforms = JointCacheDict{Transform3D{C}}(treejointids)
+        joint_twists = JointCacheDict{Twist{C}}(treejointids)
+        joint_bias_accelerations = JointCacheDict{SpatialAcceleration{C}}(treejointids)
+        motion_subspaces = CacheElement(MotionSubspaceCollection(indices(treejoints)))
+        constraint_wrench_subspaces = CacheElement(WrenchSubspaceCollection(indices(nontreejoints)))
         tree_joint_transforms = view(values(joint_transforms), 1 : Int(lasttreejointid))
         non_tree_joint_transforms = view(values(joint_transforms), Int(lasttreejointid) + 1 : Int(lastjointid))
-        joint_twists = JointCacheDict{Twist{C}}(length(tree_joints(m)))
-        joint_bias_accelerations = JointCacheDict{SpatialAcceleration{C}}(length(tree_joints(m)))
-        motion_subspaces = CacheElement(MotionSubspaceCollection(indices(type_sorted_tree_joints)))
-        constraint_wrench_subspaces = CacheElement(WrenchSubspaceCollection(indices(type_sorted_non_tree_joints)))
 
         # body-related cache
-        nbodies = length(bodies(m))
-        transforms_to_root = BodyCacheDict{Transform3D{C}}(nbodies)
-        twists_wrt_world = BodyCacheDict{Twist{C}}(nbodies)
-        bias_accelerations_wrt_world = BodyCacheDict{SpatialAcceleration{C}}(nbodies)
-        inertias = BodyCacheDict{SpatialInertia{C}}(nbodies)
-        crb_inertias = BodyCacheDict{SpatialInertia{C}}(nbodies)
+        bodyids = Base.OneTo(id(last(bodies(m))))
+        transforms_to_root = BodyCacheDict{Transform3D{C}}(bodyids)
+        twists_wrt_world = BodyCacheDict{Twist{C}}(bodyids)
+        bias_accelerations_wrt_world = BodyCacheDict{SpatialAcceleration{C}}(bodyids)
+        inertias = BodyCacheDict{SpatialInertia{C}}(bodyids)
+        crb_inertias = BodyCacheDict{SpatialInertia{C}}(bodyids)
 
         # contact. TODO: move out of MechanismState:
-        contact_states = BodyCacheDict(id(b) => Vector{Vector{DefaultSoftContactState{X}}}() for b in bodies(m))
+        contact_states = BodyCacheDict{Vector{Vector{DefaultSoftContactState{X}}}}(
+            id(b) => Vector{Vector{DefaultSoftContactState{X}}}() for b in bodies(m))
         startind = 1
         for body in bodies(m), point in contact_points(body)
             model = contact_model(point)
@@ -158,7 +169,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
         inertias[root] = zero(SpatialInertia{C}, rootframe)
 
         new{X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}(
-            modcount(m), m, type_sorted_tree_joints, type_sorted_non_tree_joints,
+            modcount(m), m, treejoints, nontreejoints,
             jointids, treejointids, nontreejointids,
             predecessor_and_successor_ids, qranges, vranges, ancestor_joint_masks, constraint_jacobian_structure,
             qsegmented, vsegmented, s,
@@ -291,7 +302,7 @@ configuration vector would be set to identity. The contract is that each of the
 joint transforms should be an identity transform.
 """
 function zero_configuration!(state::MechanismState)
-    foreach(state.type_sorted_tree_joints, values(segments(state.q))) do joint, qjoint
+    foreach(state.treejoints, values(segments(state.q))) do joint, qjoint
         zero_configuration!(qjoint, joint)
     end
     reset_contact_state!(state)
@@ -327,7 +338,7 @@ the particular joint types present in the associated `Mechanism`. The resulting
 Invalidates cache variables.
 """
 function rand_configuration!(state::MechanismState)
-    foreach(state.type_sorted_tree_joints, values(segments(state.q))) do joint, qjoint
+    foreach(state.treejoints, values(segments(state.q))) do joint, qjoint
         rand_configuration!(qjoint, joint)
     end
     reset_contact_state!(state)
@@ -474,7 +485,7 @@ This method does not ensure that the configuration or velocity satisfy joint
 configuration or velocity limits/bounds.
 """
 function normalize_configuration!(state::MechanismState)
-    foreach(state.type_sorted_tree_joints, values(segments(state.q))) do joint, qjoint
+    foreach(state.treejoints, values(segments(state.q))) do joint, qjoint
         normalize_configuration!(qjoint, joint)
     end
 end
@@ -597,7 +608,7 @@ end
     @modcountcheck state state.mechanism
 
     # update tree joint transforms
-    treejoints = state.type_sorted_tree_joints
+    treejoints = state.treejoints
     qs = values(segments(state.q))
     state.tree_joint_transforms .= joint_transform.(treejoints, qs)
 
@@ -611,7 +622,7 @@ end
     state.transforms_to_root.dirty = false
 
     # update non-tree joint transforms
-    nontreejoints = state.type_sorted_non_tree_joints
+    nontreejoints = state.nontreejoints
     if length(nontreejoints) > 0
         broadcast!(state.non_tree_joint_transforms, state, nontreejoints) do state, joint
             predid, succid = predsucc(id(joint))
@@ -628,7 +639,7 @@ end
     isdirty(state.joint_twists) && _update_joint_twists!(state)
 end
 @noinline function _update_joint_twists!(state::MechanismState)
-    treejoints = state.type_sorted_tree_joints
+    treejoints = state.treejoints
     qs = values(segments(state.q))
     vs = values(segments(state.v))
     values(state.joint_twists) .= joint_twist.(treejoints, qs, vs)
@@ -640,7 +651,7 @@ end
     isdirty(state.joint_bias_accelerations) && _update_joint_bias_accelerations!(state)
 end
 @noinline function _update_joint_bias_accelerations!(state::MechanismState)
-    treejoints = state.type_sorted_tree_joints
+    treejoints = state.treejoints
     qs = values(segments(state.q))
     vs = values(segments(state.v))
     values(state.joint_bias_accelerations) .= bias_acceleration.(treejoints, qs, vs)
@@ -658,7 +669,7 @@ end
 end
 @noinline function _update_motion_subspaces!(state::MechanismState)
     update_transforms!(state)
-    treejoints = state.type_sorted_tree_joints
+    treejoints = state.treejoints
     qs = values(segments(state.q))
     state.motion_subspaces.data .= _motion_subspace.(state, treejoints, qs)
     state.motion_subspaces.dirty = false
@@ -695,7 +706,7 @@ end
 
 @noinline function _update_constraint_wrench_subspaces!(state::MechanismState)
     update_transforms!(state)
-    nontreejoints = state.type_sorted_non_tree_joints
+    nontreejoints = state.nontreejoints
     state.constraint_wrench_subspaces.data .= _constraint_wrench_subspace.(state, nontreejoints)
     state.constraint_wrench_subspaces.dirty = false
     nothing
@@ -796,7 +807,7 @@ end
 
 function configuration_derivative!(q̇::SegmentedVector{JointID}, state::MechanismState)
     q̇s = values(segments(state.q))
-    joints = state.type_sorted_tree_joints
+    joints = state.treejoints
     qs = values(segments(state.q))
     vs = values(segments(state.v))
     foreach(velocity_to_configuration_derivative!, q̇s, joints, qs, vs)
@@ -805,7 +816,7 @@ end
 function configuration_derivative_to_velocity_adjoint!(
         fq::SegmentedVector{JointID}, state::MechanismState, fv::SegmentedVector{JointID})
     fqs = values(segments(fq))
-    joints = state.type_sorted_tree_joints
+    joints = state.treejoints
     qs = values(segments(state.q))
     fvs = values(segments(fv))
     foreach(configuration_derivative_to_velocity_adjoint!, fqs, joints, qs, fvs)
@@ -928,7 +939,7 @@ function local_coordinates!(
         ϕ::SegmentedVector{JointID}, ϕd::SegmentedVector{JointID}, state::MechanismState, q0::SegmentedVector{JointID})
     ϕs = values(segments(ϕ))
     ϕds = values(segments(ϕd))
-    joints = state.type_sorted_tree_joints
+    joints = state.treejoints
     q0s = values(segments(q0))
     qs = values(segments(state.q))
     vs = values(segments(state.v))
@@ -943,7 +954,7 @@ configuration vector ``q``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function global_coordinates!(state::MechanismState, q0::SegmentedVector{JointID}, ϕ::SegmentedVector{JointID})
     qs = values(segments(state.q))
-    joints = state.type_sorted_tree_joints
+    joints = state.treejoints
     q0s = values(segments(q0))
     ϕs = values(segments(ϕ))
     foreach(global_coordinates!, qs, joints, q0s, ϕs)
