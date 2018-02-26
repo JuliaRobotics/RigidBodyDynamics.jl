@@ -178,12 +178,11 @@ function mass_matrix!(M::Symmetric, state::MechanismState)
     update_crb_inertias!(state)
     fill!(M.data, 0)
     motion_subspaces = state.motion_subspaces.data
-    discard = DiscardVector(length(motion_subspaces))
-    broadcast!(set_mass_matrix_col!, discard, motion_subspaces, state.treejointids, M, state)
+    foreach_with_extra_args(set_mass_matrix_col!, M, state, motion_subspaces, state.treejointids) #TODO: broadcast! (compiler issue on 0.6.2)
     M
 end
 
-@inline function set_mass_matrix_col!(Sj::GeometricJacobian, idj::JointID, M::Symmetric, state::MechanismState)
+@inline function set_mass_matrix_col!(M::Symmetric, state::MechanismState, Sj::GeometricJacobian, idj::JointID)
     bodyid = successorid(idj, state)
     Icj = crb_inertia(state, bodyid)
     Fj = Icj * Sj
