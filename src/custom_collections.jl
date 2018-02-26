@@ -224,7 +224,7 @@ segments(v::SegmentedVector) = v.segments
 struct DiscardVector <: AbstractVector{Any}
     length::Int
 end
-Base.setindex!(v::DiscardVector, value, i::Int) = nothing
-Base.size(v::DiscardVector) = (v.length,)
+@inline Base.setindex!(v::DiscardVector, value, i::Int) = nothing
+@inline Base.size(v::DiscardVector) = (v.length,)
 
 end # module

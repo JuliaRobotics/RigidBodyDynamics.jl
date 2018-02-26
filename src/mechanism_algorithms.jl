@@ -171,29 +171,37 @@ The `out` argument must be an ``n_v \\times n_v`` lower triangular
 `Symmetric` matrix, where ``n_v`` is the dimension of the `Mechanism`'s joint
 velocity vector ``v``.
 """
-function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, C}) where {X, M, C}
-    @boundscheck size(out, 1) == num_velocities(state) || error("mass matrix has wrong size")
-    @boundscheck out.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
+function mass_matrix!(M::Symmetric, state::MechanismState)
+    @boundscheck size(M, 1) == num_velocities(state) || error("mass matrix has wrong size")
+    @boundscheck M.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
     update_motion_subspaces!(state)
     update_crb_inertias!(state)
-    fill!(out.data, 0)
-    # TODO: broadcast!
-    foreach_with_extra_args(out, state, state.motion_subspaces.data, state.treejointids) do out, state, Si, jointidi # TODO: use closure once it doesn't allocate
-        irange = velocity_range(state, jointidi)
-        bodyid = successorid(jointidi, state)
-        Ici = crb_inertia(state, bodyid)
-        F = Ici * Si
-        ancestor_joint_mask = state.ancestor_joint_masks[jointidi]
-        foreach_with_extra_args(out, state, irange, F, ancestor_joint_mask, state.motion_subspaces.data, state.treejointids) do out, state, irange, F, ancestor_joint_mask, Sj, jointidj # TODO: use closure once it doesn't allocate
-            Base.@_inline_meta # currently required; try removing with 1.0
-            if ancestor_joint_mask[jointidj]
-                jrange = velocity_range(state, jointidj)
-                block = angular(F)' * angular(Sj) + linear(F)' * linear(Sj)
-                set_matrix_block!(out.data, irange, jrange, block)
-            end
-        end
+    fill!(M.data, 0)
+    motion_subspaces = state.motion_subspaces.data
+    discard = DiscardVector(length(motion_subspaces))
+    broadcast!(set_mass_matrix_col!, discard, motion_subspaces, state.treejointids, M, state)
+    M
+end
+
+@inline function set_mass_matrix_col!(Sj::GeometricJacobian, idj::JointID, M::Symmetric, state::MechanismState)
+    bodyid = successorid(idj, state)
+    Icj = crb_inertia(state, bodyid)
+    Fj = Icj * Sj
+    motion_subspaces = state.motion_subspaces.data
+    ancestor_joint_mask = values(state.ancestor_joint_masks[idj])
+    discard = DiscardVector(length(ancestor_joint_mask))
+    vranges = state.velocity_ranges
+    jrange = vranges[idj]
+    broadcast!(set_mass_matrix_block!, discard, M, ancestor_joint_mask, motion_subspaces, values(vranges), Fj, Scalar(jrange))
+    nothing
+end
+
+@inline function set_mass_matrix_block!(M::Symmetric, isancestor::Bool, Si::GeometricJacobian, irange::UnitRange, Fj::MomentumMatrix, jrange)
+    if isancestor
+        block = angular(Si)' * angular(Fj) + linear(Si)' * linear(Fj)
+        set_matrix_block!(M.data, irange, jrange[], block)
     end
-    out
+    nothing
 end
 
 mass_matrix!(result::DynamicsResult, state::MechanismState) = mass_matrix!(result.massmatrix, state)

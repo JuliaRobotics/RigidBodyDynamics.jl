@@ -69,6 +69,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
     treejointids::Base.OneTo{JointID}
     nontreejointids::UnitRange{JointID}
     predecessor_and_successor_ids::JointDict{Pair{BodyID, BodyID}}
+    velocity_ranges::JointDict{UnitRange{Int}}
 
     # joint-related cache
     joint_transforms::JointCacheDict{Transform3D{C}}
@@ -115,6 +116,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
 
         predecessor_and_successor_ids = JointDict{Pair{BodyID, BodyID}}(
             id(j) => (id(predecessor(j, m)) => id(successor(j, m))) for j in joints(m))
+        velocity_ranges = JointDict{UnitRange{Int}}(id => first(parentindexes(segments(vsegmented)[id])) for id in treejointids)
 
         joint_transforms = JointCacheDict{Transform3D{C}}(length(joints(m)))
         tree_joint_transforms = view(values(joint_transforms), 1 : Int(lasttreejointid))
@@ -157,7 +159,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
         new{X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}(
             m, modcount(m), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
             constraint_jacobian_structure, qsegmented, vsegmented, s, jointids, treejointids, nontreejointids,
-            predecessor_and_successor_ids,
+            predecessor_and_successor_ids, velocity_ranges,
             joint_transforms, tree_joint_transforms, non_tree_joint_transforms, joint_twists, joint_bias_accelerations,
             motion_subspaces, constraint_wrench_subspaces,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
