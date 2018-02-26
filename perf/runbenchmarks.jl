@@ -105,7 +105,7 @@ function create_benchmark_suite()
 
     suite["constraint_jacobian!"] = @benchmarkable(begin
         setdirty!($mcstate)
-        RigidBodyDynamics.constraint_jacobian!($(mcresult.constraintjacobian), $mcstate)
+        RigidBodyDynamics.constraint_jacobian!($(mcresult.constraintjacobian), $(mcresult.constraintrowranges), $mcstate)
     end, setup = rand!($mcstate))
 
     suite["constraint_bias!"] = @benchmarkable(begin

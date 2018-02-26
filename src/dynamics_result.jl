@@ -12,11 +12,12 @@ mutable struct DynamicsResult{T, M}
     mechanism::Mechanism{M}
 
     massmatrix::Symmetric{T, Matrix{T}}
-    dynamicsbias::SegmentedVector{JointID, T, Vector{T}}
+    dynamicsbias::SegmentedVector{JointID, T, Base.OneTo{JointID}, Vector{T}}
     constraintjacobian::Matrix{T}
-    constraintbias::Vector{T}
+    constraintbias::SegmentedVector{JointID, T, UnitRange{JointID}, Vector{T}}
+    constraintrowranges::IndexDict{JointID, UnitRange{JointID}, UnitRange{Int}}
 
-    v̇::SegmentedVector{JointID, T, Vector{T}}
+    v̇::SegmentedVector{JointID, T, Base.OneTo{JointID}, Vector{T}}
     λ::Vector{T}
     ṡ::Vector{T}
 
@@ -41,7 +42,9 @@ mutable struct DynamicsResult{T, M}
         massmatrix = Symmetric(Matrix{T}(nv, nv), :L)
         dynamicsbias = SegmentedVector(Vector{T}(nv), tree_joints(mechanism), num_velocities)
         constraintjacobian = Matrix{T}(nconstraints, nv)
-        constraintbias = Vector{T}(nconstraints)
+        constraintbias = SegmentedVector{JointID, T, UnitRange{JointID}}(
+            Vector{T}(nconstraints), non_tree_joints(mechanism), num_constraints)
+        constraintrowranges = ranges(constraintbias)
 
         v̇ = SegmentedVector(Vector{T}(nv), tree_joints(mechanism), num_velocities)
         λ = Vector{T}(nconstraints)
@@ -72,7 +75,7 @@ mutable struct DynamicsResult{T, M}
         z = Vector{T}(nv)
         Y = Matrix{T}(nconstraints, nv)
 
-        new{T, M}(mechanism, massmatrix, dynamicsbias, constraintjacobian, constraintbias,
+        new{T, M}(mechanism, massmatrix, dynamicsbias, constraintjacobian, constraintbias, constraintrowranges,
             v̇, λ, ṡ, contactwrenches, totalwrenches, accelerations, jointwrenches, contact_state_derivs,
             L, A, z, Y)
     end

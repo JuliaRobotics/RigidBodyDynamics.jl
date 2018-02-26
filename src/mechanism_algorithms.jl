@@ -518,63 +518,54 @@ function inverse_dynamics(
     torques
 end
 
-function constraint_jacobian!(jac::AbstractMatrix, state::MechanismState)
-    # note: order of rows of Jacobian is determined by iteration order of state.nontreejoints
+function constraint_jacobian!(jac::AbstractMatrix, rowranges, state::MechanismState)
     # TODO: traversing jac in the wrong order
     update_motion_subspaces!(state)
     update_constraint_wrench_subspaces!(state)
-    rowstart = Ref(1) # TODO: allocation
     nontreejoints = state.nontreejoints
     wrenchsubspaces = state.constraint_wrench_subspaces.data
     discard = DiscardVector(length(nontreejoints))
-    broadcast!(discard, jac, state, rowstart, nontreejoints, wrenchsubspaces) do jac, state, rowstart, nontreejoint, T
+    broadcast!(discard, jac, state, values(rowranges), nontreejoints, wrenchsubspaces) do jac, state, rowrange, nontreejoint, T
         nontreejointid = id(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
-        nextrowstart = rowstart[] + num_constraints(nontreejoint)
-        rowrange = rowstart[] : nextrowstart - 1
-        nontreejoints = state.treejoints
+        treejoints = state.treejoints
         motionsubspaces = state.motion_subspaces.data
-        broadcast!(constraint_jacobian_inner!, DiscardVector(length(nontreejoints)), jac, rowrange, state, path, T, nontreejoints, motionsubspaces)
-        rowstart[] = nextrowstart
+        # TODO: broadcast! (currently results in allocations):
+        foreach_with_extra_args(constraint_jacobian_inner!, jac, rowrange, state, path, T, treejoints, motionsubspaces)
     end
 end
 
 @inline function constraint_jacobian_inner!(jac, rowrange, state, path, T, treejoint, S)
-            vrange = velocity_range(state, treejoint)
-            pathindex = findfirst(treejoint, path)
-            if pathindex > 0
-                part = angular(T)' * angular(S) + linear(T)' * linear(S) # TODO: At_mul_B
-                directions(path)[pathindex] == :up && (part = -part)
+    vrange = velocity_range(state, treejoint)
+    pathindex = findfirst(treejoint, path)
+    if pathindex > 0
+        part = angular(T)' * angular(S) + linear(T)' * linear(S) # TODO: At_mul_B
+        directions(path)[pathindex] == :up && (part = -part)
         set_matrix_block!(jac, rowrange, vrange, part)
-            else
+    else
         zero_matrix_block!(jac, rowrange, vrange)
     end
 end
 
-constraint_jacobian!(result::DynamicsResult, state::MechanismState) = constraint_jacobian!(result.constraintjacobian, state)
+function constraint_jacobian!(result::DynamicsResult, state::MechanismState)
+    constraint_jacobian!(result.constraintjacobian, result.constraintrowranges , state)
+end
 
 function constraint_bias!(bias::SegmentedVector, state::MechanismState)
-    # note: order of rows of Jacobian and bias term is determined by iteration order of state.nontreejoints
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
     update_constraint_wrench_subspaces!(state)
-    rowstart = Ref(1) # TODO: allocation
     nontreejoints = state.nontreejoints
     wrenchsubspaces = state.constraint_wrench_subspaces.data
     discard = DiscardVector(length(nontreejoints))
-    broadcast!(discard, bias, state, rowstart,
-            nontreejoints, wrenchsubspaces) do bias, state, rowstart, nontreejoint, T
+    broadcast!(discard, values(segments(bias)), state, nontreejoints, wrenchsubspaces) do kjoint, state, nontreejoint, T
         has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
         nontreejointid = id(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
-        nextrowstart = rowstart[] + num_constraints(nontreejoint)
-        rowrange = rowstart[] : nextrowstart - 1
-        kjoint = fastview(bias, rowrange)
         predid, succid = predsucc(nontreejointid, state)
         crossterm = cross(twist_wrt_world(state, succid), twist_wrt_world(state, predid))
         biasaccel = crossterm + (-bias_acceleration(state, predid) + bias_acceleration(state, succid)) # 8.47 in Featherstone
         At_mul_B!(kjoint, T, biasaccel)
-        rowstart[] = nextrowstart
     end
     bias
 end

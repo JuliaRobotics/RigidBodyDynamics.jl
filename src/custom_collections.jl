@@ -174,8 +174,11 @@ for IDict in (:IndexDict, :CacheIndexDict)
             if !issorted(kv, by = first)
                 sort!(kv; by = first)
             end
-            start = first(first(kv))
-            stop = first(last(kv))
+            start, stop = if isempty(kv)
+                K(1), K(0)
+            else
+                first(first(kv)), first(last(kv))
+            end
             keys = makekeys(KeyRange, start, stop)
             for i in eachindex(kv)
                 keys[i] === first(kv[i]) || error()
@@ -217,11 +220,11 @@ Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) 
 ## SegmentedVector
 const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # type of a n:m view into a Vector
 
-struct SegmentedVector{I, T, P<:AbstractVector{T}} <: AbstractVector{T}
+struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <: AbstractVector{T}
     parent::P
-    segments::IndexDict{I, Base.OneTo{I}, VectorSegment{T}}
+    segments::IndexDict{K, KeyRange, VectorSegment{T}}
 
-    function SegmentedVector(p::P, segments::IndexDict{I, Base.OneTo{I}, VectorSegment{T}}) where {I, T, P}
+    function SegmentedVector(p::P, segments::IndexDict{K, KeyRange, VectorSegment{T}}) where {T, K, KeyRange, P}
         @boundscheck begin
             start = 1
             for segment in values(segments)
@@ -232,9 +235,25 @@ struct SegmentedVector{I, T, P<:AbstractVector{T}} <: AbstractVector{T}
             end
             start === endof(p) + 1 || error("Segments do not cover input data.")
         end
-        new{I, T, P}(p, segments)
+        new{K, T, KeyRange, P}(p, segments)
     end
 end
+
+function (::Type{SegmentedVector{K, T, KeyRange}})(parent::AbstractVector{T}, keys, viewlengthfun) where {K, T, KeyRange<:AbstractRange{K}}
+    views = Vector{Pair{K, VectorSegment{T}}}()
+    start = 1
+    for key in keys
+        stop = start[] + viewlengthfun(key) - 1
+        push!(views, K(key) => view(parent, start : stop))
+        start = stop + 1
+    end
+    SegmentedVector(parent, IndexDict{K, KeyRange, VectorSegment{T}}(views))
+end
+
+function (::Type{SegmentedVector{K}})(parent::AbstractVector{T}, keys, viewlengthfun) where {K, T}
+    SegmentedVector{K, T, Base.OneTo{K}}(parent, keys, viewlengthfun)
+end
+
 
 Base.size(v::SegmentedVector) = size(v.parent)
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.parent[i]
@@ -242,7 +261,7 @@ Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.p
 
 Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
-ranges(v::SegmentedVector{I}) where {I} = IndexDict(v.segments.keys, [first(parentindexes(view)) for view in v.segments.values])
+ranges(v::SegmentedVector) = IndexDict(v.segments.keys, [first(parentindexes(view)) for view in v.segments.values])
 
 struct DiscardVector <: AbstractVector{Any}
     length::Int

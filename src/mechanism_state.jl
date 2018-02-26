@@ -13,20 +13,9 @@ Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{JointID}, value, ke
 ## SegmentedVector method overloads
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector{JointID}, id::JointID) = v.segments[id]
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector{JointID}, joint::Joint) = v[id(joint)]
-function SegmentedVector(parent::AbstractVector{T}, joints::AbstractVector{<:Joint}, viewlengthfun) where T
-    idrange = Base.OneTo(JointID(length(joints)))
-    start = Ref(1)
-    views = Vector{VectorSegment{T}}(uninitialized, length(joints))
-    for i in eachindex(joints)
-        joint = joints[i]
-        id(joint) === idrange[i] || error()
-        stop = start[] + viewlengthfun(joint) - 1
-        views[i] = view(parent, start[] : stop)
-        start[] = stop + 1
-    end
-    SegmentedVector(parent, IndexDict(idrange, views))
+function SegmentedVector(parent::Vector{T}, joints::AbstractVector{<:Joint}, viewlengthfun) where T
+    SegmentedVector{JointID, T, Base.OneTo{JointID}}(parent, joints, viewlengthfun)
 end
-
 
 ##
 function motionsubspacecollectiontype(::Type{TypeSortedCollection{D, N}}, ::Type{X}) where {D, N, X}
@@ -79,8 +68,8 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
     constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: use a Matrix-backed type
 
     # minimal representation of state
-    q::SegmentedVector{JointID, X, Vector{X}} # configurations
-    v::SegmentedVector{JointID, X, Vector{X}} # velocities
+    q::SegmentedVector{JointID, X, Base.OneTo{JointID}, Vector{X}} # configurations
+    v::SegmentedVector{JointID, X, Base.OneTo{JointID}, Vector{X}} # velocities
     s::Vector{X} # additional state
 
     # joint-related cache
@@ -129,7 +118,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
         vranges = ranges(vsegmented)
 
         # joint-related cache
-        joint_transforms = JointCacheDict{Transform3D{C}}(treejointids)
+        joint_transforms = JointCacheDict{Transform3D{C}}(jointids)
         joint_twists = JointCacheDict{Twist{C}}(treejointids)
         joint_bias_accelerations = JointCacheDict{SpatialAcceleration{C}}(treejointids)
         motion_subspaces = CacheElement(MotionSubspaceCollection(indices(treejoints)))
@@ -622,10 +611,10 @@ end
     state.transforms_to_root.dirty = false
 
     # update non-tree joint transforms
-    nontreejoints = state.nontreejoints
-    if length(nontreejoints) > 0
+    if !isempty(state.nontreejointids)
+        nontreejoints = state.nontreejoints
         broadcast!(state.non_tree_joint_transforms, state, nontreejoints) do state, joint
-            predid, succid = predsucc(id(joint))
+            predid, succid = predsucc(id(joint), state)
             before_to_root = transform_to_root(state, predid) * joint_to_predecessor(joint)
             after_to_root = transform_to_root(state, succid) * joint_to_successor(joint)
             inv(before_to_root) * after_to_root
