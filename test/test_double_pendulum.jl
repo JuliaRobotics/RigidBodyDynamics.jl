@@ -75,7 +75,8 @@
 
     G = [m1 * g * lc1 * s1 + m2 * g * (l1 * s1 + lc2 * s12); m2 * g * lc2 * s12]
 
-    v̇ = rand(num_velocities(x))
+    v̇ = similar(velocity(x))
+    rand!(v̇)
     τ = inverse_dynamics(x, v̇)
     v = velocity(x)
 
@@ -95,7 +96,8 @@
         set_configuration!(x_urdf, j_urdf, configuration(x, j))
         set_velocity!(x_urdf, j_urdf, velocity(x, j))
     end
-    v̇ = rand(num_velocities(x_urdf))
+    v̇ = similar(velocity(x_urdf))
+    rand!(v̇)
     τ = inverse_dynamics(x_urdf, v̇)
     urdf_bodies = collect(bodies(double_pendulum_urdf))
     urdf_upper_link = urdf_bodies[findfirst(b -> string(b) == string(body1), urdf_bodies)]

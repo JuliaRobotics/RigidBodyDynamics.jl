@@ -70,8 +70,8 @@ end
         q2copy = deepcopy(q2)
         v2copy = deepcopy(v2)
         x2 = MechanismState(mechanism, q2, v2)
-        @test configuration(x2) === q2
-        @test velocity(x2) === v2
+        @test parent(configuration(x2)) === q2
+        @test parent(velocity(x2)) === v2
         @test all(configuration(x2) .== q2copy)
         @test all(velocity(x2) .== v2copy)
 
@@ -215,7 +215,8 @@ end
         result = DynamicsResult(mechanism)
         for body in bodies(mechanism)
             for base in bodies(mechanism)
-                v̇ = rand(num_velocities(mechanism))
+                v̇ = similar(velocity(x))
+                rand!(v̇)
                 spatial_accelerations!(result.accelerations, x, v̇)
                 Ṫ = relative_acceleration(result, body, base)
                 q = configuration(x)
@@ -350,7 +351,9 @@ end
             inverse_dynamics(x, v̇)
         end
         M2 = similar(M.data)
-        ForwardDiff.jacobian!(M2, v̇_to_τ, zeros(Float64, num_velocities(mechanism)))
+        v̇ = similar(velocity(x))
+        v̇[:] = 0
+        ForwardDiff.jacobian!(M2, v̇_to_τ, v̇)
         @test isapprox(M2, M; atol = 1e-12)
     end
 
@@ -374,7 +377,8 @@ end
         Ṁ = reshape(dMdq * q̇, num_velocities(mechanism), num_velocities(mechanism))
 
         q = configuration(x)
-        v̇ = zeros(num_velocities(mechanism))
+        v̇ = similar(velocity(x))
+        v̇[:] = 0
         cache = StateCache(mechanism)
         function v_to_c(v)
             local x = cache[eltype(v)]
@@ -394,7 +398,8 @@ end
         mechanism = rand_tree_mechanism(Float64, [[Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
         x = MechanismState(mechanism)
         rand!(x)
-        v̇ = zeros(num_velocities(mechanism))
+        v̇ = similar(velocity(x))
+        v̇[:] = 0
         zero_velocity!(x)
         g = inverse_dynamics(x, v̇)
 
@@ -418,7 +423,8 @@ end
         q = configuration(x)
         q̇ = configuration_derivative(x)
         v = velocity(x)
-        v̇ = rand(num_velocities(mechanism))
+        v̇ = similar(velocity(x))
+        rand(v̇)
 
         # momentum computed two ways
         @test isapprox(Momentum(momentum_matrix(x), v), momentum(x))
@@ -443,7 +449,8 @@ end
         mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
         x = MechanismState(mechanism)
         rand!(x)
-        v̇ = rand(num_velocities(mechanism))
+        v̇ = similar(velocity(x))
+        rand!(v̇)
         externalwrenches = Dict(RigidBodyDynamics.id(body) => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
         τ = inverse_dynamics(x, v̇, externalwrenches)
         floatingjoint = first(out_joints(root_body(mechanism), mechanism))
@@ -475,7 +482,8 @@ end
         x = MechanismState(mechanism)
         rand!(x)
         externalwrenches = Dict(RigidBodyDynamics.id(body) => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
-        v̇ = zeros(num_velocities(x))
+        v̇ = similar(velocity(x))
+        v̇[:] = 0
         τ1 = inverse_dynamics(x, v̇, externalwrenches)
         τ2 = dynamics_bias(x, externalwrenches)
         @test τ1 ≈ τ2
@@ -503,7 +511,8 @@ end
         x = MechanismState(mechanism)
         rand!(x)
         externalwrenches = Dict(RigidBodyDynamics.id(body) => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
-        τ = rand(num_velocities(mechanism))
+        τ = similar(velocity(x))
+        rand!(τ)
         result = DynamicsResult(mechanism)
         dynamics!(result, x, τ, externalwrenches)
 
@@ -566,8 +575,10 @@ end
         mechanism = rand_tree_mechanism()
         x = MechanismState(mechanism)
         configuration(x) .= rand(num_positions(x)) # needs to work for configuration vectors that do not satisfy the state constraints as well
-        fv = rand(num_velocities(x))
-        fq = zeros(num_positions(x))
+        fv = similar(velocity(x))
+        rand!(fv)
+        fq = similar(configuration(x))
+        rand!(fq)
         configuration_derivative_to_velocity_adjoint!(fq, x, fv)
         @test dot(fv, velocity(x)) ≈ dot(fq, configuration_derivative(x))
     end

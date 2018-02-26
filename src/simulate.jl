@@ -43,8 +43,8 @@ function simulate(state0::MechanismState, final_time, control! = zero_torque!; �
         nothing
     end
     tableau = runge_kutta_4(Float64)
-    storage = ExpandingStorage{Float64}(ceil(Int64, final_time / Δt * 1.001)) # very rough overestimate of number of time steps
-    integrator = MuntheKaasIntegrator(closed_loop_dynamics!, tableau, storage)
-    integrate(integrator, state0, final_time, Δt)
+    storage = ExpandingStorage{Float64}(state0, ceil(Int64, final_time / Δt * 1.001)) # very rough overestimate of number of time steps
+    integrator = MuntheKaasIntegrator(state0, closed_loop_dynamics!, tableau, storage)
+    integrate(integrator, final_time, Δt)
     storage.ts, storage.qs, storage.vs
 end

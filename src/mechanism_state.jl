@@ -13,7 +13,7 @@ Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{JointID}, value, ke
 ## SegmentedVector method overloads
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector{JointID}, id::JointID) = v.segments[id]
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector{JointID}, joint::Joint) = v[id(joint)]
-function SegmentedVector(parent::Vector{T}, joints::AbstractVector{<:Joint}, viewlengthfun) where T
+function SegmentedVector(parent::AbstractVector{T}, joints::AbstractVector{<:Joint}, viewlengthfun) where T
     SegmentedVector{JointID, T, Base.OneTo{JointID}}(parent, joints, viewlengthfun)
 end
 
@@ -363,7 +363,7 @@ Note that this returns a reference to the underlying data in `state`. The user
 is responsible for calling [`setdirty!`](@ref) after modifying this vector to
 ensure that dependent cache variables are invalidated.
 """
-configuration(state::MechanismState) = parent(state.q)
+configuration(state::MechanismState) = state.q
 
 """
 $(SIGNATURES)
@@ -374,7 +374,7 @@ Note that this function returns a read-write reference to a field in `state`.
 The user is responsible for calling [`setdirty!`](@ref) after modifying this
 vector to ensure that dependent cache variables are invalidated.
 """
-velocity(state::MechanismState) = parent(state.v)
+velocity(state::MechanismState) = state.v
 
 """
 $(SIGNATURES)
@@ -795,20 +795,20 @@ function gravitational_potential_energy(state::MechanismState, body::Union{<:Rig
 end
 
 function configuration_derivative!(q̇::SegmentedVector{JointID}, state::MechanismState)
-    q̇s = values(segments(state.q))
     joints = state.treejoints
+    q̇s = values(segments(q̇))
     qs = values(segments(state.q))
     vs = values(segments(state.v))
-    foreach(velocity_to_configuration_derivative!, q̇s, joints, qs, vs)
+    foreach((joint, q̇t, q, v) -> velocity_to_configuration_derivative!(q̇t, joint, q, v), joints, q̇s, qs, vs)
 end
 
 function configuration_derivative_to_velocity_adjoint!(
         fq::SegmentedVector{JointID}, state::MechanismState, fv::SegmentedVector{JointID})
-    fqs = values(segments(fq))
     joints = state.treejoints
+    fqs = values(segments(fq))
     qs = values(segments(state.q))
     fvs = values(segments(fv))
-    foreach(configuration_derivative_to_velocity_adjoint!, fqs, joints, qs, fvs)
+    foreach((joint, fq, q, fv) -> configuration_derivative_to_velocity_adjoint!(fq, joint, q, fv), joints, fqs, qs, fvs)
 end
 
 function configuration_derivative(state::MechanismState{X}) where {X}
@@ -932,7 +932,7 @@ function local_coordinates!(
     q0s = values(segments(q0))
     qs = values(segments(state.q))
     vs = values(segments(state.v))
-    foreach(local_coordinates!, ϕs, ϕds, joints, q0s, qs, vs)
+    foreach((joint, ϕ, ϕ̇, q0, q, v) -> local_coordinates!(ϕ, ϕ̇, joint, q0, q, v), joints, ϕs, ϕds, q0s, qs, vs)
 end
 
 """
@@ -946,5 +946,5 @@ function global_coordinates!(state::MechanismState, q0::SegmentedVector{JointID}
     joints = state.treejoints
     q0s = values(segments(q0))
     ϕs = values(segments(ϕ))
-    foreach(global_coordinates!, qs, joints, q0s, ϕs)
+    foreach((joint, q, q0, ϕ) -> global_coordinates!(q, joint, q0, ϕ), joints, qs, q0s, ϕs)
 end

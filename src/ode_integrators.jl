@@ -71,27 +71,25 @@ $(TYPEDEF)
 An `OdeResultsSink` that stores the state at each integration time step in a
 ring buffer.
 """
-mutable struct RingBufferStorage{T} <: OdeResultsSink
+mutable struct RingBufferStorage{T, Q<:AbstractVector, V<:AbstractVector} <: OdeResultsSink
     ts::Vector{T}
-    qs::Vector{Vector{T}}
-    vs::Vector{Vector{T}}
+    qs::Vector{Q}
+    vs::Vector{V}
     last_index::Int64
 
-    function RingBufferStorage{T}(n::Int64) where {T}
+    function RingBufferStorage{T}(state, n) where {T}
+        Q = typeof(configuration(state))
+        V = typeof(velocity(state))
         ts = Vector{T}(n)
-        qs = [Vector{T}() for i in 1 : n]
-        vs = [Vector{T}() for i in 1 : n]
-        new{T}(ts, qs, vs, 0)
+        qs = [similar(configuration(state)) for i in 1 : n]
+        vs = [similar(velocity(state)) for i in 1 : n]
+        new{T, Q, V}(ts, qs, vs, 0)
     end
 end
 Base.eltype(storage::RingBufferStorage{T}) where {T} = T
 Base.length(storage::RingBufferStorage) = length(storage.ts)
-set_num_positions!(storage::RingBufferStorage, n::Int64) = for q in storage.qs resize!(q, n) end
-set_num_velocities!(storage::RingBufferStorage, n::Int64) = for v in storage.vs resize!(v, n) end
 
 function initialize(storage::RingBufferStorage, t, state)
-    set_num_positions!(storage, length(configuration(state)))
-    set_num_velocities!(storage, length(velocity(state)))
     process(storage, t, state)
 end
 
@@ -110,16 +108,18 @@ $(TYPEDEF)
 An `OdeResultsSink` that stores the state at each integration time step in
 `Vectors` that may expand.
 """
-mutable struct ExpandingStorage{T} <: OdeResultsSink
+mutable struct ExpandingStorage{T, Q<:AbstractVector, V<:AbstractVector} <: OdeResultsSink
     ts::Vector{T}
-    qs::Vector{Vector{T}}
-    vs::Vector{Vector{T}}
+    qs::Vector{Q}
+    vs::Vector{V}
 
-    function ExpandingStorage{T}(n::Int64) where {T}
-        ts = Vector{T}(); sizehint!(ts, n)
-        qs = Vector{T}[]; sizehint!(qs, n)
-        vs = Vector{T}[]; sizehint!(vs, n)
-        new{T}(ts, qs, vs)
+    function ExpandingStorage{T}(state, n) where {T}
+        Q = typeof(configuration(state))
+        V = typeof(velocity(state))
+        ts = T[]; sizehint!(ts, n)
+        qs = Q[]; sizehint!(qs, n)
+        vs = V[]; sizehint!(vs, n)
+        new{T, Q, V}(ts, qs, vs)
     end
 end
 Base.eltype(storage::ExpandingStorage{T}) where {T} = T
@@ -129,53 +129,40 @@ initialize(storage::ExpandingStorage, t, state) = process(storage, t, state)
 
 function process(storage::ExpandingStorage, t, state)
     push!(storage.ts, t)
-    push!(storage.qs, copy(configuration(state)))
-    push!(storage.vs, copy(velocity(state)))
+    q = similar(configuration(state))
+    copy!(q, configuration(state))
+    push!(storage.qs, q)
+    v = similar(velocity(state))
+    copy!(v, velocity(state))
+    push!(storage.vs, v)
     nothing
 end
 
-mutable struct MuntheKaasStageCache{N, T}
-    q0::Vector{T} # global coordinates
-    vs::SVector{N, Vector{T}} # velocity vector for each stage
-    vds::SVector{N, Vector{T}} # time derivatives of vs
-    ϕs::SVector{N, Vector{T}} # local coordinates around q0 for each stage
-    ϕds::SVector{N, Vector{T}} # time derivatives of ϕs
-    ss::SVector{N, Vector{T}} # additional state for each stage
-    sds::SVector{N, Vector{T}} # time derivatives of ss
-    ϕstep::Vector{T} # local coordinates around q0 after complete step
-    vstep::Vector{T} # velocity after complete step
-    sstep::Vector{T} # additional state after complete step
+mutable struct MuntheKaasStageCache{N, T, Q<:AbstractVector, V<:AbstractVector, S<:AbstractVector}
+    q0::Q # global coordinates
+    vs::SVector{N, V} # velocity vector for each stage
+    vds::SVector{N, V} # time derivatives of vs
+    ϕs::SVector{N, V} # local coordinates around q0 for each stage
+    ϕds::SVector{N, V} # time derivatives of ϕs
+    ss::SVector{N, S} # additional state for each stage
+    sds::SVector{N, S} # time derivatives of ss
+    ϕstep::V # local coordinates around q0 after complete step
+    vstep::V # velocity after complete step
+    sstep::S # additional state after complete step
 
-    function MuntheKaasStageCache{N, T}() where {N, T}
-        q0 = Vector{T}()
-        vs = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
-        vds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
-        ϕs = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
-        ϕds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
-        ss = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
-        sds = SVector{N, Vector{T}}((Vector{T}() for i in 1 : N)...)
-        ϕstep = Vector{T}()
-        vstep = Vector{T}()
-        sstep = Vector{T}()
-        new{N, T}(q0, vs, vds, ϕs, ϕds, ss, sds, ϕstep, vstep, sstep)
+    function MuntheKaasStageCache{N, T}(state) where {N, T}
+        q0 = similar(configuration(state), T)
+        vs = SVector{N}((similar(velocity(state), T) for i in 1 : N)...)
+        vds = SVector{N}((similar(velocity(state), T) for i in 1 : N)...)
+        ϕs = SVector{N}((similar(velocity(state), T) for i in 1 : N)...)
+        ϕds = SVector{N}((similar(velocity(state), T) for i in 1 : N)...)
+        ss = SVector{N}((similar(additional_state(state), T) for i in 1 : N)...)
+        sds = SVector{N}((similar(additional_state(state), T) for i in 1 : N)...)
+        ϕstep = similar(velocity(state), T)
+        vstep = similar(velocity(state), T)
+        sstep = similar(additional_state(state), T)
+        new{N, T, typeof(q0), typeof(ϕstep), typeof(sstep)}(q0, vs, vds, ϕs, ϕds, ss, sds, ϕstep, vstep, sstep)
     end
-end
-
-set_num_positions!(cache::MuntheKaasStageCache, n::Int64) = resize!(cache.q0, n)
-
-function set_num_velocities!(cache::MuntheKaasStageCache, n::Int64)
-    for v in cache.vs resize!(v, n) end
-    for vd in cache.vds resize!(vd, n) end
-    for ϕ in cache.ϕs resize!(ϕ, n) end
-    for ϕd in cache.ϕds resize!(ϕd, n) end
-    resize!(cache.ϕstep, n)
-    resize!(cache.vstep, n)
-end
-
-function set_num_additional_states!(cache::MuntheKaasStageCache, n::Int64)
-    for s in cache.ss resize!(s, n) end
-    for sd in cache.sds resize!(sd, n) end
-    resize!(cache.sstep, n)
 end
 
 """
@@ -199,22 +186,34 @@ From [Iserles et al., 'Lie-group methods' (2000)](https://hal.archives-ouvertes.
 
 Another useful reference is [Park and Chung, 'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems' (2005)](http://www.ent.mrt.ac.lk/iml/paperbase/TRO%20Collection/TRO/2005/october/7.pdf).
 """
-struct MuntheKaasIntegrator{N, T, F, S<:OdeResultsSink, L}
+struct MuntheKaasIntegrator{N, T, F, S<:OdeResultsSink, X, L, M<:MuntheKaasStageCache{N, T}}
     dynamics!::F # dynamics!(vd, sd, t, state), sets vd (time derivative of v) and sd (time derivative of s) given time t and state
     tableau::ButcherTableau{N, T, L}
     sink::S
-    stages::MuntheKaasStageCache{N, T}
+    state::X
+    stages::M
 
     """
     Create a `MuntheKaasIntegrator` given:
+
     * a callable `dynamics!(vd, t, state)` that updates the joint acceleration vector `vd` at time `t` and in state `state`;
     * a [`ButcherTableau`](@ref) `tableau`, specifying the integrator coefficients;
     * an [`OdeResultsSink`](@ref) `sink` which processes the results of the integration procedure at each time step.
+
+    `state` must be of a type for which the following functions are defined:
+
+    * `configuration(state)`, returns the configuration vector in global coordinates;
+    * `velocity(state)`, returns the velocity vector;
+    * `additional_state(state)`, returns the vector of additional states;
+    * `set_velocity!(state, v)`, sets velocity vector to `v`;
+    * `set_additional_state!(state, s)`, sets vector of additional states to `s`;
+    * `global_coordinates!(state, q0, ϕ)`, sets global coordinates in state based on local coordinates `ϕ` centered around global coordinates `q0`;
+    * `local_coordinates!(ϕ, ϕd, state, q0)`, converts state's global configuration `q` and velocity `v` to local coordinates centered around global coordinates `q0`.
     """
-    function MuntheKaasIntegrator(dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S) where {N, T, F, S<:OdeResultsSink, L}
+    function MuntheKaasIntegrator(state::X, dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S) where {N, T, F, S<:OdeResultsSink, X, L}
         @assert isexplicit(tableau)
-        stages = MuntheKaasStageCache{N, T}()
-        new{N, T, F, S, L}(dynamics!, tableau, sink, stages)
+        stages = MuntheKaasStageCache{N, T}(state)
+        new{N, T, F, S, X, L, typeof(stages)}(dynamics!, tableau, sink, state, stages)
     end
 end
 
@@ -225,23 +224,15 @@ Base.eltype(::MuntheKaasIntegrator{N, T}) where {N, T} = T
 $(SIGNATURES)
 
 Take a single integration step.
-
-`state` must be of a type for which the following functions are defined:
-* `configuration(state)`, returns the configuration vector in global coordinates;
-* `velocity(state)`, returns the velocity vector;
-* `additional_state(state)`, returns the vector of additional states;
-* `set_velocity!(state, v)`, sets velocity vector to `v`;
-* `set_additional_state!(state, s)`, sets vector of additional states to `s`;
-* `global_coordinates!(state, q0, ϕ)`, sets global coordinates in state based on local coordinates `ϕ` centered around global coordinates `q0`;
-* `local_coordinates!(ϕ, ϕd, state, q0)`, converts state's global configuration `q` and velocity `v` to local coordinates centered around global coordinates `q0`.
 """
-function step(integrator::MuntheKaasIntegrator, t::Real, state, Δt::Real)
+function step(integrator::MuntheKaasIntegrator, t::Real, Δt::Real)
     tableau = integrator.tableau
     stages = integrator.stages
     n = num_stages(integrator)
 
     # Use current configuration as the configuration around which the local coordinates for this step will be centered.
     q0, v0, s0 = stages.q0, stages.vstep, stages.sstep
+    state = integrator.state
     q0 .= configuration(state)
     v0 .= velocity(state)
     s0 .= additional_state(state)
@@ -305,18 +296,15 @@ end
 """
 $(SIGNATURES)
 
-Integrate dynamics from the initial state `state0` at time ``0`` to `final_time`
+Integrate dynamics from the initial state at time ``0`` to `final_time`
 using step size `Δt`.
 """
-function integrate(integrator::MuntheKaasIntegrator, state0, final_time, Δt; max_realtime_rate::Float64 = Inf)
+function integrate(integrator::MuntheKaasIntegrator, final_time, Δt; max_realtime_rate::Float64 = Inf)
     t = zero(eltype(integrator))
-    state = state0
-    set_num_positions!(integrator.stages, length(configuration(state)))
-    set_num_velocities!(integrator.stages, length(velocity(state)))
-    set_num_additional_states!(integrator.stages, length(additional_state(state)))
+    state = integrator.state
     initialize(integrator.sink, t, state)
     @throttle t while t < final_time
-        step(integrator, t, state, Δt)
+        step(integrator, t, Δt)
         t += Δt
         process(integrator.sink, t, state)
     end max_rate=max_realtime_rate min_sleep_time=1/60.

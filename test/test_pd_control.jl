@@ -36,16 +36,20 @@
         Rdes = rand(RotMatrix{3})
         ωdes = zeros(SVector{3})
         gains = PDGains(100, 20)
+        v̇des = similar(velocity(state))
 
         control_dynamics_result = DynamicsResult(mechanism)
-        function control!(torques::AbstractVector, t, state::MechanismState)
+        function control!(torques::SegmentedVector, t, state::MechanismState)
             H = transform_to_root(state, body)
             T = transform(twist_wrt_world(state, body), inv(H))
             R = rotation(H)
             ω = T.angular
             ωddes = pd(gains, R, Rdes, ω, ωdes)
-            v̇des = Array([ωddes; zeros(ωddes)])
-            inverse_dynamics!(torques, control_dynamics_result.jointwrenches, control_dynamics_result.accelerations, state, v̇des)
+            v̇desjoint = v̇des[joint]
+            v̇desjoint .= Array([ωddes; zeros(ωddes)])
+            wrenches = control_dynamics_result.jointwrenches
+            accelerations = control_dynamics_result.accelerations
+            inverse_dynamics!(torques, wrenches, accelerations, state, v̇des)
         end
 
         final_time = 3.
@@ -75,15 +79,19 @@
 
         xdes = rand(Transform3D, desiredframe, baseframe)
         vdes = zero(Twist{Float64}, desiredframe, baseframe, actualframe)
+        v̇des = similar(velocity(state))
         gains = SE3PDGains(baseframe, PDGains(100 * eye(SMatrix{3, 3}), 20), PDGains(100., 20.)) # world-fixed gains
 
         control_dynamics_result = DynamicsResult(mechanism)
-        function control!(torques::AbstractVector, t, state::MechanismState)
+        function control!(torques::SegmentedVector, t, state::MechanismState)
             x = transform_to_root(state, body)
             invx = inv(x)
             v = transform(twist_wrt_world(state, body), invx)
-            v̇des = pd(transform(gains, invx), x, xdes, v, vdes)
-            inverse_dynamics!(torques, control_dynamics_result.jointwrenches, control_dynamics_result.accelerations, state, Array(v̇des))
+            v̇desjoint = v̇des[joint]
+            v̇desjoint .= Array(pd(transform(gains, invx), x, xdes, v, vdes))
+            wrenches = control_dynamics_result.jointwrenches
+            accelerations = control_dynamics_result.accelerations
+            inverse_dynamics!(torques, wrenches, accelerations, state, v̇des)
         end
 
         final_time = 3.

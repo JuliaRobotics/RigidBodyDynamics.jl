@@ -81,6 +81,8 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
     @framecheck jac.body default_frame(target(path))
     @framecheck jac.base default_frame(source(path))
     update_motion_subspaces!(state)
+    fill!(jac.angular, 0)
+    fill!(jac.linear, 0)
     joints = state.treejoints
     motion_subspaces = state.motion_subspaces.data
     discard = DiscardVector(length(joints))
@@ -91,8 +93,6 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
             part = transformfun(motion_subspace)
             directions(path)[pathindex] == :up && (part = -part)
             set_cols!(jac, vrange, part)
-        else
-            zero_cols!(jac, vrange)
         end
     end
     jac
@@ -197,8 +197,8 @@ end
 
 @inline function set_mass_matrix_block!(M::Symmetric, isancestor::Bool, Si::GeometricJacobian, irange::UnitRange, Fj::MomentumMatrix, jrange)
     if isancestor
-        block = angular(Si)' * angular(Fj) + linear(Si)' * linear(Fj)
-        set_matrix_block!(M.data, irange, jrange[], block)
+        block = angular(Fj)' * angular(Si) + linear(Fj)' * linear(Si)
+        set_matrix_block!(M.data, jrange[], irange, block) # note the flipped indices: we're setting the lower triangle
     end
     nothing
 end
@@ -454,7 +454,7 @@ function dynamics_bias(
         externalwrenches::Associative{BodyID, Wrench{W}} = NullDict{BodyID, Wrench{X}}()) where {X, M, W}
     T = promote_type(X, M, W)
     mechanism = state.mechanism
-    torques = Vector{T}(num_velocities(state))
+    torques = similar(velocity(state), T)
     rootframe = root_frame(mechanism)
     jointwrenches = BodyDict(id(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
     accelerations = BodyDict(id(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
@@ -510,7 +510,7 @@ function inverse_dynamics(
         externalwrenches::Associative{BodyID, Wrench{W}} = NullDict{BodyID, Wrench{X}}()) where {X, M, V, W}
     T = promote_type(X, M, V, W)
     mechanism = state.mechanism
-    torques = SegmentedVector(Vector{T}(num_velocities(state)), tree_joints(mechanism), num_velocities)
+    torques = similar(velocity(state), T)
     rootframe = root_frame(mechanism)
     jointwrenches = BodyDict(id(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
     accelerations = BodyDict(id(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
@@ -522,6 +522,7 @@ function constraint_jacobian!(jac::AbstractMatrix, rowranges, state::MechanismSt
     # TODO: traversing jac in the wrong order
     update_motion_subspaces!(state)
     update_constraint_wrench_subspaces!(state)
+    fill!(jac, 0)
     nontreejoints = state.nontreejoints
     wrenchsubspaces = state.constraint_wrench_subspaces.data
     discard = DiscardVector(length(nontreejoints))
@@ -542,8 +543,6 @@ end
         part = angular(T)' * angular(S) + linear(T)' * linear(S) # TODO: At_mul_B
         directions(path)[pathindex] == :up && (part = -part)
         set_matrix_block!(jac, rowrange, vrange, part)
-    else
-        zero_matrix_block!(jac, rowrange, vrange)
     end
 end
 
@@ -656,7 +655,7 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
     uplo = M.uplo
     LinAlg.LAPACK.potrf!(uplo, L) # L <- Cholesky decomposition of M; M == L Lᵀ (note: Featherstone, page 151 uses M == Lᵀ L instead)
     τbiased = v̇
-    τbiased .-= c
+    τbiased .= τ .- c
 
     if size(K, 1) > 0
         # Loops.
@@ -733,7 +732,7 @@ The `externalwrenches` argument can be used to specify additional
 wrenches that act on the `Mechanism`'s bodies.
 """
 function dynamics!(result::DynamicsResult, state::MechanismState{X},
-        torques::SegmentedVector{JointID} = ConstVector(zero(X), num_velocities(state)),
+        torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
         externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
     contact_dynamics!(result, state)
     for jointid in state.treejointids
@@ -767,13 +766,13 @@ and returns a `Vector` ``\\dot{x}``.
 """
 function dynamics!(ẋ::StridedVector{X},
         result::DynamicsResult, state::MechanismState{X}, state_vec::AbstractVector{X},
-        torques::SegmentedVector{JointID} = ConstVector(zero(X), num_velocities(state)),
+        torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
         externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
     set!(state, state_vec)
     nq = num_positions(state)
     nv = num_velocities(state)
     q̇ = SegmentedVector(view(ẋ, 1 : nq), tree_joints(state.mechanism), num_positions) # allocates
-    v̇ = SegmentedVector(view(ẋ, nq + 1 : nq + nv), tree_joints(state.mechanism), num_positions) # allocates
+    v̇ = SegmentedVector(view(ẋ, nq + 1 : nq + nv), tree_joints(state.mechanism), num_velocities) # allocates
     configuration_derivative!(q̇, state)
     dynamics!(result, state, torques, externalwrenches)
     copy!(v̇, result.v̇)

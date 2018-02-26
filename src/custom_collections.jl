@@ -15,7 +15,6 @@ export
     DiscardVector
 
 export
-    fastview,
     foreach_with_extra_args,
     isdirty,
     segments,
@@ -79,45 +78,6 @@ Base.haskey(::NullDict, k) = false
 Base.length(::NullDict) = 0
 Base.start(::NullDict) = nothing
 Base.done(::NullDict, state) = true
-
-
-## UnsafeVectorView
-# TODO: remove
-"""
-Views in Julia still allocate some memory (since they need to keep
-a reference to the original array). This type allocates no memory
-and does no bounds checking. Use it with caution.
-
-Originally from https://github.com/mlubin/ReverseDiffSparse.jl/commit/8e3ade867581aad6ade7c898ada2ed58e0ad42bb.
-"""
-struct UnsafeVectorView{T} <: AbstractVector{T}
-    offset::Int
-    len::Int
-    ptr::Ptr{T}
-end
-
-@inline UnsafeVectorView(parent::Union{Vector, Base.FastContiguousSubArray}, range::UnitRange) = UnsafeVectorView(start(range) - 1, length(range), pointer(parent))
-@inline Base.size(v::UnsafeVectorView) = (v.len,)
-@inline Base.getindex(v::UnsafeVectorView, idx::Int) = unsafe_load(v.ptr, idx + v.offset)
-@inline Base.setindex!(v::UnsafeVectorView, value, idx::Int) = unsafe_store!(v.ptr, value, idx + v.offset)
-@inline Base.length(v::UnsafeVectorView) = v.len
-Base.IndexStyle(::Type{<:UnsafeVectorView}) = IndexLinear()
-
-"""
-UnsafeVectorView only works for isbits types. For other types, we're already
-allocating lots of memory elsewhere, so creating a new SubArray is fine.
-This function looks type-unstable, but the isbits(T) test can be evaluated
-by the compiler, so the result is actually type-stable.
-
-From https://github.com/rdeits/NNLS.jl/blob/0a9bf56774595b5735bc738723bd3cb94138c5bd/src/NNLS.jl#L218.
-"""
-@inline function fastview(parent::Union{Vector{T}, Base.FastContiguousSubArray{T}}, range::UnitRange) where {T}
-    if isbits(T)
-        UnsafeVectorView(parent, range)
-    else
-        view(parent, range)
-    end
-end
 
 
 ## CacheElement
@@ -226,14 +186,21 @@ struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <
 
     function SegmentedVector(p::P, segments::IndexDict{K, KeyRange, VectorSegment{T}}) where {T, K, KeyRange, P}
         @boundscheck begin
-            start = 1
+            firstsegment = true
+            start = 0
+            l = 0
             for segment in values(segments)
-                parent(segment) === p || error()
+                parent(segment) === parent(p) || error()
                 indices = first(parentindexes(segment))
-                first(indices) === start || error()
+                if firstsegment
+                    start = first(indices)
+                else
+                    first(indices) === start || error()
+                end
                 start = last(indices) + 1
+                l += length(indices)
             end
-            start === endof(p) + 1 || error("Segments do not cover input data.")
+            l == length(p) || error("Segments do not cover input data.")
         end
         new{K, T, KeyRange, P}(p, segments)
     end
@@ -254,7 +221,6 @@ function (::Type{SegmentedVector{K}})(parent::AbstractVector{T}, keys, viewlengt
     SegmentedVector{K, T, Base.OneTo{K}}(parent, keys, viewlengthfun)
 end
 
-
 Base.size(v::SegmentedVector) = size(v.parent)
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.parent[i]
 Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.parent[i] = value
@@ -262,6 +228,13 @@ Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.p
 Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
 ranges(v::SegmentedVector) = IndexDict(v.segments.keys, [first(parentindexes(view)) for view in v.segments.values])
+
+function Base.similar(v::SegmentedVector{K, T, KeyRange}, ::Type{S} = T) where {K, T, KeyRange, S}
+    p = similar(parent(v), S)
+    segs = IndexDict{K, KeyRange, VectorSegment{S}}(keys(segments(v)),
+        [view(p, first(parentindexes(segment))) for segment in values(segments(v))])
+    SegmentedVector(p, segs)
+end
 
 struct DiscardVector <: AbstractVector{Any}
     length::Int
