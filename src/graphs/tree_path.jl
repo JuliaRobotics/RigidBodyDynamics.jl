@@ -3,7 +3,7 @@ struct TreePath{V, E}
     target::V
     edges::Vector{E} # in order
     directions::Vector{Symbol} # Symbol: :up if going from source to LCA, :down if going from LCA to target
-    indexmap::SparseVector{Int}
+    indexmap::Vector{Int}
 end
 
 source(path::TreePath) = path.source
@@ -52,6 +52,6 @@ function TreePath(src::V, target::V, tree::SpanningTree{V, E}) where {V, E}
 
     edges = collect(E, flatten((source_to_lca, lca_to_target)))
     directions = collect(Symbol, flatten(((:up for e in source_to_lca), (:down for e in lca_to_target))))
-    indexmap = sparsevec(Dict(edge_index(e) => i for (i, e) in enumerate(edges)), num_edges(tree))
+    indexmap = Vector(sparsevec(Dict(edge_index(e) => i for (i, e) in enumerate(edges)), num_edges(tree)))
     TreePath{V, E}(src, target, edges, directions, indexmap)
 end

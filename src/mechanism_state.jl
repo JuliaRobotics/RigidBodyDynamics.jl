@@ -610,10 +610,9 @@ end
     nontreejoints = state.type_sorted_non_tree_joints
     if length(nontreejoints) > 0
         broadcast!(state.non_tree_joint_transforms, state, nontreejoints) do state, joint
-            pred = predecessor(joint, state.mechanism)
-            succ = successor(joint, state.mechanism)
-            before_to_root = transform_to_root(state, pred) * joint_to_predecessor(joint)
-            after_to_root = transform_to_root(state, succ) * joint_to_successor(joint)
+            predid, succid = predsucc(id(joint))
+            before_to_root = transform_to_root(state, predid) * joint_to_predecessor(joint)
+            after_to_root = transform_to_root(state, succid) * joint_to_successor(joint)
             inv(before_to_root) * after_to_root
         end
     end
