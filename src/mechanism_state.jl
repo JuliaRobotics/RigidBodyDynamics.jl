@@ -799,7 +799,7 @@ function configuration_derivative!(q̇::SegmentedVector{JointID}, state::Mechani
     q̇s = values(segments(q̇))
     qs = values(segments(state.q))
     vs = values(segments(state.v))
-    foreach((joint, q̇t, q, v) -> velocity_to_configuration_derivative!(q̇t, joint, q, v), joints, q̇s, qs, vs)
+    foreach((joint, q̇, q, v) -> velocity_to_configuration_derivative!(q̇, joint, q, v), joints, q̇s, qs, vs)
 end
 
 function configuration_derivative_to_velocity_adjoint!(
