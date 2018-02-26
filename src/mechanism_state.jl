@@ -53,32 +53,34 @@ Type parameters:
 * `C`: the scalar type of the cache variables (`== promote_type(X, M)`)
 """
 struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}
-    mechanism::Mechanism{M}
     modcount::Int
+
+    # mechanism layout
+    mechanism::Mechanism{M}
     type_sorted_tree_joints::JointCollection
     type_sorted_non_tree_joints::JointCollection
-    ancestor_joint_masks::JointDict{JointDict{Bool}} # TODO: use a Matrix-backed type
-    constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: use a Matrix-backed type
-
-    q::SegmentedVector{JointID, X, Vector{X}} # configurations
-    v::SegmentedVector{JointID, X, Vector{X}} # velocities
-    s::Vector{X} # additional state
-
-    # joint-related fixed data
     jointids::Base.OneTo{JointID}
     treejointids::Base.OneTo{JointID}
     nontreejointids::UnitRange{JointID}
     predecessor_and_successor_ids::JointDict{Pair{BodyID, BodyID}}
-    velocity_ranges::JointDict{UnitRange{Int}}
+    qranges::JointDict{UnitRange{Int}}
+    vranges::JointDict{UnitRange{Int}}
+    ancestor_joint_masks::JointDict{JointDict{Bool}} # TODO: use a Matrix-backed type
+    constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: use a Matrix-backed type
+
+    # minimal representation of state
+    q::SegmentedVector{JointID, X, Vector{X}} # configurations
+    v::SegmentedVector{JointID, X, Vector{X}} # velocities
+    s::Vector{X} # additional state
 
     # joint-related cache
     joint_transforms::JointCacheDict{Transform3D{C}}
-    tree_joint_transforms::VectorSegment{Transform3D{C}}
-    non_tree_joint_transforms::VectorSegment{Transform3D{C}}
     joint_twists::JointCacheDict{Twist{C}}
     joint_bias_accelerations::JointCacheDict{SpatialAcceleration{C}}
     motion_subspaces::CacheElement{MotionSubspaceCollection}
     constraint_wrench_subspaces::CacheElement{WrenchSubspaceCollection}
+    tree_joint_transforms::VectorSegment{Transform3D{C}}
+    non_tree_joint_transforms::VectorSegment{Transform3D{C}}
 
     # body-related cache
     transforms_to_root::BodyCacheDict{Transform3D{C}}
@@ -89,35 +91,34 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
     contact_states::BodyCacheDict{Vector{Vector{DefaultSoftContactState{X}}}} # TODO: consider moving to separate type
 
     function MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}(
-            m::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}
-        ) where {X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}
+                m::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}
+            ) where {X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}
         @assert length(q) == num_positions(m)
         @assert length(v) == num_velocities(m)
         @assert length(s) == num_additional_states(m)
 
+        # mechanism layout
         canonicalize_graph!(m)
         type_sorted_tree_joints = JointCollection(tree_joints(m))
         type_sorted_non_tree_joints = JointCollection(non_tree_joints(m))
-        ancestor_joint_mask = joint -> JointDict{Bool}(
-            id(j) => j ∈ path(m, successor(joint, m), root_body(m)) for j in tree_joints(m))
-        ancestor_joint_masks = JointDict{JointDict{Bool}}(id(j) => ancestor_joint_mask(j) for j in tree_joints(m))
-
-        # joint-specific
         lastjointid = isempty(joints(m)) ? JointID(0) : id(last(joints(m)))
         jointids = Base.OneTo(lastjointid)
         lasttreejointid = isempty(tree_joints(m)) ? JointID(0) : id(last(tree_joints(m)))
         treejointids = Base.OneTo(lasttreejointid)
         nontreejointids = lasttreejointid + 1 : lastjointid
-        constraint_jacobian_structure = JointDict{TreePath{RigidBody{M}, Joint{M}}}(
-            id(j) => path(m, predecessor(j, m), successor(j, m)) for j in joints(m))
-
-        qsegmented = SegmentedVector(q, tree_joints(m), num_positions)
-        vsegmented = SegmentedVector(v, tree_joints(m), num_velocities)
-
         predecessor_and_successor_ids = JointDict{Pair{BodyID, BodyID}}(
             id(j) => (id(predecessor(j, m)) => id(successor(j, m))) for j in joints(m))
-        velocity_ranges = JointDict{UnitRange{Int}}(id => first(parentindexes(segments(vsegmented)[id])) for id in treejointids)
+        ancestor_joint_mask = joint -> JointDict{Bool}(
+            id(j) => j ∈ path(m, successor(joint, m), root_body(m)) for j in tree_joints(m))
+        ancestor_joint_masks = JointDict{JointDict{Bool}}(id(j) => ancestor_joint_mask(j) for j in tree_joints(m))
+        constraint_jacobian_structure = JointDict{TreePath{RigidBody{M}, Joint{M}}}(
+            id(j) => path(m, predecessor(j, m), successor(j, m)) for j in joints(m))
+        qsegmented = SegmentedVector(q, tree_joints(m), num_positions)
+        vsegmented = SegmentedVector(v, tree_joints(m), num_velocities)
+        qranges = ranges(qsegmented)
+        vranges = ranges(vsegmented)
 
+        # joint-related cache
         joint_transforms = JointCacheDict{Transform3D{C}}(length(joints(m)))
         tree_joint_transforms = view(values(joint_transforms), 1 : Int(lasttreejointid))
         non_tree_joint_transforms = view(values(joint_transforms), Int(lasttreejointid) + 1 : Int(lastjointid))
@@ -126,7 +127,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
         motion_subspaces = CacheElement(MotionSubspaceCollection(indices(type_sorted_tree_joints)))
         constraint_wrench_subspaces = CacheElement(WrenchSubspaceCollection(indices(type_sorted_non_tree_joints)))
 
-        # body-specific
+        # body-related cache
         nbodies = length(bodies(m))
         transforms_to_root = BodyCacheDict{Transform3D{C}}(nbodies)
         twists_wrt_world = BodyCacheDict{Twist{C}}(nbodies)
@@ -134,7 +135,7 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
         inertias = BodyCacheDict{SpatialInertia{C}}(nbodies)
         crb_inertias = BodyCacheDict{SpatialInertia{C}}(nbodies)
 
-        # TODO: move out of MechanismState:
+        # contact. TODO: move out of MechanismState:
         contact_states = BodyCacheDict(id(b) => Vector{Vector{DefaultSoftContactState{X}}}() for b in bodies(m))
         startind = 1
         for body in bodies(m), point in contact_points(body)
@@ -157,11 +158,12 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
         inertias[root] = zero(SpatialInertia{C}, rootframe)
 
         new{X, M, C, JointCollection, MotionSubspaceCollection, WrenchSubspaceCollection}(
-            m, modcount(m), type_sorted_tree_joints, type_sorted_non_tree_joints, ancestor_joint_masks,
-            constraint_jacobian_structure, qsegmented, vsegmented, s, jointids, treejointids, nontreejointids,
-            predecessor_and_successor_ids, velocity_ranges,
-            joint_transforms, tree_joint_transforms, non_tree_joint_transforms, joint_twists, joint_bias_accelerations,
-            motion_subspaces, constraint_wrench_subspaces,
+            modcount(m), m, type_sorted_tree_joints, type_sorted_non_tree_joints,
+            jointids, treejointids, nontreejointids,
+            predecessor_and_successor_ids, qranges, vranges, ancestor_joint_masks, constraint_jacobian_structure,
+            qsegmented, vsegmented, s,
+            joint_transforms, joint_twists, joint_bias_accelerations, motion_subspaces, constraint_wrench_subspaces,
+            tree_joint_transforms, non_tree_joint_transforms,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
     end
@@ -482,14 +484,14 @@ $(SIGNATURES)
 
 Return the range of indices into the joint configuration vector ``q`` corresponding to joint `joint`.
 """
-configuration_range(state::MechanismState, joint::Union{<:Joint, JointID}) = first(parentindexes(configuration(state, joint)))
+configuration_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.qranges[joint]
 
 """
 $(SIGNATURES)
 
 Return the range of indices into the joint velocity vector ``v`` corresponding to joint `joint`.
 """
-velocity_range(state::MechanismState, joint::Union{<:Joint, JointID}) = first(parentindexes(velocity(state, joint)))
+velocity_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.vranges[joint]
 
 
 ## Accessor functions for cached variables

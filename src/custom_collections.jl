@@ -18,7 +18,8 @@ export
     fastview,
     foreach_with_extra_args,
     isdirty,
-    segments
+    segments,
+    ranges
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
@@ -220,6 +221,7 @@ Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.p
 
 Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
+ranges(v::SegmentedVector{I}) where {I} = IndexDict{I, UnitRange{Int}}(id => first(parentindexes(view)) for (id, view) in segments(v))
 
 struct DiscardVector <: AbstractVector{Any}
     length::Int

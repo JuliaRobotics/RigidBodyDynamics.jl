@@ -189,7 +189,7 @@ end
     motion_subspaces = state.motion_subspaces.data
     ancestor_joint_mask = values(state.ancestor_joint_masks[idj])
     discard = DiscardVector(length(ancestor_joint_mask))
-    vranges = state.velocity_ranges
+    vranges = state.vranges
     jrange = vranges[idj]
     broadcast!(set_mass_matrix_block!, discard, M, ancestor_joint_mask, motion_subspaces, values(vranges), Fj, Scalar(jrange))
     nothing
