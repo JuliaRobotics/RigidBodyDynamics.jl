@@ -11,7 +11,8 @@ export
     AbstractIndexDict,
     IndexDict,
     CacheIndexDict,
-    SegmentedVector
+    SegmentedVector,
+    DiscardVector
 
 export
     fastview,
@@ -219,5 +220,11 @@ Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.p
 
 Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
+
+struct DiscardVector <: AbstractVector{Any}
+    length::Int
+end
+Base.setindex!(v::DiscardVector, value, i::Int) = nothing
+Base.size(v::DiscardVector) = (v.length,)
 
 end # module

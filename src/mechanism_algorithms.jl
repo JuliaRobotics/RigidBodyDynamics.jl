@@ -76,23 +76,26 @@ subspaces of each of the joints to the frame in which `out` is expressed.
 
 $noalloc_doc
 """
-function geometric_jacobian!(out::GeometricJacobian, state::MechanismState, path::TreePath, transformfun)
-    @boundscheck num_velocities(state) == size(out, 2) || error("size mismatch")
-    @framecheck out.body default_frame(target(path))
-    @framecheck out.base default_frame(source(path))
+function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path::TreePath, transformfun)
+    @boundscheck num_velocities(state) == size(jac, 2) || error("size mismatch")
+    @framecheck jac.body default_frame(target(path))
+    @framecheck jac.base default_frame(source(path))
     update_motion_subspaces!(state)
-    foreach_with_extra_args(out, state, path, state.type_sorted_tree_joints, state.motion_subspaces.data) do out, state, path, joint, motion_subspace # TODO: use closure once it doesn't allocate
+    joints = state.type_sorted_tree_joints
+    motion_subspaces = state.motion_subspaces.data
+    discard = DiscardVector(length(joints))
+    broadcast!(discard, jac, state, path, joints, motion_subspaces) do jac, state, path, joint, motion_subspace
         vrange = velocity_range(state, joint)
         pathindex = findfirst(joint, path)
         if pathindex > 0
             part = transformfun(motion_subspace)
             directions(path)[pathindex] == :up && (part = -part)
-            set_cols!(out, vrange, part)
+            set_cols!(jac, vrange, part)
         else
-            zero_cols!(out, vrange)
+            zero_cols!(jac, vrange)
         end
     end
-    out
+    jac
 end
 
 """
@@ -174,7 +177,7 @@ function mass_matrix!(out::Symmetric{C, Matrix{C}}, state::MechanismState{X, M, 
     update_motion_subspaces!(state)
     update_crb_inertias!(state)
     fill!(out.data, 0)
-    joints = state.type_sorted_tree_joints
+    # TODO: broadcast!
     foreach_with_extra_args(out, state, state.motion_subspaces.data, state.treejointids) do out, state, Si, jointidi # TODO: use closure once it doesn't allocate
         irange = velocity_range(state, jointidi)
         bodyid = successorid(jointidi, state)
@@ -236,7 +239,9 @@ function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformf
     @boundscheck num_velocities(state) == size(out, 2) || error("size mismatch")
     update_motion_subspaces!(state)
     update_crb_inertias!(state)
-    foreach_with_extra_args(out, state, state.motion_subspaces.data, state.treejointids) do out, state, motion_subspace, jointid
+    motion_subspaces = state.motion_subspaces.data
+    discard = DiscardVector(length(motion_subspaces))
+    broadcast!(discard, out, state, motion_subspaces, state.treejointids) do out, state, motion_subspace, jointid
         vrange = velocity_range(state, jointid)
         bodyid = successorid(jointid, state)
         inertia = crb_inertia(state, bodyid)
@@ -256,7 +261,7 @@ in which `out` is expressed.
 $noalloc_doc
 """
 function momentum_matrix!(out::MomentumMatrix, state::MechanismState, root_to_desired::Transform3D)
-    momentum_matrix!(out, state, IJ -> transform(IJ, root_to_desired))
+    momentum_matrix!(out, state, F -> transform(F, root_to_desired))
 end
 
 """
@@ -306,22 +311,22 @@ end
 function spatial_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}},
         state::MechanismState{X, M}, v̇::SegmentedVector{JointID}) where {T, X, M}
     update_twists_wrt_world!(state)
-    mechanism = state.mechanism
-    root = root_body(mechanism)
+
+    # Compute joint accelerations
     joints = state.type_sorted_tree_joints
     qs = values(segments(state.q))
     vs = values(segments(state.v))
-
-    # Compute joint accelerations
-    foreach_with_extra_args(state, out, v̇, joints, qs, vs) do state, accels, v̇, joint, qjoint, vjoint # TODO: use closure once it doesn't allocate
-        jointid = id(joint)
-        parentbodyid, bodyid = predsucc(jointid, state)
-        v̇joint = fastview(v̇, velocity_range(state, jointid))
+    v̇s = values(segments(v̇))
+    discard = DiscardVector(length(qs))
+    broadcast!(discard, state, out, joints, qs, vs, v̇s) do state, accels, joint, qjoint, vjoint, v̇joint
+        bodyid = successorid(id(joint), state)
         accels[bodyid] = joint_spatial_acceleration(joint, qjoint, vjoint, v̇joint)
     end
 
     # Recursive propagation
     # TODO: manual frame changes. Find a way to not avoid the frame checks here.
+    mechanism = state.mechanism
+    root = root_body(mechanism)
     out[root] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
     for jointid in state.treejointids
         parentbodyid, bodyid = predsucc(jointid, state)
@@ -382,13 +387,15 @@ function joint_wrenches_and_torques!(
         end
     end
 
-    foreach_with_extra_args(state, torquesout, net_wrenches_in_joint_wrenches_out, state.type_sorted_tree_joints) do state, τ, wrenches, joint # TODO: use closure once it doesn't allocate
-        jointid = id(joint)
-        bodyid = successorid(jointid, state)
-        @inbounds τjoint = fastview(τ, velocity_range(state, jointid))
+    joints = state.type_sorted_tree_joints
+    qs = values(segments(state.q))
+    τs = values(segments(torquesout))
+    discard = DiscardVector(length(qs))
+    broadcast!(discard, state, net_wrenches_in_joint_wrenches_out, joints, qs, τs) do state, wrenches, joint, qjoint, τjoint
         # TODO: awkward to transform back to body frame; consider switching to body-frame implementation
+        bodyid = successorid(id(joint), state)
         tf = inv(transform_to_root(state, bodyid))
-        joint_torque!(τjoint, joint, configuration(state, jointid), transform(wrenches[bodyid], tf)) # TODO: consider using motion subspace
+        joint_torque!(τjoint, joint, qjoint, transform(wrenches[bodyid], tf)) # TODO: consider using motion subspace
     end
 end
 
@@ -504,56 +511,65 @@ function inverse_dynamics(
     torques
 end
 
-function constraint_jacobian!(constraintjacobian::AbstractMatrix, state::MechanismState)
+function constraint_jacobian!(jac::AbstractMatrix, state::MechanismState)
+    # note: order of rows of Jacobian is determined by iteration order of state.type_sorted_non_tree_joints
+    # TODO: traversing jac in the wrong order
     update_motion_subspaces!(state)
     update_constraint_wrench_subspaces!(state)
-    # note: order of rows of Jacobian is determined by iteration order of state.type_sorted_non_tree_joints
-    # TODO: use closure once it doesn't allocate
     rowstart = Ref(1) # TODO: allocation
-    # TODO: traversing constraintjacobian in the wrong order
-    foreach_with_extra_args(constraintjacobian, state, state.mechanism, rowstart, state.type_sorted_non_tree_joints, state.constraint_wrench_subspaces.data) do constraintjacobian, state, mechanism, rowstart, nontreejoint, T
+    nontreejoints = state.type_sorted_non_tree_joints
+    wrenchsubspaces = state.constraint_wrench_subspaces.data
+    discard = DiscardVector(length(nontreejoints))
+    broadcast!(discard, jac, state, rowstart, nontreejoints, wrenchsubspaces) do jac, state, rowstart, nontreejoint, T
         nontreejointid = id(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
         nextrowstart = rowstart[] + num_constraints(nontreejoint)
         rowrange = rowstart[] : nextrowstart - 1
+        nontreejoints = state.type_sorted_tree_joints
+        motionsubspaces = state.motion_subspaces.data
+        broadcast!(constraint_jacobian_inner!, DiscardVector(length(nontreejoints)), jac, rowrange, state, path, T, nontreejoints, motionsubspaces)
+        rowstart[] = nextrowstart
+    end
+end
 
-        foreach_with_extra_args(constraintjacobian, state, path, T, rowrange, state.type_sorted_tree_joints, state.motion_subspaces.data) do constraintjacobian, state, path, T, rowrange, treejoint, S # TODO: use closure once it doesn't allocate
-            Base.@_inline_meta
+@inline function constraint_jacobian_inner!(jac, rowrange, state, path, T, treejoint, S)
             vrange = velocity_range(state, treejoint)
             pathindex = findfirst(treejoint, path)
             if pathindex > 0
                 part = angular(T)' * angular(S) + linear(T)' * linear(S) # TODO: At_mul_B
                 directions(path)[pathindex] == :up && (part = -part)
-                set_matrix_block!(constraintjacobian, rowrange, vrange, part)
+        set_matrix_block!(jac, rowrange, vrange, part)
             else
-                zero_matrix_block!(constraintjacobian, rowrange, vrange)
-            end
-        end
-        rowstart[] = nextrowstart
+        zero_matrix_block!(jac, rowrange, vrange)
     end
 end
+
 constraint_jacobian!(result::DynamicsResult, state::MechanismState) = constraint_jacobian!(result.constraintjacobian, state)
 
-function constraint_bias!(constraintbias::AbstractVector, state::MechanismState) # TODO: SegmentedVector
+function constraint_bias!(bias::SegmentedVector, state::MechanismState)
+    # note: order of rows of Jacobian and bias term is determined by iteration order of state.type_sorted_non_tree_joints
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
     update_constraint_wrench_subspaces!(state)
     rowstart = Ref(1) # TODO: allocation
-    # note: order of rows of Jacobian and bias term is determined by iteration order of state.type_sorted_non_tree_joints
-     # TODO: use closure once it doesn't allocate
-    foreach_with_extra_args(constraintbias, state, state.mechanism, rowstart, state.type_sorted_non_tree_joints, state.constraint_wrench_subspaces.data) do constraintbias, state, mechanism, rowstart, nontreejoint, T
+    nontreejoints = state.type_sorted_non_tree_joints
+    wrenchsubspaces = state.constraint_wrench_subspaces.data
+    discard = DiscardVector(length(nontreejoints))
+    broadcast!(discard, bias, state, rowstart,
+            nontreejoints, wrenchsubspaces) do bias, state, rowstart, nontreejoint, T
         has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
         nontreejointid = id(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
         nextrowstart = rowstart[] + num_constraints(nontreejoint)
         rowrange = rowstart[] : nextrowstart - 1
-        kjoint = fastview(constraintbias, rowrange)
+        kjoint = fastview(bias, rowrange)
         predid, succid = predsucc(nontreejointid, state)
         crossterm = cross(twist_wrt_world(state, succid), twist_wrt_world(state, predid))
         biasaccel = crossterm + (-bias_acceleration(state, predid) + bias_acceleration(state, succid)) # 8.47 in Featherstone
         At_mul_B!(kjoint, T, biasaccel)
         rowstart[] = nextrowstart
     end
+    bias
 end
 constraint_bias!(result::DynamicsResult, state::MechanismState) = constraint_bias!(result.constraintbias, state)
 
@@ -605,7 +621,7 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
     # version for general scalar types
     # TODO: make more efficient
     M = result.massmatrix
-    c = result.dynamicsbias
+    c = parent(result.dynamicsbias)
     v̇ = result.v̇
 
     K = result.constraintjacobian
@@ -626,8 +642,8 @@ end
 function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) where {S, T<:LinAlg.BlasReal}
     # optimized version for BLAS floats
     M = result.massmatrix
-    c = result.dynamicsbias
-    v̇ = result.v̇
+    c = parent(result.dynamicsbias)
+    v̇ = parent(result.v̇)
 
     K = result.constraintjacobian
     k = result.constraintbias
@@ -641,11 +657,8 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
     L[:] = M.data
     uplo = M.uplo
     LinAlg.LAPACK.potrf!(uplo, L) # L <- Cholesky decomposition of M; M == L Lᵀ (note: Featherstone, page 151 uses M == Lᵀ L instead)
-    τBiased = v̇
-    @simd for i in eachindex(τ)
-        @inbounds τBiased[i] = τ[i] - c[i]
-    end
-    # TODO: use τBiased .= τ .- c in 0.6
+    τbiased = v̇
+    τbiased .-= c
 
     if size(K, 1) > 0
         # Loops.
@@ -674,7 +687,7 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
         LinAlg.BLAS.trsm!('R', uplo, 'T', 'N', one(T), L, Y)
 
         # Compute z = L⁻¹ (τ - c)
-        z[:] = τBiased
+        z[:] = τbiased
         LinAlg.BLAS.trsv!(uplo, 'N', 'N', L, z) # z <- L⁻¹ (τ - c)
 
         # Compute A = Y Yᵀ == K * M⁻¹ * Kᵀ
@@ -691,14 +704,14 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
         # TODO: https://github.com/JuliaLang/julia/issues/22242
         b[:], _ = LinAlg.LAPACK.gelsy!(A, b, singular_value_zero_tolerance) # b == λ <- (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
 
-        # Update τBiased: subtract Kᵀ * λ
-        LinAlg.BLAS.gemv!('T', -one(T), K, λ, one(T), τBiased) # τBiased <- τ - c - Kᵀ * λ
+        # Update τbiased: subtract Kᵀ * λ
+        LinAlg.BLAS.gemv!('T', -one(T), K, λ, one(T), τbiased) # τbiased <- τ - c - Kᵀ * λ
 
         # Solve for v̇ = M⁻¹ * (τ - c - Kᵀ * λ)
-        LinAlg.LAPACK.potrs!(uplo, L, τBiased) # τBiased ==v̇ <- M⁻¹ * (τ - c - Kᵀ * λ)
+        LinAlg.LAPACK.potrs!(uplo, L, τbiased) # τbiased ==v̇ <- M⁻¹ * (τ - c - Kᵀ * λ)
     else
         # No loops.
-        LinAlg.LAPACK.potrs!(uplo, L, τBiased) # τBiased == v̇ <- M⁻¹ * (τ - c)
+        LinAlg.LAPACK.potrs!(uplo, L, τbiased) # τbiased == v̇ <- M⁻¹ * (τ - c)
     end
     nothing
 end
