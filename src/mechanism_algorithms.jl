@@ -532,11 +532,11 @@ function constraint_jacobian!(jac::AbstractMatrix, rowranges, state::MechanismSt
         treejoints = state.treejoints
         motionsubspaces = state.motion_subspaces.data
         # TODO: broadcast! (currently results in allocations):
-        foreach_with_extra_args(constraint_jacobian_inner!, jac, rowrange, state, path, T, treejoints, motionsubspaces)
+        foreach_with_extra_args(constraint_jacobian_part!, jac, rowrange, state, path, T, treejoints, motionsubspaces)
     end
 end
 
-@inline function constraint_jacobian_inner!(jac, rowrange, state, path, T, treejoint, S)
+@inline function constraint_jacobian_part!(jac, rowrange, state, path, T, treejoint, S)
     vrange = velocity_range(state, treejoint)
     pathindex = findfirst(treejoint, path)
     if pathindex > 0
@@ -619,7 +619,7 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
     # TODO: make more efficient
     M = result.massmatrix
     c = parent(result.dynamicsbias)
-    v̇ = result.v̇
+    v̇ = parent(result.v̇)
 
     K = result.constraintjacobian
     k = result.constraintbias
