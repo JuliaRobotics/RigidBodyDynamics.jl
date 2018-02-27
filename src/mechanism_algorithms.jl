@@ -315,8 +315,7 @@ function bias_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}}, s
     nothing
 end
 
-function spatial_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}},
-        state::MechanismState{X, M}, v̇::SegmentedVector{JointID}) where {T, X, M}
+function spatial_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}}, state::MechanismState, v̇::SegmentedVector{JointID}) where T
     update_twists_wrt_world!(state)
 
     # Compute joint accelerations
@@ -356,13 +355,6 @@ end
 
 # TODO: ensure that accelerations are up-to-date
 relative_acceleration(result::DynamicsResult, body::RigidBody, base::RigidBody) = relative_acceleration(result.accelerations, body, base)
-
-function relative_acceleration(state::MechanismState, body::RigidBody, base::RigidBody, v̇::AbstractVector)
-    error("""`relative_acceleration(state, body, base, v̇)` has been removed.
-    Use `spatial_accelerations!(result, state)` or `spatial_accelerations!(accels, state, v̇)` to compute the
-    spatial accelerations of all bodies in one go, and then use `relative_acceleration(accels, body, base)` or
-    `relative_acceleration(result, body, base)`.""")
-end
 
 function newton_euler!(
         out::Associative{BodyID, Wrench{T}}, state::MechanismState{X, M},
@@ -777,4 +769,55 @@ function dynamics!(ẋ::StridedVector{X},
     dynamics!(result, state, torques, externalwrenches)
     copy!(v̇, result.v̇)
     ẋ
+end
+
+
+## Breaking changes:
+function relative_acceleration(state::MechanismState, body::RigidBody, base::RigidBody, v̇::AbstractVector)
+    error("""`relative_acceleration(state, body, base, v̇)` has been removed.
+    Use `spatial_accelerations!(result, state)` or `spatial_accelerations!(accels, state, v̇)` to compute the
+    spatial accelerations of all bodies in one go, and then use `relative_acceleration(accels, body, base)` or
+    `relative_acceleration(result, body, base)`.""")
+end
+
+function segmented_vector_breakage_error(funcname::Symbol, args::Symbol...)
+    error(
+    """The method signature of `$funcname` has been changed to only accept `SegmentedVector`s for arguments: $(join(args, ", ")).
+    For documentation and usage examples of `SegmentedVector`, see
+        http://tkoolen.github.io/RigidBodyDynamics.jl/latest/customcollections.html#RigidBodyDynamics.CustomCollections.SegmentedVector
+    """)
+end
+
+function spatial_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}}, state::MechanismState, v̇::AbstractVector) where T
+    segmented_vector_breakage_error(:spatial_accelerations!, :v̇)
+end
+
+function dynamics_bias!(
+        torques::AbstractVector,
+        biasaccelerations::Associative{BodyID, <:SpatialAcceleration},
+        wrenches::Associative{BodyID, <:Wrench},
+        state::MechanismState{X},
+        externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
+    segmented_vector_breakage_error(:dynamics_bias!, :torques)
+end
+
+function inverse_dynamics!(
+        torquesout::AbstractVector,
+        jointwrenchesout::Associative{BodyID, Wrench{T}},
+        accelerations::Associative{BodyID, SpatialAcceleration{T}},
+        state::MechanismState,
+        v̇::AbstractVector,
+        externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{T}}()) where T
+    segmented_vector_breakage_error(:inverse_dynamics!, :torquesout, :v̇)
+end
+
+function inverse_dynamics(
+        state::MechanismState{X, M},
+        v̇::AbstractVector{V},
+        externalwrenches::Associative{BodyID, Wrench{W}} = NullDict{BodyID, Wrench{X}}()) where {X, M, V, W}
+    segmented_vector_breakage_error(:inverse_dynamics, :v̇)
+end
+
+function constraint_bias!(bias::AbstractVector, state::MechanismState)
+    segmented_vector_breakage_error(:constraint_bias!, :bias)
 end
