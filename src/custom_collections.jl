@@ -307,16 +307,12 @@ Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
 ranges(v::SegmentedVector) = IndexDict(v.segments.keys, [first(parentindexes(view)) for view in v.segments.values])
 
-function Base.similar(v::SegmentedVector{K, T, KeyRange}, ::Type{S}, inds::Tuple{<:Union{Int, Base.OneTo}}) where {K, T, KeyRange, S}
-    p = similar(parent(v), S, inds)
+function Base.similar(v::SegmentedVector{K, T, KeyRange}, ::Type{S} = T) where {K, T, KeyRange, S}
+    p = similar(parent(v), S)
     segs = IndexDict{K, KeyRange, VectorSegment{S}}(keys(segments(v)),
         [view(p, first(parentindexes(segment))) for segment in values(segments(v))])
     SegmentedVector(p, segs)
 end
-
-Base.similar(v::SegmentedVector{<:Any, T}) where {T} = similar(v, T, indices(v))
-Base.similar(v::SegmentedVector{<:Any, T}, ::Type{S}) where {T, S} = similar(v, S, indices(v))
-Base.similar(v::SegmentedVector{<:Any, T}, inds::Tuple{<:Union{Int, <:Base.OneTo}}) where {T} = similar(v, T, indices(v))
 
 """
 $(TYPEDEF)
