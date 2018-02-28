@@ -314,7 +314,6 @@ function Base.similar(v::SegmentedVector{K, T, KeyRange}, ::Type{S} = T) where {
     SegmentedVector(p, segs)
 end
 
-
 """
 $(TYPEDEF)
 
