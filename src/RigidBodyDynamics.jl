@@ -149,7 +149,12 @@ export
 
 # Utility
 export
-    SegmentedVector
+    SegmentedVector,
+    JointDict,
+    BodyDict,
+    JointID,
+    BodyID,
+    segments
 
 include("custom_collections.jl")
 include("graphs/Graphs.jl")
