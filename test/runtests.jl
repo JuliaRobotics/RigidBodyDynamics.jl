@@ -1,4 +1,4 @@
-using Base.Test
+using Compat.Test
 
 using RigidBodyDynamics
 using RigidBodyDynamics.Graphs
@@ -23,15 +23,16 @@ include("test_mechanism_modification.jl")
 include("test_pd_control.jl")
 
 # notebooks
-@testset "example notebooks" begin
-    using NBInclude
-    notebookdir = joinpath("..", "notebooks")
-    for file in readdir(notebookdir)
-        name, ext = splitext(file)
-        if lowercase(ext) == ".ipynb"
-            @testset "$name" begin
-                println("Testing $name.")
-                nbinclude(joinpath(notebookdir, file), regex = r"^((?!\#NBSKIP).)*$"s)
+notebookdir = joinpath("..", "notebooks")
+for file in readdir(notebookdir)
+    name, ext = splitext(file)
+    if lowercase(ext) == ".ipynb"
+        @eval module $(gensym())
+            n = $name
+            using Compat.Test
+            using NBInclude
+            @testset "$n" begin
+                nbinclude(joinpath($notebookdir, $file), regex = r"^((?!\#NBSKIP).)*$"s)
             end
         end
     end
