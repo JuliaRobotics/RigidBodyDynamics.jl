@@ -49,8 +49,8 @@ end
             return c.states[i]::ReturnType
         end
     end
-    state = MechanismState{X}(c.mechanism)
+    state = MechanismState{X}(c.mechanism)::ReturnType
     push!(c.keys, key)
     push!(c.states, state)
-    state::ReturnType
+    state
 end
