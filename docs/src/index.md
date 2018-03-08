@@ -86,6 +86,6 @@ Depth = 2
  author = "Twan Koolen and contributors",
  title = "RigidBodyDynamics.jl",
  year = 2016,
- url = "https://github.com/tkoolen/RigidBodyDynamics.jl"
+ url = "https://github.com/JuliaRobotics/RigidBodyDynamics.jl"
 }
 ```

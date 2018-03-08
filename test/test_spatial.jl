@@ -205,7 +205,7 @@ end
 
     @testset "log / exp" begin
         hat = RigidBodyDynamics.Spatial.hat
-        srand(1) # TODO: https://github.com/tkoolen/RigidBodyDynamics.jl/issues/135
+        srand(1) # TODO: https://github.com/JuliaRobotics/RigidBodyDynamics.jl/issues/135
         for θ in [linspace(0., 10 * eps(), 100); linspace(0., π - eps(), 100)]
             # have magnitude of parts of twist be bounded by θ to check for numerical issues
             ϕrot = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)

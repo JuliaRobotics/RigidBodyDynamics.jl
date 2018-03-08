@@ -784,7 +784,7 @@ function segmented_vector_breakage_error(funcname::Symbol, args::Symbol...)
     error(
     """The method signature of `$funcname` has been changed to only accept `SegmentedVector`s for arguments: $(join(args, ", ")).
     For documentation and usage examples of `SegmentedVector`, see
-        http://tkoolen.github.io/RigidBodyDynamics.jl/latest/customcollections.html#RigidBodyDynamics.CustomCollections.SegmentedVector
+        http://juliarobotics.github.io/RigidBodyDynamics.jl/latest/customcollections.html#RigidBodyDynamics.CustomCollections.SegmentedVector
     """)
 end
 
