@@ -85,7 +85,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Citing this library",
     "category": "section",
-    "text": "@misc{rigidbodydynamicsjl,\n author = \"Twan Koolen and contributors\",\n title = \"RigidBodyDynamics.jl\",\n year = 2016,\n url = \"https://github.com/tkoolen/RigidBodyDynamics.jl\"\n}"
+    "text": "@misc{rigidbodydynamicsjl,\n author = \"Twan Koolen and contributors\",\n title = \"RigidBodyDynamics.jl\",\n year = 2016,\n url = \"https://github.com/JuliaRobotics/RigidBodyDynamics.jl\"\n}"
 },
 
 {
