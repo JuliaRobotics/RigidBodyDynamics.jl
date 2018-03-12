@@ -195,8 +195,8 @@ struct MechanismState{X, M, C, JointCollection, MotionSubspaceCollection, Wrench
     end
 end
 
-function MechanismState(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}) where {X, M}
-    MechanismState{X, M}(mechanism, q, v, zeros(X, num_additional_states(mechanism)))
+function MechanismState(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s=zeros(X, num_additional_states(mechanism))) where {X, M}
+    MechanismState{X, M}(mechanism, q, v, s)
 end
 
 MechanismState(mechanism::Mechanism{M}) where {M} = MechanismState{M}(mechanism)
