@@ -185,12 +185,12 @@ for IDict in (:IndexDict, :CacheIndexDict)
         end
 
         function $IDict{K, KeyRange, V}(itr) where {K, KeyRange<:AbstractUnitRange{K}, V}
-            kv = map(x -> K(first(x)) => last(x)::V, itr)
+            kv = [K(first(x)) => convert(V, last(x)) for x in itr]
             $IDict{K, KeyRange, V}(kv)
         end
 
         function $IDict{K, KeyRange}(itr) where {K, KeyRange<:AbstractUnitRange{K}}
-            kv = map(x -> K(first(x)) => last(x), itr)
+            kv = [K(first(x)) => last(x) for x in itr]
             $IDict{K, KeyRange}(kv)
         end
     end
@@ -208,6 +208,7 @@ end
 @inline keyindex(key::K, keyrange::UnitRange{K}) where {K} = Int(key - first(keyrange) + 1)
 Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{K}, key::K) where {K} = d.values[keyindex(key, d.keys)]
 Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) where {K} = d.values[keyindex(key, d.keys)] = value
+Base.@propagate_inbounds Base.get(d::AbstractIndexDict{K}, key::K, default) where {K} = d[key]
 
 
 ## SegmentedVector
