@@ -1,3 +1,6 @@
+using Compat.Test
+using RigidBodyDynamics
+
 @testset "custom collections" begin
     @testset "nulldict" begin
         nd = RigidBodyDynamics.NullDict{Int, Int}()
@@ -7,6 +10,20 @@
             @test false # should never be reached, since the nulldict is always empty
         end
         show(IOBuffer(), nd)
+    end
+
+    @testset "IndexDict" begin
+        Int32Dict{V} = RigidBodyDynamics.IndexDict{Int32, Base.OneTo{Int32}, V}
+        dict = Dict(Int32(2) => 4., Int32(1) => 3.)
+        expected = Int32Dict{Float64}(Base.OneTo(Int32(2)), [3., 4.])
+        i32dict1 = @inferred Int32Dict(dict)
+        @test i32dict1 == dict == expected
+        @test keys(expected) === keys(i32dict1)
+        @test values(expected) == values(i32dict1)
+        i32dict2 = @inferred Int32Dict{Float64}(dict)
+        @test i32dict2 == dict == expected
+        @test keys(expected) === keys(i32dict2)
+        @test values(expected) == values(i32dict2)
     end
 
     @testset "SegmentedVector" begin
