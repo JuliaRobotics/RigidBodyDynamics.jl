@@ -84,6 +84,16 @@ end
 
 DynamicsResult(mechanism::Mechanism{M}) where {M} = DynamicsResult{M}(mechanism)
 
+function Base.copy!(ẋ::AbstractVector, result::DynamicsResult)
+    nq = length(result.q̇)
+    nv = length(result.v̇)
+    ns = length(result.ṡ)
+    copy!(ẋ, 1, result.q̇, 1, nq)
+    copy!(ẋ, nq + 1, result.v̇, 1, nv)
+    copy!(ẋ, nq + nv + 1, result.ṡ, 1, ns)
+    ẋ
+end
+
 contact_state_derivatives(result::DynamicsResult, body::Union{<:RigidBody, BodyID}) =
     result.contact_state_derivatives[body]
 contact_wrench(result::DynamicsResult, body::Union{<:RigidBody, BodyID}) =

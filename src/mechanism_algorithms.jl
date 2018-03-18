@@ -763,10 +763,7 @@ function dynamics!(ẋ::StridedVector{X},
         externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
     set!(state, state_vec)
     dynamics!(result, state, torques, externalwrenches)
-    nq = num_positions(state)
-    nv = num_velocities(state)
-    copy!(view(ẋ, 1 : nq), result.q̇) # allocates
-    copy!(view(ẋ, nq + 1 : nq + nv), result.v̇) # allocates
+    copy!(ẋ, result)
     ẋ
 end
 
