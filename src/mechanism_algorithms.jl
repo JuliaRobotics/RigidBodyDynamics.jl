@@ -761,13 +761,12 @@ function dynamics!(ẋ::StridedVector{X},
         torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
         externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
     set!(state, state_vec)
+    configuration_derivative!(result.q̇, state)
+    dynamics!(result, state, torques, externalwrenches)
     nq = num_positions(state)
     nv = num_velocities(state)
-    q̇ = SegmentedVector(view(ẋ, 1 : nq), tree_joints(state.mechanism), num_positions) # allocates
-    v̇ = SegmentedVector(view(ẋ, nq + 1 : nq + nv), tree_joints(state.mechanism), num_velocities) # allocates
-    configuration_derivative!(q̇, state)
-    dynamics!(result, state, torques, externalwrenches)
-    copy!(v̇, result.v̇)
+    copy!(view(ẋ, 1 : nq), result.q̇) # allocates
+    copy!(view(ẋ, nq + 1 : nq + nv), result.v̇) # allocates
     ẋ
 end
 
