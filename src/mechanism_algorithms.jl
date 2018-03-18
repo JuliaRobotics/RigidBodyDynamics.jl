@@ -770,7 +770,6 @@ function dynamics!(ẋ::StridedVector{X},
     ẋ
 end
 
-
 ## Breaking changes:
 function relative_acceleration(state::MechanismState, body::RigidBody, base::RigidBody, v̇::AbstractVector)
     error("""`relative_acceleration(state, body, base, v̇)` has been removed.
