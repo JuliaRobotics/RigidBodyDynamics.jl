@@ -445,17 +445,18 @@ function set_additional_state!(state::MechanismState, s::AbstractVector)
     # note: setdirty! is currently not needed because no cache variables depend on s
 end
 
-function set!(state::MechanismState, x::AbstractVector)
+function Base.copy!(state::MechanismState, x::AbstractVector)
     nq = num_positions(state)
     nv = num_velocities(state)
     ns = num_additional_states(state)
-    length(x) == nq + nv + ns || error("wrong size")
-    start = 1
+    @boundscheck length(x) == nq + nv + ns || throw(DimensionMismatch())
     @inbounds copy!(parent(state.q), 1, x, 1, nq)
-    @inbounds copy!(parent(state.v), 1, x, start += nq, nv)
-    @inbounds copy!(state.s, 1, x, start += nv, ns)
+    @inbounds copy!(parent(state.v), 1, x, nq + 1, nv)
+    @inbounds copy!(state.s, 1, x, nq + nv + 1, ns)
     setdirty!(state)
 end
+
+Base.@deprecate set!(state::MechanismState, x::AbstractVector) copy!(state, x)
 
 """
 $(SIGNATURES)

@@ -125,7 +125,7 @@ export
     set_configuration!,
     set_velocity!,
     set_additional_state!,
-    set!, # TODO: remove
+    set!, # deprecated; use copy! instead
     zero!, # TODO: remove
     normalize_configuration!,
     center_of_mass,
