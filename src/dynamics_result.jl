@@ -88,9 +88,10 @@ function Base.copy!(ẋ::AbstractVector, result::DynamicsResult)
     nq = length(result.q̇)
     nv = length(result.v̇)
     ns = length(result.ṡ)
-    copy!(ẋ, 1, result.q̇, 1, nq)
-    copy!(ẋ, nq + 1, result.v̇, 1, nv)
-    copy!(ẋ, nq + nv + 1, result.ṡ, 1, ns)
+    @boundscheck length(ẋ) == nq + nv + ns || throw(DimensionMismatch())
+    @inbounds copy!(ẋ, 1, result.q̇, 1, nq)
+    @inbounds copy!(ẋ, nq + 1, result.v̇, 1, nv)
+    @inbounds copy!(ẋ, nq + nv + 1, result.ṡ, 1, ns)
     ẋ
 end
 

@@ -60,7 +60,7 @@ end
         @test v == velocity(x)
 
         zero!(x)
-        set!(x, [q; v])
+        copy!(x, [q; v])
 
         @test q == configuration(x)
         @test v == velocity(x)
