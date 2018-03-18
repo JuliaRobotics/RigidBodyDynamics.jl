@@ -726,6 +726,7 @@ wrenches that act on the `Mechanism`'s bodies.
 function dynamics!(result::DynamicsResult, state::MechanismState{X},
         torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
         externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
+    configuration_derivative!(result.q̇, state)
     contact_dynamics!(result, state)
     for jointid in state.treejointids
         bodyid = successorid(jointid, state)
@@ -761,7 +762,6 @@ function dynamics!(ẋ::StridedVector{X},
         torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
         externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
     set!(state, state_vec)
-    configuration_derivative!(result.q̇, state)
     dynamics!(result, state, torques, externalwrenches)
     nq = num_positions(state)
     nv = num_velocities(state)
