@@ -758,10 +758,10 @@ v
 and returns a `Vector` ``\\dot{x}``.
 """
 function dynamics!(ẋ::StridedVector{X},
-        result::DynamicsResult, state::MechanismState{X}, state_vec::AbstractVector{X},
+        result::DynamicsResult, state::MechanismState{X}, x::AbstractVector{X},
         torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
         externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
-    set!(state, state_vec)
+    copy!(state, x)
     dynamics!(result, state, torques, externalwrenches)
     copy!(ẋ, result)
     ẋ
