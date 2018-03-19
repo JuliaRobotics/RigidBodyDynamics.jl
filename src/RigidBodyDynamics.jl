@@ -117,7 +117,7 @@ export
     transform_to_root,
     relative_transform,
     setdirty!,
-    state_vector, # TODO: Base.convert method to Vector?
+    state_vector, # deprecated; use Vector constructor instead
     rand_configuration!,
     zero_configuration!,
     rand_velocity!,

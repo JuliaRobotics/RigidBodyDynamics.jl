@@ -383,7 +383,8 @@ Return the vector of additional states ``s``.
 """
 additional_state(state::MechanismState) = state.s
 
-state_vector(state::MechanismState) = [configuration(state); velocity(state); additional_state(state)]
+Base.Vector(state::MechanismState) = [configuration(state); velocity(state); additional_state(state)]
+Base.@deprecate state_vector(state::MechanismState) Vector(state)
 
 for fun in (:num_velocities, :num_positions)
     @eval function $fun(p::TreePath{RigidBody{T}, <:Joint{T}} where {T})
