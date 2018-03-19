@@ -77,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Contents",
     "category": "section",
-    "text": "Pages = [\n  \"quickstart.md\",\n  \"spatial.md\",\n  \"joints.md\",\n  \"rigidbody.md\",\n  \"mechanism.md\",\n  \"mechanismstate.md\",\n  \"algorithms.md\",\n  \"statecache.md\",\n  \"simulation.md\",\n  \"benchmarks.md\"]\nDepth = 2"
+    "text": "Pages = [\n  \"quickstart.md\",\n  \"spatial.md\",\n  \"joints.md\",\n  \"rigidbody.md\",\n  \"mechanism.md\",\n  \"mechanismstate.md\",\n  \"algorithms.md\",\n  \"caches.md\",\n  \"simulation.md\",\n  \"benchmarks.md\"]\nDepth = 2"
 },
 
 {
@@ -1841,27 +1841,43 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "statecache.html#",
-    "page": "StateCache",
-    "title": "StateCache",
+    "location": "caches.html#",
+    "page": "Cache types",
+    "title": "Cache types",
     "category": "page",
     "text": ""
 },
 
 {
-    "location": "statecache.html#RigidBodyDynamics.StateCache",
-    "page": "StateCache",
+    "location": "caches.html#RigidBodyDynamics.StateCache",
+    "page": "Cache types",
     "title": "RigidBodyDynamics.StateCache",
     "category": "type",
     "text": "struct StateCache{M, JointCollection} <: RigidBodyDynamics.AbstractTypeDict\n\nA container that manages the creation and storage of MechanismState objects of various scalar types, associated with a given Mechanism.\n\nA StateCache can be used to write generic functions that use MechanismState objects, while avoiding overhead due to the construction of a new MechanismState with a given scalar type every time the function is called.\n\nExamples\n\njulia> mechanism = rand_tree_mechanism(Float64, Revolute{Float64}, Prismatic{Float64}, QuaternionFloating{Float64});\n\njulia> cache = StateCache(mechanism)\nStateCache{…}\n\njulia> state32 = cache[Float32]\nMechanismState{Float32, Float64, Float64, …}(…)\n\njulia> cache[Float32] === state32\ntrue\n\njulia> cache[Float64]\nMechanismState{Float64, Float64, Float64, …}(…)\n\n\n\n"
 },
 
 {
-    "location": "statecache.html#StateCache-1",
-    "page": "StateCache",
+    "location": "caches.html#RigidBodyDynamics.DynamicsResultCache",
+    "page": "Cache types",
+    "title": "RigidBodyDynamics.DynamicsResultCache",
+    "category": "type",
+    "text": "struct DynamicsResultCache{M} <: RigidBodyDynamics.AbstractTypeDict\n\nA container that manages the creation and storage of DynamicsResult objects of various scalar types, associated with a given Mechanism. Similar to StateCache.\n\n\n\n"
+},
+
+{
+    "location": "caches.html#RigidBodyDynamics.SegmentedVectorCache",
+    "page": "Cache types",
+    "title": "RigidBodyDynamics.SegmentedVectorCache",
+    "category": "type",
+    "text": "struct SegmentedVectorCache{K, KeyRange<:AbstractUnitRange{K}} <: RigidBodyDynamics.AbstractTypeDict\n\nA container that manages the creation and storage of heterogeneously typed SegmentedVector objects. Similar to StateCache.\n\n\n\n"
+},
+
+{
+    "location": "caches.html#StateCache-1",
+    "page": "Cache types",
     "title": "StateCache",
     "category": "section",
-    "text": "StateCache"
+    "text": "StateCache\nDynamicsResultCache\nSegmentedVectorCache"
 },
 
 {
