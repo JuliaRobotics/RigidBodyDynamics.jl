@@ -84,3 +84,28 @@ Base.show(io::IO, ::DynamicsResultCache{M}) where {M} = print(io, "DynamicsResul
 DynamicsResultCache(mechanism::Mechanism{M}) where {M} = DynamicsResultCache{M}(mechanism, [], [])
 @inline valuetype(::Type{DynamicsResultCache{M}}, ::Type{T}) where {M, T} = DynamicsResult{T, M}
 @inline makevalue(c::DynamicsResultCache, ::Type{T}) where {T} = DynamicsResult{T}(c.mechanism)
+
+"""
+$(TYPEDEF)
+
+A container that manages the creation and storage of heterogeneously typed [`SegmentedVector`](@ref)
+objects. Similar to [`StateCache`](@ref).
+"""
+struct SegmentedVectorCache{K, KeyRange<:AbstractUnitRange{K}} <: AbstractTypeDict
+    ranges::IndexDict{K, KeyRange, UnitRange{Int}}
+    length::Int
+    keys::Vector{Tuple{UInt64, Int}}
+    values::Vector{SegmentedVector}
+end
+
+function SegmentedVectorCache(ranges::IndexDict{K, KeyRange, UnitRange{Int}}) where {K, KeyRange<:AbstractUnitRange{K}}
+    SegmentedVectorCache(ranges, sum(length, values(ranges)), Vector{Tuple{UInt64, Int}}(), Vector{SegmentedVector}())
+end
+
+@inline function valuetype(::Type{SegmentedVectorCache{K, KeyRange}}, ::Type{T}) where {K, T, KeyRange}
+    SegmentedVector{K, T, KeyRange, Vector{T}}
+end
+
+@inline function makevalue(c::SegmentedVectorCache{K, KeyRange}, ::Type{T}) where {K, T, KeyRange}
+    SegmentedVector{K, T, KeyRange}(Vector{T}(uninitialized, c.length), c.ranges)
+end

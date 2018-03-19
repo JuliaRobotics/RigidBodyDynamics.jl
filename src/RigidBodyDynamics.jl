@@ -21,7 +21,8 @@ export
     MechanismState,
     DynamicsResult,
     StateCache,
-    DynamicsResultCache
+    DynamicsResultCache,
+    SegmentedVectorCache
 
 # specific joint types
 export

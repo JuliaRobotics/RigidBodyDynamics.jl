@@ -7,7 +7,6 @@ using DocStringExtensions
 export
     ConstVector,
     NullDict,
-    UnsafeVectorView,
     CacheElement,
     AbstractIndexDict,
     IndexDict,
@@ -262,7 +261,7 @@ struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <
     parent::P
     segments::IndexDict{K, KeyRange, VectorSegment{T}}
 
-    function SegmentedVector(p::P, segments::IndexDict{K, KeyRange, VectorSegment{T}}) where {T, K, KeyRange, P}
+    function SegmentedVector(p::P, segments::IndexDict{K, KeyRange, VectorSegment{T}}) where {K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}}
         @boundscheck begin
             firstsegment = true
             start = 0
@@ -285,7 +284,7 @@ struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <
     end
 end
 
-function SegmentedVector{K, T, KeyRange}(parent::AbstractVector{T}, keys, viewlengthfun) where {K, T, KeyRange<:AbstractRange{K}}
+function SegmentedVector{K, T, KeyRange}(parent::P, keys, viewlengthfun) where {K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}}
     views = Vector{Pair{K, VectorSegment{T}}}()
     start = 1
     for key in keys
@@ -300,6 +299,11 @@ function SegmentedVector{K}(parent::AbstractVector{T}, keys, viewlengthfun) wher
     SegmentedVector{K, T, Base.OneTo{K}}(parent, keys, viewlengthfun)
 end
 
+function SegmentedVector{K, T, KeyRange}(parent::P, ranges::Associative{K, UnitRange{Int}}) where {K, T, KeyRange, P<:AbstractVector{T}}
+    segs = IndexDict{K, KeyRange, VectorSegment{T}}(keys(ranges), [view(parent, range) for range in values(ranges)])
+    SegmentedVector(parent, IndexDict{K, KeyRange, VectorSegment{T}}(segs))
+end
+
 Base.size(v::SegmentedVector) = size(v.parent)
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.parent[i]
 Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.parent[i] = value
@@ -309,10 +313,7 @@ segments(v::SegmentedVector) = v.segments
 ranges(v::SegmentedVector) = IndexDict(v.segments.keys, [first(parentindexes(view)) for view in v.segments.values])
 
 function Base.similar(v::SegmentedVector{K, T, KeyRange}, ::Type{S} = T) where {K, T, KeyRange, S}
-    p = similar(parent(v), S)
-    segs = IndexDict{K, KeyRange, VectorSegment{S}}(keys(segments(v)),
-        [view(p, first(parentindexes(segment))) for segment in values(segments(v))])
-    SegmentedVector(p, segs)
+    SegmentedVector{K, S, KeyRange}(similar(parent(v), S), ranges(v))
 end
 
 """
