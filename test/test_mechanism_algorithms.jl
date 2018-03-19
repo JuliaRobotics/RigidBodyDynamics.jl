@@ -497,8 +497,8 @@ end
         externalwrenches = Dict(RigidBodyDynamics.id(body) => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
 
         result1 = DynamicsResult(mechanism)
-        ẋ = Vector{Float64}(length(state_vector(x)))
-        dynamics!(ẋ, result1, x, state_vector(x), torques, externalwrenches)
+        ẋ = similar(Vector(x))
+        dynamics!(ẋ, result1, x, Vector(x), torques, externalwrenches)
 
         result2 = DynamicsResult(mechanism)
         dynamics!(result2, x, torques, externalwrenches)
