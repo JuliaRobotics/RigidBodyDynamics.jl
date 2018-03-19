@@ -16,7 +16,7 @@ makedocs(
         "MechanismState" => "mechanismstate.md",
         "Kinematics/dynamics algorithms" => "algorithms.md",
         "Custom collection types" => "customcollections.md",
-        "StateCache" => "statecache.md",
+        "Cache types" => "caches.md",
         "Simulation" => "simulation.md",
         "Benchmarks" => "benchmarks.md"
       ]

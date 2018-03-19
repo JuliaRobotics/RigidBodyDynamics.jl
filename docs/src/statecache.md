@@ -1,4 +1,0 @@
-# `StateCache`
-```@docs
-StateCache
-```
