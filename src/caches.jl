@@ -2,7 +2,7 @@ abstract type AbstractTypeDict end
 function valuetype end
 function makevalue end
 
-@inline function Base.getindex(c::C, ::Type{T}) where {C<:AbstractTypeDict, T}
+function Base.getindex(c::C, ::Type{T}) where {C<:AbstractTypeDict, T}
     ReturnType = valuetype(C, T)
     key = (object_id(T), Threads.threadid())
     @inbounds for i in eachindex(c.keys)
@@ -10,7 +10,7 @@ function makevalue end
             return c.values[i]::ReturnType
         end
     end
-    value = makevalue(c, T)
+    value = makevalue(c, T)::ReturnType
     push!(c.keys, key)
     push!(c.values, value)
     value::ReturnType
