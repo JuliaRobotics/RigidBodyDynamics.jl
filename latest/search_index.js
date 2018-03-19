@@ -1621,7 +1621,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "method",
-    "text": "dynamics!(ẋ, result, state, state_vec)\ndynamics!(ẋ, result, state, state_vec, torques)\ndynamics!(ẋ, result, state, state_vec, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
+    "text": "dynamics!(ẋ, result, state, x)\ndynamics!(ẋ, result, state, x, torques)\ndynamics!(ẋ, result, state, x, torques, externalwrenches)\n\n\nConvenience function for use with standard ODE integrators that takes a Vector argument\n\nx = left(beginarrayc\nq\nv\nendarrayright)\n\nand returns a Vector dotx.\n\n\n\n"
 },
 
 {
