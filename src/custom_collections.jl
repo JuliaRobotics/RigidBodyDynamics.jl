@@ -129,7 +129,6 @@ RigidBodyDynamics.CustomCollections.IndexDict{Int32,UnitRange{Int32},Int64} with
 struct IndexDict{K, KeyRange<:AbstractUnitRange{K}, V} <: AbstractIndexDict{K, V}
     keys::KeyRange
     values::Vector{V}
-    IndexDict(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}} = new{K, KeyRange, V}(keys, values)
 end
 
 
@@ -142,7 +141,7 @@ mutable struct CacheIndexDict{K, KeyRange<:AbstractUnitRange{K}, V} <: AbstractI
     keys::KeyRange
     values::Vector{V}
     dirty::Bool
-    function CacheIndexDict(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}}
+    function CacheIndexDict{K, KeyRange, V}(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}}
         @boundscheck length(keys) == length(values) || error("Mismatch between keys and values.")
         new{K, KeyRange, V}(keys, values, true)
     end
@@ -154,12 +153,12 @@ isdirty(d::CacheIndexDict) = d.dirty
 # Constructors
 for IDict in (:IndexDict, :CacheIndexDict)
     @eval begin
-        function $IDict{K, KeyRange, V}(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
-            $IDict(keys, Vector{V}(uninitialized, length(keys)))
+        function $IDict(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}}
+            $IDict{K, KeyRange, V}(keys, values)
         end
 
-        function $IDict{K, KeyRange, V}(keys::KeyRange, values::Vector{V}) where {K, KeyRange<:AbstractUnitRange{K}, V}
-            $IDict(keys, values)
+        function $IDict{K, KeyRange, V}(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
+            $IDict{K, KeyRange, V}(keys, Vector{V}(uninitialized, length(keys)))
         end
 
         function $IDict{K, KeyRange, V}(kv::Vector{Pair{K, V}}) where {K, KeyRange<:AbstractUnitRange{K}, V}
@@ -176,7 +175,7 @@ for IDict in (:IndexDict, :CacheIndexDict)
                 keys[i] === first(kv[i]) || error()
             end
             values = map(last, kv)
-            $IDict(keys, values)
+            $IDict{K, KeyRange, V}(keys, values)
         end
 
         function $IDict{K, KeyRange}(kv::Vector{Pair{K, V}}) where {K, KeyRange<:AbstractUnitRange{K}, V}
@@ -261,7 +260,7 @@ struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <
     parent::P
     segments::IndexDict{K, KeyRange, VectorSegment{T}}
 
-    function SegmentedVector(p::P, segments::IndexDict{K, KeyRange, VectorSegment{T}}) where {K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}}
+    function SegmentedVector{K, T, KeyRange, P}(p::P, segments::IndexDict{K, KeyRange, VectorSegment{T}}) where {K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}}
         @boundscheck begin
             firstsegment = true
             start = 0
@@ -284,6 +283,10 @@ struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <
     end
 end
 
+function SegmentedVector(p::P, segments::IndexDict{K, KeyRange, VectorSegment{T}}) where {K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}}
+    SegmentedVector{K, T, KeyRange, P}(p, segments)
+end
+
 function SegmentedVector{K, T, KeyRange}(parent::P, keys, viewlengthfun) where {K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}}
     views = Vector{Pair{K, VectorSegment{T}}}()
     start = 1
@@ -292,16 +295,16 @@ function SegmentedVector{K, T, KeyRange}(parent::P, keys, viewlengthfun) where {
         push!(views, K(key) => view(parent, start : stop))
         start = stop + 1
     end
-    SegmentedVector(parent, IndexDict{K, KeyRange, VectorSegment{T}}(views))
+    SegmentedVector{K, T, KeyRange, P}(parent, IndexDict{K, KeyRange, VectorSegment{T}}(views))
 end
 
-function SegmentedVector{K}(parent::AbstractVector{T}, keys, viewlengthfun) where {K, T}
+function SegmentedVector{K}(parent::P, keys, viewlengthfun) where {K, T, P<:AbstractVector{T}}
     SegmentedVector{K, T, Base.OneTo{K}}(parent, keys, viewlengthfun)
 end
 
 function SegmentedVector{K, T, KeyRange}(parent::P, ranges::Associative{K, UnitRange{Int}}) where {K, T, KeyRange, P<:AbstractVector{T}}
     segs = IndexDict{K, KeyRange, VectorSegment{T}}(keys(ranges), [view(parent, range) for range in values(ranges)])
-    SegmentedVector(parent, IndexDict{K, KeyRange, VectorSegment{T}}(segs))
+    SegmentedVector{K, T, KeyRange, P}(parent, IndexDict{K, KeyRange, VectorSegment{T}}(segs))
 end
 
 Base.size(v::SegmentedVector) = size(v.parent)
