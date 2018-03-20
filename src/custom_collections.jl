@@ -183,7 +183,10 @@ for IDict in (:IndexDict, :CacheIndexDict)
         end
 
         function $IDict{K, KeyRange, V}(itr) where {K, KeyRange<:AbstractUnitRange{K}, V}
-            kv = [K(first(x)) => convert(V, last(x)) for x in itr]
+            kv = Pair{K, V}[]
+            for x in itr
+                push!(kv, K(first(x)) => convert(V, last(x)))
+            end
             $IDict{K, KeyRange, V}(kv)
         end
 
@@ -210,7 +213,7 @@ Base.@propagate_inbounds Base.get(d::AbstractIndexDict{K}, key::K, default) wher
 
 
 ## SegmentedVector
-const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # type of a n:m view into a Vector
+const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int}},true} # type of a n:m view into a Vector
 
 """
 $(TYPEDEF)
@@ -313,7 +316,10 @@ Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.p
 
 Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
-ranges(v::SegmentedVector) = IndexDict(v.segments.keys, [first(parentindexes(view)) for view in v.segments.values])
+function ranges(v::SegmentedVector{K, <:Any, KeyRange}) where {K, KeyRange}
+    segments = v.segments
+    IndexDict{K, KeyRange, UnitRange{Int}}(segments.keys, map(segment -> first(parentindexes(segment))::UnitRange{Int}, segments.values))
+end
 
 function Base.similar(v::SegmentedVector{K, T, KeyRange}, ::Type{S} = T) where {K, T, KeyRange, S}
     SegmentedVector{K, S, KeyRange}(similar(parent(v), S), ranges(v))

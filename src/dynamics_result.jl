@@ -37,7 +37,7 @@ mutable struct DynamicsResult{T, M}
     function DynamicsResult{T}(mechanism::Mechanism{M}) where {T, M}
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
-        nconstraints = mapreduce(num_constraints, +, 0, non_tree_joints(mechanism))
+        nconstraints = mapreduce(num_constraints, +, 0, non_tree_joints(mechanism))::Int
 
         massmatrix = Symmetric(Matrix{T}(nv, nv), :L)
         dynamicsbias = SegmentedVector(Vector{T}(nv), tree_joints(mechanism), num_velocities)
@@ -59,16 +59,18 @@ mutable struct DynamicsResult{T, M}
         jointwrenches = BodyDict{Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
         contact_state_derivs = BodyDict{Vector{Vector{DefaultSoftContactStateDeriv{T}}}}(
             b => Vector{Vector{DefaultSoftContactStateDeriv{T}}}() for b in bodies(mechanism))
-        startind = 1
-        for body in bodies(mechanism), point in contact_points(body)
-            model = contact_model(point)
-            n = num_states(model)
-            push!(contact_state_derivs[body], collect(begin
-                ṡ_part = view(ṡ, startind : startind + n - 1)
-                contact_state_deriv = SoftContactStateDeriv(model, ṡ_part, root_frame(mechanism))
-                startind += n
-                contact_state_deriv
-            end for j = 1 : length(mechanism.environment)))
+        startind = Ref(1)
+        for body in bodies(mechanism)
+            for point::DefaultContactPoint{T} in contact_points(body)
+                model = contact_model(point)
+                n = num_states(model)
+                push!(contact_state_derivs[body], collect(begin
+                    ṡ_part = view(ṡ, startind[] : startind[] + n - 1)
+                    contact_state_deriv = SoftContactStateDeriv(model, ṡ_part, root_frame(mechanism))
+                    startind[] += n
+                    contact_state_deriv
+                end for j = 1 : length(mechanism.environment)))
+            end
         end
 
         L = Matrix{T}(nv, nv)
