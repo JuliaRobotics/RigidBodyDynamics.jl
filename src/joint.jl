@@ -57,7 +57,7 @@ function Joint(name::String, jtype::JointType; kw...)
     Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jtype; kw...)
 end
 
-Base.string(joint::Joint) = joint.name
+Base.print(io::IO, joint::Joint) = print(io, joint.name)
 frame_before(joint::Joint) = joint.frame_before
 frame_after(joint::Joint) = joint.frame_after
 joint_type(joint::Joint) = joint.joint_type
@@ -115,8 +115,17 @@ function set_joint_to_successor!(joint::Joint, tf::Transform3D)
     joint
 end
 
-Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(string(joint))\": $(joint.joint_type)")
-Base.showcompact(io::IO, joint::Joint) = print(io, "$(string(joint))") # FIXME: use show with IOContext(io, :compact => true)
+function Base.show(io::IO, joint::Joint)
+    if get(io, :compact, false)
+        print(io, joint)
+    else
+        print(io, "Joint \"$(string(joint))\": $(joint.joint_type)")
+    end
+end
+
+@static if VERSION < v"0.7.0-DEV.1472"
+    Base.showcompact(io::IO, joint::Joint) = show(IOContext(io, :compact => true), joint)
+end
 
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
 num_velocities(itr) = reduce((val, joint) -> val + num_velocities(joint), 0, itr)

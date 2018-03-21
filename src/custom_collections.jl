@@ -20,6 +20,10 @@ export
     segments,
     ranges
 
+@static if !isdefined(Base, :parentindices)
+    parentindices(x) = Base.parentindexes(x)
+end
+
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
 # heap-allocated variables. Hopefully this will not be necessary in a future version of Julia.
