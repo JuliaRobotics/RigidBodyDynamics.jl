@@ -114,13 +114,13 @@ end
 end
 
 @inline translation(jt::QuaternionFloating, q::AbstractVector) = @inbounds return SVector(q[5], q[6], q[7])
-@inline translation!(q::AbstractVector, jt::QuaternionFloating, trans::AbstractVector) = @inbounds copy!(q, 5, trans, 1, 3)
+@inline translation!(q::AbstractVector, jt::QuaternionFloating, trans::AbstractVector) = @inbounds copyto!(q, 5, trans, 1, 3)
 
 @inline angular_velocity(jt::QuaternionFloating, v::AbstractVector) = @inbounds return SVector(v[1], v[2], v[3])
-@inline angular_velocity!(v::AbstractVector, jt::QuaternionFloating, ω::AbstractVector) = @inbounds copy!(v, 1, ω, 1, 3)
+@inline angular_velocity!(v::AbstractVector, jt::QuaternionFloating, ω::AbstractVector) = @inbounds copyto!(v, 1, ω, 1, 3)
 
 @inline linear_velocity(jt::QuaternionFloating, v::AbstractVector) = @inbounds return SVector(v[4], v[5], v[6])
-@inline linear_velocity!(v::AbstractVector, jt::QuaternionFloating, ν::AbstractVector) = @inbounds copy!(v, 4, ν, 1, 3)
+@inline linear_velocity!(v::AbstractVector, jt::QuaternionFloating, ν::AbstractVector) = @inbounds copyto!(v, 4, ν, 1, 3)
 
 function joint_transform(jt::QuaternionFloating, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D, q::AbstractVector)
     Transform3D(frame_after, frame_before, rotation(jt, q), translation(jt, q))
@@ -234,11 +234,11 @@ function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
     twist = joint_twist(jt, frame_after, frame0, q, v) # (q_0 is assumed not to change)
     ξ, ξ̇ = log_with_time_derivative(relative_transform, twist)
 
-    @inbounds copy!(ϕ, 1, angular(ξ), 1, 3)
-    @inbounds copy!(ϕ, 4, linear(ξ), 1, 3)
+    @inbounds copyto!(ϕ, 1, angular(ξ), 1, 3)
+    @inbounds copyto!(ϕ, 4, linear(ξ), 1, 3)
 
-    @inbounds copy!(ϕ̇, 1, angular(ξ̇), 1, 3)
-    @inbounds copy!(ϕ̇, 4, linear(ξ̇), 1, 3)
+    @inbounds copyto!(ϕ̇, 1, angular(ξ̇), 1, 3)
+    @inbounds copyto!(ϕ̇, 4, linear(ξ̇), 1, 3)
 
     nothing
 end

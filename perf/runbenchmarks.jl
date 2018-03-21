@@ -1,5 +1,6 @@
 using RigidBodyDynamics
 using Compat
+using Compat.Random
 using BenchmarkTools
 
 const ScalarType = Float64
@@ -24,7 +25,7 @@ function create_benchmark_suite()
     state = MechanismState{ScalarType}(mechanism)
     result = DynamicsResult{ScalarType}(mechanism)
     nv = num_velocities(state)
-    mat = MomentumMatrix(root_frame(mechanism), Matrix{ScalarType}(3, nv), Matrix{ScalarType}(3, nv))
+    mat = MomentumMatrix(root_frame(mechanism), Matrix{ScalarType}(undef, 3, nv), Matrix{ScalarType}(undef, 3, nv))
     torques = similar(velocity(state))
     rfoot = findbody(mechanism, "r_foot")
     lhand = findbody(mechanism, "l_hand")

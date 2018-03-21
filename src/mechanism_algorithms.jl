@@ -142,8 +142,8 @@ See [`geometric_jacobian!(out, state, path)`](@ref).
 """
 function geometric_jacobian(state::MechanismState{X, M, C}, path::TreePath{RigidBody{M}, Joint{M}}) where {X, M, C}
     nv = num_velocities(state)
-    angular = Matrix{C}(3, nv)
-    linear = Matrix{C}(3, nv)
+    angular = Matrix{C}(undef, 3, nv)
+    linear = Matrix{C}(undef, 3, nv)
     bodyframe = default_frame(target(path))
     baseframe = default_frame(source(path))
     jac = GeometricJacobian(bodyframe, baseframe, root_frame(state.mechanism), angular, linear)
@@ -178,7 +178,7 @@ function mass_matrix!(M::Symmetric, state::MechanismState)
     update_crb_inertias!(state)
     fill!(M.data, 0)
     motion_subspaces = state.motion_subspaces.data
-    foreach_with_extra_args(set_mass_matrix_col!, M, state, motion_subspaces, state.treejointids) #TODO: broadcast! (compiler issue on 0.6.2)
+    foreach_with_extra_args(set_mass_matrix_col!, M, state, motion_subspaces, state.treejointids)
     M
 end
 
@@ -191,11 +191,11 @@ end
     discard = DiscardVector(length(ancestor_joint_mask))
     vranges = state.vranges
     jrange = vranges[idj]
-    broadcast!(set_mass_matrix_block!, discard, M, ancestor_joint_mask, motion_subspaces, values(vranges), Fj, Scalar(jrange))
+    foreach_with_extra_args(set_mass_matrix_block!, M, Fj, Scalar(jrange), motion_subspaces, values(vranges), ancestor_joint_mask)
     nothing
 end
 
-@inline function set_mass_matrix_block!(M::Symmetric, isancestor::Bool, Si::GeometricJacobian, irange::UnitRange, Fj::MomentumMatrix, jrange)
+@inline function set_mass_matrix_block!(M::Symmetric, Fj::MomentumMatrix, jrange, Si::GeometricJacobian, irange::UnitRange, isancestor::Bool)
     if isancestor
         block = angular(Fj)' * angular(Si) + linear(Fj)' * linear(Si)
         set_matrix_block!(M.data, jrange[], irange, block) # note the flipped indices: we're setting the lower triangle
@@ -300,7 +300,7 @@ See [`momentum_matrix!(out, state)`](@ref).
 function momentum_matrix(state::MechanismState)
     ncols = num_velocities(state)
     T = cache_eltype(state)
-    ret = MomentumMatrix(root_frame(state.mechanism), Matrix{T}(3, ncols), Matrix{T}(3, ncols))
+    ret = MomentumMatrix(root_frame(state.mechanism), Matrix{T}(undef, 3, ncols), Matrix{T}(undef, 3, ncols))
     momentum_matrix!(ret, state, identity)
     ret
 end
@@ -517,13 +517,11 @@ function constraint_jacobian!(jac::AbstractMatrix, rowranges, state::MechanismSt
     fill!(jac, 0)
     nontreejoints = state.nontreejoints
     wrenchsubspaces = state.constraint_wrench_subspaces.data
-    discard = DiscardVector(length(nontreejoints))
-    broadcast!(discard, jac, state, values(rowranges), nontreejoints, wrenchsubspaces) do jac, state, rowrange, nontreejoint, T
+    foreach_with_extra_args(jac, state, nontreejoints, wrenchsubspaces, values(rowranges)) do jac, state, nontreejoint, T, rowrange
         nontreejointid = JointID(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
         treejoints = state.treejoints
         motionsubspaces = state.motion_subspaces.data
-        # TODO: broadcast! (currently results in allocations):
         foreach_with_extra_args(constraint_jacobian_part!, jac, rowrange, state, path, T, treejoints, motionsubspaces)
     end
 end
@@ -539,7 +537,7 @@ end
 end
 
 function constraint_jacobian!(result::DynamicsResult, state::MechanismState)
-    constraint_jacobian!(result.constraintjacobian, result.constraintrowranges , state)
+    constraint_jacobian!(result.constraintjacobian, result.constraintrowranges, state)
 end
 
 function constraint_bias!(bias::SegmentedVector, state::MechanismState)
@@ -761,9 +759,9 @@ function dynamics!(ẋ::StridedVector{X},
         result::DynamicsResult, state::MechanismState{X}, x::AbstractVector{X},
         torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
         externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
-    copy!(state, x)
+    copyto!(state, x)
     dynamics!(result, state, torques, externalwrenches)
-    copy!(ẋ, result)
+    copyto!(ẋ, result)
     ẋ
 end
 

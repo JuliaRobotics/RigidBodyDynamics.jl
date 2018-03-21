@@ -422,7 +422,7 @@ $(SIGNATURES)
 Set the configuration vector ``q``. Invalidates cache variables.
 """
 function set_configuration!(state::MechanismState, q::AbstractVector)
-    copy!(parent(state.q), q)
+    copyto!(parent(state.q), q)
     setdirty!(state)
 end
 
@@ -432,7 +432,7 @@ $(SIGNATURES)
 Set the velocity vector ``v``. Invalidates cache variables.
 """
 function set_velocity!(state::MechanismState, v::AbstractVector)
-    copy!(state.v, v)
+    copyto!(state.v, v)
     setdirty!(state)
 end
 
@@ -442,22 +442,22 @@ $(SIGNATURES)
 Set the vector of additional states ``s``.
 """
 function set_additional_state!(state::MechanismState, s::AbstractVector)
-    copy!(state.s, s)
+    copyto!(state.s, s)
     # note: setdirty! is currently not needed because no cache variables depend on s
 end
 
-function Base.copy!(state::MechanismState, x::AbstractVector)
+function Compat.copyto!(state::MechanismState, x::AbstractVector)
     nq = num_positions(state)
     nv = num_velocities(state)
     ns = num_additional_states(state)
     @boundscheck length(x) == nq + nv + ns || throw(DimensionMismatch())
-    @inbounds copy!(parent(state.q), 1, x, 1, nq)
-    @inbounds copy!(parent(state.v), 1, x, nq + 1, nv)
-    @inbounds copy!(state.s, 1, x, nq + nv + 1, ns)
+    @inbounds copyto!(parent(state.q), 1, x, 1, nq)
+    @inbounds copyto!(parent(state.v), 1, x, nq + 1, nv)
+    @inbounds copyto!(state.s, 1, x, nq + nv + 1, ns)
     setdirty!(state)
 end
 
-Base.@deprecate set!(state::MechanismState, x::AbstractVector) copy!(state, x)
+Base.@deprecate set!(state::MechanismState, x::AbstractVector) copyto!(state, x)
 
 """
 $(SIGNATURES)
@@ -814,7 +814,7 @@ function configuration_derivative_to_velocity_adjoint!(
 end
 
 function configuration_derivative(state::MechanismState{X}) where {X}
-    ret = SegmentedVector(Vector{X}(num_positions(state.mechanism)), tree_joints(state.mechanism), num_positions)
+    ret = SegmentedVector(Vector{X}(undef, num_positions(state.mechanism)), tree_joints(state.mechanism), num_positions)
     configuration_derivative!(ret, state)
     ret
 end

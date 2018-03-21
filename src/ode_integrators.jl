@@ -1,5 +1,7 @@
 module OdeIntegrators
 
+using Compat
+using Compat.LinearAlgebra
 using RigidBodyDynamics
 using StaticArrays
 using DocStringExtensions
@@ -80,7 +82,7 @@ mutable struct RingBufferStorage{T, Q<:AbstractVector, V<:AbstractVector} <: Ode
     function RingBufferStorage{T}(state, n) where {T}
         Q = typeof(configuration(state))
         V = typeof(velocity(state))
-        ts = Vector{T}(n)
+        ts = Vector{T}(undef, n)
         qs = [similar(configuration(state)) for i in 1 : n]
         vs = [similar(velocity(state)) for i in 1 : n]
         new{T, Q, V}(ts, qs, vs, 0)
@@ -96,8 +98,8 @@ end
 function process(storage::RingBufferStorage, t, state)
     index = storage.last_index % length(storage) + 1
     storage.ts[index] = t
-    copy!(storage.qs[index], configuration(state))
-    copy!(storage.vs[index], velocity(state))
+    copyto!(storage.qs[index], configuration(state))
+    copyto!(storage.vs[index], velocity(state))
     storage.last_index = index
     nothing
 end
@@ -130,10 +132,10 @@ initialize(storage::ExpandingStorage, t, state) = process(storage, t, state)
 function process(storage::ExpandingStorage, t, state)
     push!(storage.ts, t)
     q = similar(configuration(state))
-    copy!(q, configuration(state))
+    copyto!(q, configuration(state))
     push!(storage.qs, q)
     v = similar(velocity(state))
-    copy!(v, velocity(state))
+    copyto!(v, velocity(state))
     push!(storage.vs, v)
     nothing
 end
