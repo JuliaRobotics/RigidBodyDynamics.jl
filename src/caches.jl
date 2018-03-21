@@ -4,7 +4,7 @@ function makevalue end
 
 function Base.getindex(c::C, ::Type{T}) where {C<:AbstractTypeDict, T}
     ReturnType = valuetype(C, T)
-    key = (object_id(T), Threads.threadid())
+    key = (objectid(T), Threads.threadid())
     @inbounds for i in eachindex(c.keys)
         if c.keys[i] === key
             return c.values[i]::ReturnType

@@ -6,7 +6,7 @@ function parse_scalar(::Type{T}, e::XMLElement, name::String, default::String) w
     T(parse(e == nothing ? default : attribute(e, name)))
 end
 
-function parse_vector(::Type{T}, e::Union{XMLElement, Void}, name::String, default::String) where {T}
+function parse_vector(::Type{T}, e::Union{XMLElement, Nothing}, name::String, default::String) where {T}
     usedefault = e == nothing || attribute(e, name) == nothing # TODO: better handling of required attributes
     [T(parse(str)) for str in split(usedefault ? default : attribute(e, name))]
 end
@@ -21,7 +21,7 @@ function parse_inertia(::Type{T}, xml_inertia::XMLElement) where {T}
     @SMatrix [ixx ixy ixz; ixy iyy iyz; ixz iyz izz]
 end
 
-function parse_pose(::Type{T}, xml_pose::Void) where {T}
+function parse_pose(::Type{T}, xml_pose::Nothing) where {T}
     rot = eye(RotMatrix3{T})
     trans = zero(SVector{3, T})
     rot, trans

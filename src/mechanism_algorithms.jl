@@ -305,7 +305,7 @@ function momentum_matrix(state::MechanismState)
     ret
 end
 
-function bias_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}}, state::MechanismState{X, M}) where {T, X, M}
+function bias_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}}, state::MechanismState{X, M}) where {T, X, M}
     update_bias_accelerations_wrt_world!(state)
     gravitybias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(state.mechanism))
     for jointid in state.treejointids
@@ -315,7 +315,7 @@ function bias_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}}, s
     nothing
 end
 
-function spatial_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}}, state::MechanismState, v̇::SegmentedVector{JointID}) where T
+function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}}, state::MechanismState, v̇::SegmentedVector{JointID}) where T
     update_twists_wrt_world!(state)
 
     # Compute joint accelerations
@@ -349,7 +349,7 @@ end
 
 spatial_accelerations!(result::DynamicsResult, state::MechanismState) = spatial_accelerations!(result.accelerations, state, result.v̇)
 
-function relative_acceleration(accels::Associative{BodyID, SpatialAcceleration{T}}, body::RigidBody{M}, base::RigidBody{M}) where {T, M}
+function relative_acceleration(accels::AbstractDict{BodyID, SpatialAcceleration{T}}, body::RigidBody{M}, base::RigidBody{M}) where {T, M}
     -accels[id(base)] + accels[id(body)]
 end
 
@@ -357,9 +357,9 @@ end
 relative_acceleration(result::DynamicsResult, body::RigidBody, base::RigidBody) = relative_acceleration(result.accelerations, body, base)
 
 function newton_euler!(
-        out::Associative{BodyID, Wrench{T}}, state::MechanismState{X, M},
-        accelerations::Associative{BodyID, SpatialAcceleration{T}},
-        externalwrenches::Associative{BodyID, Wrench{W}}) where {T, X, M, W}
+        out::AbstractDict{BodyID, Wrench{T}}, state::MechanismState{X, M},
+        accelerations::AbstractDict{BodyID, SpatialAcceleration{T}},
+        externalwrenches::AbstractDict{BodyID, Wrench{W}}) where {T, X, M, W}
     update_twists_wrt_world!(state)
     update_spatial_inertias!(state)
     for jointid in state.treejointids
@@ -372,7 +372,7 @@ end
 
 function joint_wrenches_and_torques!(
         torquesout::SegmentedVector{JointID},
-        net_wrenches_in_joint_wrenches_out::Associative{BodyID, <:Wrench}, # TODO: consider having a separate Associative{Joint{M}, Wrench{T}} for joint wrenches
+        net_wrenches_in_joint_wrenches_out::AbstractDict{BodyID, <:Wrench}, # TODO: consider having a separate Associative{Joint{M}, Wrench{T}} for joint wrenches
         state::MechanismState)
     # Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
     @boundscheck length(torquesout) == num_velocities(state) || error("length of torque vector is wrong")
@@ -423,10 +423,10 @@ $noalloc_doc
 """
 function dynamics_bias!(
         torques::SegmentedVector{JointID},
-        biasaccelerations::Associative{BodyID, <:SpatialAcceleration},
-        wrenches::Associative{BodyID, <:Wrench},
+        biasaccelerations::AbstractDict{BodyID, <:SpatialAcceleration},
+        wrenches::AbstractDict{BodyID, <:Wrench},
         state::MechanismState{X},
-        externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
+        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
     bias_accelerations!(biasaccelerations, state)
     newton_euler!(wrenches, state, biasaccelerations, externalwrenches)
     joint_wrenches_and_torques!(torques, wrenches, state)
@@ -443,7 +443,7 @@ $dynamics_bias_doc
 """
 function dynamics_bias(
         state::MechanismState{X, M},
-        externalwrenches::Associative{BodyID, Wrench{W}} = NullDict{BodyID, Wrench{X}}()) where {X, M, W}
+        externalwrenches::AbstractDict{BodyID, Wrench{W}} = NullDict{BodyID, Wrench{X}}()) where {X, M, W}
     T = promote_type(X, M, W)
     mechanism = state.mechanism
     torques = similar(velocity(state), T)
@@ -480,11 +480,11 @@ $noalloc_doc
 """
 function inverse_dynamics!(
         torquesout::SegmentedVector{JointID},
-        jointwrenchesout::Associative{BodyID, Wrench{T}},
-        accelerations::Associative{BodyID, SpatialAcceleration{T}},
+        jointwrenchesout::AbstractDict{BodyID, Wrench{T}},
+        accelerations::AbstractDict{BodyID, SpatialAcceleration{T}},
         state::MechanismState,
         v̇::SegmentedVector{JointID},
-        externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{T}}()) where T
+        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{T}}()) where T
     @boundscheck length(tree_joints(state.mechanism)) == length(joints(state.mechanism)) || error("This method can currently only handle tree Mechanisms.")
     spatial_accelerations!(accelerations, state, v̇)
     newton_euler!(jointwrenchesout, state, accelerations, externalwrenches)
@@ -499,7 +499,7 @@ $inverse_dynamics_doc
 function inverse_dynamics(
         state::MechanismState{X, M},
         v̇::SegmentedVector{JointID, V},
-        externalwrenches::Associative{BodyID, Wrench{W}} = NullDict{BodyID, Wrench{X}}()) where {X, M, V, W}
+        externalwrenches::AbstractDict{BodyID, Wrench{W}} = NullDict{BodyID, Wrench{X}}()) where {X, M, V, W}
     T = promote_type(X, M, V, W)
     mechanism = state.mechanism
     torques = similar(velocity(state), T)
@@ -725,7 +725,7 @@ wrenches that act on the `Mechanism`'s bodies.
 """
 function dynamics!(result::DynamicsResult, state::MechanismState{X},
         torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
-        externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
+        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
     configuration_derivative!(result.q̇, state)
     contact_dynamics!(result, state)
     for jointid in state.treejointids
@@ -760,7 +760,7 @@ and returns a `Vector` ``\\dot{x}``.
 function dynamics!(ẋ::StridedVector{X},
         result::DynamicsResult, state::MechanismState{X}, x::AbstractVector{X},
         torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
-        externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
+        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
     copy!(state, x)
     dynamics!(result, state, torques, externalwrenches)
     copy!(ẋ, result)
@@ -783,33 +783,33 @@ function segmented_vector_breakage_error(funcname::Symbol, args::Symbol...)
     """)
 end
 
-function spatial_accelerations!(out::Associative{BodyID, SpatialAcceleration{T}}, state::MechanismState, v̇::AbstractVector) where T
+function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}}, state::MechanismState, v̇::AbstractVector) where T
     segmented_vector_breakage_error(:spatial_accelerations!, :v̇)
 end
 
 function dynamics_bias!(
         torques::AbstractVector,
-        biasaccelerations::Associative{BodyID, <:SpatialAcceleration},
-        wrenches::Associative{BodyID, <:Wrench},
+        biasaccelerations::AbstractDict{BodyID, <:SpatialAcceleration},
+        wrenches::AbstractDict{BodyID, <:Wrench},
         state::MechanismState{X},
-        externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
+        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
     segmented_vector_breakage_error(:dynamics_bias!, :torques)
 end
 
 function inverse_dynamics!(
         torquesout::AbstractVector,
-        jointwrenchesout::Associative{BodyID, Wrench{T}},
-        accelerations::Associative{BodyID, SpatialAcceleration{T}},
+        jointwrenchesout::AbstractDict{BodyID, Wrench{T}},
+        accelerations::AbstractDict{BodyID, SpatialAcceleration{T}},
         state::MechanismState,
         v̇::AbstractVector,
-        externalwrenches::Associative{BodyID, <:Wrench} = NullDict{BodyID, Wrench{T}}()) where T
+        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{T}}()) where T
     segmented_vector_breakage_error(:inverse_dynamics!, :torquesout, :v̇)
 end
 
 function inverse_dynamics(
         state::MechanismState{X, M},
         v̇::AbstractVector{V},
-        externalwrenches::Associative{BodyID, Wrench{W}} = NullDict{BodyID, Wrench{X}}()) where {X, M, V, W}
+        externalwrenches::AbstractDict{BodyID, Wrench{W}} = NullDict{BodyID, Wrench{X}}()) where {X, M, V, W}
     segmented_vector_breakage_error(:inverse_dynamics, :v̇)
 end
 

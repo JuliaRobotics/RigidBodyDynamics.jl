@@ -147,7 +147,7 @@ Also optionally, `next_edge` can be used to select which joints should become pa
 new spanning tree.
 """
 function rebuild_spanning_tree!(mechanism::Mechanism{M},
-        flipped_joint_map::Associative = Dict{<:Joint{M}, <:Joint{M}}();
+        flipped_joint_map::AbstractDict = Dict{<:Joint{M}, <:Joint{M}}();
         next_edge = first #= breadth first =#) where {M}
     mechanism.tree = SpanningTree(mechanism.graph, root_body(mechanism), flipped_joint_map; next_edge = next_edge)
     register_modification!(mechanism)
@@ -168,7 +168,7 @@ Also optionally, `spanning_tree_next_edge` can be used to select which joints sh
 new spanning tree, if rebuilding the spanning tree is required.
 """
 function remove_joint!(mechanism::Mechanism{M}, joint::Joint{M};
-        flipped_joint_map::Associative = Dict{<:Joint{M}, <:Joint{M}}(),
+        flipped_joint_map::AbstractDict = Dict{<:Joint{M}, <:Joint{M}}(),
         spanning_tree_next_edge = first #= breadth first =#) where {M}
     istreejoint = joint ∈ tree_joints(mechanism)
     remove_edge!(mechanism.graph, joint)

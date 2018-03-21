@@ -1,10 +1,5 @@
 @reexport module Spatial
 
-using Base.Random
-using StaticArrays
-using Rotations
-using DocStringExtensions
-
 # types
 export
     CartesianFrame3D,
@@ -44,6 +39,12 @@ export
 # macros
 export
     @framecheck
+
+using Compat
+using Compat.Random
+using StaticArrays
+using Rotations
+using DocStringExtensions
 
 include("frame.jl")
 include("util.jl")

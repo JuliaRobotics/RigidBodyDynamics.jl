@@ -39,6 +39,7 @@ export
     direction,
     directions
 
+using Compat
 using Base.Iterators: flatten
 
 include("abstract.jl")

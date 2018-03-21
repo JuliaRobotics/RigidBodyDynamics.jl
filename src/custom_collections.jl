@@ -76,7 +76,7 @@ $(TYPEDEF)
 An immutable associative type that signifies an empty dictionary and does not
 allocate any memory.
 """
-struct NullDict{K, V} <: Associative{K, V}
+struct NullDict{K, V} <: AbstractDict{K, V}
 end
 Base.haskey(::NullDict, k) = false
 Base.length(::NullDict) = 0
@@ -96,7 +96,7 @@ end
 
 
 ## IndexDicts
-abstract type AbstractIndexDict{K, V} <: Associative{K, V} end
+abstract type AbstractIndexDict{K, V} <: AbstractDict{K, V} end
 
 makekeys(::Type{UnitRange{K}}, start::K, stop::K) where {K} = start : stop
 function makekeys(::Type{Base.OneTo{K}}, start::K, stop::K) where {K}
@@ -305,7 +305,7 @@ function SegmentedVector{K}(parent::P, keys, viewlengthfun) where {K, T, P<:Abst
     SegmentedVector{K, T, Base.OneTo{K}}(parent, keys, viewlengthfun)
 end
 
-function SegmentedVector{K, T, KeyRange}(parent::P, ranges::Associative{K, UnitRange{Int}}) where {K, T, KeyRange, P<:AbstractVector{T}}
+function SegmentedVector{K, T, KeyRange}(parent::P, ranges::AbstractDict{K, UnitRange{Int}}) where {K, T, KeyRange, P<:AbstractVector{T}}
     segs = IndexDict{K, KeyRange, VectorSegment{T}}(keys(ranges), [view(parent, range) for range in values(ranges)])
     SegmentedVector{K, T, KeyRange, P}(parent, IndexDict{K, KeyRange, VectorSegment{T}}(segs))
 end

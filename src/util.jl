@@ -37,7 +37,7 @@ end
 
 ## findunique
 function findunique(f, A)
-    results = find(f, A)
+    results = findall(f, A)
     length(results) == 0 && error("No results found.")
     length(results) > 1 && error("Multiple results found:\n$(A[results])")
     A[first(results)]
@@ -45,7 +45,7 @@ end
 
 
 # Cached download
-const module_tempdir = joinpath(Base.tempdir(), string(module_name(@__MODULE__)))
+const module_tempdir = joinpath(Base.tempdir(), string(nameof(@__MODULE__)))
 
 function cached_download(url::String, local_file_name::String, cache_dir::String = joinpath(module_tempdir, string(hash(url))))
     if !ispath(cache_dir)

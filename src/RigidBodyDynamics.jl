@@ -2,13 +2,13 @@ __precompile__()
 
 module RigidBodyDynamics
 
-using Base.Random
+using Compat
+using Compat.Random
 using StaticArrays
 using Rotations
 using TypeSortedCollections
 using LightXML
 using DocStringExtensions
-using Compat
 using Reexport
 import Base.Iterators: filter, flatten
 
