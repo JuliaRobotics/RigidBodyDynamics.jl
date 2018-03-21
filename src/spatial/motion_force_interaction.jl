@@ -104,7 +104,7 @@ function Random.rand(::Type{<:SpatialInertia{T}}, frame::CartesianFrame3D) where
     # Try to generate a random but physical moment of inertia
     # by constructing it from its eigendecomposition
     Q = rand(RotMatrix3{T}).mat
-    principal_moments = Vector{T}(3)
+    principal_moments = Vector{T}(undef, 3)
 
     # Scale the inertias to make the length scale of the
     # equivalent inertial ellipsoid roughly ~1 unit
@@ -134,8 +134,8 @@ $(SIGNATURES)
 
 Compute the mechanical power associated with a pairing of a wrench and a twist.
 """
-Base.dot(w::Wrench, t::Twist) = begin @framecheck(w.frame, t.frame); dot(angular(w), angular(t)) + dot(linear(w), linear(t)) end
-Base.dot(t::Twist, w::Wrench) = dot(w, t)
+Compat.LinearAlgebra.dot(w::Wrench, t::Twist) = begin @framecheck(w.frame, t.frame); dot(angular(w), angular(t)) + dot(linear(w), linear(t)) end
+Compat.LinearAlgebra.dot(t::Twist, w::Wrench) = dot(w, t)
 
 
 for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :MomentumMatrix => :Wrench, :WrenchMatrix => :Wrench)
@@ -198,13 +198,13 @@ end
 torque!(τ::AbstractVector, jac::GeometricJacobian, wrench::Wrench) = At_mul_B!(τ, jac, wrench)
 
 function torque(jac::GeometricJacobian, wrench::Wrench)
-    τ = Vector{promote_type(eltype(jac), eltype(wrench))}(size(jac, 2))
+    τ = Vector{promote_type(eltype(jac), eltype(wrench))}(undef, size(jac, 2))
     torque!(τ, jac, wrench)
     τ
 end
 
 for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAcceleration}), :GeometricJacobian => :(Union{Momentum, Wrench}))
-    @eval @inline function Base.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
+    @eval @inline function Compat.LinearAlgebra.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
         @boundscheck length(x) == size(mat, 2) || error("size mismatch")
         @framecheck mat.frame vec.frame
         @simd for row in eachindex(x)

@@ -270,7 +270,7 @@ struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <
             l = 0
             for segment in values(segments)
                 parent(segment) === parent(p) || error()
-                indices = first(parentindexes(segment))
+                indices = first(parentindices(segment))
                 if firstsegment
                     start = first(indices)
                     firstsegment = false
@@ -318,7 +318,7 @@ Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
 function ranges(v::SegmentedVector{K, <:Any, KeyRange}) where {K, KeyRange}
     segments = v.segments
-    IndexDict{K, KeyRange, UnitRange{Int}}(segments.keys, map(segment -> first(parentindexes(segment))::UnitRange{Int}, segments.values))
+    IndexDict{K, KeyRange, UnitRange{Int}}(segments.keys, map(segment -> first(parentindices(segment))::UnitRange{Int}, segments.values))
 end
 
 function Base.similar(v::SegmentedVector{K, T, KeyRange}, ::Type{S} = T) where {K, T, KeyRange, S}

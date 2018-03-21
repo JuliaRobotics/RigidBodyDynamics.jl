@@ -145,7 +145,7 @@ macro indextype(ID)
         Base.start(r::StepRange{$ID}) = Int(r.start)
         Base.next(r::AbstractUnitRange{$ID}, i) = (convert($ID, i), i + 1)
         Base.done(r::AbstractUnitRange{$ID}, i) = i == oftype(i, r.stop) + 1
-        Base.colon(start::$ID, step::Int, stop::$ID) = StepRange(start, step, stop)
+        Base.:(:)(start::$ID, step::Int, stop::$ID) = StepRange(start, step, stop)
         Base.steprange_last(start::$ID, step::Int, stop::$ID) = $ID(Base.steprange_last(Int(start), step, Int(stop)))
     end)
 end

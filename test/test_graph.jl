@@ -17,7 +17,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
         end
         @test isempty(setdiff(vertices(graph), verts))
         @test isempty(edges(graph))
-        show(DevNull, graph)
+        show(devnull, graph)
     end
 
 
@@ -45,7 +45,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
                 @test length(in_neighbors(v, graph)) == 1
             end
         end
-        show(DevNull, graph)
+        show(devnull, graph)
     end
 
     @testset "remove_vertex!" begin
@@ -210,7 +210,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
         end
 
         tree = tree1
-        show(DevNull, tree)
+        show(devnull, tree)
 
         @test_throws AssertionError add_edge!(tree, rand(vertices(tree)), rand(vertices(tree)), Edge(rand(Int32)))
 
@@ -221,7 +221,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
                 lca = lowest_common_ancestor(src, dest, tree)
                 p = TreePath(src, dest, tree)
 
-                show(DevNull, p)
+                show(devnull, p)
                 @inferred collect(p)
 
                 @test source(p) == src

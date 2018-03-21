@@ -116,7 +116,7 @@ function set_joint_to_successor!(joint::Joint, tf::Transform3D)
 end
 
 Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(string(joint))\": $(joint.joint_type)")
-Base.showcompact(io::IO, joint::Joint) = print(io, "$(string(joint))")
+Base.showcompact(io::IO, joint::Joint) = print(io, "$(string(joint))") # FIXME: use show with IOContext(io, :compact => true)
 
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
 num_velocities(itr) = reduce((val, joint) -> val + num_velocities(joint), 0, itr)

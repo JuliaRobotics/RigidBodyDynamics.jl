@@ -79,9 +79,9 @@ end
 
 function remove_edge!(g::DirectedGraph{V, E}, edge::E) where {V, E}
     target_inedges = in_edges(target(edge, g), g)
-    deleteat!(target_inedges, findfirst(target_inedges, edge))
+    deleteat!(target_inedges, findfirst(isequal(edge), target_inedges))
     source_outedges = out_edges(source(edge, g), g)
-    deleteat!(source_outedges, findfirst(source_outedges, edge))
+    deleteat!(source_outedges, findfirst(isequal(edge), source_outedges))
     index = edge_index(edge)
     deleteat!(g.edges, index)
     deleteat!(g.sources, index)
@@ -101,9 +101,9 @@ function rewire!(g::DirectedGraph{V, E}, edge::E, newsource::V, newtarget::V) wh
     g.targets[edge_index(edge)] = newtarget
 
     oldtarget_inedges = in_edges(oldtarget, g)
-    deleteat!(oldtarget_inedges, findfirst(oldtarget_inedges, edge))
+    deleteat!(oldtarget_inedges, findfirst(isequal(edge), oldtarget_inedges))
     oldsource_outedges = out_edges(oldsource, g)
-    deleteat!(oldsource_outedges, findfirst(oldsource_outedges, edge))
+    deleteat!(oldsource_outedges, findfirst(isequal(edge), oldsource_outedges))
 
     push!(out_edges(newsource, g), edge)
     push!(in_edges(newtarget, g), edge)
@@ -118,9 +118,9 @@ function replace_edge!(g::DirectedGraph{V, E}, old_edge::E, new_edge::E) where {
         index = edge_index(old_edge)
         edge_index!(new_edge, index)
         g.edges[index] = new_edge
-        out_edge_index = findfirst(out_edges(src, g), old_edge)
+        out_edge_index = findfirst(isequal(old_edge), out_edges(src, g))
         out_edges(src, g)[out_edge_index] = new_edge
-        in_edge_index = findfirst(in_edges(dest, g), old_edge)
+        in_edge_index = findfirst(isequal(old_edge), in_edges(dest, g))
         in_edges(dest, g)[in_edge_index] = new_edge
         edge_index!(old_edge, -1)
     end

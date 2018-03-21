@@ -72,16 +72,16 @@ Base.:\(t::Transform3D, point::Point3D) = begin @framecheck point.frame t.to; Po
 # FreeVector3D-specific
 FreeVector3D(p::Point3D) = FreeVector3D(p.frame, p.v)
 Base.:-(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, v1.v - v2.v) end
-Base.cross(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
-Base.dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
+Compat.LinearAlgebra.cross(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
+Compat.LinearAlgebra.dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
 Base.:*(t::Transform3D, vector::FreeVector3D) = begin @framecheck(t.from, vector.frame); FreeVector3D(t.to, rotation(t) * vector.v) end
 Base.:\(t::Transform3D, point::FreeVector3D) = begin @framecheck point.frame t.to; FreeVector3D(t.from, At_mul_B(rotation(t), point.v)) end
-Base.norm(v::FreeVector3D) = norm(v.v)
-Base.normalize(v::FreeVector3D, p = 2) = FreeVector3D(v.frame, normalize(v.v, p))
+Compat.LinearAlgebra.norm(v::FreeVector3D) = norm(v.v)
+Compat.LinearAlgebra.normalize(v::FreeVector3D, p = 2) = FreeVector3D(v.frame, normalize(v.v, p))
 
 # Mixed Point3D and FreeVector3D
 Base.:+(p1::FreeVector3D, p2::FreeVector3D) = begin @framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v + p2.v) end
 Base.:+(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); Point3D(p.frame, p.v + v.v) end
 Base.:+(v::FreeVector3D, p::Point3D) = p + v
 Base.:-(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); Point3D(p.frame, p.v - v.v) end
-Base.cross(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); FreeVector3D(p.frame, cross(p.v, v.v)) end
+Compat.LinearAlgebra.cross(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); FreeVector3D(p.frame, cross(p.v, v.v)) end

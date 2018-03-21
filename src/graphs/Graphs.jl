@@ -41,6 +41,7 @@ export
 
 using Compat
 using Base.Iterators: flatten
+import Compat.SparseArrays: sparsevec
 
 include("abstract.jl")
 include("directed_graph.jl")

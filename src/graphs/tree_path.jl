@@ -9,10 +9,10 @@ end
 source(path::TreePath) = path.source
 target(path::TreePath) = path.target
 
-@inline Base.findfirst(edge::E, path::TreePath{<:Any, E}) where {E} = path.indexmap[edge_index(edge)]
-@inline Base.in(edge::E, path::TreePath{<:Any, E}) where {E} = findfirst(edge, path) != 0
+@inline Base.findfirst(path::TreePath{<:Any, E}, edge::E) where {E} = path.indexmap[edge_index(edge)] # TODO: remove, use equalto
+@inline Base.in(edge::E, path::TreePath{<:Any, E}) where {E} = findfirst(path, edge) != 0 # TODO: findfirst update
 @inline directions(path::TreePath) = path.directions
-@inline direction(edge::E, path::TreePath{<:Any, E}) where {E} = path.directions[findfirst(edge, path)]
+@inline direction(edge::E, path::TreePath{<:Any, E}) where {E} = path.directions[findfirst(path, edge)] # TODO: findfirst update
 
 Base.start(path::TreePath) = start(path.edges)
 Base.next(path::TreePath, state) = next(path.edges, state)
@@ -27,7 +27,7 @@ function Base.show(io::IO, path::TreePath)
     for edge in path
         directionchar = ifelse(direction(edge, path) == :up, '↑', '↓')
         print(io, "$directionchar ")
-        showcompact(io, edge)
+        show(IOContext(io, :compact => true), edge)
         println(io)
     end
 end

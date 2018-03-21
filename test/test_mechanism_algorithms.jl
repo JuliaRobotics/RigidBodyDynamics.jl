@@ -15,16 +15,16 @@ end
             attach!(mechanism_with_loops, pred, succ, joint)
         end
 
-        show(DevNull, mechanism_with_loops)
+        show(devnull, mechanism_with_loops)
         for joint in joints(mechanism_with_loops)
-            show(DevNull, joint)
-            showcompact(DevNull, joint)
+            show(devnull, joint)
+            showcompact(devnull, joint)
         end
         for body in bodies(mechanism_with_loops)
-            show(DevNull, body)
-            showcompact(DevNull, body)
+            show(devnull, body)
+            showcompact(devnull, body)
         end
-        show(DevNull, x)
+        show(devnull, x)
     end
 
     @testset "basic stuff" begin

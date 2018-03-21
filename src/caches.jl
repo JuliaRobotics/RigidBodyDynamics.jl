@@ -107,5 +107,5 @@ end
 end
 
 @inline function makevalue(c::SegmentedVectorCache{K, KeyRange}, ::Type{T}) where {K, T, KeyRange}
-    SegmentedVector{K, T, KeyRange}(Vector{T}(uninitialized, c.length), c.ranges)
+    SegmentedVector{K, T, KeyRange}(Vector{T}(undef, c.length), c.ranges)
 end

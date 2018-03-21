@@ -24,7 +24,7 @@ tree_index(vertex::V, tree::SpanningTree{V, E}) where {V, E} = vertex == root(tr
 function SpanningTree(g::DirectedGraph{V, E}, root::V, edges::AbstractVector{E}) where {V, E}
     n = num_vertices(g)
     length(edges) == n - 1 || error("Expected n - 1 edges.")
-    inedges = Vector{E}(n)
+    inedges = Vector{E}(undef, n)
     outedges = [E[] for i = 1 : n]
     edge_tree_indices = Int64[]
     treevertices = V[]
@@ -100,7 +100,7 @@ function replace_edge!(tree::SpanningTree{V, E}, old_edge::E, new_edge::E) where
     dest = target(old_edge, tree)
     tree.edges[tree_index(old_edge, tree)] = new_edge
     tree.inedges[vertex_index(dest)] = new_edge
-    out_edge_index = findfirst(out_edges(src, tree), old_edge)
+    out_edge_index = findfirst(isequal(old_edge), out_edges(src, tree))
     out_edges(src, tree)[out_edge_index] = new_edge
     replace_edge!(tree.graph, old_edge, new_edge)
     tree
@@ -109,13 +109,13 @@ end
 function Base.show(io::IO, tree::SpanningTree, vertex = root(tree), level::Int64 = 0)
     for i = 1 : level print(io, "  ") end
     print(io, "Vertex: ")
-    showcompact(io, vertex)
+    show(IOContext(io, :compact => true), vertex)
     if vertex == root(tree)
         print(io, " (root)")
     else
         print(io, ", ")
         print(io, "Edge: ")
-        showcompact(io, edge_to_parent(vertex, tree))
+        show(IOContext(io, :compact => true), edge_to_parent(vertex, tree))
     end
     for edge in edges_to_children(vertex, tree)
         print(io, "\n")

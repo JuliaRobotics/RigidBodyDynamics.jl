@@ -84,5 +84,5 @@ end
         print(buf, name_and_id(f2))
     end
     print(buf, ')')
-    throw(ArgumentError("$(framecheck_string(expr1, f1)) ∉ $(expr2): $(String(buf))"))
+    throw(ArgumentError("$(framecheck_string(expr1, f1)) ∉ $(expr2): $(String(take!(buf)))"))
 end

@@ -285,7 +285,7 @@ function Base.exp(twist::Twist)
     Transform3D(twist.body, twist.base, rot, trans)
 end
 
-function Base.cross(twist1::Twist, twist2::Twist)
+function Compat.LinearAlgebra.cross(twist1::Twist, twist2::Twist)
     @framecheck(twist1.frame, twist2.frame)
     ang, lin = se3_commutator(angular(twist1), linear(twist1), angular(twist2), linear(twist2))
     SpatialAcceleration(twist2.body, twist2.base, twist2.frame, ang, lin)

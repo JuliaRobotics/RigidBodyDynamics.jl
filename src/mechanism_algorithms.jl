@@ -88,7 +88,7 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
     discard = DiscardVector(length(joints))
     broadcast!(discard, jac, state, path, joints, motion_subspaces) do jac, state, path, joint, motion_subspace
         vrange = velocity_range(state, joint)
-        pathindex = findfirst(joint, path)
+        pathindex = findfirst(path, joint)
         if pathindex > 0
             part = transformfun(motion_subspace)
             directions(path)[pathindex] == :up && (part = -part)
@@ -530,7 +530,7 @@ end
 
 @inline function constraint_jacobian_part!(jac, rowrange, state, path, T, treejoint, S)
     vrange = velocity_range(state, treejoint)
-    pathindex = findfirst(treejoint, path)
+    pathindex = findfirst(path, treejoint)
     if pathindex > 0
         part = angular(T)' * angular(S) + linear(T)' * linear(S) # TODO: At_mul_B
         directions(path)[pathindex] == :up && (part = -part)
@@ -628,7 +628,7 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
     nothing
 end
 
-function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) where {S, T<:LinAlg.BlasReal}
+function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) where {S, T<:Compat.LinearAlgebra.BlasReal}
     # optimized version for BLAS floats
     M = result.massmatrix
     c = parent(result.dynamicsbias)
@@ -645,7 +645,7 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
 
     L[:] = M.data
     uplo = M.uplo
-    LinAlg.LAPACK.potrf!(uplo, L) # L <- Cholesky decomposition of M; M == L Lᵀ (note: Featherstone, page 151 uses M == Lᵀ L instead)
+    Compat.LinearAlgebra.LAPACK.potrf!(uplo, L) # L <- Cholesky decomposition of M; M == L Lᵀ (note: Featherstone, page 151 uses M == Lᵀ L instead)
     τbiased = v̇
     τbiased .= τ .- c
 
@@ -673,34 +673,34 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
 
         # Compute Y = K L⁻ᵀ
         Y[:] = K
-        LinAlg.BLAS.trsm!('R', uplo, 'T', 'N', one(T), L, Y)
+        Compat.LinearAlgebra.BLAS.trsm!('R', uplo, 'T', 'N', one(T), L, Y)
 
         # Compute z = L⁻¹ (τ - c)
         z[:] = τbiased
-        LinAlg.BLAS.trsv!(uplo, 'N', 'N', L, z) # z <- L⁻¹ (τ - c)
+        Compat.LinearAlgebra.BLAS.trsv!(uplo, 'N', 'N', L, z) # z <- L⁻¹ (τ - c)
 
         # Compute A = Y Yᵀ == K * M⁻¹ * Kᵀ
-        LinAlg.BLAS.gemm!('N', 'T', one(T), Y, Y, zero(T), A) # A <- K * M⁻¹ * Kᵀ
+        Compat.LinearAlgebra.BLAS.gemm!('N', 'T', one(T), Y, Y, zero(T), A) # A <- K * M⁻¹ * Kᵀ
 
         # Compute b = Y z + k
         b = λ
         b[:] = k
-        LinAlg.BLAS.gemv!('N', one(T), Y, z, one(T), b) # b <- Y z + k
+        Compat.LinearAlgebra.BLAS.gemv!('N', one(T), Y, z, one(T), b) # b <- Y z + k
 
         # Compute λ = A⁻¹ b == (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
-        # LinAlg.LAPACK.posv!(uplo, A, b) # NOTE: doesn't work in general because A is only guaranteed to be positive semidefinite
+        # Compat.LinearAlgebra.LAPACK.posv!(uplo, A, b) # NOTE: doesn't work in general because A is only guaranteed to be positive semidefinite
         singular_value_zero_tolerance = 1e-10 # TODO: more principled choice
         # TODO: https://github.com/JuliaLang/julia/issues/22242
-        b[:], _ = LinAlg.LAPACK.gelsy!(A, b, singular_value_zero_tolerance) # b == λ <- (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
+        b[:], _ = Compat.LinearAlgebra.LAPACK.gelsy!(A, b, singular_value_zero_tolerance) # b == λ <- (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
 
         # Update τbiased: subtract Kᵀ * λ
-        LinAlg.BLAS.gemv!('T', -one(T), K, λ, one(T), τbiased) # τbiased <- τ - c - Kᵀ * λ
+        Compat.LinearAlgebra.BLAS.gemv!('T', -one(T), K, λ, one(T), τbiased) # τbiased <- τ - c - Kᵀ * λ
 
         # Solve for v̇ = M⁻¹ * (τ - c - Kᵀ * λ)
-        LinAlg.LAPACK.potrs!(uplo, L, τbiased) # τbiased ==v̇ <- M⁻¹ * (τ - c - Kᵀ * λ)
+        Compat.LinearAlgebra.LAPACK.potrs!(uplo, L, τbiased) # τbiased ==v̇ <- M⁻¹ * (τ - c - Kᵀ * λ)
     else
         # No loops.
-        LinAlg.LAPACK.potrs!(uplo, L, τbiased) # τbiased == v̇ <- M⁻¹ * (τ - c)
+        Compat.LinearAlgebra.LAPACK.potrs!(uplo, L, τbiased) # τbiased == v̇ <- M⁻¹ * (τ - c)
     end
     nothing
 end

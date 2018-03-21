@@ -320,7 +320,7 @@ end
         try
             mass_matrix(state)
         catch e
-            showerror(DevNull, e)
+            showerror(devnull, e)
         end
     end
 end # mechanism modification
