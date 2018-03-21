@@ -20,6 +20,10 @@ export
     segments,
     ranges
 
+@static if !isdefined(Base, :parentindices)
+    parentindices(x) = Base.parentindexes(x)
+end
+
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
 # heap-allocated variables. Hopefully this will not be necessary in a future version of Julia.
@@ -158,7 +162,7 @@ for IDict in (:IndexDict, :CacheIndexDict)
         end
 
         function $IDict{K, KeyRange, V}(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
-            $IDict{K, KeyRange, V}(keys, Vector{V}(uninitialized, length(keys)))
+            $IDict{K, KeyRange, V}(keys, Vector{V}(undef, length(keys)))
         end
 
         function $IDict{K, KeyRange, V}(kv::Vector{Pair{K, V}}) where {K, KeyRange<:AbstractUnitRange{K}, V}
@@ -185,13 +189,13 @@ for IDict in (:IndexDict, :CacheIndexDict)
         function $IDict{K, KeyRange, V}(itr) where {K, KeyRange<:AbstractUnitRange{K}, V}
             kv = Pair{K, V}[]
             for x in itr
-                push!(kv, K(first(x)) => convert(V, last(x)))
+                push!(kv, convert(K, first(x)) => convert(V, last(x)))
             end
             $IDict{K, KeyRange, V}(kv)
         end
 
         function $IDict{K, KeyRange}(itr) where {K, KeyRange<:AbstractUnitRange{K}}
-            kv = [K(first(x)) => last(x) for x in itr]
+            kv = [convert(K, first(x)) => last(x) for x in itr]
             $IDict{K, KeyRange}(kv)
         end
     end
@@ -270,7 +274,7 @@ struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractVector{T}} <
             l = 0
             for segment in values(segments)
                 parent(segment) === parent(p) || error()
-                indices = first(parentindexes(segment))
+                indices = first(parentindices(segment))
                 if firstsegment
                     start = first(indices)
                     firstsegment = false
@@ -295,7 +299,7 @@ function SegmentedVector{K, T, KeyRange}(parent::P, keys, viewlengthfun) where {
     start = 1
     for key in keys
         stop = start[] + viewlengthfun(key) - 1
-        push!(views, K(key) => view(parent, start : stop))
+        push!(views, convert(K, key) => view(parent, start : stop))
         start = stop + 1
     end
     SegmentedVector{K, T, KeyRange, P}(parent, IndexDict{K, KeyRange, VectorSegment{T}}(views))
@@ -318,7 +322,7 @@ Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
 function ranges(v::SegmentedVector{K, <:Any, KeyRange}) where {K, KeyRange}
     segments = v.segments
-    IndexDict{K, KeyRange, UnitRange{Int}}(segments.keys, map(segment -> first(parentindexes(segment))::UnitRange{Int}, segments.values))
+    IndexDict{K, KeyRange, UnitRange{Int}}(segments.keys, map(segment -> first(parentindices(segment))::UnitRange{Int}, segments.values))
 end
 
 function Base.similar(v::SegmentedVector{K, T, KeyRange}, ::Type{S} = T) where {K, T, KeyRange, S}

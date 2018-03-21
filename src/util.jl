@@ -128,9 +128,11 @@ macro indextype(ID)
         struct $ID <: Integer
             value::Int
         end
+        $ID(id::$ID) = id
         Base.hash(i::$ID, h::UInt) = hash(i.value, h)
         Base.convert(::Type{Int}, i::$ID) = i.value
         Base.Integer(i::$ID) = i.value
+        Base.Int(i::$ID) = i.value
         Base.convert(::Type{$ID}, i::Integer) = $ID(i)
         Base.promote_type(::Type{Int}, ::Type{$ID}) = $ID
         Base.promote_type(::Type{$ID}, ::Type{Int}) = $ID

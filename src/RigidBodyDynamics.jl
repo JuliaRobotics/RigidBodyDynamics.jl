@@ -4,6 +4,8 @@ module RigidBodyDynamics
 
 using Compat
 using Compat.Random
+using Compat.LinearAlgebra
+using Nullables
 using StaticArrays
 using Rotations
 using TypeSortedCollections
@@ -157,6 +159,10 @@ export
     JointID,
     BodyID,
     segments
+
+@static if !isdefined(Base, :parentindices)
+    parentindices(x) = Base.parentindexes(x)
+end
 
 include("custom_collections.jl")
 include("graphs/Graphs.jl")

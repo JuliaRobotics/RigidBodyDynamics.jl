@@ -46,16 +46,16 @@ end
     end
 
     @testset "show" begin
-        show(DevNull, rand(SpatialInertia{Float64}, f1))
-        show(DevNull, rand(Twist{Float64}, f2, f1, f3))
-        show(DevNull, rand(SpatialAcceleration{Float64}, f2, f1, f3))
-        show(DevNull, rand(Wrench{Float64}, f2))
-        show(DevNull, rand(Momentum{Float64}, f2))
+        show(devnull, rand(SpatialInertia{Float64}, f1))
+        show(devnull, rand(Twist{Float64}, f2, f1, f3))
+        show(devnull, rand(SpatialAcceleration{Float64}, f2, f1, f3))
+        show(devnull, rand(Wrench{Float64}, f2))
+        show(devnull, rand(Momentum{Float64}, f2))
 
         n = 5
-        show(DevNull, GeometricJacobian(f2, f1, f3, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
-        show(DevNull, MomentumMatrix(f2, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
-        show(DevNull, WrenchMatrix(f2, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
+        show(devnull, GeometricJacobian(f2, f1, f3, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
+        show(devnull, MomentumMatrix(f2, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
+        show(devnull, WrenchMatrix(f2, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
     end
 
     @testset "spatial inertia" begin
@@ -206,7 +206,8 @@ end
     @testset "log / exp" begin
         hat = RigidBodyDynamics.Spatial.hat
         srand(1) # TODO: https://github.com/JuliaRobotics/RigidBodyDynamics.jl/issues/135
-        for θ in [linspace(0., 10 * eps(), 100); linspace(0., π - eps(), 100)]
+        for θ in [LinRange(0., 10 * eps(), 100);
+                  LinRange(0., π - eps(), 100)]
             # have magnitude of parts of twist be bounded by θ to check for numerical issues
             ϕrot = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
             ϕtrans = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
@@ -227,7 +228,8 @@ end
         @test isapprox(ξ, log(H))
 
         # test rotation for θ > π
-        for θ in [linspace(π - 10 * eps(), π + 10 * eps(), 100) linspace(π, 6 * π, 100)]
+        for θ in [LinRange(π - 10 * eps(), π + 10 * eps(), 100);
+                  LinRange(π, 6 * π, 100)]
             ω = normalize(rand(SVector{3}))
             ξ1 = Twist(f2, f1, f1, ω * θ, zeros(SVector{3}))
             ξ2 = Twist(f2, f1, f1, ω * mod(θ, 2 * π), zeros(SVector{3}))
@@ -235,7 +237,7 @@ end
         end
 
         # derivative
-        for θ in linspace(1e-3, π - 1e-3, 100) # autodiff doesn't work close to the identity rotation
+        for θ in LinRange(1e-3, π - 1e-3, 100) # autodiff doesn't work close to the identity rotation
             hat = RigidBodyDynamics.Spatial.hat
             ξ = Twist{Float64}(f2, f1, f1, θ * normalize(rand(SVector{3})), θ * normalize(rand(SVector{3})))
             H = exp(ξ)

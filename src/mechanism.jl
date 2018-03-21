@@ -96,11 +96,11 @@ function Base.show(io::IO, mechanism::Mechanism)
         print(io, "Non-tree joints:")
         for joint in nontreejoints
             println(io)
-            showcompact(io, joint)
+            show(IOContext(io, :compact => true), joint)
             print(io, ", predecessor: ")
-            showcompact(io, predecessor(joint, mechanism))
+            show(IOContext(io, :compact => true), predecessor(joint, mechanism))
             print(io, ", successor: ")
-            showcompact(io, successor(joint, mechanism))
+            show(IOContext(io, :compact => true), successor(joint, mechanism))
         end
     end
 end

@@ -41,7 +41,7 @@
 
     @test isapprox(norm(v), sqrt(dot(v, v)))
 
-    show(DevNull, t1)
-    show(DevNull, p)
-    show(DevNull, v)
+    show(devnull, t1)
+    show(devnull, p)
+    show(devnull, v)
 end

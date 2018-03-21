@@ -57,7 +57,7 @@ function Joint(name::String, jtype::JointType; kw...)
     Joint(name, CartesianFrame3D(string("before_", name)), CartesianFrame3D(string("after_", name)), jtype; kw...)
 end
 
-Base.string(joint::Joint) = joint.name
+Base.print(io::IO, joint::Joint) = print(io, joint.name)
 frame_before(joint::Joint) = joint.frame_before
 frame_after(joint::Joint) = joint.frame_after
 joint_type(joint::Joint) = joint.joint_type
@@ -90,10 +90,11 @@ effort for `joint`
 """
 effort_bounds(joint::Joint) = joint.effort_bounds
 
-@inline JointID(joint::Joint) = joint.id[]
-@inline id(joint::Joint) = JointID(joint)
+JointID(joint::Joint) = joint.id[]
+Base.convert(::Type{JointID}, joint::Joint) = JointID(joint)
+Base.@deprecate id(joint::Joint) JointID(joint)
 @inline RigidBodyDynamics.Graphs.edge_id_type(::Type{<:Joint}) = JointID
-@inline RigidBodyDynamics.Graphs.edge_id(joint::Joint) = id(joint)
+@inline RigidBodyDynamics.Graphs.edge_id(joint::Joint) = convert(JointID, joint)
 @inline RigidBodyDynamics.Graphs.set_edge_id!(joint::Joint, id::JointID) = (joint.id[] = id)
 function RigidBodyDynamics.Graphs.flip_direction(joint::Joint)
     jtype = RigidBodyDynamics.flip_direction(joint_type(joint))
@@ -115,8 +116,17 @@ function set_joint_to_successor!(joint::Joint, tf::Transform3D)
     joint
 end
 
-Base.show(io::IO, joint::Joint) = print(io, "Joint \"$(string(joint))\": $(joint.joint_type)")
-Base.showcompact(io::IO, joint::Joint) = print(io, "$(string(joint))")
+function Base.show(io::IO, joint::Joint)
+    if get(io, :compact, false)
+        print(io, joint)
+    else
+        print(io, "Joint \"$(string(joint))\": $(joint.joint_type)")
+    end
+end
+
+@static if VERSION < v"0.7.0-DEV.1472"
+    Base.showcompact(io::IO, joint::Joint) = show(IOContext(io, :compact => true), joint)
+end
 
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
 num_velocities(itr) = reduce((val, joint) -> val + num_velocities(joint), 0, itr)

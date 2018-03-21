@@ -41,6 +41,7 @@ export
     @framecheck
 
 using Compat
+using Compat.LinearAlgebra
 using Compat.Random
 using StaticArrays
 using Rotations

@@ -88,7 +88,7 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
     discard = DiscardVector(length(joints))
     broadcast!(discard, jac, state, path, joints, motion_subspaces) do jac, state, path, joint, motion_subspace
         vrange = velocity_range(state, joint)
-        pathindex = findfirst(joint, path)
+        pathindex = findfirst(path, joint)
         if pathindex > 0
             part = transformfun(motion_subspace)
             directions(path)[pathindex] == :up && (part = -part)
@@ -212,7 +212,7 @@ $mass_matrix_doc
 """
 function mass_matrix(state::MechanismState{X, M, C}) where {X, M, C}
     nv = num_velocities(state)
-    ret = Symmetric(Matrix{C}(nv, nv), :L)
+    ret = Symmetric(Matrix{C}(undef, nv, nv), :L)
     mass_matrix!(ret, state)
     ret
 end
@@ -325,7 +325,7 @@ function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}
     v̇s = values(segments(v̇))
     discard = DiscardVector(length(qs))
     broadcast!(discard, state, out, joints, qs, vs, v̇s) do state, accels, joint, qjoint, vjoint, v̇joint
-        bodyid = successorid(id(joint), state)
+        bodyid = successorid(JointID(joint), state)
         accels[bodyid] = joint_spatial_acceleration(joint, qjoint, vjoint, v̇joint)
     end
 
@@ -350,7 +350,7 @@ end
 spatial_accelerations!(result::DynamicsResult, state::MechanismState) = spatial_accelerations!(result.accelerations, state, result.v̇)
 
 function relative_acceleration(accels::AbstractDict{BodyID, SpatialAcceleration{T}}, body::RigidBody{M}, base::RigidBody{M}) where {T, M}
-    -accels[id(base)] + accels[id(body)]
+    -accels[BodyID(base)] + accels[BodyID(body)]
 end
 
 # TODO: ensure that accelerations are up-to-date
@@ -392,7 +392,7 @@ function joint_wrenches_and_torques!(
     discard = DiscardVector(length(qs))
     broadcast!(discard, state, net_wrenches_in_joint_wrenches_out, joints, qs, τs) do state, wrenches, joint, qjoint, τjoint
         # TODO: awkward to transform back to body frame; consider switching to body-frame implementation
-        bodyid = successorid(id(joint), state)
+        bodyid = successorid(JointID(joint), state)
         tf = inv(transform_to_root(state, bodyid))
         joint_torque!(τjoint, joint, qjoint, transform(wrenches[bodyid], tf)) # TODO: consider using motion subspace
     end
@@ -448,8 +448,8 @@ function dynamics_bias(
     mechanism = state.mechanism
     torques = similar(velocity(state), T)
     rootframe = root_frame(mechanism)
-    jointwrenches = BodyDict(id(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-    accelerations = BodyDict(id(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+    jointwrenches = BodyDict(BodyID(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+    accelerations = BodyDict(BodyID(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
     dynamics_bias!(torques, accelerations, jointwrenches, state, externalwrenches)
     torques
 end
@@ -504,8 +504,8 @@ function inverse_dynamics(
     mechanism = state.mechanism
     torques = similar(velocity(state), T)
     rootframe = root_frame(mechanism)
-    jointwrenches = BodyDict(id(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-    accelerations = BodyDict(id(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+    jointwrenches = BodyDict(BodyID(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+    accelerations = BodyDict(BodyID(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
     inverse_dynamics!(torques, jointwrenches, accelerations, state, v̇, externalwrenches)
     torques
 end
@@ -519,7 +519,7 @@ function constraint_jacobian!(jac::AbstractMatrix, rowranges, state::MechanismSt
     wrenchsubspaces = state.constraint_wrench_subspaces.data
     discard = DiscardVector(length(nontreejoints))
     broadcast!(discard, jac, state, values(rowranges), nontreejoints, wrenchsubspaces) do jac, state, rowrange, nontreejoint, T
-        nontreejointid = id(nontreejoint)
+        nontreejointid = JointID(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
         treejoints = state.treejoints
         motionsubspaces = state.motion_subspaces.data
@@ -530,7 +530,7 @@ end
 
 @inline function constraint_jacobian_part!(jac, rowrange, state, path, T, treejoint, S)
     vrange = velocity_range(state, treejoint)
-    pathindex = findfirst(treejoint, path)
+    pathindex = findfirst(path, treejoint)
     if pathindex > 0
         part = angular(T)' * angular(S) + linear(T)' * linear(S) # TODO: At_mul_B
         directions(path)[pathindex] == :up && (part = -part)
@@ -551,7 +551,7 @@ function constraint_bias!(bias::SegmentedVector, state::MechanismState)
     discard = DiscardVector(length(nontreejoints))
     broadcast!(discard, values(segments(bias)), state, nontreejoints, wrenchsubspaces) do kjoint, state, nontreejoint, T
         has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
-        nontreejointid = id(nontreejoint)
+        nontreejointid = JointID(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
         predid, succid = predsucc(nontreejointid, state)
         crossterm = cross(twist_wrt_world(state, succid), twist_wrt_world(state, predid))
@@ -568,7 +568,7 @@ function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X
     root = root_body(mechanism)
     frame = default_frame(root)
     for body in bodies(mechanism)
-        bodyid = id(body)
+        bodyid = BodyID(body)
         wrench = zero(Wrench{T}, frame)
         points = contact_points(body)
         if !isempty(points)
@@ -628,7 +628,7 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
     nothing
 end
 
-function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) where {S, T<:LinAlg.BlasReal}
+function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) where {S, T<:Compat.LinearAlgebra.BlasReal}
     # optimized version for BLAS floats
     M = result.massmatrix
     c = parent(result.dynamicsbias)
@@ -645,7 +645,7 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
 
     L[:] = M.data
     uplo = M.uplo
-    LinAlg.LAPACK.potrf!(uplo, L) # L <- Cholesky decomposition of M; M == L Lᵀ (note: Featherstone, page 151 uses M == Lᵀ L instead)
+    Compat.LinearAlgebra.LAPACK.potrf!(uplo, L) # L <- Cholesky decomposition of M; M == L Lᵀ (note: Featherstone, page 151 uses M == Lᵀ L instead)
     τbiased = v̇
     τbiased .= τ .- c
 
@@ -673,34 +673,34 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
 
         # Compute Y = K L⁻ᵀ
         Y[:] = K
-        LinAlg.BLAS.trsm!('R', uplo, 'T', 'N', one(T), L, Y)
+        Compat.LinearAlgebra.BLAS.trsm!('R', uplo, 'T', 'N', one(T), L, Y)
 
         # Compute z = L⁻¹ (τ - c)
         z[:] = τbiased
-        LinAlg.BLAS.trsv!(uplo, 'N', 'N', L, z) # z <- L⁻¹ (τ - c)
+        Compat.LinearAlgebra.BLAS.trsv!(uplo, 'N', 'N', L, z) # z <- L⁻¹ (τ - c)
 
         # Compute A = Y Yᵀ == K * M⁻¹ * Kᵀ
-        LinAlg.BLAS.gemm!('N', 'T', one(T), Y, Y, zero(T), A) # A <- K * M⁻¹ * Kᵀ
+        Compat.LinearAlgebra.BLAS.gemm!('N', 'T', one(T), Y, Y, zero(T), A) # A <- K * M⁻¹ * Kᵀ
 
         # Compute b = Y z + k
         b = λ
         b[:] = k
-        LinAlg.BLAS.gemv!('N', one(T), Y, z, one(T), b) # b <- Y z + k
+        Compat.LinearAlgebra.BLAS.gemv!('N', one(T), Y, z, one(T), b) # b <- Y z + k
 
         # Compute λ = A⁻¹ b == (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
-        # LinAlg.LAPACK.posv!(uplo, A, b) # NOTE: doesn't work in general because A is only guaranteed to be positive semidefinite
+        # Compat.LinearAlgebra.LAPACK.posv!(uplo, A, b) # NOTE: doesn't work in general because A is only guaranteed to be positive semidefinite
         singular_value_zero_tolerance = 1e-10 # TODO: more principled choice
         # TODO: https://github.com/JuliaLang/julia/issues/22242
-        b[:], _ = LinAlg.LAPACK.gelsy!(A, b, singular_value_zero_tolerance) # b == λ <- (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
+        b[:], _ = Compat.LinearAlgebra.LAPACK.gelsy!(A, b, singular_value_zero_tolerance) # b == λ <- (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
 
         # Update τbiased: subtract Kᵀ * λ
-        LinAlg.BLAS.gemv!('T', -one(T), K, λ, one(T), τbiased) # τbiased <- τ - c - Kᵀ * λ
+        Compat.LinearAlgebra.BLAS.gemv!('T', -one(T), K, λ, one(T), τbiased) # τbiased <- τ - c - Kᵀ * λ
 
         # Solve for v̇ = M⁻¹ * (τ - c - Kᵀ * λ)
-        LinAlg.LAPACK.potrs!(uplo, L, τbiased) # τbiased ==v̇ <- M⁻¹ * (τ - c - Kᵀ * λ)
+        Compat.LinearAlgebra.LAPACK.potrs!(uplo, L, τbiased) # τbiased ==v̇ <- M⁻¹ * (τ - c - Kᵀ * λ)
     else
         # No loops.
-        LinAlg.LAPACK.potrs!(uplo, L, τbiased) # τbiased == v̇ <- M⁻¹ * (τ - c)
+        Compat.LinearAlgebra.LAPACK.potrs!(uplo, L, τbiased) # τbiased == v̇ <- M⁻¹ * (τ - c)
     end
     nothing
 end

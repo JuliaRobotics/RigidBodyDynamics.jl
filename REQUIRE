@@ -7,3 +7,4 @@ DocStringExtensions 0.4.1
 Compat 0.27 # for Val constructor
 Reexport 0.0.3
 LoopThrottle 0.0.1
+Nullables # TODO: remove after dropping 0.6 support

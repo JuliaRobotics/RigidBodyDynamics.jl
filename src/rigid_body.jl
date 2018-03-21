@@ -31,13 +31,25 @@ end
 Base.eltype(::Type{RigidBody{T}}) where {T} = T
 Base.eltype(body::RigidBody) = eltype(typeof(body))
 RigidBody(inertia::SpatialInertia) = RigidBody(string(inertia.frame), inertia)
-Base.string(b::RigidBody) = b.name
-Base.show(io::IO, b::RigidBody) = print(io, "RigidBody: \"$(string(b))\"")
-Base.showcompact(io::IO, b::RigidBody) = print(io, "$(string(b))")
-@inline BodyID(b::RigidBody) = b.id
-@inline id(b::RigidBody) = BodyID(b)
+Base.print(io::IO, b::RigidBody) = print(io, b.name)
+
+function Base.show(io::IO, b::RigidBody)
+    if get(io, :compact, false)
+        print(io, b)
+    else
+        print(io, "RigidBody: \"$(string(b))\"")
+    end
+end
+
+@static if VERSION < v"0.7.0-DEV.1472"
+    Base.showcompact(io::IO, b::RigidBody) = show(IOContext(io, :compact => true), b)
+end
+
+BodyID(b::RigidBody) = b.id
+Base.convert(::Type{BodyID}, b::RigidBody) = BodyID(b)
+Base.@deprecate id(b::RigidBody) BodyID(b)
 @inline RigidBodyDynamics.Graphs.vertex_id_type(::Type{<:RigidBody}) = BodyID
-@inline RigidBodyDynamics.Graphs.vertex_id(b::RigidBody) = id(b)
+@inline RigidBodyDynamics.Graphs.vertex_id(b::RigidBody) = convert(BodyID, b)
 @inline RigidBodyDynamics.Graphs.set_vertex_id!(b::RigidBody, id::BodyID) = (b.id = id)
 
 """
