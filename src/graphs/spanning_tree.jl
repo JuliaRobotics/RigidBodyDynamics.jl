@@ -42,7 +42,7 @@ function SpanningTree(g::DirectedGraph{V, E}, root::V, edges::AbstractVector{E})
     SpanningTree(g, root, edges, inedges, outedges, edge_tree_indices)
 end
 
-function SpanningTree(g::DirectedGraph{V, E}, root::V, flipped_edge_map::Associative = Dict{E, E}();
+function SpanningTree(g::DirectedGraph{V, E}, root::V, flipped_edge_map::AbstractDict = Dict{E, E}();
         next_edge = first #= breadth first =#) where {V, E}
     tree_edges = E[]
     tree_vertices = [root]

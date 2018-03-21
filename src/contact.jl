@@ -116,8 +116,8 @@ end
 
 
 ## Models with no state
-reset!(::Void) = nothing
-zero!(::Void) = nothing
+reset!(::Nothing) = nothing
+zero!(::Nothing) = nothing
 
 
 ## Normal contact models
@@ -137,12 +137,12 @@ num_states(::HuntCrossleyModel) = 0
 state(::HuntCrossleyModel, ::AbstractVector, ::CartesianFrame3D) = nothing
 state_derivative(::HuntCrossleyModel, ::AbstractVector, ::CartesianFrame3D) = nothing
 
-function normal_force(model::HuntCrossleyModel, ::Void, z, ż)
+function normal_force(model::HuntCrossleyModel, ::Nothing, z, ż)
     zn = z^model.n
     f = model.λ * zn * ż + model.k * zn # (2) in Marhefka, Orin (note: z is penetration, returning repelling force)
 end
 
-dynamics!(ẋ::Void, model::HuntCrossleyModel, state::Void, fnormal::Number) = nothing
+dynamics!(ẋ::Nothing, model::HuntCrossleyModel, state::Nothing, fnormal::Number) = nothing
 
 
 # Friction models
@@ -206,8 +206,8 @@ end
 const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # TODO: a bit too specific
 
 const DefaultContactPoint{T} = ContactPoint{T,SoftContactModel{HuntCrossleyModel{T},ViscoelasticCoulombModel{T}}}
-const DefaultSoftContactState{T} = SoftContactState{Void, ViscoelasticCoulombState{VectorSegment{T}}}
-const DefaultSoftContactStateDeriv{T} = SoftContactStateDeriv{Void, ViscoelasticCoulombStateDeriv{VectorSegment{T}}}
+const DefaultSoftContactState{T} = SoftContactState{Nothing, ViscoelasticCoulombState{VectorSegment{T}}}
+const DefaultSoftContactStateDeriv{T} = SoftContactStateDeriv{Nothing, ViscoelasticCoulombStateDeriv{VectorSegment{T}}}
 
 
 # Contact detection
