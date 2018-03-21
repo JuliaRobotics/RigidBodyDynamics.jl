@@ -212,7 +212,7 @@ $mass_matrix_doc
 """
 function mass_matrix(state::MechanismState{X, M, C}) where {X, M, C}
     nv = num_velocities(state)
-    ret = Symmetric(Matrix{C}(nv, nv), :L)
+    ret = Symmetric(Matrix{C}(undef, nv, nv), :L)
     mass_matrix!(ret, state)
     ret
 end
@@ -325,7 +325,7 @@ function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}
     v̇s = values(segments(v̇))
     discard = DiscardVector(length(qs))
     broadcast!(discard, state, out, joints, qs, vs, v̇s) do state, accels, joint, qjoint, vjoint, v̇joint
-        bodyid = successorid(id(joint), state)
+        bodyid = successorid(JointID(joint), state)
         accels[bodyid] = joint_spatial_acceleration(joint, qjoint, vjoint, v̇joint)
     end
 
@@ -350,7 +350,7 @@ end
 spatial_accelerations!(result::DynamicsResult, state::MechanismState) = spatial_accelerations!(result.accelerations, state, result.v̇)
 
 function relative_acceleration(accels::AbstractDict{BodyID, SpatialAcceleration{T}}, body::RigidBody{M}, base::RigidBody{M}) where {T, M}
-    -accels[id(base)] + accels[id(body)]
+    -accels[BodyID(base)] + accels[BodyID(body)]
 end
 
 # TODO: ensure that accelerations are up-to-date
@@ -392,7 +392,7 @@ function joint_wrenches_and_torques!(
     discard = DiscardVector(length(qs))
     broadcast!(discard, state, net_wrenches_in_joint_wrenches_out, joints, qs, τs) do state, wrenches, joint, qjoint, τjoint
         # TODO: awkward to transform back to body frame; consider switching to body-frame implementation
-        bodyid = successorid(id(joint), state)
+        bodyid = successorid(JointID(joint), state)
         tf = inv(transform_to_root(state, bodyid))
         joint_torque!(τjoint, joint, qjoint, transform(wrenches[bodyid], tf)) # TODO: consider using motion subspace
     end
@@ -448,8 +448,8 @@ function dynamics_bias(
     mechanism = state.mechanism
     torques = similar(velocity(state), T)
     rootframe = root_frame(mechanism)
-    jointwrenches = BodyDict(id(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-    accelerations = BodyDict(id(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+    jointwrenches = BodyDict(BodyID(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+    accelerations = BodyDict(BodyID(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
     dynamics_bias!(torques, accelerations, jointwrenches, state, externalwrenches)
     torques
 end
@@ -504,8 +504,8 @@ function inverse_dynamics(
     mechanism = state.mechanism
     torques = similar(velocity(state), T)
     rootframe = root_frame(mechanism)
-    jointwrenches = BodyDict(id(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-    accelerations = BodyDict(id(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+    jointwrenches = BodyDict(BodyID(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
+    accelerations = BodyDict(BodyID(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
     inverse_dynamics!(torques, jointwrenches, accelerations, state, v̇, externalwrenches)
     torques
 end
@@ -519,7 +519,7 @@ function constraint_jacobian!(jac::AbstractMatrix, rowranges, state::MechanismSt
     wrenchsubspaces = state.constraint_wrench_subspaces.data
     discard = DiscardVector(length(nontreejoints))
     broadcast!(discard, jac, state, values(rowranges), nontreejoints, wrenchsubspaces) do jac, state, rowrange, nontreejoint, T
-        nontreejointid = id(nontreejoint)
+        nontreejointid = JointID(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
         treejoints = state.treejoints
         motionsubspaces = state.motion_subspaces.data
@@ -551,7 +551,7 @@ function constraint_bias!(bias::SegmentedVector, state::MechanismState)
     discard = DiscardVector(length(nontreejoints))
     broadcast!(discard, values(segments(bias)), state, nontreejoints, wrenchsubspaces) do kjoint, state, nontreejoint, T
         has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
-        nontreejointid = id(nontreejoint)
+        nontreejointid = JointID(nontreejoint)
         path = state.constraint_jacobian_structure[nontreejointid]
         predid, succid = predsucc(nontreejointid, state)
         crossterm = cross(twist_wrt_world(state, succid), twist_wrt_world(state, predid))
@@ -568,7 +568,7 @@ function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X
     root = root_body(mechanism)
     frame = default_frame(root)
     for body in bodies(mechanism)
-        bodyid = id(body)
+        bodyid = BodyID(body)
         wrench = zero(Wrench{T}, frame)
         points = contact_points(body)
         if !isempty(points)

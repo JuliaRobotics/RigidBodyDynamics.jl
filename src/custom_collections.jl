@@ -162,7 +162,7 @@ for IDict in (:IndexDict, :CacheIndexDict)
         end
 
         function $IDict{K, KeyRange, V}(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
-            $IDict{K, KeyRange, V}(keys, Vector{V}(uninitialized, length(keys)))
+            $IDict{K, KeyRange, V}(keys, Vector{V}(undef, length(keys)))
         end
 
         function $IDict{K, KeyRange, V}(kv::Vector{Pair{K, V}}) where {K, KeyRange<:AbstractUnitRange{K}, V}
@@ -189,13 +189,13 @@ for IDict in (:IndexDict, :CacheIndexDict)
         function $IDict{K, KeyRange, V}(itr) where {K, KeyRange<:AbstractUnitRange{K}, V}
             kv = Pair{K, V}[]
             for x in itr
-                push!(kv, K(first(x)) => convert(V, last(x)))
+                push!(kv, convert(K, first(x)) => convert(V, last(x)))
             end
             $IDict{K, KeyRange, V}(kv)
         end
 
         function $IDict{K, KeyRange}(itr) where {K, KeyRange<:AbstractUnitRange{K}}
-            kv = [K(first(x)) => last(x) for x in itr]
+            kv = [convert(K, first(x)) => last(x) for x in itr]
             $IDict{K, KeyRange}(kv)
         end
     end
@@ -299,7 +299,7 @@ function SegmentedVector{K, T, KeyRange}(parent::P, keys, viewlengthfun) where {
     start = 1
     for key in keys
         stop = start[] + viewlengthfun(key) - 1
-        push!(views, K(key) => view(parent, start : stop))
+        push!(views, convert(K, key) => view(parent, start : stop))
         start = stop + 1
     end
     SegmentedVector{K, T, KeyRange, P}(parent, IndexDict{K, KeyRange, VectorSegment{T}}(views))

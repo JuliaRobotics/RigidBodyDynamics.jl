@@ -45,10 +45,11 @@ end
     Base.showcompact(io::IO, b::RigidBody) = show(IOContext(io, :compact => true), b)
 end
 
-@inline BodyID(b::RigidBody) = b.id
-@inline id(b::RigidBody) = BodyID(b)
+BodyID(b::RigidBody) = b.id
+Base.convert(::Type{BodyID}, b::RigidBody) = BodyID(b)
+Base.@deprecate id(b::RigidBody) BodyID(b)
 @inline RigidBodyDynamics.Graphs.vertex_id_type(::Type{<:RigidBody}) = BodyID
-@inline RigidBodyDynamics.Graphs.vertex_id(b::RigidBody) = id(b)
+@inline RigidBodyDynamics.Graphs.vertex_id(b::RigidBody) = convert(BodyID, b)
 @inline RigidBodyDynamics.Graphs.set_vertex_id!(b::RigidBody, id::BodyID) = (b.id = id)
 
 """
