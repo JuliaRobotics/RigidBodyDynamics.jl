@@ -16,7 +16,7 @@ import Base.Iterators: filter
 include("test_graph.jl")
 include("test_custom_collections.jl")
 include("test_frames.jl")
-# include("test_spatial.jl")
+include("test_spatial.jl")
 include("test_contact.jl")
 include("test_urdf_parser.jl")
 include("test_double_pendulum.jl")
