@@ -1,5 +1,6 @@
 module Contact
 
+using Compat
 using RigidBodyDynamics.Spatial
 using StaticArrays
 
