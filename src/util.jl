@@ -36,11 +36,11 @@ end
 end
 
 ## findunique
-function findunique(f, A)
-    results = findall(f, A)
-    length(results) == 0 && error("No results found.")
-    length(results) > 1 && error("Multiple results found:\n$(A[results])")
-    A[first(results)]
+function findunique(f, A::AbstractArray)
+    i = Compat.findfirst(f, A)
+    i === nothing && error("No results found.")
+    Compat.findnext(f, A, i + 1) === nothing || error("Multiple results found.")
+    @inbounds return A[i]
 end
 
 
