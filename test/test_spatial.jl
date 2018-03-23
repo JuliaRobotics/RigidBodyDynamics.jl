@@ -72,7 +72,7 @@ end
 
         # Test that the constructor works with dynamic arrays (which are
         # converted to static arrays internally)
-        I4 = @inferred(SpatialInertia(f2, eye(3), zeros(3), 1.0))
+        I4 = @inferred(SpatialInertia(f2, Matrix(1.0I, 3, 3), zeros(3), 1.0))
     end
 
     @testset "twist" begin

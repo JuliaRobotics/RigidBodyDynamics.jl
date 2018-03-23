@@ -118,7 +118,7 @@ function Random.rand(::Type{<:SpatialInertia{T}}, frame::CartesianFrame3D) where
     principal_moments[3] = rand(T) * (ub - lb) + lb
 
     # Construct the moment of inertia tensor
-    J = SMatrix{3, 3, T}(Q * diagm(principal_moments) * Q')
+    J = SMatrix{3, 3, T}(Q * Diagonal(principal_moments) * Q')
 
     # Construct the inertia in CoM frame
     com_frame = CartesianFrame3D()

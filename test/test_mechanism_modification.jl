@@ -102,8 +102,8 @@ end
         H21 = H[nq_single + 1 : end, 1 : nq_single]
         H22 = H[nq_single + 1 : end, nq_single + 1 : end]
         @test isapprox(H11, H22)
-        @test isapprox(H12, zeros(H12))
-        @test isapprox(H21, zeros(H21))
+        @test isapprox(H12, zero(H12))
+        @test isapprox(H21, zero(H21))
     end
 
     @testset "remove fixed joints" begin
@@ -242,8 +242,8 @@ end
             for (body1, body2) in bodymap
                 accel1 = relative_acceleration(result1, body1, world)
                 accel2 = relative_acceleration(result2, body2, bodymap[world])
-                @test isapprox(angular.((accel1, accel2))...)
-                @test isapprox(linear.((accel1, accel2))...)
+                @test isapprox(angular(accel1), angular(accel2))
+                @test isapprox(linear(accel1), linear(accel2))
             end
         end # for
     end # reattach

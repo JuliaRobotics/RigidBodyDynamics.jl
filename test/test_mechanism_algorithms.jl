@@ -60,7 +60,7 @@ end
         @test v == velocity(x)
 
         zero!(x)
-        copy!(x, [q; v])
+        copyto!(x, [q; v])
 
         @test q == configuration(x)
         @test v == velocity(x)
@@ -122,7 +122,7 @@ end
             body = successor(joint, mechanism)
             qjoint = configuration(x, joint)
             wrench = rand(Wrench{Float64}, frame_after(joint))
-            τ = Vector{Float64}(num_velocities(joint))
+            τ = Vector{Float64}(undef, num_velocities(joint))
             RigidBodyDynamics.joint_torque!(τ, joint, qjoint, wrench)
             S = motion_subspace(joint, configuration(x, joint))::RigidBodyDynamics.motionsubspacetype(typeof(joint), Float64)
             @test isapprox(τ, torque(S, wrench))
@@ -134,6 +134,7 @@ end
         x = MechanismState(mechanism)
         rand!(x)
         for joint in joints(mechanism)
+            num_positions(joint) == 0 && continue # https://github.com/JuliaLang/julia/issues/26578
             S = motion_subspace(joint, configuration(x, joint))
             @test isfloating(joint) == (rank(Array(S)) == 6)
             @test isfloating(joint) == (num_constraints(joint) == 0)
@@ -538,34 +539,34 @@ end
         rand!(state)
         for joint in joints(mechanism)
             # back and forth between local and global
-            ϕ = Vector{Float64}(num_velocities(joint))
-            ϕ̇ = Vector{Float64}(num_velocities(joint))
-            q0 = Vector{Float64}(num_positions(joint))
+            ϕ = Vector{Float64}(undef, num_velocities(joint))
+            ϕ̇ = Vector{Float64}(undef, num_velocities(joint))
+            q0 = Vector{Float64}(undef, num_positions(joint))
             q = configuration(state, joint)
             v = velocity(state, joint)
             rand_configuration!(q0, joint)
             local_coordinates!(ϕ, ϕ̇, joint, q0, q, v)
-            q_back = Vector{Float64}(num_positions(joint))
+            q_back = Vector{Float64}(undef, num_positions(joint))
             global_coordinates!(q_back, joint, q0, ϕ)
             @test isapprox(q, q_back)
 
             # compare ϕ̇ to autodiff
-            q̇ = Vector{Float64}(num_positions(joint))
+            q̇ = Vector{Float64}(undef, num_positions(joint))
             velocity_to_configuration_derivative!(q̇, joint, q, v)
             v̇ = rand(num_velocities(joint))
             q_autodiff = ForwardDiff.Dual.(q, q̇)
             v_autodiff = ForwardDiff.Dual.(v, v̇)
             q0_autodiff = ForwardDiff.Dual.(q0, zeros(length(q0)))
             T = eltype(q_autodiff)
-            ϕ_autodiff = Vector{T}(length(ϕ))
-            ϕ̇_autodiff = Vector{T}(length(ϕ̇))
+            ϕ_autodiff = Vector{T}(undef, length(ϕ))
+            ϕ̇_autodiff = Vector{T}(undef, length(ϕ̇))
             local_coordinates!(ϕ_autodiff, ϕ̇_autodiff, joint, q0_autodiff, q_autodiff, v_autodiff)
             ϕ̇_from_autodiff = [ForwardDiff.partials(x)[1] for x in ϕ_autodiff]
             @test isapprox(ϕ̇, ϕ̇_from_autodiff)
 
             # local coordinates should be zero when q = q0
             # Definition 2.9 in Duindam, "Port-Based Modeling and Control for Efficient Bipedal Walking Robots"
-            copy!(q, q0)
+            copyto!(q, q0)
             local_coordinates!(ϕ, ϕ̇, joint, q0, q, v)
             @test isapprox(ϕ, zeros(num_velocities(joint)); atol = 1e-15)
         end
@@ -603,6 +604,6 @@ end
             result = DynamicsResult{T}(mechanism)
             1.
         end
-        @test ForwardDiff.hessian(f330, [1.]) == 0 * eye(1)
+        @test ForwardDiff.hessian(f330, [1.]) == zeros(1, 1)
     end
 end

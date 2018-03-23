@@ -38,8 +38,8 @@ function simulate(state0::MechanismState, final_time, control! = zero_torque!; �
     closed_loop_dynamics! = (v̇::AbstractArray, ṡ::AbstractArray, t, state) -> begin
         control!(control_torques, t, state)
         dynamics!(result, state, control_torques)
-        copy!(v̇, result.v̇)
-        copy!(ṡ, result.ṡ)
+        copyto!(v̇, result.v̇)
+        copyto!(ṡ, result.ṡ)
         nothing
     end
     tableau = runge_kutta_4(Float64)

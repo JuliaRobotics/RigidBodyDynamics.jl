@@ -27,19 +27,17 @@ include("test_mechanism_modification.jl")
 include("test_pd_control.jl")
 
 # notebooks
-notebookdir = joinpath("..", "notebooks")
+notebookdir = joinpath(@__DIR__, "..", "notebooks")
 for file in readdir(notebookdir)
     name, ext = splitext(file)
-    if lowercase(ext) == ".ipynb"
-        @eval module $(gensym())
-            n = $name
-            using Compat.Test
-            using NBInclude
-            @testset "$n" begin
-                nbinclude(joinpath($notebookdir, $file), regex = r"^((?!\#NBSKIP).)*$"s)
-            end
-        end
+    lowercase(ext) == ".ipynb" || continue
+    @eval module $(gensym())
+    using Compat.Test
+    using NBInclude
+    @testset "$($name)" begin
+        nbinclude(joinpath($notebookdir, $file), regex = r"^((?!\#NBSKIP).)*$"s)
     end
+    end #module
 end
 
 # benchmarks

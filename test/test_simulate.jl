@@ -18,8 +18,8 @@
         using RigidBodyDynamics.OdeIntegrators
         passive_dynamics! = (vd::AbstractArray, sd::AbstractArray, t, state) -> begin
             dynamics!(result, state)
-            copy!(vd, result.v̇)
-            copy!(sd, result.ṡ)
+            copyto!(vd, result.v̇)
+            copyto!(sd, result.ṡ)
             nothing
         end
         storage = RingBufferStorage{Float64}(x, 3)

@@ -39,17 +39,17 @@ mutable struct DynamicsResult{T, M}
         nv = num_velocities(mechanism)
         nconstraints = mapreduce(num_constraints, +, 0, non_tree_joints(mechanism))::Int
 
-        massmatrix = Symmetric(Matrix{T}(nv, nv), :L)
-        dynamicsbias = SegmentedVector(Vector{T}(nv), tree_joints(mechanism), num_velocities)
-        constraintjacobian = Matrix{T}(nconstraints, nv)
+        massmatrix = Symmetric(Matrix{T}(undef, nv, nv), :L)
+        dynamicsbias = SegmentedVector(Vector{T}(undef, nv), tree_joints(mechanism), num_velocities)
+        constraintjacobian = Matrix{T}(undef, nconstraints, nv)
         constraintbias = SegmentedVector{JointID, T, UnitRange{JointID}}(
-            Vector{T}(nconstraints), non_tree_joints(mechanism), num_constraints)
+            Vector{T}(undef, nconstraints), non_tree_joints(mechanism), num_constraints)
         constraintrowranges = ranges(constraintbias)
 
-        q̇ = SegmentedVector(Vector{T}(nq), tree_joints(mechanism), num_positions)
-        v̇ = SegmentedVector(Vector{T}(nv), tree_joints(mechanism), num_velocities)
-        ṡ = Vector{T}(num_additional_states(mechanism))
-        λ = Vector{T}(nconstraints)
+        q̇ = SegmentedVector(Vector{T}(undef, nq), tree_joints(mechanism), num_positions)
+        v̇ = SegmentedVector(Vector{T}(undef, nv), tree_joints(mechanism), num_velocities)
+        ṡ = Vector{T}(undef, num_additional_states(mechanism))
+        λ = Vector{T}(undef, nconstraints)
 
         rootframe = root_frame(mechanism)
         contactwrenches = BodyDict{Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
@@ -73,10 +73,10 @@ mutable struct DynamicsResult{T, M}
             end
         end
 
-        L = Matrix{T}(nv, nv)
-        A = Matrix{T}(nconstraints, nconstraints)
-        z = Vector{T}(nv)
-        Y = Matrix{T}(nconstraints, nv)
+        L = Matrix{T}(undef, nv, nv)
+        A = Matrix{T}(undef, nconstraints, nconstraints)
+        z = Vector{T}(undef, nv)
+        Y = Matrix{T}(undef, nconstraints, nv)
 
         new{T, M}(mechanism, massmatrix, dynamicsbias, constraintjacobian, constraintbias, constraintrowranges,
             q̇, v̇, ṡ, λ, contactwrenches, totalwrenches, accelerations, jointwrenches, contact_state_derivs,
@@ -86,14 +86,14 @@ end
 
 DynamicsResult(mechanism::Mechanism{M}) where {M} = DynamicsResult{M}(mechanism)
 
-function Base.copy!(ẋ::AbstractVector, result::DynamicsResult)
+function Compat.copyto!(ẋ::AbstractVector, result::DynamicsResult)
     nq = length(result.q̇)
     nv = length(result.v̇)
     ns = length(result.ṡ)
     @boundscheck length(ẋ) == nq + nv + ns || throw(DimensionMismatch())
-    @inbounds copy!(ẋ, 1, result.q̇, 1, nq)
-    @inbounds copy!(ẋ, nq + 1, result.v̇, 1, nv)
-    @inbounds copy!(ẋ, nq + nv + 1, result.ṡ, 1, ns)
+    @inbounds copyto!(ẋ, 1, result.q̇, 1, nq)
+    @inbounds copyto!(ẋ, nq + 1, result.v̇, 1, nv)
+    @inbounds copyto!(ẋ, nq + nv + 1, result.ṡ, 1, ns)
     ẋ
 end
 
