@@ -1,5 +1,69 @@
 @indextype JointID
 
+# TODO: document which methods are needed for a new JointType.
+"""
+$(TYPEDEF)
+
+The abstract supertype of all concrete joint types.
+"""
+abstract type JointType{T} end
+Base.eltype(::Type{JointType{T}}) where {T} = T
+num_velocities(::T) where {T<:JointType} = num_velocities(T)
+num_positions(::T) where {T<:JointType} = num_positions(T)
+num_constraints(::Type{T}) where {T<:JointType} = _num_constraints(num_velocities(T))
+
+Base.@pure _num_constraints(N::Int) = 6 - N
+Base.@pure _3x(N::Int) = 3 * N
+
+function motionsubspacetype(::Type{JT}, ::Type{X}) where {T, JT<:JointType{T}, X}
+    N = num_velocities(JT)
+    L = _3x(N)
+    C = promote_type(T, X)
+    GeometricJacobian{SMatrix{3, N, C, L}}
+end
+
+function wrenchsubspacetype(::Type{JT}, ::Type{X}) where {T, JT<:JointType{T}, X}
+    N = num_constraints(JT)
+    L = _3x(N)
+    C = promote_type(T, X)
+    WrenchMatrix{SMatrix{3, N, C, L}}
+end
+
+# Default implementations
+function flip_direction(jt::JointType{T}) where {T}
+    error("Flipping direction is not supported for $(typeof(jt))")
+end
+
+zero_configuration!(q::AbstractVector, ::JointType) = (q[:] = 0; nothing)
+
+function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
+        jt::JointType, q0::AbstractVector, q::AbstractVector, v::AbstractVector)
+    ϕ .= q .- q0
+    velocity_to_configuration_derivative!(ϕ̇, jt, q, v)
+    nothing
+end
+
+function global_coordinates!(q::AbstractVector, jt::JointType, q0::AbstractVector, ϕ::AbstractVector)
+    q .= q0 .+ ϕ
+end
+
+function configuration_derivative_to_velocity_adjoint!(out, jt::JointType, q::AbstractVector, f)
+    out .= f
+end
+
+function configuration_derivative_to_velocity!(v::AbstractVector, ::JointType, q::AbstractVector, q̇::AbstractVector)
+    v .= q̇
+    nothing
+end
+
+function velocity_to_configuration_derivative!(q̇::AbstractVector, ::JointType, q::AbstractVector, v::AbstractVector)
+    q̇ .= v
+    nothing
+end
+
+normalize_configuration!(q::AbstractVector, ::JointType) = nothing
+is_configuration_normalized(::JointType, q::AbstractVector, rtol, atol) = true
+
 """
 $(TYPEDEF)
 
@@ -11,7 +75,7 @@ joint's predecessor, and the rigid body after the joint is its successor.
 
 The state related to the joint is parameterized by two sets of variables, namely
 
-* a vector ``q \\in  \\mathcal{Q}``, parameterizing the relative homogeneous transform.
+* a vector ``q \\in \\mathcal{Q}``, parameterizing the relative homogeneous transform.
 * a vector ``v \\in \\mathbb{R}^k``, parameterizing the relative twist.
 
 The twist of the successor with respect to the predecessor is a linear function
@@ -141,6 +205,17 @@ end
     nothing
 end
 
+@inline function set_configuration!(q::AbstractVector, joint::Joint, config::AbstractVector)
+    check_num_positions(joint, q)
+    copyto!(q, config)
+    q
+end
+
+@inline function set_velocity!(v::AbstractVector, joint::Joint, vel::AbstractVector)
+    check_num_velocities(joint, v)
+    copyto!(v, vel)
+    v
+end
 
 """
 $(SIGNATURES)

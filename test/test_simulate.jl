@@ -55,8 +55,9 @@
         state = MechanismState(mechanism)
         z0 = 0.05
         zero!(state)
-        RigidBodyDynamics.translation!(configuration(state, floatingjoint), joint_type(floatingjoint), SVector(1., 2., z0 - com.v[3]))
-        setdirty!(state)
+        tf = transform_to_root(state, body)
+        tf = Transform3D(frame_after(floatingjoint), frame_before(floatingjoint), rotation(tf), SVector(1., 2., z0 - com.v[3]))
+        set_configuration!(state, floatingjoint, tf)
 
         energy0 = gravitational_potential_energy(state)
         com_world = transform_to_root(state, body) * com

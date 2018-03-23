@@ -178,8 +178,8 @@ using .Graphs
 import .Spatial: rotation, translation, transform, center_of_mass, newton_euler, kinetic_energy
 
 include("util.jl")
-include("joint_types.jl")
 include("joint.jl")
+include("joint_types.jl")
 include("rigid_body.jl")
 include("mechanism.jl")
 include("mechanism_modification.jl")

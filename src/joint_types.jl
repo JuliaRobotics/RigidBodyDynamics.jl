@@ -1,68 +1,3 @@
-# TODO: put in separate module
-
-abstract type JointType{T} end
-Base.eltype(::Type{JointType{T}}) where {T} = T
-num_velocities(::T) where {T<:JointType} = num_velocities(T)
-num_positions(::T) where {T<:JointType} = num_positions(T)
-
-num_constraints(::Type{T}) where {T<:JointType} = _num_constraints(num_velocities(T))
-Base.@pure _num_constraints(N::Int) = 6 - N
-
-function motionsubspacetype(::Type{JT}, ::Type{X}) where {T, JT<:JointType{T}, X}
-    N = num_velocities(JT)
-    L = _3x(N)
-    C = promote_type(T, X)
-    GeometricJacobian{SMatrix{3, N, C, L}}
-end
-
-function wrenchsubspacetype(::Type{JT}, ::Type{X}) where {T, JT<:JointType{T}, X}
-    N = num_constraints(JT)
-    L = _3x(N)
-    C = promote_type(T, X)
-    WrenchMatrix{SMatrix{3, N, C, L}}
-end
-
-Base.@pure _3x(N::Int) = 3 * N
-
-
-# Default implementations
-isfloating(::Type{<:JointType}) = false
-
-function flip_direction(jt::JointType{T}) where {T}
-    error("Flipping direction is not supported for $(typeof(jt))")
-end
-
-zero_configuration!(q::AbstractVector, ::JointType) = (q[:] = 0; nothing)
-
-function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
-        jt::JointType, q0::AbstractVector, q::AbstractVector, v::AbstractVector)
-    ϕ .= q .- q0
-    velocity_to_configuration_derivative!(ϕ̇, jt, q, v)
-    nothing
-end
-
-function global_coordinates!(q::AbstractVector, jt::JointType, q0::AbstractVector, ϕ::AbstractVector)
-    q .= q0 .+ ϕ
-end
-
-function configuration_derivative_to_velocity_adjoint!(out, jt::JointType, q::AbstractVector, f)
-    out .= f
-end
-
-function configuration_derivative_to_velocity!(v::AbstractVector, ::JointType, q::AbstractVector, q̇::AbstractVector)
-    v .= q̇
-    nothing
-end
-
-function velocity_to_configuration_derivative!(q̇::AbstractVector, ::JointType, q::AbstractVector, v::AbstractVector)
-    q̇ .= v
-    nothing
-end
-
-normalize_configuration!(q::AbstractVector, ::JointType) = nothing
-is_configuration_normalized(::JointType, q::AbstractVector, rtol, atol) = true
-
-
 """
 $(TYPEDEF)
 
@@ -96,7 +31,7 @@ isfloating(::Type{<:QuaternionFloating}) = true
     quat
 end
 
-@inline function rotation!(q::AbstractVector, jt::QuaternionFloating, rot::Rotation{3, T}) where T
+@inline function set_rotation!(q::AbstractVector, jt::QuaternionFloating, rot::Rotation{3, T}) where T
     quat = convert(Quat{T}, rot)
     @inbounds q[1] = quat.w
     @inbounds q[2] = quat.x
@@ -105,7 +40,7 @@ end
     nothing
 end
 
-@inline function rotation!(q::AbstractVector, jt::QuaternionFloating, rot::AbstractVector)
+@inline function set_rotation!(q::AbstractVector, jt::QuaternionFloating, rot::AbstractVector)
     @inbounds q[1] = rot[1]
     @inbounds q[2] = rot[2]
     @inbounds q[3] = rot[3]
@@ -114,13 +49,32 @@ end
 end
 
 @inline translation(jt::QuaternionFloating, q::AbstractVector) = @inbounds return SVector(q[5], q[6], q[7])
-@inline translation!(q::AbstractVector, jt::QuaternionFloating, trans::AbstractVector) = @inbounds copyto!(q, 5, trans, 1, 3)
+@inline set_translation!(q::AbstractVector, jt::QuaternionFloating, trans::AbstractVector) = @inbounds copyto!(q, 5, trans, 1, 3)
 
 @inline angular_velocity(jt::QuaternionFloating, v::AbstractVector) = @inbounds return SVector(v[1], v[2], v[3])
-@inline angular_velocity!(v::AbstractVector, jt::QuaternionFloating, ω::AbstractVector) = @inbounds copyto!(v, 1, ω, 1, 3)
+@inline set_angular_velocity!(v::AbstractVector, jt::QuaternionFloating, ω::AbstractVector) = @inbounds copyto!(v, 1, ω, 1, 3)
 
 @inline linear_velocity(jt::QuaternionFloating, v::AbstractVector) = @inbounds return SVector(v[4], v[5], v[6])
-@inline linear_velocity!(v::AbstractVector, jt::QuaternionFloating, ν::AbstractVector) = @inbounds copyto!(v, 4, ν, 1, 3)
+@inline set_linear_velocity!(v::AbstractVector, jt::QuaternionFloating, ν::AbstractVector) = @inbounds copyto!(v, 4, ν, 1, 3)
+
+function set_configuration!(q::AbstractVector, joint::Joint{<:Any, <:QuaternionFloating}, config::Transform3D)
+    check_num_positions(joint, q)
+    @framecheck config.from frame_after(joint)
+    @framecheck config.to frame_before(joint)
+    set_rotation!(q, joint_type(joint), rotation(config))
+    set_translation!(q, joint_type(joint), translation(config))
+    q
+end
+
+function set_velocity!(v::AbstractVector, joint::Joint{<:Any, <:QuaternionFloating}, twist::Twist)
+    check_num_velocities(joint, v)
+    @framecheck twist.base frame_before(joint)
+    @framecheck twist.body frame_after(joint)
+    @framecheck twist.frame frame_after(joint)
+    set_angular_velocity!(v, joint_type(joint), angular(twist))
+    set_linear_velocity!(v, joint_type(joint), linear(twist))
+    v
+end
 
 function joint_transform(jt::QuaternionFloating, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D, q::AbstractVector)
     Transform3D(frame_after, frame_before, rotation(jt, q), translation(jt, q))
@@ -151,8 +105,8 @@ function configuration_derivative_to_velocity!(v::AbstractVector, jt::Quaternion
     ω = angular_velocity_in_body(quat, quatdot)
     posdot = translation(jt, q̇)
     linear = inv(quat) * posdot
-    angular_velocity!(v, jt, ω)
-    linear_velocity!(v, jt, linear)
+    set_angular_velocity!(v, jt, ω)
+    set_linear_velocity!(v, jt, linear)
     nothing
 end
 
@@ -161,8 +115,8 @@ function configuration_derivative_to_velocity_adjoint!(fq, jt::QuaternionFloatin
     quat = Quat(q[1] / quatnorm, q[2] / quatnorm, q[3] / quatnorm, q[4] / quatnorm, false)
     rot = (velocity_jacobian(angular_velocity_in_body, quat)' * angular_velocity(jt, fv)) ./ quatnorm
     trans = quat * linear_velocity(jt, fv)
-    rotation!(fq, jt, rot)
-    translation!(fq, jt, trans)
+    set_rotation!(fq, jt, rot)
+    set_translation!(fq, jt, trans)
     nothing
 end
 
@@ -172,22 +126,22 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::Quaterni
     linear = linear_velocity(jt, v)
     quatdot = quaternion_derivative(quat, ω)
     transdot = quat * linear
-    rotation!(q̇, jt, quatdot)
-    translation!(q̇, jt, transdot)
+    set_rotation!(q̇, jt, quatdot)
+    set_translation!(q̇, jt, transdot)
     nothing
 end
 
 function zero_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
-    rotation!(q, jt, eye(Quat{T}))
-    translation!(q, jt, zeros(SVector{3, T}))
+    set_rotation!(q, jt, eye(Quat{T}))
+    set_translation!(q, jt, zeros(SVector{3, T}))
     nothing
 end
 
 function rand_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
-    rotation!(q, jt, rand(Quat{T}))
-    translation!(q, jt, rand(SVector{3, T}) - 0.5)
+    set_rotation!(q, jt, rand(Quat{T}))
+    set_translation!(q, jt, rand(SVector{3, T}) - 0.5)
     nothing
 end
 
@@ -208,8 +162,8 @@ function joint_spatial_acceleration(jt::QuaternionFloating{T}, frame_after::Cart
 end
 
 function joint_torque!(τ::AbstractVector, jt::QuaternionFloating, q::AbstractVector, joint_wrench::Wrench)
-    angular_velocity!(τ, jt, angular(joint_wrench))
-    linear_velocity!(τ, jt, linear(joint_wrench))
+    set_angular_velocity!(τ, jt, angular(joint_wrench))
+    set_linear_velocity!(τ, jt, linear(joint_wrench))
     nothing
 end
 
@@ -255,12 +209,12 @@ function global_coordinates!(q::AbstractVector, jt::QuaternionFloating, q0::Abst
     ξ = Twist(frame_after, frame0, frame0, ξrot, ξtrans)
     relative_transform = exp(ξ)
     t = t0 * relative_transform
-    rotation!(q, jt, rotation(t))
-    translation!(q, jt, translation(t))
+    set_rotation!(q, jt, rotation(t))
+    set_translation!(q, jt, translation(t))
     nothing
 end
 
-normalize_configuration!(q::AbstractVector, jt::QuaternionFloating) = rotation!(q, jt, rotation(jt, q, true))
+normalize_configuration!(q::AbstractVector, jt::QuaternionFloating) = set_rotation!(q, jt, rotation(jt, q, true))
 
 function is_configuration_normalized(jt::QuaternionFloating, q::AbstractVector, rtol, atol)
     isapprox(quatnorm(rotation(jt, q, false)), one(eltype(q)); rtol = rtol, atol = atol)
@@ -275,6 +229,19 @@ abstract type OneDegreeOfFreedomFixedAxis{T} <: JointType{T} end
 num_positions(::Type{<:OneDegreeOfFreedomFixedAxis}) = 1
 num_velocities(::Type{<:OneDegreeOfFreedomFixedAxis}) = 1
 has_fixed_subspaces(jt::OneDegreeOfFreedomFixedAxis) = true
+isfloating(::Type{<:OneDegreeOfFreedomFixedAxis}) = false
+
+function set_configuration!(q::AbstractVector, joint::Joint{<:Any, <:OneDegreeOfFreedomFixedAxis}, config::Number)
+    check_num_positions(joint, q)
+    q[1] = config
+    q
+end
+
+function set_velocity!(v::AbstractVector, joint::Joint{<:Any, <:OneDegreeOfFreedomFixedAxis}, vel::Number)
+    check_num_positions(joint, v)
+    v[1] = vel
+    v
+end
 
 function rand_configuration!(q::AbstractVector, ::OneDegreeOfFreedomFixedAxis)
     randn!(q)
@@ -442,6 +409,7 @@ RigidBodyDynamics.flip_direction(jt::Fixed) = deepcopy(jt)
 num_positions(::Type{<:Fixed}) = 0
 num_velocities(::Type{<:Fixed}) = 0
 has_fixed_subspaces(jt::Fixed) = true
+isfloating(::Type{<:Fixed}) = false
 
 function joint_transform(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}) where {T, X}
@@ -543,6 +511,7 @@ end
 num_positions(::Type{<:Planar}) = 3
 num_velocities(::Type{<:Planar}) = 3
 has_fixed_subspaces(jt::Planar) = true
+isfloating(::Type{<:Planar}) = false
 
 function rand_configuration!(q::AbstractVector{T}, ::Planar) where {T}
     q[1] = rand() - T(0.5)
@@ -648,19 +617,26 @@ Random.rand(::Type{QuaternionSpherical{T}}) where {T} = QuaternionSpherical{T}()
 num_positions(::Type{<:QuaternionSpherical}) = 4
 num_velocities(::Type{<:QuaternionSpherical}) = 3
 has_fixed_subspaces(jt::QuaternionSpherical) = true
+isfloating(::Type{<:QuaternionSpherical}) = false
 
 @inline function rotation(jt::QuaternionSpherical, q::AbstractVector, normalize::Bool = true)
     @inbounds quat = Quat(q[1], q[2], q[3], q[4], normalize)
     quat
 end
 
-@inline function rotation!(q::AbstractVector, jt::QuaternionSpherical, rot::Rotation{3, T}) where {T}
+@inline function set_rotation!(q::AbstractVector, jt::QuaternionSpherical, rot::Rotation{3, T}) where {T}
     quat = convert(Quat{T}, rot)
     @inbounds q[1] = quat.w
     @inbounds q[2] = quat.x
     @inbounds q[3] = quat.y
     @inbounds q[4] = quat.z
     nothing
+end
+
+function set_configuration!(q::AbstractVector, joint::Joint{<:Any, <:QuaternionSpherical}, rot::Rotation{3})
+    check_num_positions(joint, q)
+    set_rotation!(q, joint_type(joint), rot)
+    q
 end
 
 function joint_transform(jt::QuaternionSpherical, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D, q::AbstractVector)
@@ -711,13 +687,13 @@ end
 
 function zero_configuration!(q::AbstractVector, jt::QuaternionSpherical)
     T = eltype(q)
-    rotation!(q, jt, eye(Quat{T}))
+    set_rotation!(q, jt, eye(Quat{T}))
     nothing
 end
 
 function rand_configuration!(q::AbstractVector, jt::QuaternionSpherical)
     T = eltype(q)
-    rotation!(q, jt, rand(Quat{T}))
+    set_rotation!(q, jt, rand(Quat{T}))
     nothing
 end
 
@@ -756,11 +732,11 @@ end
 function global_coordinates!(q::AbstractVector, jt::QuaternionSpherical, q0::AbstractVector, ϕ::AbstractVector)
     quat0 = rotation(jt, q0)
     quat = quat0 * Quat(RodriguesVec(ϕ[1], ϕ[2], ϕ[3]))
-    rotation!(q, jt, quat)
+    set_rotation!(q, jt, quat)
     nothing
 end
 
-normalize_configuration!(q::AbstractVector, jt::QuaternionSpherical) = rotation!(q, jt, rotation(jt, q, true))
+normalize_configuration!(q::AbstractVector, jt::QuaternionSpherical) = set_rotation!(q, jt, rotation(jt, q, true))
 
 function is_configuration_normalized(jt::QuaternionSpherical, q::AbstractVector, rtol, atol)
     isapprox(quatnorm(rotation(jt, q, false)), one(eltype(q)); rtol = rtol, atol = atol)

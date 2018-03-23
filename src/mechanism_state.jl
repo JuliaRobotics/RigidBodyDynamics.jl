@@ -398,8 +398,8 @@ $(SIGNATURES)
 Set the part of the configuration vector associated with `joint`.
 Invalidates cache variables.
 """
-function set_configuration!(state::MechanismState, joint::Joint, q::AbstractVector)
-    configuration(state, joint)[:] = q
+function set_configuration!(state::MechanismState, joint::Joint, config)
+    set_configuration!(configuration(state, joint), joint, config)
     reset_contact_state!(state)
     setdirty!(state)
 end
@@ -410,8 +410,8 @@ $(SIGNATURES)
 Set the part of the velocity vector associated with `joint`.
 Invalidates cache variables.
 """
-function set_velocity!(state::MechanismState, joint::Joint, v::AbstractVector)
-    velocity(state, joint)[:] = v
+function set_velocity!(state::MechanismState, joint::Joint, vel)
+    set_velocity!(velocity(state, joint), joint, vel)
     reset_contact_state!(state)
     setdirty!(state)
 end
@@ -422,7 +422,7 @@ $(SIGNATURES)
 Set the configuration vector ``q``. Invalidates cache variables.
 """
 function set_configuration!(state::MechanismState, q::AbstractVector)
-    copyto!(parent(state.q), q)
+    copyto!(state.q, q)
     setdirty!(state)
 end
 
