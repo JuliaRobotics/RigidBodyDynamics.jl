@@ -1,20 +1,3 @@
-function floating_joint_transform_to_configuration!(joint::Joint, q::AbstractVector, joint_transform::Transform3D)
-    @framecheck frame_before(joint) joint_transform.to
-    @framecheck frame_after(joint) joint_transform.from
-    joint_type(joint)::QuaternionFloating
-    RigidBodyDynamics.rotation!(q, joint_type(joint), rotation(joint_transform))
-    RigidBodyDynamics.translation!(q, joint_type(joint), translation(joint_transform))
-end
-
-function floating_joint_twist_to_velocity!(joint::Joint, v::AbstractVector, joint_twist::Twist)
-    @framecheck frame_before(joint) joint_twist.base
-    @framecheck frame_after(joint) joint_twist.body
-    @framecheck frame_after(joint) joint_twist.frame
-    joint_type(joint)::QuaternionFloating
-    RigidBodyDynamics.angular_velocity!(v, joint_type(joint), angular(joint_twist))
-    RigidBodyDynamics.linear_velocity!(v, joint_type(joint), linear(joint_twist))
-end
-
 @testset "mechanism modification" begin
     @testset "attach!" begin
         body0 = RigidBody{Float64}("root")
@@ -213,12 +196,12 @@ end
 
             # set configuration and velocity of new floating joint
             newfloatingjoint_transform = inv(joint_to_world) * relative_transform(x1, body_to_joint.from, joint_to_world.to) * inv(body_to_joint)
-            floating_joint_transform_to_configuration!(newfloatingjoint, configuration(x2, newfloatingjoint), newfloatingjoint_transform)
+            set_configuration!(x2, newfloatingjoint, newfloatingjoint_transform)
 
             newfloatingjoint_twist = transform(x1, relative_twist(x1, newfloatingbody, world), body_to_joint.from)
             newfloatingjoint_twist = transform(newfloatingjoint_twist, body_to_joint)
             newfloatingjoint_twist = Twist(body_to_joint.to, joint_to_world.from, newfloatingjoint_twist.frame, angular(newfloatingjoint_twist), linear(newfloatingjoint_twist))
-            floating_joint_twist_to_velocity!(newfloatingjoint, velocity(x2, newfloatingjoint), newfloatingjoint_twist)
+            set_velocity!(velocity(x2, newfloatingjoint), newfloatingjoint, newfloatingjoint_twist)
 
             # do dynamics and compute spatial accelerations
             result1 = DynamicsResult(mechanism1)
@@ -264,10 +247,10 @@ end
             joint = newfloatingjoints[newbody]
 
             tf = relative_transform(tree_state, frame_after(joint), frame_before(joint))
-            floating_joint_transform_to_configuration!(joint, configuration(mc_state, joint), tf)
+            set_configuration!(configuration(mc_state, joint), joint, tf)
 
             twist = transform(relative_twist(tree_state, frame_after(joint), frame_before(joint)), inv(tf))
-            floating_joint_twist_to_velocity!(joint, velocity(mc_state, joint), twist)
+            set_velocity!(mc_state, joint, twist)
         end
         setdirty!(mc_state)
 
