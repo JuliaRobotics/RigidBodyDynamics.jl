@@ -493,7 +493,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Joints",
     "title": "RigidBodyDynamics.Joint",
     "category": "type",
-    "text": "struct Joint{T, JT<:RigidBodyDynamics.JointType{T}}\n\nA joint represents a kinematic restriction of the relative twist between two rigid bodies to a linear subspace of dimension k.\n\nA joint has a direction. The rigid body before the joint is called the joint\'s predecessor, and the rigid body after the joint is its successor.\n\nThe state related to the joint is parameterized by two sets of variables, namely\n\na vector q in  mathcalQ, parameterizing the relative homogeneous transform.\na vector v in mathbbR^k, parameterizing the relative twist.\n\nThe twist of the successor with respect to the predecessor is a linear function of v.\n\nFor some joint types (notably those using a redundant representation of relative orientation, such as a unit quaternion), dotq, the time derivative of q, may not be the same as v. However, an invertible linear transformation exists between dotq and v.\n\nSee also:\n\nDefinition 2.9 in Duindam, \"Port-Based Modeling and Control for Efficient Bipedal Walking Robots\", 2006.\nSection 4.4 of Featherstone, \"Rigid Body Dynamics Algorithms\", 2008.\n\n\n\n"
+    "text": "struct Joint{T, JT<:RigidBodyDynamics.JointType{T}}\n\nA joint represents a kinematic restriction of the relative twist between two rigid bodies to a linear subspace of dimension k.\n\nA joint has a direction. The rigid body before the joint is called the joint\'s predecessor, and the rigid body after the joint is its successor.\n\nThe state related to the joint is parameterized by two sets of variables, namely\n\na vector q in mathcalQ, parameterizing the relative homogeneous transform.\na vector v in mathbbR^k, parameterizing the relative twist.\n\nThe twist of the successor with respect to the predecessor is a linear function of v.\n\nFor some joint types (notably those using a redundant representation of relative orientation, such as a unit quaternion), dotq, the time derivative of q, may not be the same as v. However, an invertible linear transformation exists between dotq and v.\n\nSee also:\n\nDefinition 2.9 in Duindam, \"Port-Based Modeling and Control for Efficient Bipedal Walking Robots\", 2006.\nSection 4.4 of Featherstone, \"Rigid Body Dynamics Algorithms\", 2008.\n\n\n\n"
 },
 
 {
@@ -1417,11 +1417,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1} where T}",
+    "location": "mechanismstate.html#RigidBodyDynamics.set_configuration!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,Any}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.set_configuration!",
     "category": "method",
-    "text": "set_configuration!(state, joint, q)\n\n\nSet the part of the configuration vector associated with joint. Invalidates cache variables.\n\n\n\n"
+    "text": "set_configuration!(state, joint, config)\n\n\nSet the part of the configuration vector associated with joint. Invalidates cache variables.\n\n\n\n"
 },
 
 {
@@ -1433,11 +1433,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,AbstractArray{T,1} where T}",
+    "location": "mechanismstate.html#RigidBodyDynamics.set_velocity!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.Joint,Any}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.set_velocity!",
     "category": "method",
-    "text": "set_velocity!(state, joint, v)\n\n\nSet the part of the velocity vector associated with joint. Invalidates cache variables.\n\n\n\n"
+    "text": "set_velocity!(state, joint, vel)\n\n\nSet the part of the velocity vector associated with joint. Invalidates cache variables.\n\n\n\n"
 },
 
 {
