@@ -1,4 +1,23 @@
 @testset "mechanism modification" begin
+    @testset "flip_direction" begin
+        Bounds = RigidBodyDynamics.Bounds
+        jointname = "joint1"
+        axis = [1.0, 0.0, 0.0]
+        for JT in [Revolute, Prismatic]
+            jointtype = JT(axis)
+            posbounds = [Bounds(1., 2.)]
+            velbounds = [Bounds(3., 4.)]
+            effbounds = [Bounds(5., 6.)]
+            joint = Joint(jointname, jointtype, position_bounds = posbounds, velocity_bounds = velbounds, effort_bounds = effbounds)
+            flipped = RigidBodyDynamics.Graphs.flip_direction(joint)
+            @test flipped.name == joint.name
+            @test joint_type(flipped) == JT(.-axis)
+            @test flipped.position_bounds == [Bounds(-2., -1.)]
+            @test flipped.velocity_bounds == [Bounds(-4., -3.)]
+            @test flipped.effort_bounds == [Bounds(-6., -5.)]
+        end
+    end
+
     @testset "attach!" begin
         body0 = RigidBody{Float64}("root")
         mechanism = Mechanism(body0)

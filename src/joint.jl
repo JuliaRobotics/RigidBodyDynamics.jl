@@ -163,9 +163,9 @@ Base.@deprecate id(joint::Joint) JointID(joint)
 function RigidBodyDynamics.Graphs.flip_direction(joint::Joint)
     jtype = RigidBodyDynamics.flip_direction(joint_type(joint))
     Joint(string(joint), frame_after(joint), frame_before(joint), jtype;
-        position_bounds = joint.position_bounds,
-        velocity_bounds = joint.velocity_bounds,
-        effort_bounds = joint.effort_bounds)
+        position_bounds = .-joint.position_bounds,
+        velocity_bounds = .-joint.velocity_bounds,
+        effort_bounds = .-joint.effort_bounds)
 end
 
 function set_joint_to_predecessor!(joint::Joint, tf::Transform3D)
