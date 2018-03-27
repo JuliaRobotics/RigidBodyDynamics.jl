@@ -111,6 +111,7 @@ Bounds(lower::T1, upper::T2) where {T1, T2} = Bounds{promote_type(T1, T2)}(lower
 upper(b::Bounds) = b.upper
 lower(b::Bounds) = b.lower
 Base.:(==)(b1::Bounds, b2::Bounds) = b1.lower == b2.lower && b1.upper == b2.upper
+Base.:-(b::Bounds) = Bounds(-b.upper, -b.lower)
 Base.show(io::IO, b::Bounds) = print(io, "(", lower(b), ", ", upper(b), ")")
 Base.convert(::Type{Bounds{T1}}, b::Bounds{T2}) where {T1, T2} = Bounds{T1}(convert(T1, lower(b)), convert(T1, upper(b)))
 
