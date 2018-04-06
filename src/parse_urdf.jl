@@ -46,6 +46,12 @@ function parse_joint_type(::Type{T}, xml_joint::XMLElement) where {T}
         return QuaternionFloating{T}()
     elseif joint_type == "fixed"
         return Fixed{T}()
+    elseif joint_type == "planar"
+        urdf_axis = SVector{3}(parse_vector(T, find_element(xml_joint, "axis"), "xyz", "1 0 0"))
+        # The URDF spec says that a planar joint allows motion in a
+        # plane perpendicular to the axis.
+        R = Rotations.rotation_between(SVector(0, 0, 1), urdf_axis)
+        return Planar{T}(R * SVector(1, 0, 0), R * SVector(0, 1, 0))
     else
         error("joint type $joint_type not recognized")
     end
