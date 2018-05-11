@@ -28,8 +28,8 @@ function parse_pose(::Type{T}, xml_pose::Nothing) where {T}
 end
 
 function parse_pose(::Type{T}, xml_pose::XMLElement) where {T}
-    rpy = RotXYZ(parse_vector(T, xml_pose, "rpy", "0 0 0")...)
-    rot = RotMatrix(rpy)
+    rpy = parse_vector(T, xml_pose, "rpy", "0 0 0")
+    rot = RotMatrix(RotZYX(rpy[3], rpy[2], rpy[1]))
     trans = SVector{3}(parse_vector(T, xml_pose, "xyz", "0 0 0"))
     rot, trans
 end
