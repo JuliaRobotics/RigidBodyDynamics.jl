@@ -41,5 +41,63 @@
         @test jt.x_axis ≈ SVector(1, 0, 0)
         @test jt.y_axis ≈ SVector(0, 1, 0)
     end
+
+    @testset "rotation handling" begin
+        # https://github.com/JuliaRobotics/RigidBodyDynamics.jl/issues/429
+        xml = """
+            <origin rpy="0 0 0"/>
+        """
+        xpose = LightXML.root(LightXML.parse_string(xml))
+        rot, trans = RigidBodyDynamics.parse_pose(Float64, xpose)
+        @test rot ≈ SDiagonal(1, 1, 1)
+        @test trans ≈ SVector(0, 0, 0)
+
+        xml = """
+            <origin rpy="0.3 0 0"/>
+        """
+        xpose = LightXML.root(LightXML.parse_string(xml))
+        rot, trans = RigidBodyDynamics.parse_pose(Float64, xpose)
+        @test rot ≈ RotMatrix(RotX(0.3))
+        @test trans ≈ SVector(0, 0, 0)
+
+        xml = """
+            <origin rpy="0 0.2 0"/>
+        """
+        xpose = LightXML.root(LightXML.parse_string(xml))
+        rot, trans = RigidBodyDynamics.parse_pose(Float64, xpose)
+        @test rot ≈ RotMatrix(RotY(0.2))
+        @test trans ≈ SVector(0, 0, 0)
+
+        xml = """
+            <origin rpy="0 0 0.1"/>
+        """
+        xpose = LightXML.root(LightXML.parse_string(xml))
+        rot, trans = RigidBodyDynamics.parse_pose(Float64, xpose)
+        @test rot ≈ RotMatrix(RotZ(0.1))
+        @test trans ≈ SVector(0, 0, 0)
+
+        # Comparison against ROS's tf.transformations.quaternion_from_euler
+        xml = """
+            <origin rpy="1 2 3"/>
+        """
+        xpose = LightXML.root(LightXML.parse_string(xml))
+        rot, trans = RigidBodyDynamics.parse_pose(Float64, xpose)
+        @test rot ≈ [0.41198225 -0.83373765 -0.36763046;
+                    -0.05872664 -0.42691762  0.90238159;
+                    -0.90929743 -0.35017549 -0.2248451] atol=1e-7
+        @test trans ≈ SVector(0, 0, 0)
+
+
+        # Comparison against ROS's tf.transformations.quaternion_from_euler
+        xml = """
+            <origin rpy="0.5 0.1 0.2"/>
+        """
+        xpose = LightXML.root(LightXML.parse_string(xml))
+        rot, trans = RigidBodyDynamics.parse_pose(Float64, xpose)
+        @test rot ≈ [0.97517033 -0.12744012  0.18111281;
+                     0.19767681  0.86959819 -0.45246312;
+                    -0.09983342  0.47703041  0.8731983] atol=1e-7
+        @test trans ≈ SVector(0, 0, 0)
+    end
 end
 
