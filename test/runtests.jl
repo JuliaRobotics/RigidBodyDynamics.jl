@@ -13,6 +13,7 @@ using ForwardDiff
 
 import Base.Iterators: filter
 
+include("test_exports.jl")
 include("test_graph.jl")
 include("test_custom_collections.jl")
 include("test_frames.jl")
