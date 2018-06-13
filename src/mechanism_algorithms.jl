@@ -77,22 +77,21 @@ subspaces of each of the joints to the frame in which `out` is expressed.
 $noalloc_doc
 """
 function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path::TreePath, transformfun)
-    @boundscheck num_velocities(state) == size(jac, 2) || error("size mismatch")
+    @boundscheck num_velocities(state) == size(jac, 2) || throw(DimensionMismatch())
     @framecheck jac.body default_frame(target(path))
     @framecheck jac.base default_frame(source(path))
     update_motion_subspaces!(state)
     fill!(jac.angular, 0)
     fill!(jac.linear, 0)
-    joints = state.treejoints
-    motion_subspaces = state.motion_subspaces.data
-    discard = DiscardVector(length(joints))
-    broadcast!(discard, jac, state, path, joints, motion_subspaces) do jac, state, path, joint, motion_subspace
+    @inbounds for i in eachindex(path.edges)
+        joint = path.edges[i]
         vrange = velocity_range(state, joint)
-        pathindex = findfirst(path, joint)
-        if pathindex > 0
-            part = transformfun(motion_subspace)
-            directions(path)[pathindex] == :up && (part = -part)
-            set_cols!(jac, vrange, part)
+        direction = directions(path)[i]
+        for col in eachindex(vrange)
+            vindex = vrange[col]
+            Scol = transformfun(state.motion_subspaces.data[vindex])
+            direction == :up && (Scol = -Scol)
+            set_col!(jac, vindex, Scol)
         end
     end
     jac
@@ -178,29 +177,30 @@ function mass_matrix!(M::Symmetric, state::MechanismState)
     update_crb_inertias!(state)
     fill!(M.data, 0)
     motion_subspaces = state.motion_subspaces.data
-    foreach_with_extra_args(set_mass_matrix_col!, M, state, motion_subspaces, state.treejointids)
-    M
-end
-
-@inline function set_mass_matrix_col!(M::Symmetric, state::MechanismState, Sj::GeometricJacobian, idj::JointID)
-    bodyid = successorid(idj, state)
-    Icj = crb_inertia(state, bodyid)
-    Fj = Icj * Sj
-    motion_subspaces = state.motion_subspaces.data
-    ancestor_joint_mask = values(state.ancestor_joint_masks[idj])
-    discard = DiscardVector(length(ancestor_joint_mask))
-    vranges = state.vranges
-    jrange = vranges[idj]
-    foreach_with_extra_args(set_mass_matrix_block!, M, Fj, Scalar(jrange), motion_subspaces, values(vranges), ancestor_joint_mask)
-    nothing
-end
-
-@inline function set_mass_matrix_block!(M::Symmetric, Fj::MomentumMatrix, jrange, Si::GeometricJacobian, irange::UnitRange, isancestor::Bool)
-    if isancestor
-        block = angular(Fj)' * angular(Si) + linear(Fj)' * linear(Si)
-        set_matrix_block!(M.data, jrange[], irange, block) # note the flipped indices: we're setting the lower triangle
+    @inbounds for i in state.treejointids
+        bodyid = successorid(i, state)
+        Ici = crb_inertia(state, bodyid)
+        ancestor_joint_mask = values(state.ancestor_joint_masks[i]) # TODO
+        vrangei = velocity_range(state, i)
+        for coli in eachindex(vrangei)
+            vindexi = vrangei[coli]
+            Sicol = motion_subspaces[vindexi]
+            Ficol = Ici * Sicol
+            for j in Base.OneTo(i) # TODO: iterate directly over relevant joint ids
+                if ancestor_joint_mask[j]
+                    vrangej = velocity_range(state, j)
+                    for colj in eachindex(vrangej)
+                        vindexj = vrangej[colj]
+                        Sjcol = motion_subspaces[vindexj]
+                        # TODO: make nicer:
+                        @framecheck Ficol.frame Sjcol.frame
+                        M.data[vindexi, vindexj] = (transpose(angular(Ficol)) * angular(Sjcol) + transpose(linear(Ficol)) * linear(Sjcol))[1]
+                    end
+                end
+            end
+        end
     end
-    nothing
+    M
 end
 
 mass_matrix!(result::DynamicsResult, state::MechanismState) = mass_matrix!(result.massmatrix, state)
@@ -242,18 +242,19 @@ momentum matrix blocks associated with each of the joints to the frame in which
 
 $noalloc_doc
 """
-function momentum_matrix!(out::MomentumMatrix, state::MechanismState, transformfun)
-    @boundscheck num_velocities(state) == size(out, 2) || error("size mismatch")
+function momentum_matrix!(mat::MomentumMatrix, state::MechanismState, transformfun)
+    @boundscheck num_velocities(state) == size(mat, 2) || throw(DimensionMismatch())
     update_motion_subspaces!(state)
     update_crb_inertias!(state)
-    motion_subspaces = state.motion_subspaces.data
-    discard = DiscardVector(length(motion_subspaces))
-    broadcast!(discard, out, state, motion_subspaces, state.treejointids) do out, state, motion_subspace, jointid
-        vrange = velocity_range(state, jointid)
+    @inbounds for jointid in state.treejointids
         bodyid = successorid(jointid, state)
         inertia = crb_inertia(state, bodyid)
-        part = transformfun(inertia * motion_subspace)
-        set_cols!(out, vrange, part)
+        vrange = velocity_range(state, jointid)
+        for col in eachindex(vrange)
+            vindex = vrange[col]
+            Scol = transformfun(inertia * state.motion_subspaces.data[vindex])
+            set_col!(mat, vindex, Scol)
+        end
     end
 end
 
@@ -267,8 +268,8 @@ in which `out` is expressed.
 
 $noalloc_doc
 """
-function momentum_matrix!(out::MomentumMatrix, state::MechanismState, root_to_desired::Transform3D)
-    momentum_matrix!(out, state, F -> transform(F, root_to_desired))
+function momentum_matrix!(mat::MomentumMatrix, state::MechanismState, root_to_desired::Transform3D)
+    momentum_matrix!(mat, state, F -> transform(F, root_to_desired))
 end
 
 """
@@ -515,25 +516,27 @@ function constraint_jacobian!(jac::AbstractMatrix, rowranges, state::MechanismSt
     update_motion_subspaces!(state)
     update_constraint_wrench_subspaces!(state)
     fill!(jac, 0)
-    nontreejoints = state.nontreejoints
-    wrenchsubspaces = state.constraint_wrench_subspaces.data
-    foreach_with_extra_args(jac, state, nontreejoints, wrenchsubspaces, values(rowranges)) do jac, state, nontreejoint, T, rowrange
-        nontreejointid = JointID(nontreejoint)
+    @inbounds for nontreejointid in state.nontreejointids
         path = state.constraint_jacobian_structure[nontreejointid]
-        treejoints = state.treejoints
-        motionsubspaces = state.motion_subspaces.data
-        foreach_with_extra_args(constraint_jacobian_part!, jac, rowrange, state, path, T, treejoints, motionsubspaces)
+        for cindex in constraint_range(state, nontreejointid)
+            Tcol = state.constraint_wrench_subspaces.data[cindex]
+            for i in eachindex(path.edges)
+                treejoint = path.edges[i]
+                vrange = velocity_range(state, treejoint)
+                direction = directions(path)[i]
+                sign = ifelse(direction == :up, -1, 1)
+                for col in eachindex(vrange)
+                    vindex = vrange[col]
+                    Scol = state.motion_subspaces.data[vindex]
+                    # TODO: make nicer:
+                    @framecheck Tcol.frame Scol.frame
+                    jacelement = flipsign((transpose(angular(Tcol)) * angular(Scol) + transpose(linear(Tcol)) * linear(Scol))[1], sign)
+                    jac[cindex, vindex] = jacelement
+                end
+            end
+        end
     end
-end
-
-@inline function constraint_jacobian_part!(jac, rowrange, state, path, T, treejoint, S)
-    vrange = velocity_range(state, treejoint)
-    pathindex = findfirst(path, treejoint)
-    if pathindex > 0
-        part = angular(T)' * angular(S) + linear(T)' * linear(S) # TODO: At_mul_B
-        directions(path)[pathindex] == :up && (part = -part)
-        set_matrix_block!(jac, rowrange, vrange, part)
-    end
+    jac
 end
 
 function constraint_jacobian!(result::DynamicsResult, state::MechanismState)
@@ -544,17 +547,18 @@ function constraint_bias!(bias::SegmentedVector, state::MechanismState)
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
     update_constraint_wrench_subspaces!(state)
-    nontreejoints = state.nontreejoints
-    wrenchsubspaces = state.constraint_wrench_subspaces.data
-    discard = DiscardVector(length(nontreejoints))
-    broadcast!(discard, values(segments(bias)), state, nontreejoints, wrenchsubspaces) do kjoint, state, nontreejoint, T
-        has_fixed_subspaces(nontreejoint) || error("Only joints with fixed motion subspace (Ṡ = 0) supported at this point.") # TODO: call to joint-type-specific function
-        nontreejointid = JointID(nontreejoint)
+    constraint_wrench_subspaces = state.constraint_wrench_subspaces.data
+    @inbounds for nontreejointid in state.nontreejointids
         path = state.constraint_jacobian_structure[nontreejointid]
         predid, succid = predsucc(nontreejointid, state)
         crossterm = cross(twist_wrt_world(state, succid), twist_wrt_world(state, predid))
         biasaccel = crossterm + (-bias_acceleration(state, predid) + bias_acceleration(state, succid)) # 8.47 in Featherstone
-        At_mul_B!(kjoint, T, biasaccel)
+        for cindex in constraint_range(state, nontreejointid)
+            Tcol = constraint_wrench_subspaces[cindex]
+            # TODO: make nicer:
+            @framecheck Tcol.frame biasaccel.frame
+            bias[cindex] = (transpose(Tcol.angular) * biasaccel.angular + transpose(Tcol.linear) * biasaccel.linear)[1]
+        end
     end
     bias
 end

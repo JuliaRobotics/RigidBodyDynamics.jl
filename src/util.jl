@@ -1,39 +1,21 @@
-# Copy block of matrix. TODO: use higher level abstraction once it's fast
-@inline function set_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange, part::AbstractMatrix)
-    for col in 1 : size(part, 2), row in 1 : size(part, 1)
-        out[irange[row], jrange[col]] = part[row, col]
-    end
-end
-
-# zero block of a matrix. TODO: use higher level abstraction once it's fast
-@inline function zero_matrix_block!(out::AbstractMatrix, irange::UnitRange, jrange::UnitRange)
-    for col in jrange, row in irange
-        out[row, col] = 0
-    end
-end
-
 # TODO: higher level abstraction once it's as fast
 for T in (:GeometricJacobian, :MomentumMatrix)
-    @eval @inline function set_cols!(out::$T, vrange::UnitRange, part::$T)
-        @framecheck out.frame part.frame
-        for col in 1 : size(part, 2)
-            outcol = vrange[col]
-            angular(out)[1, outcol] = angular(part)[1, col]
-            angular(out)[2, outcol] = angular(part)[2, col]
-            angular(out)[3, outcol] = angular(part)[3, col]
-            linear(out)[1, outcol] = linear(part)[1, col]
-            linear(out)[2, outcol] = linear(part)[2, col]
-            linear(out)[3, outcol] = linear(part)[3, col]
+    @eval @inline function set_col!(dest::$T, col::Integer, src::$T)
+        @framecheck dest.frame src.frame
+        @boundscheck size(src, 2) == 1 || throw(ArgumentError())
+        @boundscheck col ∈ Base.OneTo(size(dest, 2)) || throw(DimensionMismatch())
+        @inbounds begin
+            start = LinearIndices(dest.angular)[1, col]
+            dest.angular[start] = src.angular[1]
+            dest.angular[start + 1] = src.angular[2]
+            dest.angular[start + 2] = src.angular[3]
+            dest.linear[start] = src.linear[1]
+            dest.linear[start + 1] = src.linear[2]
+            dest.linear[start + 2] = src.linear[3]
         end
     end
 end
 
-@inline function zero_cols!(out::GeometricJacobian, vrange::UnitRange)
-    for j in vrange # TODO: use higher level abstraction once it's as fast
-        angular(out)[1, j] = angular(out)[2, j] = angular(out)[3, j] = 0;
-        linear(out)[1, j] = linear(out)[2, j] = linear(out)[3, j] = 0;
-    end
-end
 
 ## findunique
 function findunique(f, A::AbstractArray)

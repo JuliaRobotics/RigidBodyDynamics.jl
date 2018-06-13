@@ -37,19 +37,19 @@ mutable struct DynamicsResult{T, M}
     function DynamicsResult{T}(mechanism::Mechanism{M}) where {T, M}
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
-        nconstraints = mapreduce(num_constraints, +, 0, non_tree_joints(mechanism))::Int
+        nc = num_constraints(mechanism)
 
         massmatrix = Symmetric(Matrix{T}(undef, nv, nv), :L)
         dynamicsbias = SegmentedVector(Vector{T}(undef, nv), tree_joints(mechanism), num_velocities)
-        constraintjacobian = Matrix{T}(undef, nconstraints, nv)
+        constraintjacobian = Matrix{T}(undef, nc, nv)
         constraintbias = SegmentedVector{JointID, T, UnitRange{JointID}}(
-            Vector{T}(undef, nconstraints), non_tree_joints(mechanism), num_constraints)
+            Vector{T}(undef, nc), non_tree_joints(mechanism), num_constraints)
         constraintrowranges = ranges(constraintbias)
 
         q̇ = SegmentedVector(Vector{T}(undef, nq), tree_joints(mechanism), num_positions)
         v̇ = SegmentedVector(Vector{T}(undef, nv), tree_joints(mechanism), num_velocities)
         ṡ = Vector{T}(undef, num_additional_states(mechanism))
-        λ = Vector{T}(undef, nconstraints)
+        λ = Vector{T}(undef, nc)
 
         rootframe = root_frame(mechanism)
         contactwrenches = BodyDict{Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
@@ -74,9 +74,9 @@ mutable struct DynamicsResult{T, M}
         end
 
         L = Matrix{T}(undef, nv, nv)
-        A = Matrix{T}(undef, nconstraints, nconstraints)
+        A = Matrix{T}(undef, nc, nc)
         z = Vector{T}(undef, nv)
-        Y = Matrix{T}(undef, nconstraints, nv)
+        Y = Matrix{T}(undef, nc, nv)
 
         new{T, M}(mechanism, massmatrix, dynamicsbias, constraintjacobian, constraintbias, constraintrowranges,
             q̇, v̇, ṡ, λ, contactwrenches, totalwrenches, accelerations, jointwrenches, contact_state_derivs,

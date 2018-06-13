@@ -58,9 +58,7 @@ Base.show(io::IO, ::StateCache) = print(io, "StateCache{…}(…)")
 
 @inline function valuetype(::Type{StateCache{M, JC}}, ::Type{X}) where {M, JC, X}
     C = promote_type(X, M)
-    MSC = motionsubspacecollectiontype(JC, X)
-    WSC = wrenchsubspacecollectiontype(JC, X)
-    MechanismState{X, M, C, JC, MSC, WSC}
+    MechanismState{X, M, C, JC}
 end
 
 @inline makevalue(c::StateCache, ::Type{X}) where X = MechanismState{X}(c.mechanism)

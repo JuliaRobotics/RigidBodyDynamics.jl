@@ -86,7 +86,7 @@
     @test isapprox(τ, M * v̇ + C * v + G, atol = 1e-12)
 
     # compare against URDF
-    double_pendulum_urdf = parse_urdf(Float64, "urdf/Acrobot.urdf")
+    double_pendulum_urdf = parse_urdf(Float64, joinpath(@__DIR__, "urdf", "Acrobot.urdf"))
     remove_fixed_tree_joints!(double_pendulum_urdf)
     x_urdf = MechanismState(double_pendulum_urdf)
     for (i, j) in enumerate(joints(double_pendulum))
