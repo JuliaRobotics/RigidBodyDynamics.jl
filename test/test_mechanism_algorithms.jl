@@ -238,7 +238,7 @@ end
             J = geometric_jacobian(x, p)
             T = Twist(J, velocity(x))
             @test point_velocity(T, point_in_world) ≈ point_velocity(J_point, velocity(x))
-            @test point_velocity(J_point, velocity(x)) ≈ Array(J_point) * velocity(x)
+            @test point_velocity(J_point, velocity(x)).v ≈ Array(J_point) * velocity(x)
 
             # Test that in-place updates work too
             rand!(x)
@@ -246,6 +246,7 @@ end
                 @test_throws ArgumentError point_jacobian!(J_point, x, p, point)
             end
             point_jacobian!(J_point, x, p, point_in_world)
+            @test @allocated(point_jacobian!(J_point, x, p, point_in_world)) == 0
             J = geometric_jacobian(x, p)
             T = Twist(J, velocity(x))
             @test point_velocity(T, point_in_world) ≈ point_velocity(J_point, velocity(x))
