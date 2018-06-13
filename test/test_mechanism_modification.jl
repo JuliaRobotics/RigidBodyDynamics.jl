@@ -88,8 +88,9 @@
 
         # independent acrobots in the same configuration
         # make sure mass matrix is block diagonal, and that blocks on diagonal are the same
-        double_acrobot = parse_urdf(Float64, "urdf/Acrobot.urdf")
-        acrobot2 = parse_urdf(Float64, "urdf/Acrobot.urdf")
+        urdf = joinpath(@__DIR__, "urdf", "Acrobot.urdf")
+        double_acrobot = parse_urdf(Float64, urdf)
+        acrobot2 = parse_urdf(Float64, urdf)
         xsingle = MechanismState(acrobot2)
         rand!(xsingle)
         qsingle = configuration(xsingle)

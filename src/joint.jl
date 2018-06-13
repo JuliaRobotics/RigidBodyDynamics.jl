@@ -10,24 +10,7 @@ abstract type JointType{T} end
 Base.eltype(::Type{JointType{T}}) where {T} = T
 num_velocities(::T) where {T<:JointType} = num_velocities(T)
 num_positions(::T) where {T<:JointType} = num_positions(T)
-num_constraints(::Type{T}) where {T<:JointType} = _num_constraints(num_velocities(T))
-
-Base.@pure _num_constraints(N::Int) = 6 - N
-Base.@pure _3x(N::Int) = 3 * N
-
-function motionsubspacetype(::Type{JT}, ::Type{X}) where {T, JT<:JointType{T}, X}
-    N = num_velocities(JT)
-    L = _3x(N)
-    C = promote_type(T, X)
-    GeometricJacobian{SMatrix{3, N, C, L}}
-end
-
-function wrenchsubspacetype(::Type{JT}, ::Type{X}) where {T, JT<:JointType{T}, X}
-    N = num_constraints(JT)
-    L = _3x(N)
-    C = promote_type(T, X)
-    WrenchMatrix{SMatrix{3, N, C, L}}
-end
+num_constraints(::Type{T}) where {T<:JointType} = 6 - num_velocities(T)
 
 # Default implementations
 function flip_direction(jt::JointType{T}) where {T}
@@ -127,8 +110,6 @@ frame_after(joint::Joint) = joint.frame_after
 joint_type(joint::Joint) = joint.joint_type
 joint_to_predecessor(joint::Joint) = joint.joint_to_predecessor[]
 joint_to_successor(joint::Joint) = joint.joint_to_successor[]
-motionsubspacetype(::Type{J}, ::Type{X}) where {JT, J<:Joint{<:Any, JT}, X} = motionsubspacetype(JT, X)
-wrenchsubspacetype(::Type{J}, ::Type{X}) where {JT, J<:Joint{<:Any, JT}, X} = wrenchsubspacetype(JT, X)
 
 """
 $(SIGNATURES)
