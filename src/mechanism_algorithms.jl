@@ -97,6 +97,36 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
     jac
 end
 
+function point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePath, point::Point3D)
+    @framecheck Jp.frame point.frame
+    update_motion_subspaces!(state)
+    fill!(Jp.J, 0)
+    p̂ = Spatial.hat(point.v)
+    for i in eachindex(path.edges)
+        joint = path.edges[i]
+        vrange = velocity_range(state, joint)
+        direction = path.directions[i]
+        for col in eachindex(vrange)
+            vindex = vrange[col]
+            Scol = state.motion_subspaces.data[vindex]
+            direction == :up && (Scol = -Scol)
+            newcol =  -p̂ * angular(Scol) + linear(Scol)
+            for row in 1:3
+                Jp.J[row, vindex] = newcol[row]
+            end
+        end
+    end
+    Jp
+end
+
+function point_jacobian(state::MechanismState{X, M, C},
+                        path::TreePath{RigidBody{M}, Joint{M}},
+                        point::Point3D) where {X, M, C}
+    Jp = PointJacobian(Matrix{C}(undef, 3, num_velocities(state)), point.frame)
+    point_jacobian!(Jp, state, path, point)
+    Jp
+end
+
 """
 $(SIGNATURES)
 

@@ -221,6 +221,37 @@ end
         end
     end
 
+    @testset "point jacobian" begin
+        mechanism = randmech()
+        x = MechanismState(mechanism)
+        rand!(x)
+        for i = 1 : 100
+            bs = Set(bodies(mechanism))
+            body = rand([bs...])
+            delete!(bs, body)
+            base = rand([bs...])
+            p = path(mechanism, base, body)
+            point = Point3D(default_frame(body), rand(SVector{3, Float64}))
+            point_in_world = transform(x, point, root_frame(mechanism))
+            J_point = point_jacobian(x, p, point_in_world)
+
+            J = geometric_jacobian(x, p)
+            T = Twist(J, velocity(x))
+            @test point_velocity(T, point_in_world) ≈ point_velocity(J_point, velocity(x))
+            @test point_velocity(J_point, velocity(x)) ≈ Array(J_point) * velocity(x)
+
+            # Test that in-place updates work too
+            rand!(x)
+            if point.frame != root_frame(mechanism)
+                @test_throws ArgumentError point_jacobian!(J_point, x, p, point)
+            end
+            point_jacobian!(J_point, x, p, point_in_world)
+            J = geometric_jacobian(x, p)
+            T = Twist(J, velocity(x))
+            @test point_velocity(T, point_in_world) ≈ point_velocity(J_point, velocity(x))
+        end
+    end
+
     @testset "motion_subspace / constraint_wrench_subspace" begin
         mechanism = randmech()
         x = MechanismState(mechanism)
