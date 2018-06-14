@@ -97,8 +97,23 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
     jac
 end
 
+const point_jacobian_doc = """
+Compute the Jacobian mapping the `Mechanism`'s joint velocity vector ``v`` to
+the velocity of a point fixed to the target of the joint path (the body
+succeeding the last joint in the path) with respect to the source of the joint
+path (the body preceding the first joint in the path).
+"""
+
+"""
+$(SIGNATURES)
+
+$point_jacobian_doc
+
+$noalloc_doc
+"""
 function point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePath, point::Point3D)
     @framecheck Jp.frame point.frame
+    # TODO: check frame consistency with the motion subspaces
     update_motion_subspaces!(state)
     fill!(Jp.J, 0)
     p̂ = Spatial.hat(point.v)
@@ -119,6 +134,11 @@ function point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePat
     Jp
 end
 
+"""
+$(SIGNATURES)
+
+$point_jacobian_doc
+"""
 function point_jacobian(state::MechanismState{X, M, C},
                         path::TreePath{RigidBody{M}, Joint{M}},
                         point::Point3D) where {X, M, C}
