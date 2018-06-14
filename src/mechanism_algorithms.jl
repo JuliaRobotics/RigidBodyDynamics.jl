@@ -170,7 +170,7 @@ function _point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePa
     update_motion_subspaces!(state)
     fill!(Jp.J, 0)
     p̂ = Spatial.hat(point.v)
-    for i in eachindex(path.edges)
+    @inbounds for i in eachindex(path.edges)
         joint = path.edges[i]
         vrange = velocity_range(state, joint)
         direction = path.directions[i]
