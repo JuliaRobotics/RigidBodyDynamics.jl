@@ -1761,6 +1761,30 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "algorithms.html#RigidBodyDynamics.point_jacobian!-Tuple{RigidBodyDynamics.Spatial.PointJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath,RigidBodyDynamics.Spatial.Point3D}",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics.point_jacobian!",
+    "category": "method",
+    "text": "point_jacobian!(out, state, path, point)\n\n\nCompute the Jacobian mapping the Mechanism\'s joint velocity vector v to the velocity of a point fixed to the target of the joint path (the body succeeding the last joint in the path) with respect to the source of the joint path (the body preceding the first joint in the path).\n\nUses state to compute the transform from the Mechanism\'s root frame to the frame in which out is expressed if necessary.\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+},
+
+{
+    "location": "algorithms.html#RigidBodyDynamics.point_jacobian-Union{Tuple{C}, Tuple{M}, Tuple{RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection,RigidBodyDynamics.Graphs.TreePath{RigidBodyDynamics.RigidBody{M},RigidBodyDynamics.Joint{M,JT} where JT<:RigidBodyDynamics.JointType{M}},RigidBodyDynamics.Spatial.Point3D}, Tuple{X}} where C where M where X",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics.point_jacobian",
+    "category": "method",
+    "text": "point_jacobian(state, path, point)\n\n\nCompute the Jacobian mapping the Mechanism\'s joint velocity vector v to the velocity of a point fixed to the target of the joint path (the body succeeding the last joint in the path) with respect to the source of the joint path (the body preceding the first joint in the path).\n\n\n\n"
+},
+
+{
+    "location": "algorithms.html#RigidBodyDynamics._point_jacobian!-Tuple{RigidBodyDynamics.Spatial.PointJacobian,RigidBodyDynamics.MechanismState,RigidBodyDynamics.Graphs.TreePath,RigidBodyDynamics.Spatial.Point3D,Any}",
+    "page": "Kinematics/dynamics algorithms",
+    "title": "RigidBodyDynamics._point_jacobian!",
+    "category": "method",
+    "text": "_point_jacobian!(Jp, state, path, point, transformfun)\n\n\nCompute the Jacobian mapping the Mechanism\'s joint velocity vector v to the velocity of a point fixed to the target of the joint path (the body succeeding the last joint in the path) with respect to the source of the joint path (the body preceding the first joint in the path).\n\nThis method does its computation in place, performing no dynamic memory allocation.\n\n\n\n"
+},
+
+{
     "location": "algorithms.html#RigidBodyDynamics.subtree_mass-Union{Tuple{RigidBodyDynamics.RigidBody{T},RigidBodyDynamics.Mechanism{T}}, Tuple{T}} where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.subtree_mass",
