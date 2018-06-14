@@ -54,6 +54,17 @@ function transform(jac::GeometricJacobian, tf::Transform3D)
     GeometricJacobian(jac.body, jac.base, tf.to, ang, lin)
 end
 
+struct PointJacobian{M <: AbstractMatrix}
+    J::M
+    frame::CartesianFrame3D
+end
+
+Base.Array(Jp::PointJacobian) = Matrix(Jp.J)
+
+function point_velocity(Jp::PointJacobian, v::AbstractVector)
+    FreeVector3D(Jp.frame, Jp.J * v)
+end
+
 
 """
 $(TYPEDEF)

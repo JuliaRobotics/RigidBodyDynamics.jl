@@ -133,6 +133,8 @@ export
     center_of_mass,
     geometric_jacobian,
     geometric_jacobian!,
+    point_jacobian,
+    point_jacobian!,
     relative_acceleration,
     kinetic_energy,
     gravitational_potential_energy,
