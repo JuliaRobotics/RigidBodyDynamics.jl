@@ -97,56 +97,6 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
     jac
 end
 
-const point_jacobian_doc = """
-Compute the Jacobian mapping the `Mechanism`'s joint velocity vector ``v`` to
-the velocity of a point fixed to the target of the joint path (the body
-succeeding the last joint in the path) with respect to the source of the joint
-path (the body preceding the first joint in the path).
-"""
-
-"""
-$(SIGNATURES)
-
-$point_jacobian_doc
-
-$noalloc_doc
-"""
-function point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePath, point::Point3D)
-    @framecheck Jp.frame point.frame
-    # TODO: check frame consistency with the motion subspaces
-    update_motion_subspaces!(state)
-    fill!(Jp.J, 0)
-    p̂ = Spatial.hat(point.v)
-    for i in eachindex(path.edges)
-        joint = path.edges[i]
-        vrange = velocity_range(state, joint)
-        direction = path.directions[i]
-        for col in eachindex(vrange)
-            vindex = vrange[col]
-            Scol = state.motion_subspaces.data[vindex]
-            direction == :up && (Scol = -Scol)
-            newcol =  -p̂ * angular(Scol) + linear(Scol)
-            for row in 1:3
-                Jp.J[row, vindex] = newcol[row]
-            end
-        end
-    end
-    Jp
-end
-
-"""
-$(SIGNATURES)
-
-$point_jacobian_doc
-"""
-function point_jacobian(state::MechanismState{X, M, C},
-                        path::TreePath{RigidBody{M}, Joint{M}},
-                        point::Point3D) where {X, M, C}
-    Jp = PointJacobian(Matrix{C}(undef, 3, num_velocities(state)), point.frame)
-    point_jacobian!(Jp, state, path, point)
-    Jp
-end
-
 """
 $(SIGNATURES)
 
@@ -198,6 +148,80 @@ function geometric_jacobian(state::MechanismState{X, M, C}, path::TreePath{Rigid
     jac = GeometricJacobian(bodyframe, baseframe, root_frame(state.mechanism), angular, linear)
     geometric_jacobian!(jac, state, path, identity)
 end
+
+
+const point_jacobian_doc = """
+Compute the Jacobian mapping the `Mechanism`'s joint velocity vector ``v`` to
+the velocity of a point fixed to the target of the joint path (the body
+succeeding the last joint in the path) with respect to the source of the joint
+path (the body preceding the first joint in the path).
+"""
+
+"""
+$(SIGNATURES)
+
+$point_jacobian_doc
+
+$noalloc_doc
+"""
+function _point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePath, 
+                         point::Point3D, transformfun)
+    @framecheck Jp.frame point.frame
+    update_motion_subspaces!(state)
+    fill!(Jp.J, 0)
+    p̂ = Spatial.hat(point.v)
+    for i in eachindex(path.edges)
+        joint = path.edges[i]
+        vrange = velocity_range(state, joint)
+        direction = path.directions[i]
+        for col in eachindex(vrange)
+            vindex = vrange[col]
+            Scol = transformfun(state.motion_subspaces.data[vindex])
+            direction == :up && (Scol = -Scol)
+            newcol =  -p̂ * angular(Scol) + linear(Scol)
+            for row in 1:3
+                Jp.J[row, vindex] = newcol[row]
+            end
+        end
+    end
+    Jp
+end
+
+"""
+$(SIGNATURES)
+
+$point_jacobian_doc
+
+Uses `state` to compute the transform from the `Mechanism`'s root frame to the
+frame in which `out` is expressed if necessary.
+
+$noalloc_doc
+"""
+function point_jacobian!(out::PointJacobian, state::MechanismState, path::TreePath, point::Point3D)
+    if out.frame == root_frame(state.mechanism)
+        _point_jacobian!(out, state, path, point, identity)
+    else
+        root_to_desired = inv(transform_to_root(state, out.frame))
+        let root_to_desired = root_to_desired
+            _point_jacobian!(out, state, path, point, S -> transform(S, root_to_desired))
+        end
+    end
+end
+
+
+"""
+$(SIGNATURES)
+
+$point_jacobian_doc
+"""
+function point_jacobian(state::MechanismState{X, M, C},
+                        path::TreePath{RigidBody{M}, Joint{M}},
+                        point::Point3D) where {X, M, C}
+    Jp = PointJacobian(Matrix{C}(undef, 3, num_velocities(state)), point.frame)
+    point_jacobian!(Jp, state, path, point)
+    Jp
+end
+
 
 const mass_matrix_doc = """Compute the joint-space mass matrix
 (also known as the inertia matrix) of the `Mechanism` in the given state, i.e.,

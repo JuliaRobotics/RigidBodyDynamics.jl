@@ -225,32 +225,62 @@ end
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
-        for i = 1 : 100
-            bs = Set(bodies(mechanism))
-            body = rand([bs...])
-            delete!(bs, body)
-            base = rand([bs...])
-            p = path(mechanism, base, body)
-            point = Point3D(default_frame(body), rand(SVector{3, Float64}))
-            point_in_world = transform(x, point, root_frame(mechanism))
-            J_point = point_jacobian(x, p, point_in_world)
+        @testset "point expressed in body frame" begin
+            for i = 1 : 100
+                bs = Set(bodies(mechanism))
+                body = rand([bs...])
+                delete!(bs, body)
+                base = rand([bs...])
+                p = path(mechanism, base, body)
+                point = Point3D(default_frame(body), rand(SVector{3, Float64}))
+                J_point = point_jacobian(x, p, point)
 
-            J = geometric_jacobian(x, p)
-            T = Twist(J, velocity(x))
-            @test point_velocity(T, point_in_world) ≈ point_velocity(J_point, velocity(x))
-            @test point_velocity(J_point, velocity(x)).v ≈ Array(J_point) * velocity(x)
+                # Check agreement with GeometricJacobian -> Twist -> point_velocity
+                J = geometric_jacobian(x, p)
+                T = Twist(J, velocity(x))
+                point_in_world = transform(x, point, root_frame(mechanism))
+                point_velocity_expected = point_velocity(T, point_in_world)
+                @test point_velocity_expected ≈ transform(x, point_velocity(J_point, velocity(x)), root_frame(mechanism))
 
-            # Test that in-place updates work too
-            rand!(x)
-            if point.frame != root_frame(mechanism)
-                @test_throws ArgumentError point_jacobian!(J_point, x, p, point)
+                # Test that point_velocity give us what Jp * v does
+                @test transform(x, point_velocity(J_point, velocity(x)), point.frame).v ≈ Array(J_point) * velocity(x)
+
+                # Test that in-place updates work too
+                rand!(x)
+                if point.frame != default_frame(base)
+                    @test_throws ArgumentError point_jacobian!(J_point, x, p, transform(x, point, default_frame(base)))
+                end
+                point_jacobian!(J_point, x, p, point)
+                @test @allocated(point_jacobian!(J_point, x, p, point)) == 0
+                J = geometric_jacobian(x, p)
+                T = Twist(J, velocity(x))
+                point_in_world = transform(x, point, root_frame(mechanism))
+                @test point_velocity(T, point_in_world) ≈ transform(x, point_velocity(J_point, velocity(x)), root_frame(mechanism))
             end
-            point_jacobian!(J_point, x, p, point_in_world)
-            @test @allocated(point_jacobian!(J_point, x, p, point_in_world)) == 0
-            J = geometric_jacobian(x, p)
-            T = Twist(J, velocity(x))
-            @test point_velocity(T, point_in_world) ≈ point_velocity(J_point, velocity(x))
         end
+
+        @testset "point expressed in world frame" begin
+            for i = 1 : 10
+                bs = Set(bodies(mechanism))
+                body = rand([bs...])
+                delete!(bs, body)
+                base = rand([bs...])
+                p = path(mechanism, base, body)
+                point = Point3D(root_frame(mechanism), rand(SVector{3, Float64}))
+                J_point = point_jacobian(x, p, point)
+
+                # Check agreement with GeometricJacobian -> Twist -> point_velocity
+                J = geometric_jacobian(x, p)
+                T = Twist(J, velocity(x))
+                @test point_velocity(T, point) ≈ point_velocity(J_point, velocity(x))
+
+                # Test that point_velocity give us what Jp * v does
+                @test point_velocity(J_point, velocity(x)).v ≈ Array(J_point) * velocity(x)
+
+                point_jacobian!(J_point, x, p, point)
+            end
+        end
+
     end
 
     @testset "motion_subspace / constraint_wrench_subspace" begin
