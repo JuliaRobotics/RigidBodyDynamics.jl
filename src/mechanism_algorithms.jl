@@ -330,6 +330,7 @@ function momentum_matrix!(mat::MomentumMatrix, state::MechanismState, transformf
             set_col!(mat, vindex, Scol)
         end
     end
+    mat
 end
 
 """
