@@ -1537,6 +1537,30 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanismstate.html#Compat.copyto!-Tuple{AbstractArray{T,1} where T,RigidBodyDynamics.MechanismState}",
+    "page": "MechanismState",
+    "title": "Compat.copyto!",
+    "category": "method",
+    "text": "copyto!(dest, src)\n\n\nCopy state information in state dest to vector src (ordered [q; v; s]).\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#Compat.copyto!-Tuple{RigidBodyDynamics.MechanismState,AbstractArray{T,1} where T}",
+    "page": "MechanismState",
+    "title": "Compat.copyto!",
+    "category": "method",
+    "text": "copyto!(dest, src)\n\n\nCopy state information in vector src (ordered [q; v; s]) to state dest.\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#Compat.copyto!-Tuple{RigidBodyDynamics.MechanismState,RigidBodyDynamics.MechanismState}",
+    "page": "MechanismState",
+    "title": "Compat.copyto!",
+    "category": "method",
+    "text": "copyto!(dest, src)\n\n\nCopy (minimal representation of) state src to state dest.\n\n\n\n"
+},
+
+{
     "location": "mechanismstate.html#RigidBodyDynamics.constraint_range-Tuple{RigidBodyDynamics.MechanismState,Union{#s22, RigidBodyDynamics.JointID} where #s22<:RigidBodyDynamics.Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.constraint_range",
