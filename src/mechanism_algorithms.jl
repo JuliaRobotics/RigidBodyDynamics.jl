@@ -83,13 +83,13 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
     update_motion_subspaces!(state)
     fill!(jac.angular, 0)
     fill!(jac.linear, 0)
-    @inbounds for i in eachindex(path.edges)
-        joint = path.edges[i]
+    for i in eachindex(path.edges) # TODO: just use @inbounds here; currently messes with frame check in set_col!
+        @inbounds joint = path.edges[i]
         vrange = velocity_range(state, joint)
-        direction = directions(path)[i]
+        @inbounds direction = directions(path)[i]
         for col in eachindex(vrange)
-            vindex = vrange[col]
-            Scol = transformfun(state.motion_subspaces.data[vindex])
+            @inbounds vindex = vrange[col]
+            @inbounds Scol = transformfun(state.motion_subspaces.data[vindex])
             direction == :up && (Scol = -Scol)
             set_col!(jac, vindex, Scol)
         end
@@ -164,7 +164,7 @@ $point_jacobian_doc
 
 $noalloc_doc
 """
-function _point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePath, 
+function _point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePath,
                          point::Point3D, transformfun)
     @framecheck Jp.frame point.frame
     update_motion_subspaces!(state)
@@ -320,13 +320,13 @@ function momentum_matrix!(mat::MomentumMatrix, state::MechanismState, transformf
     @boundscheck num_velocities(state) == size(mat, 2) || throw(DimensionMismatch())
     update_motion_subspaces!(state)
     update_crb_inertias!(state)
-    @inbounds for jointid in state.treejointids
-        bodyid = successorid(jointid, state)
-        inertia = crb_inertia(state, bodyid)
-        vrange = velocity_range(state, jointid)
+    for jointid in state.treejointids # TODO: just use @inbounds here; currently messes with frame check in set_col!
+        @inbounds bodyid = successorid(jointid, state)
+        @inbounds inertia = crb_inertia(state, bodyid)
+        @inbounds vrange = velocity_range(state, jointid)
         for col in eachindex(vrange)
-            vindex = vrange[col]
-            Scol = transformfun(inertia * state.motion_subspaces.data[vindex])
+            @inbounds vindex = vrange[col]
+            @inbounds Scol = transformfun(inertia * state.motion_subspaces.data[vindex])
             set_col!(mat, vindex, Scol)
         end
     end
