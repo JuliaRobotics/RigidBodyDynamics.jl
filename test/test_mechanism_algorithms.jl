@@ -79,6 +79,22 @@ end
         @test @inferred(num_velocities(mechanism)) == num_velocities(x)
     end
 
+    @testset "copyto! / Vector" begin
+        mechanism = randmech()
+        x1 = MechanismState(mechanism)
+        rand!(x1)
+        @test Vector(x1) == [configuration(x1); velocity(x1); additional_state(x1)]
+
+        x2 = MechanismState(mechanism)
+        rand!(x2)
+        copyto!(x1, x2)
+        @test Vector(x1) == Vector(x2)
+
+        x3 = MechanismState(mechanism)
+        copyto!(x3, Vector(x2))
+        @test Vector(x3) == Vector(x2)
+    end
+
     @testset "q̇ <-> v" begin
         mechanism = randmech()
         x = MechanismState(mechanism)

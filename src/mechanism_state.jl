@@ -364,9 +364,6 @@ Return the vector of additional states ``s``.
 """
 additional_state(state::MechanismState) = state.s
 
-Base.Vector(state::MechanismState) = [configuration(state); velocity(state); additional_state(state)]
-Base.@deprecate state_vector(state::MechanismState) Vector(state)
-
 for fun in (:num_velocities, :num_positions)
     @eval function $fun(p::TreePath{RigidBody{T}, <:Joint{T}} where {T})
         mapreduce($fun, +, 0, p)
@@ -427,18 +424,63 @@ function set_additional_state!(state::MechanismState, s::AbstractVector)
     # note: setdirty! is currently not needed because no cache variables depend on s
 end
 
-function Compat.copyto!(state::MechanismState, x::AbstractVector)
-    nq = num_positions(state)
-    nv = num_velocities(state)
-    ns = num_additional_states(state)
-    @boundscheck length(x) == nq + nv + ns || throw(DimensionMismatch())
-    @inbounds copyto!(parent(state.q), 1, x, 1, nq)
-    @inbounds copyto!(parent(state.v), 1, x, nq + 1, nv)
-    @inbounds copyto!(state.s, 1, x, nq + nv + 1, ns)
-    setdirty!(state)
+"""
+$(SIGNATURES)
+
+Copy (minimal representation of) state `src` to state `dest`.
+"""
+function Compat.copyto!(dest::MechanismState, src::MechanismState)
+    dest.mechanism == src.mechanism || throw(ArgumentError("States are not associated with the same Mechanism."))
+    @modcountcheck dest src
+    copyto!(dest.q, src.q)
+    copyto!(dest.v, src.v)
+    copyto!(dest.s, src.s)
+    setdirty!(dest)
+    dest
 end
 
-Base.@deprecate set!(state::MechanismState, x::AbstractVector) copyto!(state, x)
+"""
+$(SIGNATURES)
+
+Copy state information in vector `src` (ordered `[q; v; s]`) to state `dest`.
+"""
+function Compat.copyto!(dest::MechanismState, src::AbstractVector)
+    nq = num_positions(dest)
+    nv = num_velocities(dest)
+    ns = num_additional_states(dest)
+    @boundscheck length(src) == nq + nv + ns || throw(DimensionMismatch())
+    @inbounds copyto!(parent(dest.q), 1, src, 1, nq)
+    @inbounds copyto!(parent(dest.v), 1, src, nq + 1, nv)
+    @inbounds copyto!(dest.s, 1, src, nq + nv + 1, ns)
+    setdirty!(dest)
+    dest
+end
+
+"""
+$(SIGNATURES)
+
+Copy state information in state `dest` to vector `src` (ordered `[q; v; s]`).
+"""
+function Compat.copyto!(dest::AbstractVector, src::MechanismState)
+    nq = num_positions(src)
+    nv = num_velocities(src)
+    ns = num_additional_states(src)
+    length(dest) == nq + nv + ns || throw(DimensionMismatch())
+    @inbounds copyto!(dest, 1, src.q, 1, nq)
+    @inbounds copyto!(dest, nq + 1, src.v, 1, nv)
+    @inbounds copyto!(dest, nq + nv + 1, src.s, 1, ns)
+    dest
+end
+
+"""
+$(SIGNATURES)
+
+Create a `Vector` that represents the same state as `state` (ordered `[q; v; s]`).
+"""
+function Base.Vector(state::MechanismState{X}) where {X}
+    dest = Vector{X}(undef, num_positions(state) + num_velocities(state) + num_additional_states(state))
+    copyto!(dest, state)
+end
 
 """
 $(SIGNATURES)

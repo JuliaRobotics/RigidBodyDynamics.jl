@@ -119,7 +119,6 @@ export
     transform_to_root,
     relative_transform,
     setdirty!,
-    state_vector, # deprecated; use Vector constructor instead
     rand_configuration!,
     zero_configuration!,
     rand_velocity!,
@@ -127,7 +126,6 @@ export
     set_configuration!,
     set_velocity!,
     set_additional_state!,
-    set!, # deprecated; use copy! instead
     zero!, # TODO: remove
     normalize_configuration!,
     center_of_mass,
