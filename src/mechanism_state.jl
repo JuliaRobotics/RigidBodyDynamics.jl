@@ -863,6 +863,36 @@ function configuration_derivative(state::MechanismState{X}) where {X}
     ret
 end
 
+function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, state::MechanismState)
+    for joint in joints(state.mechanism)
+        qidx = configuration_range(state, joint)
+        vidx = velocity_range(state, joint)
+        velocity_to_configuration_derivative_jacobian!(@view(Q_v[qidx, vidx]), joint_type(joint), configuration(state, joint))
+    end
+    nothing
+end
+
+function velocity_to_configuration_derivative_jacobian(state::MechanismState{X, M, C}) where {X, M, C}
+    Q_v = spzeros(C, num_positions(state), num_velocities(state))
+    velocity_to_configuration_derivative_jacobian!(Q_v, state)
+    Q_v
+end
+
+function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, state::MechanismState)
+    for joint in joints(state.mechanism)
+        qidx = configuration_range(state, joint)
+        vidx = velocity_range(state, joint)
+        configuration_derivative_to_velocity_jacobian!(@view(V_q[vidx, qidx]), joint_type(joint), configuration(state, joint))
+    end
+    nothing
+end
+
+function configuration_derivative_to_velocity_jacobian(state::MechanismState{X, M, C}) where {X, M, C}
+    V_q = spzeros(C, num_velocities(state), num_positions(state))
+    configuration_derivative_to_velocity_jacobian!(V_q, state)
+    V_q
+end
+
 function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
     body = body_fixed_frame_to_body(state.mechanism, frame) # FIXME: expensive
     tf = transform_to_root(state, body)

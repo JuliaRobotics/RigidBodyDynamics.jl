@@ -131,6 +131,52 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::Quaterni
     nothing
 end
 
+
+"""
+$(SIGNATURES)
+
+Compute the jacobian ``Q_v`` which maps joint velocity to configuration
+derivative for the joint type ``jt``:
+
+```math
+\\dot{q} = Q_v v
+```
+
+This updates the entries of Q_v in place.
+"""
+function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, jt::QuaternionFloating, q::AbstractVector)
+    @boundscheck size(Q_v) == (7, 6)
+    quat = rotation(jt, q)
+    Q_v[1:4, 1:3] .= velocity_jacobian(quaternion_derivative, quat)
+    Q_v[1:4, 4:6] .= 0
+    Q_v[5:6, 1:3] .= 0
+    Q_v[5:7, 4:6] .= quat
+    nothing
+end
+
+"""
+$(SIGNATURES)
+
+Compute the jacobian ``V_q`` which maps joint configuration derivative to
+velocity for the joint type ``jt``:
+
+```math
+v = V_q \\dot{q}
+```
+
+This updates the entries of V_q in place.
+"""
+function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, jt::QuaternionFloating, q::AbstractVector)
+    @boundscheck size(V_q) == (6, 7)
+    quat = rotation(jt, q)
+    V_q[1:3, 1:4] .= velocity_jacobian(angular_velocity_in_body, quat)
+    V_q[1:3, 5:7] .= 0
+    V_q[4:6, 1:4] .= 0
+    V_q[4:6, 5:7] .= inv(quat)
+    nothing
+end
+
+
 function zero_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
     set_rotation!(q, jt, eye(Quat{T}))
@@ -252,6 +298,18 @@ function bias_acceleration(jt::OneDegreeOfFreedomFixedAxis{T}, frame_after::Cart
         q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
+end
+
+function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, ::OneDegreeOfFreedomFixedAxis, ::AbstractVector)
+    @boundscheck size(Q_v) == (1, 1)
+    Q_v[1, 1] = 1
+    nothing
+end
+
+function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, ::OneDegreeOfFreedomFixedAxis, ::AbstractVector)
+    @boundscheck size(V_q) == (1, 1)
+    V_q[1, 1] = 1
+    nothing
 end
 
 """
@@ -455,6 +513,9 @@ configuration_derivative_to_velocity!(v::AbstractVector, ::Fixed, q::AbstractVec
 velocity_to_configuration_derivative!(q̇::AbstractVector, ::Fixed, q::AbstractVector, v::AbstractVector) = nothing
 joint_torque!(τ::AbstractVector, jt::Fixed, q::AbstractVector, joint_wrench::Wrench) = nothing
 
+velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, ::Fixed, ::AbstractVector) = (@boundscheck size(Q_v) == (0, 0); nothing)
+configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, ::Fixed, ::AbstractVector) = (@boundscheck size(V_q) == (0, 0); nothing)
+
 
 """
 $(TYPEDEF)
@@ -593,6 +654,23 @@ function configuration_derivative_to_velocity_adjoint!(out, jt::Planar, q::Abstr
     nothing
 end
 
+function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, jt::Planar, q::AbstractVector)
+    @boundscheck size(Q_v) == (3, 3)
+    Q_v .= 0
+    Q_v[1:2, 1:2] .= RotMatrix(q[3])
+    Q_v[3, 3] = 1
+    nothing
+end
+
+function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, jt::Planar, q::AbstractVector)
+    @boundscheck size(V_q) == (3, 3)
+    V_q .= 0
+    V_q[1:2, 1:2] .= RotMatrix(-q[3])
+    V_q[3, 3] = 1
+    nothing
+end
+
+
 
 """
 $(TYPEDEF)
@@ -682,6 +760,20 @@ end
 function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, v::AbstractVector)
     quat = rotation(jt, q)
     q̇ .= quaternion_derivative(quat, v)
+    nothing
+end
+
+function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, jt::QuaternionSpherical, q::AbstractVector)
+    @boundscheck size(Q_v) == (4, 3)
+    quat = rotation(jt, q)
+    Q_v .= velocity_jacobian(quaternion_derivative, quat)
+    nothing
+end
+
+function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, jt::QuaternionSpherical, q::AbstractVector)
+    @boundscheck size(V_q) == (3, 4)
+    quat = rotation(jt, q)
+    V_q .= velocity_jacobian(angular_velocity_in_body, quat)
     nothing
 end
 
