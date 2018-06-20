@@ -361,8 +361,13 @@ struct SegmentedBlockDiagonalMatrix{T} <: AbstractMatrix{T}
     blocks::Vector{MatrixBlock{T}}
 
     function SegmentedBlockDiagonalMatrix{T}(parent::AbstractMatrix{T}, block_indices) where T
+        block_end = first.(indices(parent)) .- 1
         blocks = map(block_indices) do indices
-            view(parent, indices[1], indices[2])
+            if any(first.(indices) .<= block_end)
+                throw(ArgumentError("Block indices should be in diagonal order and non-overlapping"))
+            end
+            block_end = last.(indices)
+            view(parent, indices...)
         end
         new{T}(parent, blocks)
     end
