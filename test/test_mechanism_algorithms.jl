@@ -118,9 +118,9 @@ end
         for i in 1:100
             rand!(x)
             allocs = @allocated RigidBodyDynamics.configuration_derivative_to_velocity_jacobian!(V_q, x)
-            @test_broken allocs == 0
+            @test allocs == 0
             allocs = @allocated RigidBodyDynamics.velocity_to_configuration_derivative_jacobian!(Q_v, x)
-            @test_broken allocs == 0
+            @test allocs == 0
             @test velocity(x) ≈ V_q * configuration_derivative(x)
             @test configuration_derivative(x) ≈ Q_v * velocity(x)
         end

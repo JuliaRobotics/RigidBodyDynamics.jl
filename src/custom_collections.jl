@@ -12,7 +12,8 @@ export
     IndexDict,
     CacheIndexDict,
     SegmentedVector,
-    DiscardVector
+    DiscardVector,
+    SegmentedBlockDiagonalMatrix
 
 export
     foreach_with_extra_args,
@@ -342,5 +343,44 @@ struct DiscardVector <: AbstractVector{Any}
 end
 @inline Base.setindex!(v::DiscardVector, value, i::Int) = nothing
 @inline Base.size(v::DiscardVector) = (v.length,)
+
+
+const MatrixBlock{T} = SubArray{T,2,Array{T, 2},Tuple{UnitRange{Int},UnitRange{Int}},false}
+
+"""
+$(TYPEDEF)
+
+`SegmentedBlockDiagonalMatrix` is an `AbstractMatrix` backed by a plain Matrix which
+additionally stores a sequence of views into the diagonal blocks of the parent matrix. This
+type is useful for storing and updating block-diagonal matrices whose block contents
+may change but whose overall structure is fixed, such as configuration derivative <-> velocity
+jacobians.
+"""
+struct SegmentedBlockDiagonalMatrix{T} <: AbstractMatrix{T}
+    parent::Matrix{T}
+    blocks::Vector{MatrixBlock{T}}
+
+    function SegmentedBlockDiagonalMatrix{T}(parent::AbstractMatrix{T}, block_indices) where T
+        blocks = map(block_indices) do indices
+            view(parent, indices[1], indices[2])
+        end
+        new{T}(parent, blocks)
+    end
+
+end
+
+SegmentedBlockDiagonalMatrix(parent::AbstractMatrix{T}, block_indices) where {T} = SegmentedBlockDiagonalMatrix{T}(parent, block_indices)
+
+function SegmentedBlockDiagonalMatrix{T}(initializer, rows::Integer, cols::Integer, block_indices) where T
+    parent = Matrix{T}(initializer, rows, cols)
+    SegmentedBlockDiagonalMatrix{T}(parent, block_indices)
+end
+
+Base.parent(m::SegmentedBlockDiagonalMatrix) = m.parent
+Base.size(m::SegmentedBlockDiagonalMatrix) = size(m.parent)
+Base.@propagate_inbounds Base.getindex(v::SegmentedBlockDiagonalMatrix, i::Int) = v.parent[i]
+Base.@propagate_inbounds Base.setindex!(v::SegmentedBlockDiagonalMatrix, value, i::Int) = v.parent[i] = value
+Base.IndexStyle(::Type{<:SegmentedBlockDiagonalMatrix}) = IndexLinear()
+blocks(m::SegmentedBlockDiagonalMatrix) = m.blocks
 
 end # module

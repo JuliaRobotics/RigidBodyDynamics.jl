@@ -135,6 +135,30 @@ end
 """
 $(SIGNATURES)
 
+Copy the matrix ``source`` to a block of the same size in ``destination``
+spanning the given given range of rows and columns. In Julia v0.7 and above we
+should be able to eliminate this function in favor of:
+
+```julia
+destination[dest_rows, dest_cols] .= source
+```
+
+since the resulting view will be elided.
+"""
+function _copyto_offset!(destination::AbstractMatrix, source::AbstractMatrix, dest_rows::UnitRange{Int} = 1:size(source, 1), dest_cols::UnitRange{Int} = 1:size(source, 2))
+    @boundscheck length(dest_rows) == size(source, 1)
+    @boundscheck length(dest_cols) == size(source, 2)
+    for j in 1:size(source, 2)
+        for i in 1:size(source, 1)
+            destination[dest_rows[i], dest_cols[j]] = source[i, j]
+        end
+    end
+end
+
+
+"""
+$(SIGNATURES)
+
 Compute the jacobian ``Q_v`` which maps joint velocity to configuration
 derivative for the joint type ``jt``:
 
@@ -142,15 +166,17 @@ derivative for the joint type ``jt``:
 \\dot{q} = Q_v v
 ```
 
-This updates the entries of Q_v in place.
+This updates the entries of Q_v in place. Note that only the structurally
+non-zero entries in V_q are modified, so you may need to initialize V_q
+to zero before first calling this method.
 """
 function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, jt::QuaternionFloating, q::AbstractVector)
     @boundscheck size(Q_v) == (7, 6)
     quat = rotation(jt, q)
-    Q_v[1:4, 1:3] .= velocity_jacobian(quaternion_derivative, quat)
-    Q_v[1:4, 4:6] .= 0
-    Q_v[5:6, 1:3] .= 0
-    Q_v[5:7, 4:6] .= quat
+    # Q_v[1:4, 1:3] .= velocity_jacobian(quaternion_derivative, quat)
+    # Q_v[5:7, 4:6] .= quat
+    _copyto_offset!(Q_v, velocity_jacobian(quaternion_derivative, quat), 1:4, 1:3)
+    _copyto_offset!(Q_v, quat, 5:7, 4:6)
     nothing
 end
 
@@ -164,15 +190,17 @@ velocity for the joint type ``jt``:
 v = V_q \\dot{q}
 ```
 
-This updates the entries of V_q in place.
+This updates the entries of V_q in place. Note that only the structurally
+non-zero entries in V_q are modified, so you may need to initialize V_q
+to zero before first calling this method.
 """
 function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, jt::QuaternionFloating, q::AbstractVector)
     @boundscheck size(V_q) == (6, 7)
     quat = rotation(jt, q)
-    V_q[1:3, 1:4] .= velocity_jacobian(angular_velocity_in_body, quat)
-    V_q[1:3, 5:7] .= 0
-    V_q[4:6, 1:4] .= 0
-    V_q[4:6, 5:7] .= inv(quat)
+    # V_q[1:3, 1:4] .= velocity_jacobian(angular_velocity_in_body, quat)
+    # V_q[4:6, 5:7] .= inv(quat)
+    _copyto_offset!(V_q, velocity_jacobian(angular_velocity_in_body, quat), 1:3, 1:4)
+    _copyto_offset!(V_q, inv(quat), 4:6, 5:7)
     nothing
 end
 
@@ -656,16 +684,17 @@ end
 
 function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, jt::Planar, q::AbstractVector)
     @boundscheck size(Q_v) == (3, 3)
-    Q_v .= 0
-    Q_v[1:2, 1:2] .= RotMatrix(q[3])
+    rot = RotMatrix(q[3])
+    _copyto_offset!(Q_v, rot, 1:2, 1:2)
     Q_v[3, 3] = 1
+    Q_v
     nothing
 end
 
 function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, jt::Planar, q::AbstractVector)
     @boundscheck size(V_q) == (3, 3)
-    V_q .= 0
-    V_q[1:2, 1:2] .= RotMatrix(-q[3])
+    rot = RotMatrix(-q[3])
+    _copyto_offset!(V_q, rot, 1:2, 1:2)
     V_q[3, 3] = 1
     nothing
 end
