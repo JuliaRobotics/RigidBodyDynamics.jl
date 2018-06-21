@@ -896,7 +896,7 @@ end
 function configuration_derivative_to_velocity_jacobian(state::MechanismState{X, M, C}) where {X, M, C}
     q_ranges = values(ranges(configuration(state)))
     v_ranges = values(ranges(velocity(state)))
-    J = SegmentedBlockDiagonalMatrix(zeros(num_velocities(state), num_positions(state)), zip(v_ranges, q_ranges))
+    J = SegmentedBlockDiagonalMatrix(zeros(C, num_velocities(state), num_positions(state)), zip(v_ranges, q_ranges))
     configuration_derivative_to_velocity_jacobian!(J, state)
     J
 end
