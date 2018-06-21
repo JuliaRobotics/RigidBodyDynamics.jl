@@ -113,16 +113,32 @@ end
 
         V_q = RigidBodyDynamics.configuration_derivative_to_velocity_jacobian(x)
         Q_v = RigidBodyDynamics.velocity_to_configuration_derivative_jacobian(x)
-        RigidBodyDynamics.configuration_derivative_to_velocity_jacobian!(V_q, x)
-        RigidBodyDynamics.velocity_to_configuration_derivative_jacobian!(Q_v, x)
-        for i in 1:100
+        for i in 1:10
             rand!(x)
-            allocs = @allocated RigidBodyDynamics.configuration_derivative_to_velocity_jacobian!(V_q, x)
-            @test allocs == 0
-            allocs = @allocated RigidBodyDynamics.velocity_to_configuration_derivative_jacobian!(Q_v, x)
-            @test allocs == 0
-            @test velocity(x) ≈ V_q * configuration_derivative(x)
-            @test configuration_derivative(x) ≈ Q_v * velocity(x)
+            q = configuration(x)
+            q̇ = configuration_derivative(x)
+            v = velocity(x)
+
+            RigidBodyDynamics.configuration_derivative_to_velocity_jacobian!(V_q, x)
+            RigidBodyDynamics.velocity_to_configuration_derivative_jacobian!(Q_v, x)
+            @test V_q * q̇ ≈ v
+            @test Q_v * v ≈ q̇
+
+            @test @allocated(RigidBodyDynamics.configuration_derivative_to_velocity_jacobian!(V_q, x)) == 0
+            @test @allocated(RigidBodyDynamics.velocity_to_configuration_derivative_jacobian!(Q_v, x)) == 0
+
+            for joint in joints(mechanism)
+                qrange = configuration_range(x, joint)
+                vrange = velocity_range(x, joint)
+                qj = q[qrange]
+                q̇j = q̇[qrange]
+                vj = v[vrange]
+
+                Q_v_j = RigidBodyDynamics.velocity_to_configuration_derivative_jacobian(joint, qj)
+                @test Q_v_j * vj ≈ q̇j
+                V_q_j = RigidBodyDynamics.configuration_derivative_to_velocity_jacobian(joint, qj)
+                @test V_q_j * q̇j ≈ vj
+            end
         end
     end
 

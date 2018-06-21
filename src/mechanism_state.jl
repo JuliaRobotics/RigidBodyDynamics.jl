@@ -869,7 +869,7 @@ function velocity_to_configuration_derivative_jacobian!(Q_v::SegmentedBlockDiago
     discard = DiscardVector(length(qs))
     bs = CustomCollections.blocks(Q_v)
     broadcast!(discard, joints, qs, bs) do joint, qjoint, block
-        velocity_to_configuration_derivative_jacobian!(block, joint_type(joint), qjoint)
+        velocity_to_configuration_derivative_jacobian!(block, joint, qjoint)
     end
     nothing
 end
@@ -877,7 +877,7 @@ end
 function velocity_to_configuration_derivative_jacobian(state::MechanismState{X, M, C}) where {X, M, C}
     q_ranges = values(ranges(configuration(state)))
     v_ranges = values(ranges(velocity(state)))
-    Q_v = SegmentedBlockDiagonalMatrix(zeros(num_positions(state), num_velocities(state)), zip(q_ranges, v_ranges))
+    Q_v = SegmentedBlockDiagonalMatrix(zeros(C, num_positions(state), num_velocities(state)), zip(q_ranges, v_ranges))
     velocity_to_configuration_derivative_jacobian!(Q_v, state)
     Q_v
 end
@@ -888,7 +888,7 @@ function configuration_derivative_to_velocity_jacobian!(V_q::SegmentedBlockDiago
     discard = DiscardVector(length(qs))
     bs = CustomCollections.blocks(V_q)
     broadcast!(discard, joints, qs, bs) do joint, qjoint, block
-        configuration_derivative_to_velocity_jacobian!(block, joint_type(joint), qjoint)
+        configuration_derivative_to_velocity_jacobian!(block, joint, qjoint)
     end
     nothing
 end

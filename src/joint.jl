@@ -348,6 +348,29 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, joint::Joint
     velocity_to_configuration_derivative!(q̇, joint.joint_type, q, v)
 end
 
+
+# TODO: move the documentation from the joint_type methods to these ones
+
+function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, joint::Joint, q::AbstractVector)
+    @boundscheck size(Q_v) == (num_positions(joint), num_velocities(joint)) || error("Wrong size")
+    Q_v .= velocity_to_configuration_derivative_jacobian(joint, q)
+end
+
+function velocity_to_configuration_derivative_jacobian(joint::Joint, q::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
+    velocity_to_configuration_derivative_jacobian(joint.joint_type, q)
+end
+
+function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, joint::Joint, q::AbstractVector)
+    @boundscheck size(V_q) == (num_velocities(joint), num_positions(joint)) || error("Wrong size")
+    V_q .= configuration_derivative_to_velocity_jacobian(joint, q)
+end
+
+function configuration_derivative_to_velocity_jacobian(joint::Joint, q::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
+    configuration_derivative_to_velocity_jacobian(joint.joint_type, q)
+end
+
 """
 $(SIGNATURES)
 

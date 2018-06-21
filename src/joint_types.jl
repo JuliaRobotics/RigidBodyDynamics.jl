@@ -135,49 +135,23 @@ end
 """
 $(SIGNATURES)
 
-Copy the matrix ``source`` to a block of the same size in ``destination``
-spanning the given given range of rows and columns. In Julia v0.7 and above we
-should be able to eliminate this function in favor of:
-
-```julia
-destination[dest_rows, dest_cols] .= source
-```
-
-since the resulting view will be elided.
-"""
-function _copyto_offset!(destination::AbstractMatrix, source::AbstractMatrix, dest_rows::UnitRange{Int} = 1:size(source, 1), dest_cols::UnitRange{Int} = 1:size(source, 2))
-    @boundscheck length(dest_rows) == size(source, 1)
-    @boundscheck length(dest_cols) == size(source, 2)
-    for j in 1:size(source, 2)
-        for i in 1:size(source, 1)
-            destination[dest_rows[i], dest_cols[j]] = source[i, j]
-        end
-    end
-end
-
-
-"""
-$(SIGNATURES)
-
 Compute the jacobian ``Q_v`` which maps joint velocity to configuration
 derivative for the joint type ``jt``:
 
 ```math
 \\dot{q} = Q_v v
 ```
-
-This updates the entries of Q_v in place. Note that only the structurally
-non-zero entries in V_q are modified, so you may need to initialize V_q
-to zero before first calling this method.
 """
-function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, jt::QuaternionFloating, q::AbstractVector)
-    @boundscheck size(Q_v) == (7, 6)
+function velocity_to_configuration_derivative_jacobian(jt::QuaternionFloating, q::AbstractVector)
     quat = rotation(jt, q)
-    # Q_v[1:4, 1:3] .= velocity_jacobian(quaternion_derivative, quat)
-    # Q_v[5:7, 4:6] .= quat
-    _copyto_offset!(Q_v, velocity_jacobian(quaternion_derivative, quat), 1:4, 1:3)
-    _copyto_offset!(Q_v, quat, 5:7, 4:6)
-    nothing
+    vj = velocity_jacobian(quaternion_derivative, quat)
+    @SMatrix([vj[1, 1] vj[1, 2] vj[1, 3] 0          0          0;
+              vj[2, 1] vj[2, 2] vj[2, 3] 0          0          0;
+              vj[3, 1] vj[3, 2] vj[3, 3] 0          0          0;
+              vj[4, 1] vj[4, 2] vj[4, 3] 0          0          0;
+              0        0        0        quat[1, 1] quat[1, 2] quat[1, 3];
+              0        0        0        quat[2, 1] quat[2, 2] quat[2, 3];
+              0        0        0        quat[3, 1] quat[3, 2] quat[3, 3]])
 end
 
 """
@@ -189,19 +163,17 @@ velocity for the joint type ``jt``:
 ```math
 v = V_q \\dot{q}
 ```
-
-This updates the entries of V_q in place. Note that only the structurally
-non-zero entries in V_q are modified, so you may need to initialize V_q
-to zero before first calling this method.
 """
-function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, jt::QuaternionFloating, q::AbstractVector)
-    @boundscheck size(V_q) == (6, 7)
+function configuration_derivative_to_velocity_jacobian(jt::QuaternionFloating, q::AbstractVector)
     quat = rotation(jt, q)
-    # V_q[1:3, 1:4] .= velocity_jacobian(angular_velocity_in_body, quat)
-    # V_q[4:6, 5:7] .= inv(quat)
-    _copyto_offset!(V_q, velocity_jacobian(angular_velocity_in_body, quat), 1:3, 1:4)
-    _copyto_offset!(V_q, inv(quat), 4:6, 5:7)
-    nothing
+    vj = velocity_jacobian(angular_velocity_in_body, quat)
+    quat_inv = inv(quat)
+    @SMatrix([vj[1, 1] vj[1, 2] vj[1, 3] vj[1, 4] 0              0              0;
+              vj[2, 1] vj[2, 2] vj[2, 3] vj[2, 4] 0              0              0;
+              vj[3, 1] vj[3, 2] vj[3, 3] vj[3, 4] 0              0              0;
+              0        0        0        0        quat_inv[1, 1] quat_inv[1, 2] quat_inv[1, 3];
+              0        0        0        0        quat_inv[2, 1] quat_inv[2, 2] quat_inv[2, 3];
+              0        0        0        0        quat_inv[3, 1] quat_inv[3, 2] quat_inv[3, 3]])
 end
 
 
@@ -328,16 +300,12 @@ function bias_acceleration(jt::OneDegreeOfFreedomFixedAxis{T}, frame_after::Cart
     zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
 end
 
-function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, ::OneDegreeOfFreedomFixedAxis, ::AbstractVector)
-    @boundscheck size(Q_v) == (1, 1)
-    Q_v[1, 1] = 1
-    nothing
+function velocity_to_configuration_derivative_jacobian(::OneDegreeOfFreedomFixedAxis{T}, ::AbstractVector) where T
+    @SMatrix([one(T)])
 end
 
-function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, ::OneDegreeOfFreedomFixedAxis, ::AbstractVector)
-    @boundscheck size(V_q) == (1, 1)
-    V_q[1, 1] = 1
-    nothing
+function configuration_derivative_to_velocity_jacobian(::OneDegreeOfFreedomFixedAxis{T}, ::AbstractVector) where T
+    @SMatrix([one(T)])
 end
 
 """
@@ -541,8 +509,13 @@ configuration_derivative_to_velocity!(v::AbstractVector, ::Fixed, q::AbstractVec
 velocity_to_configuration_derivative!(q̇::AbstractVector, ::Fixed, q::AbstractVector, v::AbstractVector) = nothing
 joint_torque!(τ::AbstractVector, jt::Fixed, q::AbstractVector, joint_wrench::Wrench) = nothing
 
-velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, ::Fixed, ::AbstractVector) = (@boundscheck size(Q_v) == (0, 0); nothing)
-configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, ::Fixed, ::AbstractVector) = (@boundscheck size(V_q) == (0, 0); nothing)
+function velocity_to_configuration_derivative_jacobian(::Fixed{T}, ::AbstractVector) where T
+    SMatrix{0, 0, T}()
+end
+
+function configuration_derivative_to_velocity_jacobian(::Fixed{T}, ::AbstractVector) where T
+    SMatrix{0, 0, T}()
+end
 
 
 """
@@ -682,21 +655,18 @@ function configuration_derivative_to_velocity_adjoint!(out, jt::Planar, q::Abstr
     nothing
 end
 
-function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, jt::Planar, q::AbstractVector)
-    @boundscheck size(Q_v) == (3, 3)
+function velocity_to_configuration_derivative_jacobian(::Planar, q::AbstractVector)
     rot = RotMatrix(q[3])
-    _copyto_offset!(Q_v, rot, 1:2, 1:2)
-    Q_v[3, 3] = 1
-    Q_v
-    nothing
+    @SMatrix([rot[1, 1] rot[1, 2] 0;
+              rot[2, 1] rot[2, 2] 0;
+              0         0         1])
 end
 
-function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, jt::Planar, q::AbstractVector)
-    @boundscheck size(V_q) == (3, 3)
+function configuration_derivative_to_velocity_jacobian(::Planar, q::AbstractVector)
     rot = RotMatrix(-q[3])
-    _copyto_offset!(V_q, rot, 1:2, 1:2)
-    V_q[3, 3] = 1
-    nothing
+    @SMatrix([rot[1, 1] rot[1, 2] 0;
+              rot[2, 1] rot[2, 2] 0;
+              0         0         1])
 end
 
 
@@ -792,18 +762,14 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::Quaterni
     nothing
 end
 
-function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, jt::QuaternionSpherical, q::AbstractVector)
-    @boundscheck size(Q_v) == (4, 3)
+function velocity_to_configuration_derivative_jacobian(jt::QuaternionSpherical, q::AbstractVector)
     quat = rotation(jt, q)
-    Q_v .= velocity_jacobian(quaternion_derivative, quat)
-    nothing
+    velocity_jacobian(quaternion_derivative, quat)
 end
 
-function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, jt::QuaternionSpherical, q::AbstractVector)
-    @boundscheck size(V_q) == (3, 4)
+function configuration_derivative_to_velocity_jacobian(jt::QuaternionSpherical, q::AbstractVector)
     quat = rotation(jt, q)
-    V_q .= velocity_jacobian(angular_velocity_in_body, quat)
-    nothing
+    velocity_jacobian(angular_velocity_in_body, quat)
 end
 
 function zero_configuration!(q::AbstractVector, jt::QuaternionSpherical)

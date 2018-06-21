@@ -345,7 +345,28 @@ end
 @inline Base.size(v::DiscardVector) = (v.length,)
 
 
-const MatrixBlock{T} = SubArray{T,2,Array{T, 2},Tuple{UnitRange{Int},UnitRange{Int}},false}
+const AbstractMatrixBlock{T, M} = SubArray{T,2,M,Tuple{UnitRange{Int},UnitRange{Int}},false}
+
+function _is_contiguous_and_diagonal(parent::AbstractMatrix, block_indices)
+    expected_starts = first.(indices(parent))
+    for inds in block_indices
+        if first.(inds) !== expected_starts
+            return false
+        end
+        expected_starts = last.(inds) .+ 1
+    end
+    if expected_starts !== last.(indices(parent)) .+ 1
+        return false
+    end
+    return true
+end
+
+
+function check_contiguous_block_ranges(parent::AbstractMatrix, block_indices)
+    if !_is_contiguous_and_diagonal(parent, block_indices)
+        throw(ArgumentError("The `block_indices` should be a vector of index ranges corresponding to non-overlapping contiguous diagonal blocks"))
+    end
+end
 
 """
 $(TYPEDEF)
@@ -356,22 +377,17 @@ type is useful for storing and updating block-diagonal matrices whose block cont
 may change but whose overall structure is fixed, such as configuration derivative <-> velocity
 jacobians.
 """
-struct SegmentedBlockDiagonalMatrix{T} <: AbstractMatrix{T}
-    parent::Matrix{T}
-    blocks::Vector{MatrixBlock{T}}
+struct SegmentedBlockDiagonalMatrix{T, M <: AbstractMatrix{T}} <: AbstractMatrix{T}
+    parent::M
+    blocks::Vector{AbstractMatrixBlock{T, M}}
 
     function SegmentedBlockDiagonalMatrix{T}(parent::AbstractMatrix{T}, block_indices) where T
-        block_end = first.(indices(parent)) .- 1
+        check_contiguous_block_ranges(parent, block_indices)
         blocks = map(block_indices) do indices
-            if any(first.(indices) .<= block_end)
-                throw(ArgumentError("Block indices should be in diagonal order and non-overlapping"))
-            end
-            block_end = last.(indices)
             view(parent, indices...)
         end
-        new{T}(parent, blocks)
+        new{T, typeof(parent)}(parent, blocks)
     end
-
 end
 
 SegmentedBlockDiagonalMatrix(parent::AbstractMatrix{T}, block_indices) where {T} = SegmentedBlockDiagonalMatrix{T}(parent, block_indices)

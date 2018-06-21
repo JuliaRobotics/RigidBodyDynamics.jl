@@ -1,6 +1,16 @@
 using Compat.Test
 using RigidBodyDynamics
 
+# A pathologically weird matrix which uses base -1 indexing
+# for its first dimension and base 2 indexing for its second
+struct NonOneBasedMatrix <: AbstractMatrix{Float64}
+    m::Int
+    n::Int
+end
+
+Base.size(m::NonOneBasedMatrix) = (m.m, m.n)
+Base.indices(m::NonOneBasedMatrix) = ((1:m.m) - 2, (1:m.n) + 1)
+
 @testset "custom collections" begin
     @testset "nulldict" begin
         nd = RigidBodyDynamics.NullDict{Int, Int}()
@@ -49,5 +59,61 @@ using RigidBodyDynamics
         xseg3 = copy(xseg)
         @test xseg3 == xseg
         @test xseg3 isa SegmentedVector
+    end
+
+    @testset "SegmentedBlockDiagonalMatrix" begin
+        A = rand(10, 10)
+        blocks = [(1:1, 1:1),  # square
+                  (2:4, 2:2),  # non-square
+                  (5:4, 3:2),  # empty
+                  (5:7, 3:6),  # 2x2
+                  (8:10, 7:10)]
+        RigidBodyDynamics.CustomCollections.check_contiguous_block_ranges(A, blocks)
+        S = RigidBodyDynamics.SegmentedBlockDiagonalMatrix(A, blocks)
+        for (i, block) in enumerate(blocks)
+            @test S[block...] == RigidBodyDynamics.CustomCollections.blocks(S)[i]
+        end
+
+        @testset "Malformed blocks" begin
+            @testset "overlap" begin
+                blocks = [(1:1, 1:1),
+                          (2:4, 2:3),
+                          (5:4, 3:2),
+                          (5:7, 3:6),
+                          (8:10, 7:10)]
+                @test_throws ArgumentError RigidBodyDynamics.CustomCollections.check_contiguous_block_ranges(A, blocks)
+            end
+
+            @testset "out of bounds" begin
+                blocks = [(1:1, 0:1),
+                          (2:4, 2:2),
+                          (5:4, 3:2),
+                          (5:7, 3:6),
+                          (8:10, 7:10)]
+                @test_throws ArgumentError RigidBodyDynamics.CustomCollections.check_contiguous_block_ranges(A, blocks)
+
+                blocks = [(1:1, 1:1),
+                          (2:4, 2:2),
+                          (5:4, 3:2),
+                          (5:7, 3:6),
+                          (8:12, 7:10)]
+                @test_throws ArgumentError RigidBodyDynamics.CustomCollections.check_contiguous_block_ranges(A, blocks)
+            end
+
+            @testset "gap" begin
+                blocks = [(1:1, 1:1),
+                          (5:4, 3:2),
+                          (5:7, 3:6),
+                          (8:10, 7:10)]
+                @test_throws ArgumentError RigidBodyDynamics.CustomCollections.check_contiguous_block_ranges(A, blocks)
+            end
+        end
+
+        @testset "Nonstandard indexing" begin
+            M = NonOneBasedMatrix(5, 5)
+            blocks = [(-1:1, 2:3),
+                      (2:3,  4:6)]
+            RigidBodyDynamics.CustomCollections.check_contiguous_block_ranges(M, blocks)
+        end
     end
 end
