@@ -132,16 +132,6 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::Quaterni
 end
 
 
-"""
-$(SIGNATURES)
-
-Compute the jacobian ``Q_v`` which maps joint velocity to configuration
-derivative for the joint type ``jt``:
-
-```math
-\\dot{q} = Q_v v
-```
-"""
 function velocity_to_configuration_derivative_jacobian(jt::QuaternionFloating, q::AbstractVector)
     quat = rotation(jt, q)
     vj = velocity_jacobian(quaternion_derivative, quat)
@@ -154,16 +144,6 @@ function velocity_to_configuration_derivative_jacobian(jt::QuaternionFloating, q
               0        0        0        quat[3, 1] quat[3, 2] quat[3, 3]])
 end
 
-"""
-$(SIGNATURES)
-
-Compute the jacobian ``V_q`` which maps joint configuration derivative to
-velocity for the joint type ``jt``:
-
-```math
-v = V_q \\dot{q}
-```
-"""
 function configuration_derivative_to_velocity_jacobian(jt::QuaternionFloating, q::AbstractVector)
     quat = rotation(jt, q)
     vj = velocity_jacobian(angular_velocity_in_body, quat)

@@ -863,11 +863,11 @@ function configuration_derivative(state::MechanismState{X}) where {X}
     ret
 end
 
-function velocity_to_configuration_derivative_jacobian!(Q_v::SegmentedBlockDiagonalMatrix, state::MechanismState)
+function velocity_to_configuration_derivative_jacobian!(J::SegmentedBlockDiagonalMatrix, state::MechanismState)
     joints = state.treejoints
     qs = values(segments(state.q))
     discard = DiscardVector(length(qs))
-    bs = CustomCollections.blocks(Q_v)
+    bs = CustomCollections.blocks(J)
     broadcast!(discard, joints, qs, bs) do joint, qjoint, block
         velocity_to_configuration_derivative_jacobian!(block, joint, qjoint)
     end
@@ -877,16 +877,16 @@ end
 function velocity_to_configuration_derivative_jacobian(state::MechanismState{X, M, C}) where {X, M, C}
     q_ranges = values(ranges(configuration(state)))
     v_ranges = values(ranges(velocity(state)))
-    Q_v = SegmentedBlockDiagonalMatrix(zeros(C, num_positions(state), num_velocities(state)), zip(q_ranges, v_ranges))
-    velocity_to_configuration_derivative_jacobian!(Q_v, state)
-    Q_v
+    J = SegmentedBlockDiagonalMatrix(zeros(C, num_positions(state), num_velocities(state)), zip(q_ranges, v_ranges))
+    velocity_to_configuration_derivative_jacobian!(J, state)
+    J
 end
 
-function configuration_derivative_to_velocity_jacobian!(V_q::SegmentedBlockDiagonalMatrix, state::MechanismState)
+function configuration_derivative_to_velocity_jacobian!(J::SegmentedBlockDiagonalMatrix, state::MechanismState)
     joints = state.treejoints
     qs = values(segments(state.q))
     discard = DiscardVector(length(qs))
-    bs = CustomCollections.blocks(V_q)
+    bs = CustomCollections.blocks(J)
     broadcast!(discard, joints, qs, bs) do joint, qjoint, block
         configuration_derivative_to_velocity_jacobian!(block, joint, qjoint)
     end
@@ -896,9 +896,9 @@ end
 function configuration_derivative_to_velocity_jacobian(state::MechanismState{X, M, C}) where {X, M, C}
     q_ranges = values(ranges(configuration(state)))
     v_ranges = values(ranges(velocity(state)))
-    V_q = SegmentedBlockDiagonalMatrix(zeros(num_velocities(state), num_positions(state)), zip(v_ranges, q_ranges))
-    configuration_derivative_to_velocity_jacobian!(V_q, state)
-    V_q
+    J = SegmentedBlockDiagonalMatrix(zeros(num_velocities(state), num_positions(state)), zip(v_ranges, q_ranges))
+    configuration_derivative_to_velocity_jacobian!(J, state)
+    J
 end
 
 function transform_to_root(state::MechanismState, frame::CartesianFrame3D)

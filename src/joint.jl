@@ -318,11 +318,13 @@ where ``v`` is the joint velocity vector, return a vector ``f_q`` such that
 ```
 
 Note: since ``v`` is a linear function of ``\\dot{q}`` (see [`configuration_derivative_to_velocity!`](@ref)),
-we can write ``v = V_q \\dot{q}``, so
+we can write ``v = J_{\\dot{q} \\rightarrow v} \\dot{q}``, so
 ```math
-\\langle f_v, v \\rangle = \\langle f_v, V_q \\dot{q} \\rangle = \\langle V_q^{*} f_v, \\dot{q} \\rangle
+\\langle f_v, v \\rangle = \\langle f_v, J_{\\dot{q} \\rightarrow v} \\dot{q} \\rangle = \\langle J_{\\dot{q} \\rightarrow v}^{*} f_v, \\dot{q} \\rangle
 ```
-so ``f_q = V_q^{*} f_v``.
+so ``f_q = J_{\\dot{q} \\rightarrow v}^{*} f_v``.
+
+To compute ``J_{\\dot{q} \\rightarrow v}`` see [`configuration_derivative_to_velocity_jacobian`](@ref).
 """
 function configuration_derivative_to_velocity_adjoint!(fq, joint::Joint, q::AbstractVector, fv)
     @boundscheck check_num_positions(joint, fq)
@@ -349,27 +351,60 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, joint::Joint
 end
 
 
-# TODO: move the documentation from the joint_type methods to these ones
+"""
+$(SIGNATURES)
 
-function velocity_to_configuration_derivative_jacobian!(Q_v::AbstractMatrix, joint::Joint, q::AbstractVector)
-    @boundscheck size(Q_v) == (num_positions(joint), num_velocities(joint)) || error("Wrong size")
-    Q_v .= velocity_to_configuration_derivative_jacobian(joint, q)
-end
+Compute the jacobian ``J_{v \\rightarrow \\dot{q}}`` which maps joint velocity to configuration
+derivative for the given joint:
 
+```math
+\\dot{q} = J_{v \\rightarrow \\dot{q}} v
+```
+"""
 function velocity_to_configuration_derivative_jacobian(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     velocity_to_configuration_derivative_jacobian(joint.joint_type, q)
 end
 
-function configuration_derivative_to_velocity_jacobian!(V_q::AbstractMatrix, joint::Joint, q::AbstractVector)
-    @boundscheck size(V_q) == (num_velocities(joint), num_positions(joint)) || error("Wrong size")
-    V_q .= configuration_derivative_to_velocity_jacobian(joint, q)
+"""
+$(SIGNATURES)
+
+See [`velocity_to_configuration_derivative_jacobian`](@ref). 
+
+This method does its computation in-place, storing the result in `J`. 
+"""
+function velocity_to_configuration_derivative_jacobian!(J::AbstractMatrix, joint::Joint, q::AbstractVector)
+    @boundscheck size(J) == (num_positions(joint), num_velocities(joint)) || error("Wrong size")
+    J .= velocity_to_configuration_derivative_jacobian(joint, q)
 end
 
+"""
+$(SIGNATURES)
+
+Compute the jacobian ``J_{\\dot{q} \\rightarrow v}`` which maps joint
+configuration derivative to velocity for the given joint:
+
+```math
+v = J_{\\dot{q} \\rightarrow v} \\dot{q}
+```
+"""
 function configuration_derivative_to_velocity_jacobian(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     configuration_derivative_to_velocity_jacobian(joint.joint_type, q)
 end
+
+"""
+$(SIGNATURES)
+
+See [`configuration_derivative_to_velocity_jacobian`](@ref). 
+
+This method does its computation in-place, storing the result in `J`. 
+"""
+function configuration_derivative_to_velocity_jacobian!(J::AbstractMatrix, joint::Joint, q::AbstractVector)
+    @boundscheck size(J) == (num_velocities(joint), num_positions(joint)) || error("Wrong size")
+    J .= configuration_derivative_to_velocity_jacobian(joint, q)
+end
+
 
 """
 $(SIGNATURES)
