@@ -377,20 +377,18 @@ type is useful for storing and updating block-diagonal matrices whose block cont
 may change but whose overall structure is fixed, such as configuration derivative <-> velocity
 jacobians.
 """
-struct SegmentedBlockDiagonalMatrix{T, M <: AbstractMatrix{T}} <: AbstractMatrix{T}
+struct SegmentedBlockDiagonalMatrix{T, M<:AbstractMatrix{T}} <: AbstractMatrix{T}
     parent::M
     blocks::Vector{AbstractMatrixBlock{T, M}}
 
-    function SegmentedBlockDiagonalMatrix{T}(parent::AbstractMatrix{T}, block_indices) where T
+    function SegmentedBlockDiagonalMatrix{T, M}(parent::M, block_indices) where {T, M<:AbstractMatrix{T}}
         check_contiguous_block_ranges(parent, block_indices)
-        blocks = map(block_indices) do indices
-            view(parent, indices...)
-        end
-        new{T, typeof(parent)}(parent, blocks)
+        blocks = collect(view(parent, indices...) for indices in block_indices)
+        new{T, M}(parent, blocks)
     end
 end
 
-SegmentedBlockDiagonalMatrix(parent::AbstractMatrix{T}, block_indices) where {T} = SegmentedBlockDiagonalMatrix{T}(parent, block_indices)
+SegmentedBlockDiagonalMatrix(parent::M, block_indices) where {T, M<:AbstractMatrix{T}} = SegmentedBlockDiagonalMatrix{T, M}(parent, block_indices)
 
 function SegmentedBlockDiagonalMatrix{T}(initializer, rows::Integer, cols::Integer, block_indices) where T
     parent = Matrix{T}(initializer, rows, cols)
