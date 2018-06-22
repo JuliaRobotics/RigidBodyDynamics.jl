@@ -131,6 +131,35 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::Quaterni
     nothing
 end
 
+
+function velocity_to_configuration_derivative_jacobian(jt::QuaternionFloating, q::AbstractVector)
+    quat = rotation(jt, q)
+    vj = velocity_jacobian(quaternion_derivative, quat)
+    R = RotMatrix(quat)
+    # TODO: use hvcat once it's as fast
+    @inbounds return @SMatrix([vj[1] vj[5] vj[9]  0    0    0;
+                               vj[2] vj[6] vj[10] 0    0    0;
+                               vj[3] vj[7] vj[11] 0    0    0;
+                               vj[4] vj[8] vj[12] 0    0    0;
+                               0     0     0      R[1] R[4] R[7];
+                               0     0     0      R[2] R[5] R[8];
+                               0     0     0      R[3] R[6] R[9]])
+end
+
+function configuration_derivative_to_velocity_jacobian(jt::QuaternionFloating, q::AbstractVector)
+    quat = rotation(jt, q)
+    vj = velocity_jacobian(angular_velocity_in_body, quat)
+    R_inv = RotMatrix(inv(quat))
+    # TODO: use hvcat once it's as fast
+    @inbounds return @SMatrix([vj[1] vj[4] vj[7] vj[10] 0        0        0;
+                               vj[2] vj[5] vj[8] vj[11] 0        0        0;
+                               vj[3] vj[6] vj[9] vj[12] 0        0        0;
+                               0     0     0     0      R_inv[1] R_inv[4] R_inv[7];
+                               0     0     0     0      R_inv[2] R_inv[5] R_inv[8];
+                               0     0     0     0      R_inv[3] R_inv[6] R_inv[9]])
+end
+
+
 function zero_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
     set_rotation!(q, jt, eye(Quat{T}))
@@ -252,6 +281,14 @@ function bias_acceleration(jt::OneDegreeOfFreedomFixedAxis{T}, frame_after::Cart
         q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
     zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
+end
+
+function velocity_to_configuration_derivative_jacobian(::OneDegreeOfFreedomFixedAxis{T}, ::AbstractVector) where T
+    @SMatrix([one(T)])
+end
+
+function configuration_derivative_to_velocity_jacobian(::OneDegreeOfFreedomFixedAxis{T}, ::AbstractVector) where T
+    @SMatrix([one(T)])
 end
 
 """
@@ -455,6 +492,14 @@ configuration_derivative_to_velocity!(v::AbstractVector, ::Fixed, q::AbstractVec
 velocity_to_configuration_derivative!(q̇::AbstractVector, ::Fixed, q::AbstractVector, v::AbstractVector) = nothing
 joint_torque!(τ::AbstractVector, jt::Fixed, q::AbstractVector, joint_wrench::Wrench) = nothing
 
+function velocity_to_configuration_derivative_jacobian(::Fixed{T}, ::AbstractVector) where T
+    SMatrix{0, 0, T}()
+end
+
+function configuration_derivative_to_velocity_jacobian(::Fixed{T}, ::AbstractVector) where T
+    SMatrix{0, 0, T}()
+end
+
 
 """
 $(TYPEDEF)
@@ -593,6 +638,23 @@ function configuration_derivative_to_velocity_adjoint!(out, jt::Planar, q::Abstr
     nothing
 end
 
+function velocity_to_configuration_derivative_jacobian(::Planar, q::AbstractVector)
+    # TODO: use SMatrix(RotZ(q[3]) once it's as fast
+    rot = RotMatrix(q[3])
+    @inbounds return @SMatrix([rot[1] rot[3] 0;
+                               rot[2] rot[4] 0;
+                               0         0   1])
+end
+
+function configuration_derivative_to_velocity_jacobian(::Planar, q::AbstractVector)
+    # TODO: use SMatrix(RotZ(-q[3]) once it's as fast
+    rot = RotMatrix(-q[3])
+    @inbounds return @SMatrix([rot[1] rot[3] 0;
+                               rot[2] rot[4] 0;
+                               0         0   1])
+end
+
+
 
 """
 $(TYPEDEF)
@@ -683,6 +745,16 @@ function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::Quaterni
     quat = rotation(jt, q)
     q̇ .= quaternion_derivative(quat, v)
     nothing
+end
+
+function velocity_to_configuration_derivative_jacobian(jt::QuaternionSpherical, q::AbstractVector)
+    quat = rotation(jt, q)
+    velocity_jacobian(quaternion_derivative, quat)
+end
+
+function configuration_derivative_to_velocity_jacobian(jt::QuaternionSpherical, q::AbstractVector)
+    quat = rotation(jt, q)
+    velocity_jacobian(angular_velocity_in_body, quat)
 end
 
 function zero_configuration!(q::AbstractVector, jt::QuaternionSpherical)

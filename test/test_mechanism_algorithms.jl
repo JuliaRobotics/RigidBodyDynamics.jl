@@ -110,6 +110,36 @@ end
             configuration_derivative_to_velocity!(vjoint_from_q̇, joint, qjoint, q̇joint)
             @test isapprox(vjoint, vjoint_from_q̇; atol = 1e-12)
         end
+
+        Jq̇_to_v = RigidBodyDynamics.configuration_derivative_to_velocity_jacobian(x)
+        Jv_to_q̇ = RigidBodyDynamics.velocity_to_configuration_derivative_jacobian(x)
+        for i in 1:10
+            rand!(x)
+            q = configuration(x)
+            q̇ = configuration_derivative(x)
+            v = velocity(x)
+
+            RigidBodyDynamics.configuration_derivative_to_velocity_jacobian!(Jq̇_to_v, x)
+            RigidBodyDynamics.velocity_to_configuration_derivative_jacobian!(Jv_to_q̇, x)
+            @test Jq̇_to_v * q̇ ≈ v
+            @test Jv_to_q̇ * v ≈ q̇
+
+            @test @allocated(RigidBodyDynamics.configuration_derivative_to_velocity_jacobian!(Jq̇_to_v, x)) == 0
+            @test @allocated(RigidBodyDynamics.velocity_to_configuration_derivative_jacobian!(Jv_to_q̇, x)) == 0
+
+            for joint in joints(mechanism)
+                qrange = configuration_range(x, joint)
+                vrange = velocity_range(x, joint)
+                qj = q[qrange]
+                q̇j = q̇[qrange]
+                vj = v[vrange]
+
+                Jv_to_q̇_j = RigidBodyDynamics.velocity_to_configuration_derivative_jacobian(joint, qj)
+                @test Jv_to_q̇_j * vj ≈ q̇j
+                Jq̇_to_v_j = RigidBodyDynamics.configuration_derivative_to_velocity_jacobian(joint, qj)
+                @test Jq̇_to_v_j * q̇j ≈ vj
+            end
+        end
     end
 
     @testset "set_configuration! / set_velocity!" begin

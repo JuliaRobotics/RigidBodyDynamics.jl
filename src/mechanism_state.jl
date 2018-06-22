@@ -863,6 +863,40 @@ function configuration_derivative(state::MechanismState{X}) where {X}
     ret
 end
 
+function velocity_to_configuration_derivative_jacobian!(J::SegmentedBlockDiagonalMatrix, state::MechanismState)
+    joints = state.treejoints
+    qs = values(segments(state.q))
+    foreach(joints, qs, CustomCollections.blocks(J)) do joint, qjoint, block
+        copyto!(block, velocity_to_configuration_derivative_jacobian(joint, qjoint))
+    end
+    nothing
+end
+
+function velocity_to_configuration_derivative_jacobian(state::MechanismState{X, M, C}) where {X, M, C}
+    q_ranges = values(ranges(configuration(state)))
+    v_ranges = values(ranges(velocity(state)))
+    J = SegmentedBlockDiagonalMatrix(zeros(C, num_positions(state), num_velocities(state)), zip(q_ranges, v_ranges))
+    velocity_to_configuration_derivative_jacobian!(J, state)
+    J
+end
+
+function configuration_derivative_to_velocity_jacobian!(J::SegmentedBlockDiagonalMatrix, state::MechanismState)
+    joints = state.treejoints
+    qs = values(segments(state.q))
+    foreach(joints, qs, CustomCollections.blocks(J)) do joint, qjoint, block
+        copyto!(block, configuration_derivative_to_velocity_jacobian(joint, qjoint))
+    end
+    nothing
+end
+
+function configuration_derivative_to_velocity_jacobian(state::MechanismState{X, M, C}) where {X, M, C}
+    q_ranges = values(ranges(configuration(state)))
+    v_ranges = values(ranges(velocity(state)))
+    J = SegmentedBlockDiagonalMatrix(zeros(C, num_velocities(state), num_positions(state)), zip(v_ranges, q_ranges))
+    configuration_derivative_to_velocity_jacobian!(J, state)
+    J
+end
+
 function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
     body = body_fixed_frame_to_body(state.mechanism, frame) # FIXME: expensive
     tf = transform_to_root(state, body)
