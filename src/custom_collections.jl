@@ -371,7 +371,7 @@ end
 """
 $(TYPEDEF)
 
-`SegmentedBlockDiagonalMatrix` is an `AbstractMatrix` backed by a plain Matrix which
+`SegmentedBlockDiagonalMatrix` is an `AbstractMatrix` backed by a parent `AbstractMatrix`, which
 additionally stores a sequence of views into the diagonal blocks of the parent matrix. This
 type is useful for storing and updating block-diagonal matrices whose block contents
 may change but whose overall structure is fixed, such as configuration derivative <-> velocity
