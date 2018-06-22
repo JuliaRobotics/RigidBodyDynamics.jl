@@ -135,25 +135,28 @@ end
 function velocity_to_configuration_derivative_jacobian(jt::QuaternionFloating, q::AbstractVector)
     quat = rotation(jt, q)
     vj = velocity_jacobian(quaternion_derivative, quat)
-    @SMatrix([vj[1, 1] vj[1, 2] vj[1, 3] 0          0          0;
-              vj[2, 1] vj[2, 2] vj[2, 3] 0          0          0;
-              vj[3, 1] vj[3, 2] vj[3, 3] 0          0          0;
-              vj[4, 1] vj[4, 2] vj[4, 3] 0          0          0;
-              0        0        0        quat[1, 1] quat[1, 2] quat[1, 3];
-              0        0        0        quat[2, 1] quat[2, 2] quat[2, 3];
-              0        0        0        quat[3, 1] quat[3, 2] quat[3, 3]])
+    R = RotMatrix(quat)
+    # TODO: use hvcat once it's as fast
+    @inbounds return @SMatrix([vj[1] vj[5] vj[9]  0    0    0;
+                               vj[2] vj[6] vj[10] 0    0    0;
+                               vj[3] vj[7] vj[11] 0    0    0;
+                               vj[4] vj[8] vj[12] 0    0    0;
+                               0     0     0      R[1] R[4] R[7];
+                               0     0     0      R[2] R[5] R[8];
+                               0     0     0      R[3] R[6] R[9]])
 end
 
 function configuration_derivative_to_velocity_jacobian(jt::QuaternionFloating, q::AbstractVector)
     quat = rotation(jt, q)
     vj = velocity_jacobian(angular_velocity_in_body, quat)
-    quat_inv = inv(quat)
-    @SMatrix([vj[1, 1] vj[1, 2] vj[1, 3] vj[1, 4] 0              0              0;
-              vj[2, 1] vj[2, 2] vj[2, 3] vj[2, 4] 0              0              0;
-              vj[3, 1] vj[3, 2] vj[3, 3] vj[3, 4] 0              0              0;
-              0        0        0        0        quat_inv[1, 1] quat_inv[1, 2] quat_inv[1, 3];
-              0        0        0        0        quat_inv[2, 1] quat_inv[2, 2] quat_inv[2, 3];
-              0        0        0        0        quat_inv[3, 1] quat_inv[3, 2] quat_inv[3, 3]])
+    R_inv = RotMatrix(inv(quat))
+    # TODO: use hvcat once it's as fast
+    @inbounds return @SMatrix([vj[1] vj[4] vj[7] vj[10] 0        0        0;
+                               vj[2] vj[5] vj[8] vj[11] 0        0        0;
+                               vj[3] vj[6] vj[9] vj[12] 0        0        0;
+                               0     0     0     0      R_inv[1] R_inv[4] R_inv[7];
+                               0     0     0     0      R_inv[2] R_inv[5] R_inv[8];
+                               0     0     0     0      R_inv[3] R_inv[6] R_inv[9]])
 end
 
 
@@ -636,17 +639,19 @@ function configuration_derivative_to_velocity_adjoint!(out, jt::Planar, q::Abstr
 end
 
 function velocity_to_configuration_derivative_jacobian(::Planar, q::AbstractVector)
+    # TODO: use SMatrix(RotZ(q[3]) once it's as fast
     rot = RotMatrix(q[3])
-    @SMatrix([rot[1, 1] rot[1, 2] 0;
-              rot[2, 1] rot[2, 2] 0;
-              0         0         1])
+    @inbounds return @SMatrix([rot[1] rot[3] 0;
+                               rot[2] rot[4] 0;
+                               0         0   1])
 end
 
 function configuration_derivative_to_velocity_jacobian(::Planar, q::AbstractVector)
+    # TODO: use SMatrix(RotZ(-q[3]) once it's as fast
     rot = RotMatrix(-q[3])
-    @SMatrix([rot[1, 1] rot[1, 2] 0;
-              rot[2, 1] rot[2, 2] 0;
-              0         0         1])
+    @inbounds return @SMatrix([rot[1] rot[3] 0;
+                               rot[2] rot[4] 0;
+                               0         0   1])
 end
 
 
