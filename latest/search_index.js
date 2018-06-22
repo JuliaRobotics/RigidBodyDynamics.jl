@@ -525,7 +525,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Joints",
     "title": "RigidBodyDynamics.configuration_derivative_to_velocity_adjoint!",
     "category": "method",
-    "text": "configuration_derivative_to_velocity_adjoint!(fq, joint, q, fv)\n\n\nGiven  a linear function\n\nf(v) = langle f_v v rangle\n\nwhere v is the joint velocity vector, return a vector f_q such that\n\nlangle f_v v rangle = langle f_q dotq(v) rangle\n\nNote: since v is a linear function of dotq (see configuration_derivative_to_velocity!), we can write v = V_q dotq, so\n\nlangle f_v v rangle = langle f_v V_q dotq rangle = langle V_q^* f_v dotq rangle\n\nso f_q = V_q^* f_v.\n\n\n\n"
+    "text": "configuration_derivative_to_velocity_adjoint!(fq, joint, q, fv)\n\n\nGiven  a linear function\n\nf(v) = langle f_v v rangle\n\nwhere v is the joint velocity vector, return a vector f_q such that\n\nlangle f_v v rangle = langle f_q dotq(v) rangle\n\nNote: since v is a linear function of dotq (see configuration_derivative_to_velocity!), we can write v = J_dotq rightarrow v dotq, so\n\nlangle f_v v rangle = langle f_v J_dotq rightarrow v dotq rangle = langle J_dotq rightarrow v^* f_v dotq rangle\n\nso f_q = J_dotq rightarrow v^* f_v.\n\nTo compute J_dotq rightarrow v see configuration_derivative_to_velocity_jacobian.\n\n\n\n"
 },
 
 {
@@ -665,6 +665,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "joints.html#RigidBodyDynamics.configuration_derivative_to_velocity_jacobian-Tuple{RigidBodyDynamics.Joint,AbstractArray{T,1} where T}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.configuration_derivative_to_velocity_jacobian",
+    "category": "method",
+    "text": "configuration_derivative_to_velocity_jacobian(joint, q)\n\n\nCompute the jacobian J_dotq rightarrow v which maps joint configuration derivative to velocity for the given joint:\n\nv = J_dotq rightarrow v dotq\n\n\n\n"
+},
+
+{
     "location": "joints.html#RigidBodyDynamics.joint_spatial_acceleration-Tuple{RigidBodyDynamics.Joint,AbstractArray{T,1} where T,AbstractArray{T,1} where T,AbstractArray{T,1} where T}",
     "page": "Joints",
     "title": "RigidBodyDynamics.joint_spatial_acceleration",
@@ -686,6 +694,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.joint_twist",
     "category": "method",
     "text": "joint_twist(joint, q, v)\n\n\nReturn the twist of joint\'s  successor with respect to its predecessor, expressed in the frame after the joint.\n\nNote that this is the same as Twist(motion_subspace(joint, q), v).\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.velocity_to_configuration_derivative_jacobian-Tuple{RigidBodyDynamics.Joint,AbstractArray{T,1} where T}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.velocity_to_configuration_derivative_jacobian",
+    "category": "method",
+    "text": "velocity_to_configuration_derivative_jacobian(joint, q)\n\n\nCompute the jacobian J_v rightarrow dotq which maps joint velocity to configuration derivative for the given joint:\n\ndotq = J_v rightarrow dotq v\n\n\n\n"
 },
 
 {
@@ -1401,7 +1417,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,Union{#s21, RigidBodyDynamics.BodyID} where #s21<:RigidBodyDynamics.RigidBody,Union{#s8, RigidBodyDynamics.BodyID} where #s8<:RigidBodyDynamics.RigidBody}",
+    "location": "mechanismstate.html#RigidBodyDynamics.relative_twist-Tuple{RigidBodyDynamics.MechanismState,Union{#s9, RigidBodyDynamics.BodyID} where #s9<:RigidBodyDynamics.RigidBody,Union{#s8, RigidBodyDynamics.BodyID} where #s8<:RigidBodyDynamics.RigidBody}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.relative_twist",
     "category": "method",
@@ -1649,7 +1665,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{RigidBodyDynamics.DynamicsResult,RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{T,1} where T,Associative{RigidBodyDynamics.BodyID,#s21} where #s21<:RigidBodyDynamics.Spatial.Wrench}, Tuple{RigidBodyDynamics.DynamicsResult,RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{T,1} where T}, Tuple{RigidBodyDynamics.DynamicsResult,RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{X}} where X",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics!-Union{Tuple{RigidBodyDynamics.DynamicsResult,RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{T,1} where T,Associative{RigidBodyDynamics.BodyID,#s9} where #s9<:RigidBodyDynamics.Spatial.Wrench}, Tuple{RigidBodyDynamics.DynamicsResult,RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{T,1} where T}, Tuple{RigidBodyDynamics.DynamicsResult,RigidBodyDynamics.MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{X}} where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "method",
@@ -1886,6 +1902,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.CustomCollections.NullDict",
     "category": "type",
     "text": "struct NullDict{K, V} <: Associative{K,V}\n\nAn immutable associative type that signifies an empty dictionary and does not allocate any memory.\n\n\n\n"
+},
+
+{
+    "location": "customcollections.html#RigidBodyDynamics.CustomCollections.SegmentedBlockDiagonalMatrix",
+    "page": "Custom collection types",
+    "title": "RigidBodyDynamics.CustomCollections.SegmentedBlockDiagonalMatrix",
+    "category": "type",
+    "text": "struct SegmentedBlockDiagonalMatrix{T, M<:AbstractArray{T,2}} <: AbstractArray{T,2}\n\nSegmentedBlockDiagonalMatrix is an AbstractMatrix backed by a parent AbstractMatrix, which additionally stores a sequence of views into the diagonal blocks of the parent matrix. This type is useful for storing and updating block-diagonal matrices whose block contents may change but whose overall structure is fixed, such as configuration derivative <-> velocity jacobians.\n\n\n\n"
 },
 
 {
