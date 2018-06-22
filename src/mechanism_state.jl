@@ -866,10 +866,8 @@ end
 function velocity_to_configuration_derivative_jacobian!(J::SegmentedBlockDiagonalMatrix, state::MechanismState)
     joints = state.treejoints
     qs = values(segments(state.q))
-    discard = DiscardVector(length(qs))
-    bs = CustomCollections.blocks(J)
-    broadcast!(discard, joints, qs, bs) do joint, qjoint, block
-        velocity_to_configuration_derivative_jacobian!(block, joint, qjoint)
+    foreach(joints, qs, CustomCollections.blocks(J)) do joint, qjoint, block
+        copyto!(block, velocity_to_configuration_derivative_jacobian(joint, qjoint))
     end
     nothing
 end
@@ -885,10 +883,8 @@ end
 function configuration_derivative_to_velocity_jacobian!(J::SegmentedBlockDiagonalMatrix, state::MechanismState)
     joints = state.treejoints
     qs = values(segments(state.q))
-    discard = DiscardVector(length(qs))
-    bs = CustomCollections.blocks(J)
-    broadcast!(discard, joints, qs, bs) do joint, qjoint, block
-        configuration_derivative_to_velocity_jacobian!(block, joint, qjoint)
+    foreach(joints, qs, CustomCollections.blocks(J)) do joint, qjoint, block
+        copyto!(block, configuration_derivative_to_velocity_jacobian(joint, qjoint))
     end
     nothing
 end
