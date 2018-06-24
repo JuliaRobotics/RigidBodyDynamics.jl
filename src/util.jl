@@ -124,17 +124,16 @@ macro indextype(ID)
         Base.:-(x::$ID, y::$ID) = x.value - y.value
         Base.:+(x::$ID, y::Int) = $ID(x.value + y)
 
-        # Want the state of the iterator to be a plain Int, not an $ID. Same for length. Some Base methods aren't designed for this, so:
-        Base.start(r::Base.OneTo{$ID}) = 1
-        Base.start(r::UnitRange{$ID}) = Int(r.start)
-        Base.start(r::StepRange{$ID}) = Int(r.start)
-        Base.next(r::AbstractUnitRange{$ID}, i) = (convert($ID, i), i + 1)
-        Base.done(r::AbstractUnitRange{$ID}, i) = i == oftype(i, r.stop) + 1
+        # Want the state of the iterator to be a plain Int, not an $ID. Same for length.
+        # Some Base methods aren't designed for this before https://github.com/JuliaLang/julia/pull/27302, so:
         @static if VERSION < v"0.7-"
+            Base.start(r::Base.OneTo{$ID}) = 1
+            Base.start(r::UnitRange{$ID}) = Int(r.start)
+            Base.start(r::StepRange{$ID}) = Int(r.start)
+            Base.next(r::AbstractUnitRange{$ID}, i) = (convert($ID, i), i + 1)
+            Base.done(r::AbstractUnitRange{$ID}, i) = i == oftype(i, r.stop) + 1
             Base.colon(start::$ID, step::Int, stop::$ID) = StepRange(start, step, stop)
-        else
-            Base.:(:)(start::$ID, step::Int, stop::$ID) = StepRange(start, step, stop)
+            Base.steprange_last(start::$ID, step::Int, stop::$ID) = $ID(Base.steprange_last(Int(start), step, Int(stop)))
         end
-        Base.steprange_last(start::$ID, step::Int, stop::$ID) = $ID(Base.steprange_last(Int(start), step, Int(stop)))
     end)
 end

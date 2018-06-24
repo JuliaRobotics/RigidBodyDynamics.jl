@@ -1,14 +1,14 @@
 function parse_scalar(::Type{T}, e::XMLElement, name::String) where {T}
-    T(parse(attribute(e, name)))
+    parse(T, attribute(e, name))
 end
 
 function parse_scalar(::Type{T}, e::XMLElement, name::String, default::String) where {T}
-    T(parse(e == nothing ? default : attribute(e, name)))
+    parse(T, e == nothing ? default : attribute(e, name))
 end
 
 function parse_vector(::Type{T}, e::Union{XMLElement, Nothing}, name::String, default::String) where {T}
     usedefault = e == nothing || attribute(e, name) == nothing # TODO: better handling of required attributes
-    [T(parse(str)) for str in split(usedefault ? default : attribute(e, name))]
+    [parse(T, str) for str in split(usedefault ? default : attribute(e, name))]
 end
 
 function parse_inertia(::Type{T}, xml_inertia::XMLElement) where {T}
