@@ -24,6 +24,7 @@ export
 @static if !isdefined(Base, :parentindices)
     parentindices(x) = Base.parentindexes(x)
 end
+import Compat.axes
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
@@ -348,14 +349,14 @@ end
 const AbstractMatrixBlock{T, M} = SubArray{T,2,M,Tuple{UnitRange{Int},UnitRange{Int}},false}
 
 function _is_contiguous_and_diagonal(parent::AbstractMatrix, block_indices)
-    expected_starts = first.(indices(parent))
+    expected_starts = first.(axes(parent))
     for inds in block_indices
         if first.(inds) !== expected_starts
             return false
         end
         expected_starts = last.(inds) .+ 1
     end
-    if expected_starts !== last.(indices(parent)) .+ 1
+    if expected_starts !== last.(axes(parent)) .+ 1
         return false
     end
     return true
