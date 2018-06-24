@@ -6,7 +6,7 @@ $(SIGNATURES)
 A trivial controller that simply sets the torques to zero.
 """
 function zero_torque!(torques::AbstractVector, t, state::MechanismState)
-    torques[:] = 0
+    torques .= 0
 end
 
 """

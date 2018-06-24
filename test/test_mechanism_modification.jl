@@ -299,8 +299,8 @@
         rand!(state_float64)
         NullDual = typeof(ForwardDiff.Dual(0., ()))
         state_dual = MechanismState{NullDual}(mechanism)
-        configuration(state_dual)[:] = configuration(state_float64)
-        velocity(state_dual)[:] = velocity(state_float64)
+        configuration(state_dual) .= configuration(state_float64)
+        velocity(state_dual) .= velocity(state_float64)
 
         dynamics_result_float64 = DynamicsResult(mechanism)
         dynamics!(dynamics_result_float64, state_float64)

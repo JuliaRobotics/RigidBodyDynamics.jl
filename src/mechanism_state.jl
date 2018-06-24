@@ -285,7 +285,7 @@ $(SIGNATURES)
 Zero the velocity vector ``v``. Invalidates cache variables.
 """
 function zero_velocity!(state::MechanismState)
-    state.v[:] = 0
+    state.v .= 0
     reset_contact_state!(state)
     setdirty!(state)
 end

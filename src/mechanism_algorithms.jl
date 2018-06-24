@@ -700,8 +700,8 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
          K zeros(nl, nl)]
     r = [τ - c; -k]
     v̇λ = G \ r
-    v̇[:] = view(v̇λ, 1 : nv)
-    λ[:] = view(v̇λ, nv + 1 : nv + nl)
+    v̇ .= view(v̇λ, 1 : nv)
+    λ .= view(v̇λ, nv + 1 : nv + nl)
     nothing
 end
 
@@ -720,7 +720,7 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
     z = result.z
     Y = result.Y
 
-    L[:] = M.data
+    L .= M.data
     uplo = M.uplo
     Compat.LinearAlgebra.LAPACK.potrf!(uplo, L) # L <- Cholesky decomposition of M; M == L Lᵀ (note: Featherstone, page 151 uses M == Lᵀ L instead)
     τbiased = v̇
@@ -749,11 +749,11 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
         # solve M v̇  = τ - c for v̇
 
         # Compute Y = K L⁻ᵀ
-        Y[:] = K
+        Y .= K
         Compat.LinearAlgebra.BLAS.trsm!('R', uplo, 'T', 'N', one(T), L, Y)
 
         # Compute z = L⁻¹ (τ - c)
-        z[:] = τbiased
+        z .= τbiased
         Compat.LinearAlgebra.BLAS.trsv!(uplo, 'N', 'N', L, z) # z <- L⁻¹ (τ - c)
 
         # Compute A = Y Yᵀ == K * M⁻¹ * Kᵀ
@@ -761,7 +761,7 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
 
         # Compute b = Y z + k
         b = λ
-        b[:] = k
+        b .= k
         Compat.LinearAlgebra.BLAS.gemv!('N', one(T), Y, z, one(T), b) # b <- Y z + k
 
         # Compute λ = A⁻¹ b == (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
