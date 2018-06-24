@@ -159,8 +159,10 @@ isdirty(d::CacheIndexDict) = d.dirty
 # Constructors
 for IDict in (:IndexDict, :CacheIndexDict)
     @eval begin
-        function $IDict(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}}
-            $IDict{K, KeyRange, V}(keys, values)
+        @static if VERSION < v"0.7-"
+            function $IDict(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}}
+                $IDict{K, KeyRange, V}(keys, values)
+            end
         end
 
         function $IDict{K, KeyRange, V}(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
