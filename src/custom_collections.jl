@@ -43,7 +43,7 @@ for num_extra_args = 1 : 5
                 push!(expr.args, quote
                     let inds = leading_tsc.indices[$i]
                         @boundscheck TypeSortedCollections.indices_match($vali, inds, A1, As...) || TypeSortedCollections.indices_match_fail()
-                        @inbounds for j in linearindices(inds)
+                        @inbounds for j in LinearIndices(inds)
                             vecindex = inds[j]
                             f($(extra_args...), TypeSortedCollections._getindex_all($vali, j, vecindex, A1, As...)...)
                         end
