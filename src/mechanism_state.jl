@@ -182,6 +182,11 @@ end
 
 MechanismState(mechanism::Mechanism{M}) where {M} = MechanismState{M}(mechanism)
 
+if VERSION >= v"0.7-"
+    # TODO: remove once Ref depwarn is gone
+    Base.broadcastable(x::MechanismState) = Ref(x)
+end
+
 Base.show(io::IO, ::MechanismState{X, M, C}) where {X, M, C} = print(io, "MechanismState{$X, $M, $C, …}(…)")
 
 modcount(state::MechanismState) = state.modcount
@@ -285,7 +290,7 @@ $(SIGNATURES)
 Zero the velocity vector ``v``. Invalidates cache variables.
 """
 function zero_velocity!(state::MechanismState)
-    state.v[:] = 0
+    state.v .= 0
     reset_contact_state!(state)
     setdirty!(state)
 end

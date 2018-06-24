@@ -245,7 +245,7 @@ function step(integrator::MuntheKaasIntegrator, t::Real, Δt::Real)
         ϕ = stages.ϕs[i]
         v = stages.vs[i]
         s = stages.ss[i]
-        ϕ[:] = 0
+        ϕ .= 0
         v .= v0
         s .= s0
         for j = 1 : i - 1
@@ -276,7 +276,7 @@ function step(integrator::MuntheKaasIntegrator, t::Real, Δt::Real)
 
     # Combine stages
     ϕ = stages.ϕstep
-    ϕ[:] = 0
+    ϕ .= 0
     v = stages.vstep # already initialized to v0
     s = stages.sstep # already initialized to s0
     for i = 1 : n

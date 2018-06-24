@@ -9,9 +9,10 @@ using RigidBodyDynamics.Contact
 using RigidBodyDynamics.PDControl
 using Rotations
 using StaticArrays
-using ForwardDiff
 
 import Base.Iterators: filter
+import ForwardDiff
+import LightXML
 
 include("test_exports.jl")
 include("test_graph.jl")

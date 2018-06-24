@@ -506,7 +506,7 @@ end
         end
         M2 = similar(M.data)
         v̇ = similar(velocity(x))
-        v̇[:] = 0
+        v̇ .= 0
         ForwardDiff.jacobian!(M2, v̇_to_τ, v̇)
         @test isapprox(M2, M; atol = 1e-12)
     end
@@ -532,7 +532,7 @@ end
 
         q = configuration(x)
         v̇ = similar(velocity(x))
-        v̇[:] = 0
+        v̇ .= 0
         cache = StateCache(mechanism)
         function v_to_c(v)
             local x = cache[eltype(v)]
@@ -553,7 +553,7 @@ end
         x = MechanismState(mechanism)
         rand!(x)
         v̇ = similar(velocity(x))
-        v̇[:] = 0
+        v̇ .= 0
         zero_velocity!(x)
         g = inverse_dynamics(x, v̇)
 
@@ -637,7 +637,7 @@ end
         rand!(x)
         externalwrenches = Dict(BodyID(body) => rand(Wrench{Float64}, root_frame(mechanism)) for body in bodies(mechanism))
         v̇ = similar(velocity(x))
-        v̇[:] = 0
+        v̇ .= 0
         τ1 = inverse_dynamics(x, v̇, externalwrenches)
         τ2 = dynamics_bias(x, externalwrenches)
         @test τ1 ≈ τ2

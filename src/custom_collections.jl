@@ -24,6 +24,7 @@ export
 @static if !isdefined(Base, :parentindices)
     parentindices(x) = Base.parentindexes(x)
 end
+import Compat.axes
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
@@ -42,7 +43,7 @@ for num_extra_args = 1 : 5
                 push!(expr.args, quote
                     let inds = leading_tsc.indices[$i]
                         @boundscheck TypeSortedCollections.indices_match($vali, inds, A1, As...) || TypeSortedCollections.indices_match_fail()
-                        @inbounds for j in linearindices(inds)
+                        @inbounds for j in LinearIndices(inds)
                             vecindex = inds[j]
                             f($(extra_args...), TypeSortedCollections._getindex_all($vali, j, vecindex, A1, As...)...)
                         end
@@ -136,6 +137,10 @@ struct IndexDict{K, KeyRange<:AbstractUnitRange{K}, V} <: AbstractIndexDict{K, V
     values::Vector{V}
 end
 
+if VERSION >= v"0.7-"
+    # TODO: remove once Ref depwarn is gone
+    Base.broadcastable(x::IndexDict) = Ref(x)
+end
 
 """
 $(TYPEDEF)
@@ -158,8 +163,10 @@ isdirty(d::CacheIndexDict) = d.dirty
 # Constructors
 for IDict in (:IndexDict, :CacheIndexDict)
     @eval begin
-        function $IDict(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}}
-            $IDict{K, KeyRange, V}(keys, values)
+        @static if VERSION < v"0.7-"
+            function $IDict(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}}
+                $IDict{K, KeyRange, V}(keys, values)
+            end
         end
 
         function $IDict{K, KeyRange, V}(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
@@ -348,14 +355,14 @@ end
 const AbstractMatrixBlock{T, M} = SubArray{T,2,M,Tuple{UnitRange{Int},UnitRange{Int}},false}
 
 function _is_contiguous_and_diagonal(parent::AbstractMatrix, block_indices)
-    expected_starts = first.(indices(parent))
+    expected_starts = first.(axes(parent))
     for inds in block_indices
         if first.(inds) !== expected_starts
             return false
         end
         expected_starts = last.(inds) .+ 1
     end
-    if expected_starts !== last.(indices(parent)) .+ 1
+    if expected_starts !== last.(axes(parent)) .+ 1
         return false
     end
     return true
