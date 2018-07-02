@@ -1,6 +1,6 @@
 module TestCaches
 
-using Compat.Test
+using Test
 using RigidBodyDynamics
 
 function randmech()

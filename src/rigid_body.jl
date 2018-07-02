@@ -41,10 +41,6 @@ function Base.show(io::IO, b::RigidBody)
     end
 end
 
-@static if VERSION < v"0.7.0-DEV.1472"
-    Base.showcompact(io::IO, b::RigidBody) = show(IOContext(io, :compact => true), b)
-end
-
 BodyID(b::RigidBody) = b.id
 Base.convert(::Type{BodyID}, b::RigidBody) = BodyID(b)
 Base.@deprecate id(b::RigidBody) BodyID(b)

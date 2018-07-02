@@ -182,10 +182,8 @@ end
 
 MechanismState(mechanism::Mechanism{M}) where {M} = MechanismState{M}(mechanism)
 
-if VERSION >= v"0.7-"
-    # TODO: remove once Ref depwarn is gone
-    Base.broadcastable(x::MechanismState) = Ref(x)
-end
+# TODO: remove once Ref depwarn is gone
+Base.broadcastable(x::MechanismState) = Ref(x)
 
 Base.show(io::IO, ::MechanismState{X, M, C}) where {X, M, C} = print(io, "MechanismState{$X, $M, $C, …}(…)")
 

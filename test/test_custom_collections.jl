@@ -1,4 +1,4 @@
-using Compat.Test
+using Test
 using RigidBodyDynamics
 
 # A pathologically weird matrix which uses base -1 indexing
