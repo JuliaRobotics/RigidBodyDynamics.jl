@@ -7,4 +7,4 @@ DocStringExtensions 0.4.1
 Compat 0.59 # for undef
 Reexport 0.0.3
 LoopThrottle 0.0.1
-Nullables # TODO: remove after dropping 0.6 support
+Nullables 0.0.5 # TODO: remove after dropping 0.6 support
