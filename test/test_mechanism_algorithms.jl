@@ -18,11 +18,11 @@ end
         show(devnull, mechanism_with_loops)
         for joint in joints(mechanism_with_loops)
             show(devnull, joint)
-            showcompact(devnull, joint)
+            show(IOContext(devnull, :compact => true), joint)
         end
         for body in bodies(mechanism_with_loops)
             show(devnull, body)
-            showcompact(devnull, body)
+            show(IOContext(devnull, :compact => true), body)
         end
         show(devnull, x)
     end
