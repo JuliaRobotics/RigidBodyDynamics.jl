@@ -41,9 +41,8 @@ export
 export
     @framecheck
 
-using Compat
-using Compat.LinearAlgebra
-using Compat.Random
+using LinearAlgebra
+using Random
 using StaticArrays
 using Rotations
 using DocStringExtensions

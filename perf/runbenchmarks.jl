@@ -1,6 +1,5 @@
 using RigidBodyDynamics
-using Compat
-using Compat.Random
+using Random
 using BenchmarkTools
 
 const ScalarType = Float64

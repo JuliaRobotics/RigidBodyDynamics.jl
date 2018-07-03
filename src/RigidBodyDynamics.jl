@@ -2,9 +2,8 @@ __precompile__()
 
 module RigidBodyDynamics
 
-using Compat
-using Compat.Random
-using Compat.LinearAlgebra
+using Random
+using LinearAlgebra
 using Nullables
 using StaticArrays
 using Rotations

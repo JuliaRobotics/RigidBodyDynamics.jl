@@ -1,7 +1,6 @@
 module OdeIntegrators
 
-using Compat
-using Compat.LinearAlgebra
+using LinearAlgebra
 using RigidBodyDynamics
 using StaticArrays
 using DocStringExtensions

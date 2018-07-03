@@ -9,7 +9,7 @@ struct NonOneBasedMatrix <: AbstractMatrix{Float64}
 end
 
 Base.size(m::NonOneBasedMatrix) = (m.m, m.n)
-Compat.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
+Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
 
 @testset "custom collections" begin
     @testset "nulldict" begin

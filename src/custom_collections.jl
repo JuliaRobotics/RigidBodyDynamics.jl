@@ -1,6 +1,5 @@
 module CustomCollections
 
-using Compat
 using TypeSortedCollections
 using DocStringExtensions
 
@@ -24,7 +23,6 @@ export
 @static if !isdefined(Base, :parentindices)
     parentindices(x) = Base.parentindexes(x)
 end
-import Compat.axes
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over

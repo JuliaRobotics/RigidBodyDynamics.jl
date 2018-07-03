@@ -134,8 +134,8 @@ $(SIGNATURES)
 
 Compute the mechanical power associated with a pairing of a wrench and a twist.
 """
-Compat.LinearAlgebra.dot(w::Wrench, t::Twist) = begin @framecheck(w.frame, t.frame); dot(angular(w), angular(t)) + dot(linear(w), linear(t)) end
-Compat.LinearAlgebra.dot(t::Twist, w::Wrench) = dot(w, t)
+LinearAlgebra.dot(w::Wrench, t::Twist) = begin @framecheck(w.frame, t.frame); dot(angular(w), angular(t)) + dot(linear(w), linear(t)) end
+LinearAlgebra.dot(t::Twist, w::Wrench) = dot(w, t)
 
 
 for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :MomentumMatrix => :Wrench, :WrenchMatrix => :Wrench)
@@ -204,7 +204,7 @@ function torque(jac::GeometricJacobian, wrench::Wrench)
 end
 
 for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAcceleration}), :GeometricJacobian => :(Union{Momentum, Wrench}))
-    @eval @inline function Compat.LinearAlgebra.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
+    @eval @inline function LinearAlgebra.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
         @boundscheck length(x) == size(mat, 2) || error("size mismatch")
         @framecheck mat.frame vec.frame
         @simd for row in eachindex(x)

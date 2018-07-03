@@ -19,9 +19,9 @@ end
 
 ## findunique
 function findunique(f, A::AbstractArray)
-    i = Compat.findfirst(f, A)
+    i = findfirst(f, A)
     i === nothing && error("No results found.")
-    Compat.findnext(f, A, i + 1) === nothing || error("Multiple results found.")
+    findnext(f, A, i + 1) === nothing || error("Multiple results found.")
     @inbounds return A[i]
 end
 

@@ -1,7 +1,6 @@
-using Compat
 using Test
-using Compat.LinearAlgebra
-using Compat.Random
+using LinearAlgebra
+using Random
 
 using RigidBodyDynamics
 using RigidBodyDynamics.Graphs
