@@ -114,21 +114,21 @@ $(SIGNATURES)
 
 Return the dimension of the joint configuration vector ``q``.
 """
-num_positions(mechanism::Mechanism)::Int = mapreduce(num_positions, +, 0, tree_joints(mechanism))
+num_positions(mechanism::Mechanism)::Int = mapreduce(num_positions, +, tree_joints(mechanism); init=0)
 
 """
 $(SIGNATURES)
 
 Return the dimension of the joint velocity vector ``v``.
 """
-num_velocities(mechanism::Mechanism)::Int = mapreduce(num_velocities, +, 0, tree_joints(mechanism))
+num_velocities(mechanism::Mechanism)::Int = mapreduce(num_velocities, +, tree_joints(mechanism); init=0)
 
 """
 $(SIGNATURES)
 
 Return the number of constraints imposed by the mechanism's non-tree joints (i.e., the number of rows of the constraint Jacobian).
 """
-num_constraints(mechanism::Mechanism)::Int = mapreduce(num_constraints, +, 0, non_tree_joints(mechanism))
+num_constraints(mechanism::Mechanism)::Int = mapreduce(num_constraints, +, non_tree_joints(mechanism); init=0)
 
 """
 $(SIGNATURES)

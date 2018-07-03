@@ -369,7 +369,7 @@ additional_state(state::MechanismState) = state.s
 
 for fun in (:num_velocities, :num_positions)
     @eval function $fun(p::TreePath{RigidBody{T}, <:Joint{T}} where {T})
-        mapreduce($fun, +, 0, p)
+        mapreduce($fun, +, p; init=0)
     end
 end
 
