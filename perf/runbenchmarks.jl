@@ -1,5 +1,6 @@
 using RigidBodyDynamics
 using Random
+using Profile
 using BenchmarkTools
 
 const ScalarType = Float64
