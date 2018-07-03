@@ -2,7 +2,8 @@ function randmech()
     rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 5]; [Fixed{Float64} for i = 1 : 5]; [QuaternionSpherical{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]; [Planar{Float64} for i = 1 : 5]]...)
 end
 
-@testset "mechanism algorithms" begin
+# TODO: uncomment:
+# @testset "mechanism algorithms" begin
     @testset "show" begin
         mechanism = randmech()
         x = MechanismState(mechanism)
@@ -759,4 +760,4 @@ end
         end
         @test ForwardDiff.hessian(f330, [1.]) == zeros(1, 1)
     end
-end
+# end
