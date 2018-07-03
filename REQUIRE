@@ -6,4 +6,3 @@ LightXML 0.4.0
 DocStringExtensions 0.4.1
 Reexport 0.0.3
 LoopThrottle 0.0.1
-Nullables 0.0.5 # TODO: remove after dropping 0.6 support

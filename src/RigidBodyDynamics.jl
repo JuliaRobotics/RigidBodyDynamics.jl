@@ -4,7 +4,6 @@ module RigidBodyDynamics
 
 using Random
 using LinearAlgebra
-using Nullables
 using StaticArrays
 using Rotations
 using TypeSortedCollections
