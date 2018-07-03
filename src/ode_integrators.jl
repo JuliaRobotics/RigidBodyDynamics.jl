@@ -33,7 +33,7 @@ struct ButcherTableau{N, T, L}
         @assert N > 0
         @assert size(a, 2) == N
         @assert length(b) == N
-        c = vec(sum(a, 2))
+        c = vec(sum(a, dims=2))
         explicit = all(triu(a) .== 0)
         new{N, T, L}(SMatrix{N, N}(a), SVector{N}(b), SVector{N}(c), explicit)
     end
