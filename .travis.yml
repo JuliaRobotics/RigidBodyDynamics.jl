@@ -13,9 +13,8 @@ notifications:
 before_install:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
-  - julia -e 'ENV["PYTHON"]=""; Pkg.clone(pwd()); Pkg.build("RigidBodyDynamics"); Pkg.test("RigidBodyDynamics"; coverage=true)'
+  # - julia -e 'ENV["PYTHON"]=""; Pkg.clone(pwd()); Pkg.build("RigidBodyDynamics"); Pkg.test("RigidBodyDynamics"; coverage=true)'
   # Note: PYTHON env is to ensure that PyCall uses the Conda.jl package's Miniconda distribution within Julia. Otherwise the sympy Python module won't be installed/imported properly.
 after_success:
-  - julia -e 'cd(Pkg.dir("RigidBodyDynamics")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
-  - julia -e 'Pkg.add("Documenter")'
-  - julia -e 'cd(Pkg.dir("RigidBodyDynamics")); include(joinpath("docs", "make.jl"))'
+  - julia -e 'import Pkg; Pkg.add("Documenter"); include("docs/make.jl")'
+  - julia -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
