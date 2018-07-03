@@ -135,7 +135,6 @@ struct IndexDict{K, KeyRange<:AbstractUnitRange{K}, V} <: AbstractIndexDict{K, V
     values::Vector{V}
 end
 
-# TODO: remove once Ref depwarn is gone
 Base.broadcastable(x::IndexDict) = Ref(x)
 
 """
