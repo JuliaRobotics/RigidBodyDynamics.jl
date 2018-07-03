@@ -39,16 +39,16 @@ Download links and more detailed instructions are available on the [Julia](http:
     Do **not** use `apt-get` or `brew` to install Julia, as the versions provided by these package managers tend to be out of date.
 
 ### Installing RigidBodyDynamics
-To install the latest tagged release of RigidBodyDynamics, simply run
+To install the latest tagged release of RigidBodyDynamics, start Julia and enter `Pkg` mode by pressing `]`, and then simply run
 
 ```julia
-Pkg.add("RigidBodyDynamics") 
+add RigidBodyDynamics
 ```
 
 To check out the master branch and work on the bleeding edge (generally, not recommended), additionally run
 
 ```julia
-Pkg.checkout("RigidBodyDynamics")
+develop RigidBodyDynamics
 ```
 
 ## About
