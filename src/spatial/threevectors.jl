@@ -67,7 +67,7 @@ FreeVector3D
 # Point3D-specific
 Base.:-(p1::Point3D, p2::Point3D) = begin @framecheck(p1.frame, p2.frame); FreeVector3D(p1.frame, p1.v - p2.v) end
 Base.:*(t::Transform3D, point::Point3D) = begin @framecheck(t.from, point.frame); Point3D(t.to, rotation(t) * point.v + translation(t)) end
-Base.:\(t::Transform3D, point::Point3D) = begin @framecheck point.frame t.to; Point3D(t.from, At_mul_B(rotation(t), point.v - translation(t))) end
+Base.:\(t::Transform3D, point::Point3D) = begin @framecheck point.frame t.to; Point3D(t.from, rotation(t) \ (point.v - translation(t))) end
 
 # FreeVector3D-specific
 FreeVector3D(p::Point3D) = FreeVector3D(p.frame, p.v)
@@ -75,7 +75,7 @@ Base.:-(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.fra
 LinearAlgebra.cross(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
 LinearAlgebra.dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
 Base.:*(t::Transform3D, vector::FreeVector3D) = begin @framecheck(t.from, vector.frame); FreeVector3D(t.to, rotation(t) * vector.v) end
-Base.:\(t::Transform3D, point::FreeVector3D) = begin @framecheck point.frame t.to; FreeVector3D(t.from, At_mul_B(rotation(t), point.v)) end
+Base.:\(t::Transform3D, point::FreeVector3D) = begin @framecheck point.frame t.to; FreeVector3D(t.from, rotation(t) \ point.v) end
 LinearAlgebra.norm(v::FreeVector3D) = norm(v.v)
 LinearAlgebra.normalize(v::FreeVector3D, p = 2) = FreeVector3D(v.frame, normalize(v.v, p))
 
