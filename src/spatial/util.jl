@@ -26,7 +26,7 @@ colwise(f, vec, mat)
 Return a matrix `A` such that `A[:, i] == f(vec, mat[:, i])`.
 """
 function colwise(f, vec::AbstractVector, mat::AbstractMatrix)
-    mapslices(x -> f(vec, x), mat, (1,))
+    mapslices(x -> f(vec, x), mat; dims=(1,))
 end
 
 """
