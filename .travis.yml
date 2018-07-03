@@ -1,9 +1,9 @@
 language: julia
 os:
   - linux
-#  - osx
+  - osx
 julia:
-  - 0.6
+  - nightly
 branches:
   only:
     - master

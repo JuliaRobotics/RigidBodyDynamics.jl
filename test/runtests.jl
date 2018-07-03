@@ -1,5 +1,5 @@
 using Compat
-using Compat.Test
+using Test
 using Compat.LinearAlgebra
 using Compat.Random
 
@@ -34,7 +34,7 @@ for file in readdir(notebookdir)
     name, ext = splitext(file)
     lowercase(ext) == ".ipynb" || continue
     @eval module $(gensym())
-    using Compat.Test
+    using Test
     using NBInclude
     @testset "$($name)" begin
         nbinclude(joinpath($notebookdir, $file), regex = r"^((?!\#NBSKIP).)*$"s)
