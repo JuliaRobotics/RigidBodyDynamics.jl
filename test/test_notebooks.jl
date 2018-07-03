@@ -1,6 +1,8 @@
 @testset "example notebooks" begin
     notebookdir = joinpath(@__DIR__, "..", "notebooks")
     excludes = String[]
+    push!(excludes, joinpath(notebookdir, "Rigorous error bounds using IntervalArithmetic.ipynb"))
+    push!(excludes, joinpath(notebookdir, "Symbolic double pendulum.ipynb"))
     for file in readdir(notebookdir)
         path = joinpath(notebookdir, file)
         path in excludes && continue
