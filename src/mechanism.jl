@@ -262,7 +262,7 @@ end
 
 function gravitational_spatial_acceleration(mechanism::Mechanism)
     frame = mechanism.gravitational_acceleration.frame
-    SpatialAcceleration(frame, frame, frame, zeros(SVector{3, eltype(mechanism)}), mechanism.gravitational_acceleration.v)
+    SpatialAcceleration(frame, frame, frame, zero(SVector{3, eltype(mechanism)}), mechanism.gravitational_acceleration.v)
 end
 
 findbody(mechanism::Mechanism, name::String) = findunique(b -> string(b) == name, bodies(mechanism))

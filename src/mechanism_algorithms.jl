@@ -31,7 +31,7 @@ function center_of_mass(state::MechanismState, itr)
     T = cache_eltype(state)
     mechanism = state.mechanism
     frame = root_frame(mechanism)
-    com = Point3D(frame, zeros(SVector{3, T}))
+    com = Point3D(frame, zero(SVector{3, T}))
     mass = zero(T)
     for body in itr
         if !isroot(body, mechanism)

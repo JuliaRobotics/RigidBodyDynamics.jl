@@ -25,7 +25,7 @@ colwise(f, A::AbstractMatrix, b::AbstractVector) = mapslices(x -> f(x, b), A, di
 end
 
 @inline function _colwise(f, ::Val{0}, a::StaticVector, B::StaticMatrix)
-    zeros(similar_type(B, promote_type(eltype(a), eltype(B))))
+    zero(similar_type(B, promote_type(eltype(a), eltype(B))))
 end
 
 @inline function _colwise(f, M::Val, a::StaticVector, B::StaticMatrix)
@@ -41,7 +41,7 @@ end
 end
 
 @inline function _colwise(f, ::Val{0}, A::StaticMatrix, b::StaticVector)
-    zeros(similar_type(A, promote_type(eltype(A), eltype(b))))
+    zero(similar_type(A, promote_type(eltype(A), eltype(b))))
 end
 
 @inline function _colwise(f, M::Val, A::StaticMatrix, b::StaticVector)

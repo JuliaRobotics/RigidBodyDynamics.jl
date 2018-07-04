@@ -137,7 +137,7 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         end
 
         function Base.zero(::Type{$ForceSpaceElement{T}}, frame::CartesianFrame3D) where {T}
-            $ForceSpaceElement(frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
+            $ForceSpaceElement(frame, zero(SVector{3, T}), zero(SVector{3, T}))
         end
 
         Base.zero(f::$ForceSpaceElement) = zero(typeof(f), f.frame)

@@ -68,7 +68,7 @@ end
     Transform3D(t.to, t.from, rotinv, -(rotinv * translation(t)))
 end
 
-@inline LinearAlgebra.eye(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) where {T} = Transform3D(from, to, eye(SMatrix{4, 4, T}))
+@inline LinearAlgebra.eye(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) where {T} = Transform3D(from, to, one(SMatrix{4, 4, T}))
 @inline LinearAlgebra.eye(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = eye(Transform3D{Float64}, from, to)
 @inline LinearAlgebra.eye(::Type{T}, frame::CartesianFrame3D) where {T<:Transform3D} = eye(T, frame, frame)
 
