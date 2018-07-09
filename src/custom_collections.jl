@@ -152,7 +152,7 @@ mutable struct CacheIndexDict{K, KeyRange<:AbstractUnitRange{K}, V} <: AbstractI
     end
 end
 
-setdirty!(d::CacheIndexDict) = (d.dirty = true)
+setdirty!(d::CacheIndexDict) = (d.dirty = true; nothing)
 isdirty(d::CacheIndexDict) = d.dirty
 
 # Constructors

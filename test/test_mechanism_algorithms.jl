@@ -617,7 +617,7 @@ end
         com = center_of_mass(x)
         gravitational_wrench = Wrench(gravitational_force.frame, cross(com, gravitational_force).v, gravitational_force.v)
         total_wrench = floatingjointwrench + gravitational_wrench + sum((b) -> transform(x, externalwrenches[BodyID(b)], root_frame(mechanism)), non_root_bodies(mechanism))
-        @test isapprox(total_wrench, ḣ; atol = 1e-12)
+        @test isapprox(total_wrench, ḣ; atol = 1e-10)
     end
 
     @testset "dynamics / inverse dynamics" begin
