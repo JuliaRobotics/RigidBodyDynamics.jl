@@ -1,9 +1,6 @@
 # Benchmarks
 
-To get maximal performance, it is recommended to:
-
-1. [Rebuild the Julia system image for your CPU architecture](https://docs.julialang.org/en/stable/devdocs/sysimg/#)
-1. Pass `-O3`, `--check-bounds=no`, and `--math-mode=fast` as command line flags to `julia`.
+To get maximal performance, it is recommended to pass `-O3`, `--check-bounds=no`, and `--math-mode=fast` as command line flags to `julia`.
 
 Run `perf/runbenchmarks.jl` to see benchmark results for the Atlas robot (v5) in the following scenarios:
 
@@ -12,7 +9,7 @@ Run `perf/runbenchmarks.jl` to see benchmark results for the Atlas robot (v5) in
 1. Do inverse dynamics.
 1. Do forward dynamics.
 
-Note that results on Travis builds are **not at all** representative because of code coverage. Results on a reasonably fast machine at commit [8f70a47bcd](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/tree/8f70a47bcd6ed4baca9d3ea4f304dc4f1df787d7):
+Note that results on Travis builds are **not at all** representative because of code coverage. Results on a reasonably fast machine at commit [fa1b725](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/tree/fa1b725d20fb14cd8fe9c5e8ed6312164f56a902):
 
 Output of `versioninfo()`:
 

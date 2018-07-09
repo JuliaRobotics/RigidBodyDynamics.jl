@@ -1,6 +1,7 @@
 # Joints
 
 ## Index
+
 ```@index
 Pages   = ["joints.md"]
 Order   = [:type, :function]

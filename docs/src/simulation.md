@@ -1,17 +1,20 @@
 # Simulation
 
 ## Index
+
 ```@index
 Pages   = ["simulation.md"]
 Order   = [:type, :function]
 ```
 
 ## Basic simulation
+
 ```@docs
 simulate
 ```
 
 ## Lower level ODE integration interface
+
 ```@docs
 MuntheKaasIntegrator
 ButcherTableau

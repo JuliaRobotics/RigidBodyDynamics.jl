@@ -1,16 +1,20 @@
 # Mechanisms
 
 ## Index
+
 ```@index
 Pages   = ["mechanism.md"]
 Order   = [:type, :function]
 ```
 
 ## The `Mechanism` type
+
 ```@docs
 Mechanism
 ```
+
 ## [Creating and modifying `Mechanism`s](@id mechanism_create)
+
 ```@docs
 parse_urdf
 ```
@@ -22,6 +26,7 @@ Pages   = ["mechanism_modification.jl"]
 ```
 
 ## Basic functionality
+
 ```@autodocs
 Modules = [RigidBodyDynamics]
 Order   = [:function]
