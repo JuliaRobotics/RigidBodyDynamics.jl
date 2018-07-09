@@ -31,6 +31,9 @@ Base.eltype(::Type{GeometricJacobian{A}}) where {A} = eltype(A)
 
 Base.size(jac::GeometricJacobian) = (6, size(angular(jac), 2))
 Base.size(jac::GeometricJacobian, d) = size(jac)[d]
+
+Base.transpose(jac::GeometricJacobian) = Transpose(jac)
+
 angular(jac::GeometricJacobian) = jac.angular
 linear(jac::GeometricJacobian) = jac.linear
 change_base(jac::GeometricJacobian, base::CartesianFrame3D) = GeometricJacobian(jac.body, base, jac.frame, angular(jac), linear(jac))

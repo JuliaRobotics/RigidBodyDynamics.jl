@@ -195,7 +195,7 @@ function newton_euler(inertia::SpatialInertia, spatial_accel::SpatialAcceleratio
     Wrench(frame, ang, lin)
 end
 
-torque!(τ::AbstractVector, jac::GeometricJacobian, wrench::Wrench) = At_mul_B!(τ, jac, wrench)
+torque!(τ::AbstractVector, jac::GeometricJacobian, wrench::Wrench) = mul!(τ, transpose(jac), wrench)
 
 function torque(jac::GeometricJacobian, wrench::Wrench)
     τ = Vector{promote_type(eltype(jac), eltype(wrench))}(undef, size(jac, 2))
@@ -204,20 +204,34 @@ function torque(jac::GeometricJacobian, wrench::Wrench)
 end
 
 for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAcceleration}), :GeometricJacobian => :(Union{Momentum, Wrench}))
-    @eval @inline function LinearAlgebra.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
-        @boundscheck length(x) == size(mat, 2) || error("size mismatch")
+    @eval @inline function LinearAlgebra.mul!(
+            dest::AbstractVector{T},
+            transposed_mat::LinearAlgebra.Transpose{<:Any, <:$MatrixType},
+            vec::$VectorType) where T
+        mat = parent(transposed_mat)
+        @boundscheck length(dest) == size(mat, 2) || throw(DimensionMismatch())
         @framecheck mat.frame vec.frame
-        @simd for row in eachindex(x)
-            @inbounds begin
-                x[row] =
-                angular(mat)[1, row] * angular(vec)[1] +
-                angular(mat)[2, row] * angular(vec)[2] +
-                angular(mat)[3, row] * angular(vec)[3] +
-                linear(mat)[1, row] * linear(vec)[1] +
-                linear(mat)[2, row] * linear(vec)[2] +
-                linear(mat)[3, row] * linear(vec)[3]
+
+        mat_angular = angular(mat)
+        mat_linear = linear(mat)
+        vec_angular = angular(vec)
+        vec_linear = linear(vec)
+
+        @inbounds begin
+            @simd for row in eachindex(dest)
+                dest[row] =
+                    mat_angular[1, row] * vec_angular[1] +
+                    mat_angular[2, row] * vec_angular[2] +
+                    mat_angular[3, row] * vec_angular[3]
+            end
+            @simd for row in eachindex(dest)
+                dest[row] +=
+                    mat_linear[1, row] * vec_linear[1] +
+                    mat_linear[2, row] * vec_linear[2] +
+                    mat_linear[3, row] * vec_linear[3]
             end
         end
+        dest
     end
 end
 

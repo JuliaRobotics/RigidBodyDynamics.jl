@@ -36,6 +36,8 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
         Base.eltype(::Type{$ForceSpaceMatrix{A}}) where {A} = eltype(A)
         Base.size(mat::$ForceSpaceMatrix) = (6, size(angular(mat), 2))
         Base.size(mat::$ForceSpaceMatrix, d) = size(mat)[d]
+        Base.transpose(mat::$ForceSpaceMatrix) = Transpose(mat)
+
         angular(mat::$ForceSpaceMatrix) = mat.angular
         linear(mat::$ForceSpaceMatrix) = mat.linear
 

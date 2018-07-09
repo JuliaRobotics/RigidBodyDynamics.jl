@@ -166,11 +166,11 @@ end
         @test isapprox(Twist(transform(Jmutable, H), v), transform(Twist(Jmutable, v), H))
     end
 
-    @testset "At_mul_B!" begin
+    @testset "mul! with transpose(mat)" begin
         mat = WrenchMatrix(f1, rand(SMatrix{3, 4}), rand(SMatrix{3, 4}))
         vec = rand(SpatialAcceleration{Float64}, f2, f3, f1)
         k = fill(NaN, size(mat, 2))
-        At_mul_B!(k, mat, vec)
+        mul!(k, transpose(mat), vec)
         @test isapprox(k, angular(mat)' * angular(vec) + linear(mat)' * linear(vec), atol = 1e-14)
     end
 
