@@ -159,7 +159,7 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
         change_base(m::$MotionSpaceElement, base::CartesianFrame3D) = $MotionSpaceElement(m.body, base, m.frame, angular(m), linear(m))
 
         function Base.zero(::Type{$MotionSpaceElement{T}}, body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D) where {T}
-            $MotionSpaceElement(body, base, frame, zeros(SVector{3, T}), zeros(SVector{3, T}))
+            $MotionSpaceElement(body, base, frame, zero(SVector{3, T}), zero(SVector{3, T}))
         end
 
         Base.zero(m::$MotionSpaceElement) = zero(typeof(m), m.body, m.base, m.frame)
@@ -282,7 +282,7 @@ function Base.exp(twist::Twist)
     θ = norm(ϕrot)
     if abs(rem2pi(θ, RoundNearest)) < eps(typeof(θ))
         # (2.32)
-        rot = eye(RotMatrix3{typeof(θ)})
+        rot = one(RotMatrix3{typeof(θ)})
         trans = ϕtrans
     else
         # (2.36)
@@ -296,7 +296,7 @@ function Base.exp(twist::Twist)
     Transform3D(twist.body, twist.base, rot, trans)
 end
 
-function Compat.LinearAlgebra.cross(twist1::Twist, twist2::Twist)
+function LinearAlgebra.cross(twist1::Twist, twist2::Twist)
     @framecheck(twist1.frame, twist2.frame)
     ang, lin = se3_commutator(angular(twist1), linear(twist1), angular(twist2), linear(twist2))
     SpatialAcceleration(twist2.body, twist2.base, twist2.frame, ang, lin)

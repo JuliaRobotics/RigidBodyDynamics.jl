@@ -43,7 +43,7 @@ function Base.convert(::Type{SMatrix{6, 6, T}}, inertia::SpatialInertia) where {
     J = inertia.moment
     C = hat(inertia.cross_part)
     m = inertia.mass
-    [J  C; C' m * eye(SMatrix{3, 3, T})]
+    [J  C; C' m * one(SMatrix{3, 3, T})]
 end
 Base.convert(::Type{T}, inertia::SpatialInertia) where {T<:Matrix} = convert(T, convert(SMatrix{6, 6, eltype(T)}, inertia))
 
@@ -63,7 +63,7 @@ function Base.show(io::IO, inertia::SpatialInertia)
     print(io, "moment of inertia:\n$(inertia.moment)")
 end
 
-Base.zero(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) where {T} = SpatialInertia(frame, zeros(SMatrix{3, 3, T}), zeros(SVector{3, T}), zero(T))
+Base.zero(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) where {T} = SpatialInertia(frame, zero(SMatrix{3, 3, T}), zero(SVector{3, T}), zero(T))
 Base.zero(inertia::SpatialInertia) = zero(typeof(inertia), inertia.frame)
 
 function Base.isapprox(x::SpatialInertia, y::SpatialInertia; atol = 1e-12)
@@ -122,7 +122,7 @@ function Random.rand(::Type{<:SpatialInertia{T}}, frame::CartesianFrame3D) where
 
     # Construct the inertia in CoM frame
     com_frame = CartesianFrame3D()
-    spatial_inertia = SpatialInertia(com_frame, J, zeros(SVector{3, T}), rand(T))
+    spatial_inertia = SpatialInertia(com_frame, J, zero(SVector{3, T}), rand(T))
 
     # Put the center of mass at a random offset
     com_frame_to_desired_frame = Transform3D(com_frame, frame, rand(SVector{3, T}) - T(0.5))
@@ -134,8 +134,8 @@ $(SIGNATURES)
 
 Compute the mechanical power associated with a pairing of a wrench and a twist.
 """
-Compat.LinearAlgebra.dot(w::Wrench, t::Twist) = begin @framecheck(w.frame, t.frame); dot(angular(w), angular(t)) + dot(linear(w), linear(t)) end
-Compat.LinearAlgebra.dot(t::Twist, w::Wrench) = dot(w, t)
+LinearAlgebra.dot(w::Wrench, t::Twist) = begin @framecheck(w.frame, t.frame); dot(angular(w), angular(t)) + dot(linear(w), linear(t)) end
+LinearAlgebra.dot(t::Twist, w::Wrench) = dot(w, t)
 
 
 for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :MomentumMatrix => :Wrench, :WrenchMatrix => :Wrench)
@@ -204,7 +204,7 @@ function torque(jac::GeometricJacobian, wrench::Wrench)
 end
 
 for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAcceleration}), :GeometricJacobian => :(Union{Momentum, Wrench}))
-    @eval @inline function Compat.LinearAlgebra.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
+    @eval @inline function LinearAlgebra.At_mul_B!(x::AbstractVector, mat::$MatrixType, vec::$VectorType)
         @boundscheck length(x) == size(mat, 2) || error("size mismatch")
         @framecheck mat.frame vec.frame
         @simd for row in eachindex(x)

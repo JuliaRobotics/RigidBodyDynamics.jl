@@ -1,7 +1,7 @@
 function Ad(H::Transform3D)
     hat = RigidBodyDynamics.Spatial.hat
     p_hat = hat(translation(H))
-    [[rotation(H) zeros(SMatrix{3, 3, eltype(H)})]; [p_hat * rotation(H) rotation(H)]]
+    [[rotation(H) zero(SMatrix{3, 3, eltype(H)})]; [p_hat * rotation(H) rotation(H)]]
 end
 
 @testset "spatial" begin
@@ -13,7 +13,7 @@ end
     @testset "rotation vector rate" begin
         hat = RigidBodyDynamics.Spatial.hat
         rotation_vector_rate = RigidBodyDynamics.Spatial.rotation_vector_rate
-        for ϕ in (rand(SVector{3}), zeros(SVector{3})) # exponential coordinates (rotation vector)
+        for ϕ in (rand(SVector{3}), zero(SVector{3})) # exponential coordinates (rotation vector)
             ω = rand(SVector{3}) # angular velocity in body frame
             R = RotMatrix(RodriguesVec(ϕ...))
             Ṙ = R * hat(ω)
@@ -109,10 +109,10 @@ end
         @test_throws ArgumentError transform(W, inv(H21)) # wrong frame
         @test W + zero(W) == W
 
-        point2 = Point3D(f2, zeros(SVector{3}))
+        point2 = Point3D(f2, zero(SVector{3}))
         force2 = FreeVector3D(f2, rand(SVector{3}))
         W2 = Wrench(point2, force2)
-        @test isapprox(angular(W2), zeros(SVector{3}))
+        @test isapprox(angular(W2), zero(SVector{3}))
         @test isapprox(linear(W2), force2.v)
         @test W2.frame == force2.frame
 
@@ -219,11 +219,15 @@ end
             ξhat = [ξhat; zeros(1, 4)]
             H_mat = [rotation(H) translation(H)]
             H_mat = [H_mat; zeros(1, 3) 1.]
-            @test isapprox(expm(ξhat), H_mat)
+            if VERSION < v"0.7-"
+                @test isapprox(expm(ξhat), H_mat)
+            else
+                @test isapprox(exp(ξhat), H_mat)
+            end
         end
 
         # test without rotation but with nonzero translation:
-        ξ = Twist{Float64}(f2, f1, f1, zeros(SVector{3}), rand(SVector{3}))
+        ξ = Twist{Float64}(f2, f1, f1, zero(SVector{3}), rand(SVector{3}))
         H = exp(ξ)
         @test isapprox(ξ, log(H))
 
@@ -231,8 +235,8 @@ end
         for θ in [LinRange(π - 10 * eps(), π + 10 * eps(), 100);
                   LinRange(π, 6 * π, 100)]
             ω = normalize(rand(SVector{3}))
-            ξ1 = Twist(f2, f1, f1, ω * θ, zeros(SVector{3}))
-            ξ2 = Twist(f2, f1, f1, ω * mod(θ, 2 * π), zeros(SVector{3}))
+            ξ1 = Twist(f2, f1, f1, ω * θ, zero(SVector{3}))
+            ξ2 = Twist(f2, f1, f1, ω * mod(θ, 2 * π), zero(SVector{3}))
             @test isapprox(exp(ξ1), exp(ξ2))
         end
 

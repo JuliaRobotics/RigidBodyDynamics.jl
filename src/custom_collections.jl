@@ -1,6 +1,5 @@
 module CustomCollections
 
-using Compat
 using TypeSortedCollections
 using DocStringExtensions
 
@@ -24,7 +23,6 @@ export
 @static if !isdefined(Base, :parentindices)
     parentindices(x) = Base.parentindexes(x)
 end
-import Compat.axes
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
@@ -137,10 +135,7 @@ struct IndexDict{K, KeyRange<:AbstractUnitRange{K}, V} <: AbstractIndexDict{K, V
     values::Vector{V}
 end
 
-if VERSION >= v"0.7-"
-    # TODO: remove once Ref depwarn is gone
-    Base.broadcastable(x::IndexDict) = Ref(x)
-end
+Base.broadcastable(x::IndexDict) = Ref(x)
 
 """
 $(TYPEDEF)
@@ -163,11 +158,6 @@ isdirty(d::CacheIndexDict) = d.dirty
 # Constructors
 for IDict in (:IndexDict, :CacheIndexDict)
     @eval begin
-        @static if VERSION < v"0.7-"
-            function $IDict(keys::KeyRange, values::Vector{V}) where {K, V, KeyRange<:AbstractUnitRange{K}}
-                $IDict{K, KeyRange, V}(keys, values)
-            end
-        end
 
         function $IDict{K, KeyRange, V}(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
             $IDict{K, KeyRange, V}(keys, Vector{V}(undef, length(keys)))

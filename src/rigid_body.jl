@@ -11,7 +11,7 @@ a list of definitions of coordinate systems that are rigidly attached to it.
 """
 mutable struct RigidBody{T}
     name::String
-    inertia::Nullable{SpatialInertia{T}}
+    inertia::Union{SpatialInertia{T}, Nothing}
     frame_definitions::Vector{Transform3D{T}}
     contact_points::Vector{DefaultContactPoint{T}} # TODO: allow different contact models
     id::BodyID
@@ -19,12 +19,12 @@ mutable struct RigidBody{T}
     # inertia undefined; can be used for the root of a kinematic tree
     function RigidBody{T}(name::String) where {T}
         frame = CartesianFrame3D(name)
-        new{T}(name, Nullable{SpatialInertia{T}}(), [eye(Transform3D{T}, frame)], DefaultContactPoint{T}[], BodyID(-1))
+        new{T}(name, nothing, [eye(Transform3D{T}, frame)], DefaultContactPoint{T}[], BodyID(-1))
     end
 
     # other bodies
     function RigidBody(name::String, inertia::SpatialInertia{T}) where {T}
-        new{T}(name, Nullable(inertia), [eye(Transform3D{T}, inertia.frame)], DefaultContactPoint{T}[], BodyID(-1))
+        new{T}(name, inertia, [eye(Transform3D{T}, inertia.frame)], DefaultContactPoint{T}[], BodyID(-1))
     end
 end
 
@@ -41,10 +41,6 @@ function Base.show(io::IO, b::RigidBody)
     end
 end
 
-@static if VERSION < v"0.7.0-DEV.1472"
-    Base.showcompact(io::IO, b::RigidBody) = show(IOContext(io, :compact => true), b)
-end
-
 BodyID(b::RigidBody) = b.id
 Base.convert(::Type{BodyID}, b::RigidBody) = BodyID(b)
 Base.@deprecate id(b::RigidBody) BodyID(b)
@@ -57,7 +53,7 @@ $(SIGNATURES)
 
 Whether the body has a defined inertia.
 """
-has_defined_inertia(b::RigidBody) = !isnull(b.inertia)
+has_defined_inertia(b::RigidBody) = b.inertia !== nothing
 
 """
 $(SIGNATURES)
@@ -65,7 +61,7 @@ $(SIGNATURES)
 Return the spatial inertia of the body. If the inertia is undefined, calling
 this method will result in an error.
 """
-spatial_inertia(b::RigidBody) = get(b.inertia)
+spatial_inertia(b::RigidBody) = b.inertia
 
 """
 $(SIGNATURES)
@@ -73,7 +69,7 @@ $(SIGNATURES)
 Set the spatial inertia of the body.
 """
 function spatial_inertia!(body::RigidBody, inertia::SpatialInertia)
-    body.inertia = Nullable(transform(inertia, frame_definition(body, inertia.frame)))
+    body.inertia = transform(inertia, frame_definition(body, inertia.frame))
 end
 
 """
@@ -162,7 +158,7 @@ function change_default_frame!(body::RigidBody, new_default_frame::CartesianFram
         old_to_new = inv(frame_definition(body, new_default_frame))
         map!(tf -> old_to_new * tf, body.frame_definitions, body.frame_definitions)
         if has_defined_inertia(body)
-            body.inertia = Nullable(transform(spatial_inertia(body), old_to_new))
+            body.inertia = transform(spatial_inertia(body), old_to_new)
         end
         for point in contact_points(body)
             point.location = old_to_new * point.location

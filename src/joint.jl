@@ -169,10 +169,6 @@ function Base.show(io::IO, joint::Joint)
     end
 end
 
-@static if VERSION < v"0.7.0-DEV.1472"
-    Base.showcompact(io::IO, joint::Joint) = show(IOContext(io, :compact => true), joint)
-end
-
 num_positions(itr) = reduce((val, joint) -> val + num_positions(joint), 0, itr)
 num_velocities(itr) = reduce((val, joint) -> val + num_velocities(joint), 0, itr)
 

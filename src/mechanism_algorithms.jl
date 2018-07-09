@@ -31,7 +31,7 @@ function center_of_mass(state::MechanismState, itr)
     T = cache_eltype(state)
     mechanism = state.mechanism
     frame = root_frame(mechanism)
-    com = Point3D(frame, zeros(SVector{3, T}))
+    com = Point3D(frame, zero(SVector{3, T}))
     mass = zero(T)
     for body in itr
         if !isroot(body, mechanism)
@@ -696,7 +696,7 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
 
     nv = size(M, 1)
     nl = size(K, 1)
-    G = [full(M) K'; # TODO: full because of https://github.com/JuliaLang/julia/issues/21332
+    G = [Matrix(M) K'; # TODO: Matrix because of https://github.com/JuliaLang/julia/issues/21332
          K zeros(nl, nl)]
     r = [τ - c; -k]
     v̇λ = G \ r
@@ -705,7 +705,7 @@ function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
     nothing
 end
 
-function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) where {S, T<:Compat.LinearAlgebra.BlasReal}
+function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) where {S, T<:LinearAlgebra.BlasReal}
     # optimized version for BLAS floats
     M = result.massmatrix
     c = parent(result.dynamicsbias)
@@ -722,7 +722,7 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
 
     L .= M.data
     uplo = M.uplo
-    Compat.LinearAlgebra.LAPACK.potrf!(uplo, L) # L <- Cholesky decomposition of M; M == L Lᵀ (note: Featherstone, page 151 uses M == Lᵀ L instead)
+    LinearAlgebra.LAPACK.potrf!(uplo, L) # L <- Cholesky decomposition of M; M == L Lᵀ (note: Featherstone, page 151 uses M == Lᵀ L instead)
     τbiased = v̇
     τbiased .= τ .- c
 
@@ -750,34 +750,34 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
 
         # Compute Y = K L⁻ᵀ
         Y .= K
-        Compat.LinearAlgebra.BLAS.trsm!('R', uplo, 'T', 'N', one(T), L, Y)
+        LinearAlgebra.BLAS.trsm!('R', uplo, 'T', 'N', one(T), L, Y)
 
         # Compute z = L⁻¹ (τ - c)
         z .= τbiased
-        Compat.LinearAlgebra.BLAS.trsv!(uplo, 'N', 'N', L, z) # z <- L⁻¹ (τ - c)
+        LinearAlgebra.BLAS.trsv!(uplo, 'N', 'N', L, z) # z <- L⁻¹ (τ - c)
 
         # Compute A = Y Yᵀ == K * M⁻¹ * Kᵀ
-        Compat.LinearAlgebra.BLAS.gemm!('N', 'T', one(T), Y, Y, zero(T), A) # A <- K * M⁻¹ * Kᵀ
+        LinearAlgebra.BLAS.gemm!('N', 'T', one(T), Y, Y, zero(T), A) # A <- K * M⁻¹ * Kᵀ
 
         # Compute b = Y z + k
         b = λ
         b .= k
-        Compat.LinearAlgebra.BLAS.gemv!('N', one(T), Y, z, one(T), b) # b <- Y z + k
+        LinearAlgebra.BLAS.gemv!('N', one(T), Y, z, one(T), b) # b <- Y z + k
 
         # Compute λ = A⁻¹ b == (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
-        # Compat.LinearAlgebra.LAPACK.posv!(uplo, A, b) # NOTE: doesn't work in general because A is only guaranteed to be positive semidefinite
+        # LinearAlgebra.LAPACK.posv!(uplo, A, b) # NOTE: doesn't work in general because A is only guaranteed to be positive semidefinite
         singular_value_zero_tolerance = 1e-10 # TODO: more principled choice
         # TODO: https://github.com/JuliaLang/julia/issues/22242
-        b[:], _ = Compat.LinearAlgebra.LAPACK.gelsy!(A, b, singular_value_zero_tolerance) # b == λ <- (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
+        b[:], _ = LinearAlgebra.LAPACK.gelsy!(A, b, singular_value_zero_tolerance) # b == λ <- (K * M⁻¹ * Kᵀ)⁻¹ * (K * M⁻¹ * (τ - c) + k)
 
         # Update τbiased: subtract Kᵀ * λ
-        Compat.LinearAlgebra.BLAS.gemv!('T', -one(T), K, λ, one(T), τbiased) # τbiased <- τ - c - Kᵀ * λ
+        LinearAlgebra.BLAS.gemv!('T', -one(T), K, λ, one(T), τbiased) # τbiased <- τ - c - Kᵀ * λ
 
         # Solve for v̇ = M⁻¹ * (τ - c - Kᵀ * λ)
-        Compat.LinearAlgebra.LAPACK.potrs!(uplo, L, τbiased) # τbiased ==v̇ <- M⁻¹ * (τ - c - Kᵀ * λ)
+        LinearAlgebra.LAPACK.potrs!(uplo, L, τbiased) # τbiased ==v̇ <- M⁻¹ * (τ - c - Kᵀ * λ)
     else
         # No loops.
-        Compat.LinearAlgebra.LAPACK.potrs!(uplo, L, τbiased) # τbiased == v̇ <- M⁻¹ * (τ - c)
+        LinearAlgebra.LAPACK.potrs!(uplo, L, τbiased) # τbiased == v̇ <- M⁻¹ * (τ - c)
     end
     nothing
 end

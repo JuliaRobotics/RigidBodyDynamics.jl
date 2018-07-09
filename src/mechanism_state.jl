@@ -182,10 +182,7 @@ end
 
 MechanismState(mechanism::Mechanism{M}) where {M} = MechanismState{M}(mechanism)
 
-if VERSION >= v"0.7-"
-    # TODO: remove once Ref depwarn is gone
-    Base.broadcastable(x::MechanismState) = Ref(x)
-end
+Base.broadcastable(x::MechanismState) = Ref(x)
 
 Base.show(io::IO, ::MechanismState{X, M, C}) where {X, M, C} = print(io, "MechanismState{$X, $M, $C, …}(…)")
 
@@ -371,7 +368,7 @@ additional_state(state::MechanismState) = state.s
 
 for fun in (:num_velocities, :num_positions)
     @eval function $fun(p::TreePath{RigidBody{T}, <:Joint{T}} where {T})
-        mapreduce($fun, +, 0, p)
+        mapreduce($fun, +, p; init=0)
     end
 end
 
@@ -434,7 +431,7 @@ $(SIGNATURES)
 
 Copy (minimal representation of) state `src` to state `dest`.
 """
-function Compat.copyto!(dest::MechanismState, src::MechanismState)
+function Base.copyto!(dest::MechanismState, src::MechanismState)
     dest.mechanism == src.mechanism || throw(ArgumentError("States are not associated with the same Mechanism."))
     @modcountcheck dest src
     copyto!(dest.q, src.q)
@@ -449,7 +446,7 @@ $(SIGNATURES)
 
 Copy state information in vector `src` (ordered `[q; v; s]`) to state `dest`.
 """
-function Compat.copyto!(dest::MechanismState, src::AbstractVector)
+function Base.copyto!(dest::MechanismState, src::AbstractVector)
     nq = num_positions(dest)
     nv = num_velocities(dest)
     ns = num_additional_states(dest)
@@ -466,7 +463,7 @@ $(SIGNATURES)
 
 Copy state information in state `dest` to vector `src` (ordered `[q; v; s]`).
 """
-function Compat.copyto!(dest::AbstractVector, src::MechanismState)
+function Base.copyto!(dest::AbstractVector, src::MechanismState)
     nq = num_positions(src)
     nv = num_velocities(src)
     ns = num_additional_states(src)

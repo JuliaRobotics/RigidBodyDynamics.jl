@@ -1,7 +1,6 @@
 module Contact
 
-using Compat
-using Compat.LinearAlgebra
+using LinearAlgebra
 using RigidBodyDynamics.Spatial
 using StaticArrays
 

@@ -17,16 +17,14 @@ Note that results on Travis builds are **not at all** representative because of 
 Output of `versioninfo()`:
 
 ```
-Julia Version 0.6.2
-Commit d386e40c17 (2017-12-13 18:08 UTC)
+Julia Version 0.7.0-beta.133
+Commit 60174a9 (2018-07-03 20:03 UTC)
 Platform Info:
-  OS: Linux (x86_64-pc-linux-gnu)
+  OS: Linux (x86_64-linux-gnu)
   CPU: Intel(R) Core(TM) i7-6950X CPU @ 3.00GHz
   WORD_SIZE: 64
-  BLAS: libopenblas (USE64BITINT DYNAMIC_ARCH NO_AFFINITY Haswell)
-  LAPACK: libopenblas64_
   LIBM: libopenlibm
-  LLVM: libLLVM-3.9.1 (ORCJIT, broadwell)
+  LLVM: libLLVM-6.0.0 (ORCJIT, broadwell)
 ```
 
 Mass matrix:
@@ -35,10 +33,10 @@ Mass matrix:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     9.697 μs (0.00% GC)
-  median time:      10.003 μs (0.00% GC)
-  mean time:        10.076 μs (0.00% GC)
-  maximum time:     47.473 μs (0.00% GC)
+  minimum time:     7.577 μs (0.00% GC)
+  median time:      8.250 μs (0.00% GC)
+  mean time:        8.295 μs (0.00% GC)
+  maximum time:     45.776 μs (0.00% GC)
 ```
 
 Mass matrix and Jacobian from left hand to right foot:
@@ -47,10 +45,10 @@ Mass matrix and Jacobian from left hand to right foot:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     10.426 μs (0.00% GC)
-  median time:      10.737 μs (0.00% GC)
-  mean time:        10.754 μs (0.00% GC)
-  maximum time:     49.830 μs (0.00% GC)
+  minimum time:     8.070 μs (0.00% GC)
+  median time:      8.461 μs (0.00% GC)
+  mean time:        8.801 μs (0.00% GC)
+  maximum time:     45.001 μs (0.00% GC)
 ```
 
 Note the low additional cost of computing a Jacobian when the mass matrix is already computed. This is because RigidBodyDynamics.jl caches intermediate computation results.
@@ -61,20 +59,20 @@ Inverse dynamics:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     10.988 μs (0.00% GC)
-  median time:      11.294 μs (0.00% GC)
-  mean time:        11.383 μs (0.00% GC)
-  maximum time:     33.164 μs (0.00% GC)
+  minimum time:     8.907 μs (0.00% GC)
+  median time:      9.341 μs (0.00% GC)
+  mean time:        9.633 μs (0.00% GC)
+  maximum time:     40.387 μs (0.00% GC)
 ```
 
 Forward dynamics:
 
 ```
-  memory estimate:  64 bytes
-  allocs estimate:  3
+  memory estimate:  0 bytes
+  allocs estimate:  0
   --------------
-  minimum time:     39.481 μs (0.00% GC)
-  median time:      54.874 μs (0.00% GC)
-  mean time:        55.230 μs (0.00% GC)
-  maximum time:     594.235 μs (0.00% GC)
+  minimum time:     32.671 μs (0.00% GC)
+  median time:      38.204 μs (0.00% GC)
+  mean time:        38.177 μs (0.00% GC)
+  maximum time:     188.785 μs (0.00% GC)
 ```

@@ -3,7 +3,6 @@ module PDControl
 using RigidBodyDynamics.Spatial
 using StaticArrays
 using Rotations
-using Compat
 
 # functions
 export

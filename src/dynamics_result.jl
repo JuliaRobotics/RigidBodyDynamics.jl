@@ -86,7 +86,7 @@ end
 
 DynamicsResult(mechanism::Mechanism{M}) where {M} = DynamicsResult{M}(mechanism)
 
-function Compat.copyto!(ẋ::AbstractVector, result::DynamicsResult)
+function Base.copyto!(ẋ::AbstractVector, result::DynamicsResult)
     nq = length(result.q̇)
     nv = length(result.v̇)
     ns = length(result.ṡ)

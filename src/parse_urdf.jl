@@ -22,7 +22,7 @@ function parse_inertia(::Type{T}, xml_inertia::XMLElement) where {T}
 end
 
 function parse_pose(::Type{T}, xml_pose::Nothing) where {T}
-    rot = eye(RotMatrix3{T})
+    rot = one(RotMatrix3{T})
     trans = zero(SVector{3, T})
     rot, trans
 end
@@ -90,7 +90,7 @@ end
 function parse_inertia(::Type{T}, xml_inertial::XMLElement, frame::CartesianFrame3D) where {T}
     urdf_frame = CartesianFrame3D("inertia urdf helper")
     moment = parse_inertia(T, find_element(xml_inertial, "inertia"))
-    com = zeros(SVector{3, T})
+    com = zero(SVector{3, T})
     mass = parse_scalar(T, find_element(xml_inertial, "mass"), "value", "0")
     inertia = SpatialInertia(urdf_frame, moment, com, mass)
     pose = parse_pose(T, find_element(xml_inertial, "origin"))

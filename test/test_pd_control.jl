@@ -34,7 +34,7 @@
         rand!(state)
 
         Rdes = rand(RotMatrix{3})
-        ωdes = zeros(SVector{3})
+        ωdes = zero(SVector{3})
         gains = PDGains(100, 20)
         v̇des = similar(velocity(state))
 
@@ -46,7 +46,7 @@
             ω = T.angular
             ωddes = pd(gains, R, Rdes, ω, ωdes)
             v̇desjoint = v̇des[joint]
-            v̇desjoint .= Array([ωddes; zeros(ωddes)])
+            v̇desjoint .= Array([ωddes; zero(ωddes)])
             wrenches = control_dynamics_result.jointwrenches
             accelerations = control_dynamics_result.accelerations
             inverse_dynamics!(torques, wrenches, accelerations, state, v̇des)
@@ -60,7 +60,7 @@
         R = rotation(H)
         ω = T.angular
 
-        @test isapprox(R * Rdes', eye(Rdes); atol = 1e-8)
+        @test isapprox(R * Rdes', one(typeof(Rdes)); atol = 1e-8)
         @test isapprox(ω, zero(ω); atol = 1e-8)
     end
 
@@ -80,7 +80,7 @@
         xdes = rand(Transform3D, desiredframe, baseframe)
         vdes = zero(Twist{Float64}, desiredframe, baseframe, actualframe)
         v̇des = similar(velocity(state))
-        gains = SE3PDGains(baseframe, PDGains(100 * eye(SMatrix{3, 3}), 20), PDGains(100., 20.)) # world-fixed gains
+        gains = SE3PDGains(baseframe, PDGains(100 * one(SMatrix{3, 3}), 20), PDGains(100., 20.)) # world-fixed gains
 
         control_dynamics_result = DynamicsResult(mechanism)
         function control!(torques::SegmentedVector, t, state::MechanismState)

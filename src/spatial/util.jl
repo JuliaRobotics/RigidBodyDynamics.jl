@@ -1,54 +1,54 @@
 ## Colwise
 # TODO: replace with future mapslices specialization, see https://github.com/JuliaArrays/StaticArrays.jl/pull/99
 """
-colwise(f, vec, mat)
-Return a matrix `A` such that `A[:, i] == f(vec, mat[:, i])`.
+    $(SIGNATURES)
+
+Equivalent to one of
+
+```julia
+mapslices(x -> f(a, x), B, dims=1)
+mapslices(x -> f(x, b), A, dims=1)
+```
+
+but optimized for statically-sized matrices.
 """
-@generated function colwise(f, vec::StaticVector, mat::StaticArray)
-    length(vec) == size(mat, 1) || throw(DimensionMismatch())
-    if size(mat, 2) == 0
-        T = similar_type(mat, promote_type(eltype(vec), eltype(mat)))
-        quote
-            $(Expr(:meta, :inline))
-            zeros($T)
-        end
-    else
-        exprs = [:(f(vec, mat[:, $j])) for j = 1 : size(mat, 2)]
-        quote
-            $(Expr(:meta, :inline))
-            @inbounds return $(Expr(:call, hcat, exprs...))
-        end
-    end
+function colwise end
+
+colwise(f, a::AbstractVector, B::AbstractMatrix) = mapslices(x -> f(a, x), B, dims=1)
+colwise(f, A::AbstractMatrix, b::AbstractVector) = mapslices(x -> f(x, b), A, dims=1)
+
+@inline function colwise(f, a::StaticVector, B::StaticMatrix)
+    Sa = Size(a)
+    SB = Size(B)
+    Sa[1] === SB[1] || throw(DimensionMismatch())
+    _colwise(f, Val(SB[2]), a, B)
 end
 
-"""
-colwise(f, vec, mat)
-Return a matrix `A` such that `A[:, i] == f(vec, mat[:, i])`.
-"""
-function colwise(f, vec::AbstractVector, mat::AbstractMatrix)
-    mapslices(x -> f(vec, x), mat, (1,))
+@inline function _colwise(f, ::Val{0}, a::StaticVector, B::StaticMatrix)
+    zero(similar_type(B, promote_type(eltype(a), eltype(B))))
 end
 
-"""
-colwise(f, mat, vec)
-Return a matrix `A` such that `A[:, i] == f(mat[:, i], vec)`.
-"""
-@generated function colwise(f, mat::StaticArray, vec::StaticVector)
-    length(vec) == size(mat, 1) || throw(DimensionMismatch())
-    if size(mat, 2) == 0
-        T = similar_type(mat, promote_type(eltype(vec), eltype(mat)))
-        quote
-            $(Expr(:meta, :inline))
-            zeros($T)
-        end
-    else
-        exprs = [:(f(mat[:, $j], vec)) for j = 1 : size(mat, 2)]
-        quote
-            $(Expr(:meta, :inline))
-            @inbounds return $(Expr(:call, hcat, exprs...))
-        end
-    end
+@inline function _colwise(f, M::Val, a::StaticVector, B::StaticMatrix)
+    cols = ntuple(i -> f(a, B[:, i]), M)
+    hcat(cols...)
 end
+
+@inline function colwise(f, A::StaticMatrix, b::StaticVector)
+    SA = Size(A)
+    Sb = Size(b)
+    SA[1] === Sb[1] || throw(DimensionMismatch())
+    _colwise(f, Val(SA[2]), A, b)
+end
+
+@inline function _colwise(f, ::Val{0}, A::StaticMatrix, b::StaticVector)
+    zero(similar_type(A, promote_type(eltype(A), eltype(b))))
+end
+
+@inline function _colwise(f, M::Val, A::StaticMatrix, b::StaticVector)
+    cols = ntuple(i -> f(A[:, i], b), M)
+    hcat(cols...)
+end
+
 
 @inline function vector_to_skew_symmetric(v::SVector{3, T}) where {T}
     @SMatrix [zero(T) -v[3] v[2];

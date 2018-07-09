@@ -22,7 +22,7 @@
     # it would be easier to do the following:
     #
     #   joint1 = Joint("joint1", Revolute(axis))
-    #   inertia1 = SpatialInertia(CartesianFrame3D("inertia1_centroidal"), I1_about_com * axis * axis', zeros(SVector{3, Float64}), m1)
+    #   inertia1 = SpatialInertia(CartesianFrame3D("inertia1_centroidal"), I1_about_com * axis * axis', zero(SVector{3, Float64}), m1)
     #   link1 = RigidBody(inertia1)
     #   before_joint_1_to_world = eye(Transform3D, frame_before(joint1), default_frame(world))
     #   c1_to_joint = Transform3D(inertia1.frame, frame_after(joint1), SVector(lc1, 0, 0))

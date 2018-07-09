@@ -287,7 +287,7 @@
         for (treebody, mcbody) in bodymap
             tree_accel = relative_acceleration(tree_dynamics_result, treebody, root_body(tree_mechanism))
             mc_accel = relative_acceleration(mc_dynamics_result, mcbody, root_body(mc_mechanism))
-            @test isapprox(tree_accel, mc_accel; atol = 1e-11)
+            @test isapprox(tree_accel, mc_accel; atol = 1e-10)
         end
     end # maximal coordinates
 

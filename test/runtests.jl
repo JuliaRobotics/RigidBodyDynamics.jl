@@ -1,7 +1,6 @@
-using Compat
-using Compat.Test
-using Compat.LinearAlgebra
-using Compat.Random
+using Test
+using LinearAlgebra
+using Random
 
 using RigidBodyDynamics
 using RigidBodyDynamics.Graphs
@@ -27,22 +26,8 @@ include("test_mechanism_algorithms.jl")
 include("test_simulate.jl")
 include("test_mechanism_modification.jl")
 include("test_pd_control.jl")
+include("test_notebooks.jl")
 
-# notebooks
-notebookdir = joinpath(@__DIR__, "..", "notebooks")
-for file in readdir(notebookdir)
-    name, ext = splitext(file)
-    lowercase(ext) == ".ipynb" || continue
-    @eval module $(gensym())
-    using Compat.Test
-    using NBInclude
-    @testset "$($name)" begin
-        nbinclude(joinpath($notebookdir, $file), regex = r"^((?!\#NBSKIP).)*$"s)
-    end
-    end #module
-end
-
-# benchmarks
 @testset "benchmarks" begin
     @test begin include("../perf/runbenchmarks.jl"); true end
 end

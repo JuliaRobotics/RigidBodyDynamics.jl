@@ -130,8 +130,8 @@ end
 function reindex!(g::DirectedGraph{V, E}, vertices_in_order, edges_in_order) where {V, E}
     @assert isempty(setdiff(vertices(g), vertices_in_order))
     @assert isempty(setdiff(edges(g), edges_in_order))
-    sources = source.(edges_in_order, g)
-    targets = target.(edges_in_order, g)
+    sources = source.(edges_in_order, Ref(g))
+    targets = target.(edges_in_order, Ref(g))
     empty!(g)
     for v in vertices_in_order
         add_vertex!(g, v)

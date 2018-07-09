@@ -19,9 +19,9 @@ end
 
 ## findunique
 function findunique(f, A::AbstractArray)
-    i = Compat.findfirst(f, A)
+    i = findfirst(f, A)
     i === nothing && error("No results found.")
-    Compat.findnext(f, A, i + 1) === nothing || error("Multiple results found.")
+    findnext(f, A, i + 1) === nothing || error("Multiple results found.")
     @inbounds return A[i]
 end
 
@@ -96,6 +96,7 @@ Base.:(==)(b1::Bounds, b2::Bounds) = b1.lower == b2.lower && b1.upper == b2.uppe
 Base.:-(b::Bounds) = Bounds(-b.upper, -b.lower)
 Base.show(io::IO, b::Bounds) = print(io, "(", lower(b), ", ", upper(b), ")")
 Base.convert(::Type{Bounds{T1}}, b::Bounds{T2}) where {T1, T2} = Bounds{T1}(convert(T1, lower(b)), convert(T1, upper(b)))
+Base.broadcastable(b::Bounds) = Ref(b)
 
 """
 $(SIGNATURES)
@@ -126,14 +127,5 @@ macro indextype(ID)
 
         # Want the state of the iterator to be a plain Int, not an $ID. Same for length.
         # Some Base methods aren't designed for this before https://github.com/JuliaLang/julia/pull/27302, so:
-        @static if VERSION < v"0.7-"
-            Base.start(r::Base.OneTo{$ID}) = 1
-            Base.start(r::UnitRange{$ID}) = Int(r.start)
-            Base.start(r::StepRange{$ID}) = Int(r.start)
-            Base.next(r::AbstractUnitRange{$ID}, i) = (convert($ID, i), i + 1)
-            Base.done(r::AbstractUnitRange{$ID}, i) = i == oftype(i, r.stop) + 1
-            Base.colon(start::$ID, step::Int, stop::$ID) = StepRange(start, step, stop)
-            Base.steprange_last(start::$ID, step::Int, stop::$ID) = $ID(Base.steprange_last(Int(start), step, Int(stop)))
-        end
     end)
 end
