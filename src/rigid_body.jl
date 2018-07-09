@@ -19,12 +19,12 @@ mutable struct RigidBody{T}
     # inertia undefined; can be used for the root of a kinematic tree
     function RigidBody{T}(name::String) where {T}
         frame = CartesianFrame3D(name)
-        new{T}(name, nothing, [eye(Transform3D{T}, frame)], DefaultContactPoint{T}[], BodyID(-1))
+        new{T}(name, nothing, [one(Transform3D{T}, frame)], DefaultContactPoint{T}[], BodyID(-1))
     end
 
     # other bodies
     function RigidBody(name::String, inertia::SpatialInertia{T}) where {T}
-        new{T}(name, inertia, [eye(Transform3D{T}, inertia.frame)], DefaultContactPoint{T}[], BodyID(-1))
+        new{T}(name, inertia, [one(Transform3D{T}, inertia.frame)], DefaultContactPoint{T}[], BodyID(-1))
     end
 end
 

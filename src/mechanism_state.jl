@@ -140,7 +140,7 @@ struct MechanismState{X, M, C, JointCollection}
         # initialize state-independent cache data for root bodies:
         root = root_body(m)
         rootframe = default_frame(root)
-        transforms_to_root[root] = eye(Transform3D{C}, rootframe)
+        transforms_to_root[root] = one(Transform3D{C}, rootframe)
         twists_wrt_world[root] = zero(Twist{C}, rootframe, rootframe, rootframe)
         bias_accelerations_wrt_world[root] = zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe)
         inertias[root] = zero(SpatialInertia{C}, rootframe)

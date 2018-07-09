@@ -451,7 +451,7 @@ isfloating(::Type{<:Fixed}) = false
 function joint_transform(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
-    eye(Transform3D{S}, frame_after, frame_before)
+    one(Transform3D{S}, frame_after, frame_before)
 end
 
 function joint_twist(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,

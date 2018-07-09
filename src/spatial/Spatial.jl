@@ -47,6 +47,8 @@ using StaticArrays
 using Rotations
 using DocStringExtensions
 
+import LinearAlgebra: eye # TODO: remove once eye(Transform3D) deprecation is removed
+
 include("frame.jl")
 include("util.jl")
 include("transform3d.jl")

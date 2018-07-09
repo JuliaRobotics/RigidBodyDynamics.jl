@@ -197,8 +197,8 @@
 
             # reroot mechanism2
             newfloatingjoint = Joint("new_floating", QuaternionFloating{Float64}())
-            joint_to_world = eye(Transform3D, frame_before(newfloatingjoint), default_frame(world))
-            body_to_joint = eye(Transform3D, default_frame(newfloatingbody), frame_after(newfloatingjoint))
+            joint_to_world = one(Transform3D, frame_before(newfloatingjoint), default_frame(world))
+            body_to_joint = one(Transform3D, default_frame(newfloatingbody), frame_after(newfloatingjoint))
             attach!(mechanism2, bodymap[world], bodymap[newfloatingbody], newfloatingjoint, joint_pose = joint_to_world, successor_pose = body_to_joint)
             flipped_joint_map = Dict()
             remove_joint!(mechanism2, jointmap[floatingjoint]; flipped_joint_map = flipped_joint_map)

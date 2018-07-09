@@ -16,8 +16,8 @@
     @framecheck(f2, (f2, f3))
 
     t1 = rand(Transform3D, f2, f1)
-    @test isapprox(t1 * inv(t1), eye(Transform3D, f1))
-    @test isapprox(inv(t1) * t1, eye(Transform3D, f2))
+    @test isapprox(t1 * inv(t1), one(Transform3D, f1))
+    @test isapprox(inv(t1) * t1, one(Transform3D, f2))
 
     @test isapprox(t1 * Point3D(Float64, f2), Point3D(f1, translation(t1)))
 
