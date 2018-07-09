@@ -106,7 +106,7 @@ function Base.show(io::IO, mechanism::Mechanism)
 end
 
 isroot(b::RigidBody{T}, mechanism::Mechanism{T}) where {T} = b == root_body(mechanism)
-non_root_bodies(mechanism::Mechanism) = (body for body in bodies(mechanism) if !isroot(body, mechanism))
+non_root_bodies(mechanism::Mechanism) = Base.unsafe_view(bodies(mechanism), 2 : length(bodies(mechanism)))
 num_bodies(mechanism::Mechanism) = num_vertices(mechanism.graph)
 
 """

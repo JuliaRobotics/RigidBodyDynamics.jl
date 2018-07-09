@@ -253,7 +253,7 @@ function mass_matrix!(M::Symmetric, state::MechanismState)
     motion_subspaces = state.motion_subspaces.data
     @inbounds for i in state.treejointids
         bodyid = successorid(i, state)
-        Ici = crb_inertia(state, bodyid)
+        Ici = crb_inertia(state, bodyid, false)
         ancestor_joint_mask = values(state.ancestor_joint_masks[i]) # TODO
         vrangei = velocity_range(state, i)
         for coli in eachindex(vrangei)
@@ -386,12 +386,13 @@ function bias_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}}, 
     gravitybias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(state.mechanism))
     for jointid in state.treejointids
         bodyid = successorid(jointid, state)
-        out[bodyid] = gravitybias + bias_acceleration(state, bodyid)
+        out[bodyid] = gravitybias + bias_acceleration(state, bodyid, false)
     end
     nothing
 end
 
 function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}}, state::MechanismState, v̇::SegmentedVector{JointID}) where T
+    update_transforms!(state)
     update_twists_wrt_world!(state)
 
     # Compute joint accelerations
@@ -410,11 +411,11 @@ function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}
     mechanism = state.mechanism
     root = root_body(mechanism)
     out[root] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
-    for jointid in state.treejointids
+    @inbounds for jointid in state.treejointids
         parentbodyid, bodyid = predsucc(jointid, state)
-        toroot = transform_to_root(state, bodyid)
-        parenttwist = twist_wrt_world(state, parentbodyid)
-        bodytwist = twist_wrt_world(state, bodyid)
+        toroot = transform_to_root(state, bodyid, false)
+        parenttwist = twist_wrt_world(state, parentbodyid, false)
+        bodytwist = twist_wrt_world(state, bodyid, false)
         jointaccel = out[bodyid]
         jointaccel = SpatialAcceleration(jointaccel.body, parenttwist.body, toroot.to,
             Spatial.transform_spatial_motion(jointaccel.angular, jointaccel.linear, rotation(toroot), translation(toroot))...)
@@ -440,7 +441,7 @@ function newton_euler!(
     update_spatial_inertias!(state)
     for jointid in state.treejointids
         bodyid = successorid(jointid, state)
-        wrench = newton_euler(state, bodyid, accelerations[bodyid])
+        wrench = newton_euler(state, bodyid, accelerations[bodyid], false)
         out[bodyid] = haskey(externalwrenches, bodyid) ? wrench - externalwrenches[bodyid] : wrench
     end
 end
@@ -450,6 +451,7 @@ function joint_wrenches_and_torques!(
         torquesout::SegmentedVector{JointID},
         net_wrenches_in_joint_wrenches_out::AbstractDict{BodyID, <:Wrench}, # TODO: consider having a separate Associative{Joint{M}, Wrench{T}} for joint wrenches
         state::MechanismState)
+    update_transforms!(state)
     # Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
     @boundscheck length(torquesout) == num_velocities(state) || error("length of torque vector is wrong")
 
@@ -469,7 +471,7 @@ function joint_wrenches_and_torques!(
     broadcast!(discard, state, net_wrenches_in_joint_wrenches_out, joints, qs, τs) do state, wrenches, joint, qjoint, τjoint
         # TODO: awkward to transform back to body frame; consider switching to body-frame implementation
         bodyid = successorid(JointID(joint), state)
-        tf = inv(transform_to_root(state, bodyid))
+        tf = inv(transform_to_root(state, bodyid, false))
         joint_torque!(τjoint, joint, qjoint, transform(wrenches[bodyid], tf)) # TODO: consider using motion subspace
     end
 end
@@ -506,6 +508,7 @@ function dynamics_bias!(
     bias_accelerations!(biasaccelerations, state)
     newton_euler!(wrenches, state, biasaccelerations, externalwrenches)
     joint_wrenches_and_torques!(torques, wrenches, state)
+    torques
 end
 
 function dynamics_bias!(result::DynamicsResult, state::MechanismState)
@@ -626,8 +629,8 @@ function constraint_bias!(bias::SegmentedVector, state::MechanismState)
     @inbounds for nontreejointid in state.nontreejointids
         path = state.constraint_jacobian_structure[nontreejointid]
         predid, succid = predsucc(nontreejointid, state)
-        crossterm = cross(twist_wrt_world(state, succid), twist_wrt_world(state, predid))
-        biasaccel = crossterm + (-bias_acceleration(state, predid) + bias_acceleration(state, succid)) # 8.47 in Featherstone
+        crossterm = cross(twist_wrt_world(state, succid, false), twist_wrt_world(state, predid, false))
+        biasaccel = crossterm + (-bias_acceleration(state, predid, false) + bias_acceleration(state, succid, false)) # 8.47 in Featherstone
         for cindex in constraint_range(state, nontreejointid)
             Tcol = constraint_wrench_subspaces[cindex]
             # TODO: make nicer:
@@ -640,6 +643,7 @@ end
 constraint_bias!(result::DynamicsResult, state::MechanismState) = constraint_bias!(result.constraintbias, state)
 
 function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M, C}) where {X, M, C, T}
+    update_transforms!(state)
     update_twists_wrt_world!(state)
     mechanism = state.mechanism
     root = root_body(mechanism)
@@ -650,8 +654,8 @@ function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X
         points = contact_points(body)
         if !isempty(points)
             # TODO: AABB
-            body_to_root = transform_to_root(state, bodyid)
-            twist = twist_wrt_world(state, bodyid)
+            body_to_root = transform_to_root(state, bodyid, false)
+            twist = twist_wrt_world(state, bodyid, false)
             states_for_body = contact_states(state, bodyid)
             state_derivs_for_body = contact_state_derivatives(result, bodyid)
             for i = 1 : length(points)

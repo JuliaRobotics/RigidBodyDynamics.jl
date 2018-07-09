@@ -61,7 +61,7 @@ $(SIGNATURES)
 Return the spatial inertia of the body. If the inertia is undefined, calling
 this method will result in an error.
 """
-spatial_inertia(b::RigidBody) = b.inertia
+spatial_inertia(b::RigidBody{T}) where {T} = b.inertia::SpatialInertia{T}
 
 """
 $(SIGNATURES)

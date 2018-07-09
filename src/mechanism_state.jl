@@ -37,6 +37,7 @@ struct MechanismState{X, M, C, JointCollection}
 
     # mechanism layout
     mechanism::Mechanism{M}
+    nonrootbodies::Vector{RigidBody{M}} # TODO: remove once https://github.com/JuliaLang/julia/issues/14955 is fixed
     treejoints::JointCollection
     nontreejoints::JointCollection
     jointids::Base.OneTo{JointID}
@@ -80,6 +81,7 @@ struct MechanismState{X, M, C, JointCollection}
 
         # mechanism layout
         canonicalize_graph!(m)
+        nonrootbodies = collect(non_root_bodies(m))
         treejoints = JointCollection(tree_joints(m))
         nontreejoints = JointCollection(non_tree_joints(m))
         lastjointid = isempty(joints(m)) ? JointID(0) : JointID(last(joints(m)))
@@ -146,7 +148,7 @@ struct MechanismState{X, M, C, JointCollection}
         inertias[root] = zero(SpatialInertia{C}, rootframe)
 
         new{X, M, C, JointCollection}(
-            modcount(m), m, treejoints, nontreejoints,
+            modcount(m), m, nonrootbodies, treejoints, nontreejoints,
             jointids, treejointids, nontreejointids,
             predecessor_and_successor_ids, qranges, vranges, constraintranges, ancestor_joint_masks, constraint_jacobian_structure,
             qsegmented, vsegmented, s,
@@ -246,6 +248,7 @@ function setdirty!(state::MechanismState)
     CustomCollections.setdirty!(state.bias_accelerations_wrt_world)
     CustomCollections.setdirty!(state.inertias)
     CustomCollections.setdirty!(state.crb_inertias)
+    nothing
 end
 
 """
@@ -535,8 +538,8 @@ $(SIGNATURES)
 Return the joint transform for the given joint, i.e. the transform from
 `frame_after(joint)` to `frame_before(joint)`.
 """
-@inline function joint_transform(state::MechanismState, joint::Union{<:Joint, JointID})
-    update_transforms!(state)
+Base.@propagate_inbounds function joint_transform(state::MechanismState, joint::Union{<:Joint, JointID}, safe=true)
+    safe && update_transforms!(state)
     state.joint_transforms[joint]
 end
 
@@ -546,8 +549,8 @@ Return the joint twist for the given joint, i.e. the twist of
 `frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
 root frame of the mechanism.
 """
-@inline function twist(state::MechanismState, joint::Union{<:Joint, JointID})
-    update_joint_twists!(state)
+Base.@propagate_inbounds function twist(state::MechanismState, joint::Union{<:Joint, JointID}, safe=true)
+    safe && update_joint_twists!(state)
     state.joint_twists[joint]
 end
 
@@ -558,8 +561,8 @@ Return the bias acceleration across the given joint, i.e. the spatial accelerati
 of `frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
 root frame of the mechanism when all joint accelerations are zero.
 """
-@inline function bias_acceleration(state::MechanismState, joint::Union{<:Joint, JointID})
-    update_joint_bias_accelerations!(state)
+Base.@propagate_inbounds function bias_acceleration(state::MechanismState, joint::Union{<:Joint, JointID}, safe=true)
+    safe && update_joint_bias_accelerations!(state)
     state.joint_bias_accelerations[joint]
 end
 
@@ -572,8 +575,8 @@ $(SIGNATURES)
 Return the transform from `default_frame(body)` to the root frame of the
 mechanism.
 """
-@inline function transform_to_root(state::MechanismState, body::Union{<:RigidBody, BodyID})
-    update_transforms!(state)
+Base.@propagate_inbounds function transform_to_root(state::MechanismState, body::Union{<:RigidBody, BodyID}, safe=true)
+    safe && update_transforms!(state)
     state.transforms_to_root[body]
 end
 
@@ -583,8 +586,8 @@ $(SIGNATURES)
 Return the twist of `default_frame(body)` with respect to the root frame of the
 mechanism, expressed in the root frame.
 """
-@inline function twist_wrt_world(state::MechanismState, body::Union{<:RigidBody, BodyID})
-    update_twists_wrt_world!(state)
+Base.@propagate_inbounds function twist_wrt_world(state::MechanismState, body::Union{<:RigidBody, BodyID}, safe=true)
+    safe && update_twists_wrt_world!(state)
     state.twists_wrt_world[body]
 end
 
@@ -596,8 +599,8 @@ i.e. the spatial acceleration of `default_frame(body)` with respect to the
 root frame of the mechanism, expressed in the root frame, when all joint
 accelerations are zero.
 """
-@inline function bias_acceleration(state::MechanismState, body::Union{<:RigidBody, BodyID})
-    update_bias_accelerations_wrt_world!(state)
+Base.@propagate_inbounds function bias_acceleration(state::MechanismState, body::Union{<:RigidBody, BodyID}, safe=true)
+    safe && update_bias_accelerations_wrt_world!(state)
     state.bias_accelerations_wrt_world[body]
 end
 
@@ -607,8 +610,8 @@ $(SIGNATURES)
 Return the spatial inertia of `body` expressed in the root frame of the
 mechanism.
 """
-@inline function spatial_inertia(state::MechanismState, body::Union{<:RigidBody, BodyID})
-    update_spatial_inertias!(state)
+Base.@propagate_inbounds function spatial_inertia(state::MechanismState, body::Union{<:RigidBody, BodyID}, safe=true)
+    safe && update_spatial_inertias!(state)
     state.inertias[body]
 end
 
@@ -618,8 +621,8 @@ $(SIGNATURES)
 Return the composite rigid body inertia `body` expressed in the root frame of the
 mechanism.
 """
-@inline function crb_inertia(state::MechanismState, body::Union{<:RigidBody, BodyID})
-    update_crb_inertias!(state)
+Base.@propagate_inbounds function crb_inertia(state::MechanismState, body::Union{<:RigidBody, BodyID}, safe=true)
+    safe && update_crb_inertias!(state)
     state.crb_inertias[body]
 end
 
@@ -647,9 +650,10 @@ end
     if !isempty(state.nontreejointids)
         nontreejoints = state.nontreejoints
         broadcast!(state.non_tree_joint_transforms, state, nontreejoints) do state, joint
+
             predid, succid = predsucc(JointID(joint), state)
-            before_to_root = transform_to_root(state, predid) * joint_to_predecessor(joint)
-            after_to_root = transform_to_root(state, succid) * joint_to_successor(joint)
+            before_to_root = state.transforms_to_root[predid] * joint_to_predecessor(joint)
+            after_to_root = state.transforms_to_root[succid] * joint_to_successor(joint)
             inv(before_to_root) * after_to_root
         end
     end
@@ -659,35 +663,38 @@ end
 
 @inline function update_joint_twists!(state::MechanismState)
     isdirty(state.joint_twists) && _update_joint_twists!(state)
+    nothing
 end
 @noinline function _update_joint_twists!(state::MechanismState)
     treejoints = state.treejoints
     qs = values(segments(state.q))
     vs = values(segments(state.v))
-    values(state.joint_twists) .= joint_twist.(treejoints, qs, vs)
+    @inbounds values(state.joint_twists) .= joint_twist.(treejoints, qs, vs)
     state.joint_twists.dirty = false
     nothing
 end
 
 @inline function update_joint_bias_accelerations!(state::MechanismState)
     isdirty(state.joint_bias_accelerations) && _update_joint_bias_accelerations!(state)
+    nothing
 end
 @noinline function _update_joint_bias_accelerations!(state::MechanismState)
     treejoints = state.treejoints
     qs = values(segments(state.q))
     vs = values(segments(state.v))
-    values(state.joint_bias_accelerations) .= bias_acceleration.(treejoints, qs, vs)
+    @inbounds values(state.joint_bias_accelerations) .= bias_acceleration.(treejoints, qs, vs)
     state.joint_bias_accelerations.dirty = false
     nothing
 end
 
 @inline function update_motion_subspaces!(state::MechanismState)
     isdirty(state.motion_subspaces) && _update_motion_subspaces!(state)
+    nothing
 end
 @inline function _motion_subspace(state::MechanismState, joint::Joint, qjoint::AbstractVector)
     jointid = JointID(joint)
     bodyid = successorid(jointid, state)
-    transform(motion_subspace(joint, qjoint), transform_to_root(state, bodyid))
+    transform(motion_subspace(joint, qjoint), transform_to_root(state, bodyid, false))
 end
 @noinline function _update_motion_subspaces!(state::MechanismState)
     update_transforms!(state)
@@ -708,15 +715,16 @@ end
 
 @inline function update_twists_wrt_world!(state::MechanismState)
     isdirty(state.twists_wrt_world) && _update_twists_wrt_world!(state)
+    nothing
 end
 @noinline function _update_twists_wrt_world!(state::MechanismState)
     update_transforms!(state)
     update_joint_twists!(state)
     twists = state.twists_wrt_world
-    for jointid in state.treejointids
+    @inbounds for jointid in state.treejointids
         parentbodyid, bodyid = predsucc(jointid, state)
         jointtwist = state.joint_twists[jointid]
-        twists[bodyid] = twists[parentbodyid] + transform(jointtwist, transform_to_root(state, bodyid))
+        twists[bodyid] = twists[parentbodyid] + transform(jointtwist, transform_to_root(state, bodyid, false))
     end
     state.twists_wrt_world.dirty = false
     nothing
@@ -724,6 +732,7 @@ end
 
 @inline function update_constraint_wrench_subspaces!(state::MechanismState)
     isdirty(state.constraint_wrench_subspaces) && _update_constraint_wrench_subspaces!(state)
+    nothing
 end
 @inline function _constraint_wrench_subspace(state::MechanismState, joint::Joint)
     jointid = JointID(joint)
@@ -751,6 +760,7 @@ end
 
 @inline function update_bias_accelerations_wrt_world!(state::MechanismState)
     isdirty(state.bias_accelerations_wrt_world) && _update_bias_accelerations_wrt_world!(state)
+    nothing
 end
 @noinline function _update_bias_accelerations_wrt_world!(state::MechanismState) # TODO: make more efficient
     update_transforms!(state)
@@ -761,7 +771,7 @@ end
         parentbodyid, bodyid = predsucc(jointid, state)
         jointbias = bias_acceleration(state, jointid)
         # TODO: awkward way of doing this:
-        toroot = transform_to_root(state, bodyid)
+        toroot = transform_to_root(state, bodyid, false)
         twistwrtworld = transform(twist_wrt_world(state, bodyid), inv(toroot))
         jointtwist = twist(state, jointid)
         biasaccels[bodyid] = biasaccels[parentbodyid] + transform(jointbias, toroot, twistwrtworld, jointtwist)
@@ -772,15 +782,15 @@ end
 
 @inline function update_spatial_inertias!(state::MechanismState)
     isdirty(state.inertias) && _update_spatial_inertias!(state)
+    nothing
 end
 @noinline function _update_spatial_inertias!(state::MechanismState)
     update_transforms!(state)
     mechanism = state.mechanism
     inertias = state.inertias
-    for joint in tree_joints(mechanism)
-        body = successor(joint, mechanism)
+    @inbounds for body in state.nonrootbodies
         bodyid = BodyID(body)
-        inertias[bodyid] = transform(spatial_inertia(body), transform_to_root(state, bodyid))
+        inertias[bodyid] = transform(spatial_inertia(body), transform_to_root(state, bodyid, false))
     end
     state.inertias.dirty = false
     nothing
@@ -788,6 +798,7 @@ end
 
 @inline function update_crb_inertias!(state::MechanismState)
     isdirty(state.crb_inertias) && _update_crb_inertias!(state)
+    nothing
 end
 @noinline function _update_crb_inertias!(state::MechanismState)
     update_spatial_inertias!(state)
@@ -809,22 +820,22 @@ end
 
 contact_states(state::MechanismState, body::Union{<:RigidBody, BodyID}) = state.contact_states[body]
 
-function newton_euler(state::MechanismState, body::Union{<:RigidBody, BodyID}, accel::SpatialAcceleration)
-    inertia = spatial_inertia(state, body)
-    twist = twist_wrt_world(state, body)
+Base.@propagate_inbounds function newton_euler(state::MechanismState, body::Union{<:RigidBody, BodyID}, accel::SpatialAcceleration, safe=true)
+    inertia = spatial_inertia(state, body, safe)
+    twist = twist_wrt_world(state, body, safe)
     newton_euler(inertia, accel, twist)
 end
 
-function momentum(state::MechanismState, body::Union{<:RigidBody, BodyID})
-    spatial_inertia(state, body) * twist_wrt_world(state, body)
+Base.@propagate_inbounds function momentum(state::MechanismState, body::Union{<:RigidBody, BodyID}, safe=true)
+    spatial_inertia(state, body, safe) * twist_wrt_world(state, body, safe)
 end
 
-function momentum_rate_bias(state::MechanismState, body::Union{<:RigidBody, BodyID})
-    newton_euler(state, body, bias_acceleration(state, body))
+Base.@propagate_inbounds function momentum_rate_bias(state::MechanismState, body::Union{<:RigidBody, BodyID}, safe=true)
+    newton_euler(state, body, bias_acceleration(state, body, safe), safe)
 end
 
-function kinetic_energy(state::MechanismState, body::Union{<:RigidBody, BodyID})
-    kinetic_energy(spatial_inertia(state, body), twist_wrt_world(state, body))
+Base.@propagate_inbounds function kinetic_energy(state::MechanismState, body::Union{<:RigidBody, BodyID}, safe=true)
+    kinetic_energy(spatial_inertia(state, body, safe), twist_wrt_world(state, body, safe))
 end
 
 """
@@ -834,11 +845,11 @@ Return the gravitational potential energy in the given state, computed as the
 negation of the dot product of the gravitational force and the center
 of mass expressed in the `Mechanism`'s root frame.
 """
-function gravitational_potential_energy(state::MechanismState, body::Union{<:RigidBody, BodyID})
+Base.@propagate_inbounds function gravitational_potential_energy(state::MechanismState, body::Union{<:RigidBody, BodyID}, safe=true)
     inertia = spatial_inertia(body)
     m = inertia.mass
     m > 0 || return zero(cache_eltype(state))
-    com = transform_to_root(state, body) * center_of_mass(inertia)
+    com = transform_to_root(state, body, safe) * center_of_mass(inertia)
     -m * dot(state.mechanism.gravitational_acceleration, FreeVector3D(com))
 end
 
@@ -899,54 +910,52 @@ function configuration_derivative_to_velocity_jacobian(state::MechanismState{X, 
     J
 end
 
-function transform_to_root(state::MechanismState, frame::CartesianFrame3D)
+function transform_to_root(state::MechanismState, frame::CartesianFrame3D, safe=true)
     body = body_fixed_frame_to_body(state.mechanism, frame) # FIXME: expensive
-    tf = transform_to_root(state, body)
+    tf = transform_to_root(state, body, safe)
     if tf.from != frame
         tf = tf * body_fixed_frame_definition(state.mechanism, frame) # TODO: consider caching
     end
     tf
 end
 
-@inline function non_root_body_sum(fun, start, state::MechanismState, body_itr)
-    ret = start
-    for body in body_itr
-        if !isroot(body, state.mechanism)
-            ret += fun(state, body)
-        end
+Base.@propagate_inbounds function statesum(fun::F, state::MechanismState, itr, safe=true; init) where F
+    ret = init
+    for x in itr
+        ret += fun(state, x, safe)
     end
     ret
 end
 
-function momentum(state::MechanismState, body_itr)
+Base.@propagate_inbounds function momentum(state::MechanismState, body_itr)
     T = cache_eltype(state)
     update_twists_wrt_world!(state)
     update_spatial_inertias!(state)
-    non_root_body_sum(momentum, zero(Momentum{T}, root_frame(state.mechanism)), state, body_itr)
+    statesum(momentum, state, body_itr, false, init=zero(Momentum{T}, root_frame(state.mechanism)))
 end
 
-function momentum_rate_bias(state::MechanismState, body_itr)
+Base.@propagate_inbounds function momentum_rate_bias(state::MechanismState, body_itr)
     T = cache_eltype(state)
     update_bias_accelerations_wrt_world!(state)
     update_spatial_inertias!(state)
-    non_root_body_sum(momentum_rate_bias, zero(Wrench{T}, root_frame(state.mechanism)), state, body_itr)
+    statesum(momentum_rate_bias, state, body_itr, false, init=zero(Wrench{T}, root_frame(state.mechanism)))
 end
 
-function kinetic_energy(state::MechanismState, body_itr)
+Base.@propagate_inbounds function kinetic_energy(state::MechanismState, body_itr)
     T = cache_eltype(state)
     update_twists_wrt_world!(state)
     update_spatial_inertias!(state)
-    non_root_body_sum(kinetic_energy, zero(T), state, body_itr)
+    statesum(kinetic_energy, state, body_itr, false, init=zero(T))
 end
 
-function gravitational_potential_energy(state::MechanismState, body_itr)
+Base.@propagate_inbounds function gravitational_potential_energy(state::MechanismState, body_itr)
     T = cache_eltype(state)
     update_transforms!(state)
-    non_root_body_sum(gravitational_potential_energy, zero(T), state, body_itr)
+    statesum(gravitational_potential_energy, state, body_itr, false, init=zero(T))
 end
 
 for fun in (:momentum, :momentum_rate_bias, :kinetic_energy, :gravitational_potential_energy)
-    @eval $fun(state::MechanismState) = $fun(state, bodies(state.mechanism))
+    @eval $fun(state::MechanismState) = @inbounds return $fun(state, state.nonrootbodies)
 end
 
 """
@@ -956,7 +965,7 @@ Return the homogeneous transform from `from` to `to`.
 """
 function relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D)
     update_transforms!(state)
-    inv(transform_to_root(state, to)) * transform_to_root(state, from)
+    inv(transform_to_root(state, to, false)) * transform_to_root(state, from, false)
 end
 
 """
@@ -966,7 +975,8 @@ Return the twist of `body` with respect to `base`, expressed in the
 `Mechanism`'s root frame.
 """
 function relative_twist(state::MechanismState, body::Union{<:RigidBody, BodyID}, base::Union{<:RigidBody, BodyID})
-    -twist_wrt_world(state, base) + twist_wrt_world(state, body)
+    update_twists_wrt_world!(state)
+    -twist_wrt_world(state, base, false) + twist_wrt_world(state, body, false)
 end
 
 """
