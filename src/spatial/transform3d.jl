@@ -68,9 +68,13 @@ end
     Transform3D(t.to, t.from, rotinv, -(rotinv * translation(t)))
 end
 
-@inline LinearAlgebra.eye(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) where {T} = Transform3D(from, to, one(SMatrix{4, 4, T}))
-@inline LinearAlgebra.eye(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = eye(Transform3D{Float64}, from, to)
-@inline LinearAlgebra.eye(::Type{T}, frame::CartesianFrame3D) where {T<:Transform3D} = eye(T, frame, frame)
+Base.one(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) where {T} =
+    Transform3D(from, to, one(SMatrix{4, 4, T}))
+Base.one(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = one(Transform3D{Float64}, from, to)
+Base.one(::Type{T}, frame::CartesianFrame3D) where {T<:Transform3D} = one(T, frame, frame)
+
+Base.@deprecate eye(T::Type{<:Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) one(T, from, to)
+Base.@deprecate eye(::Type{T}, frame::CartesianFrame3D) where {T<:Transform3D} one(T, frame)
 
 function Random.rand(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) where T
     rot = rand(RotMatrix3{T})
