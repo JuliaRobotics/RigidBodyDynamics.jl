@@ -650,9 +650,10 @@ end
     if !isempty(state.nontreejointids)
         nontreejoints = state.nontreejoints
         broadcast!(state.non_tree_joint_transforms, state, nontreejoints) do state, joint
+
             predid, succid = predsucc(JointID(joint), state)
-            before_to_root = transform_to_root(state, predid, false) * joint_to_predecessor(joint)
-            after_to_root = transform_to_root(state, succid, false) * joint_to_successor(joint)
+            before_to_root = state.transforms_to_root[predid] * joint_to_predecessor(joint)
+            after_to_root = state.transforms_to_root[succid] * joint_to_successor(joint)
             inv(before_to_root) * after_to_root
         end
     end
