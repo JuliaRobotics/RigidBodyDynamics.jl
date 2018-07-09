@@ -67,7 +67,7 @@ end
         @test isapprox(Array(I1), Ad(inv(H21))' * Array(I2) * Ad(inv(H21)); atol = 1e-12)
         @test isapprox(I2, transform(I1, inv(H21)))
         @test isapprox(Array(I2) + Array(I3), Array(I2 + I3); atol = 1e-12)
-        @inferred transform(zero(SpatialInertia{Float32}, f1), eye(Transform3D, f1))
+        @inferred transform(zero(SpatialInertia{Float32}, f1), one(Transform3D, f1))
         @test I2 + zero(I2) == I2
 
         # Test that the constructor works with dynamic arrays (which are

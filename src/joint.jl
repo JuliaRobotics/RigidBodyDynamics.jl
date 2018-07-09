@@ -92,8 +92,8 @@ struct Joint{T, JT<:JointType{T}}
             effort_bounds::Vector{Bounds{T}}=fill(Bounds{T}(), num_velocities(joint_type))) where {T}
         JT = typeof(joint_type)
         id = Ref(JointID(-1))
-        joint_to_predecessor = Ref(eye(Transform3D{T}, frame_before))
-        joint_to_successor = Ref(eye(Transform3D{T}, frame_after))
+        joint_to_predecessor = Ref(one(Transform3D{T}, frame_before))
+        joint_to_successor = Ref(one(Transform3D{T}, frame_after))
         new{T, JT}(name, frame_before, frame_after, joint_type, id,
             joint_to_predecessor, joint_to_successor,
             position_bounds, velocity_bounds, effort_bounds)

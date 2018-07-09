@@ -99,7 +99,7 @@
 
         x = transform_to_root(state, body)
         v = transform(twist_wrt_world(state, body), inv(x))
-        @test isapprox(x, xdes * eye(Transform3D, actualframe, desiredframe), atol = 1e-6)
+        @test isapprox(x, xdes * one(Transform3D, actualframe, desiredframe), atol = 1e-6)
         @test isapprox(v, vdes + zero(Twist{Float64}, actualframe, desiredframe, actualframe), atol = 1e-6)
     end
 
