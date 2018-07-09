@@ -162,8 +162,7 @@ end
 
 function zero_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
-    set_rotation!(q, jt, eye(Quat{T}))
-    set_translation!(q, jt, zeros(SVector{3, T}))
+    set_rotation!(q, jt, one(Quat{T}))
     set_translation!(q, jt, zero(SVector{3, T}))
     nothing
 end
@@ -760,7 +759,7 @@ end
 
 function zero_configuration!(q::AbstractVector, jt::QuaternionSpherical)
     T = eltype(q)
-    set_rotation!(q, jt, eye(Quat{T}))
+    set_rotation!(q, jt, one(Quat{T}))
     nothing
 end
 
