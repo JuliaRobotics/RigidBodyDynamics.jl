@@ -100,20 +100,20 @@ end
 
 function transform_spatial_motion(angular::SVector{3}, linear::SVector{3}, rot::R, trans::SVector{3}) where {R <: Rotation{3}}
     angular = rot * angular
-    linear = rot * linear + cross(trans, angular)
+    linear = rot * linear + trans × angular
     angular, linear
 end
 
 function mul_inertia(J, c, m, ω, v)
-    angular = J * ω + cross(c, v)
-    linear = m * v - cross(c, ω)
+    angular = J * ω + c × v
+    linear = m * v - c × ω
     angular, linear
 end
 
 # also known as 'spatial motion cross product'
 @inline function se3_commutator(xω, xv, yω, yv)
-    angular = cross(xω, yω)
-    linear = cross(xω, yv) + cross(xv, yω)
+    angular = xω × yω
+    linear = xω × yv + xv × yω
     angular, linear
 end
 

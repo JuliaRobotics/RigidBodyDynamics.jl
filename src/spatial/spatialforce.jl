@@ -49,7 +49,7 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
             @framecheck(mat.frame, tf.from)
             R = rotation(tf)
             Av = R * linear(mat)
-            Aω = R * angular(mat) + colwise(cross, translation(tf), Av)
+            Aω = R * angular(mat) + colwise(×, translation(tf), Av)
             $ForceSpaceMatrix(tf.to, Aω, Av)
         end
     end
@@ -156,7 +156,7 @@ for ForceSpaceElement in (:Momentum, :Wrench)
             @framecheck(f.frame, tf.from)
             rot = rotation(tf)
             lin = rot * linear(f)
-            ang = rot * angular(f) + cross(translation(tf), lin)
+            ang = rot * angular(f) + translation(tf) × lin
             $ForceSpaceElement(tf.to, ang, lin)
         end
 

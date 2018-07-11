@@ -53,7 +53,7 @@ function transform(jac::GeometricJacobian, tf::Transform3D)
     @framecheck(jac.frame, tf.from)
     R = rotation(tf)
     ang = R * angular(jac)
-    lin = R * linear(jac) + colwise(cross, translation(tf), ang)
+    lin = R * linear(jac) + colwise(×, translation(tf), ang)
     GeometricJacobian(jac.body, jac.base, tf.to, ang, lin)
 end
 

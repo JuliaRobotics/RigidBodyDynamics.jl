@@ -163,8 +163,8 @@ function Base.:*(inertia::SpatialInertia, jac::GeometricJacobian)
     J = inertia.moment
     m = inertia.mass
     c = inertia.cross_part
-    ang = J * Jω + colwise(cross, c, Jv)
-    lin = m * Jv - colwise(cross, c, Jω)
+    ang = J * Jω + colwise(×, c, Jv)
+    lin = m * Jv - colwise(×, c, Jω)
     MomentumMatrix(inertia.frame, ang, lin)
 end
 

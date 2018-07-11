@@ -629,7 +629,7 @@ function constraint_bias!(bias::SegmentedVector, state::MechanismState)
     @inbounds for nontreejointid in state.nontreejointids
         path = state.constraint_jacobian_structure[nontreejointid]
         predid, succid = predsucc(nontreejointid, state)
-        crossterm = cross(twist_wrt_world(state, succid, false), twist_wrt_world(state, predid, false))
+        crossterm = twist_wrt_world(state, succid, false) × twist_wrt_world(state, predid, false)
         biasaccel = crossterm + (-bias_acceleration(state, predid, false) + bias_acceleration(state, succid, false)) # 8.47 in Featherstone
         for cindex in constraint_range(state, nontreejointid)
             Tcol = constraint_wrench_subspaces[cindex]
