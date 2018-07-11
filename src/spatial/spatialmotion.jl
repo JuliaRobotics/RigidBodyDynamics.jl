@@ -139,7 +139,6 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
 
         angular(m::$MotionSpaceElement) = m.angular
         linear(m::$MotionSpaceElement) = m.linear
-        StaticArrays.similar_type(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) where {T1, T2} = $MotionSpaceElement{T2} # FIXME: lose this
 
         function Base.show(io::IO, m::$MotionSpaceElement)
             print(io, "$($(string(MotionSpaceElement))) of \"$(string(m.body))\" w.r.t \"$(string(m.base))\" in \"$(string(m.frame))\":\nangular: $(angular(m)), linear: $(linear(m))")

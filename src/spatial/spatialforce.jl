@@ -130,7 +130,6 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         end
 
         Base.eltype(::Type{$ForceSpaceElement{T}}) where {T} = T
-        StaticArrays.similar_type(::Type{$ForceSpaceElement{T1}}, ::Type{T2}) where {T1, T2} = $ForceSpaceElement{T2} # FIXME: lose this
         angular(f::$ForceSpaceElement) = f.angular
         linear(f::$ForceSpaceElement) = f.linear
 

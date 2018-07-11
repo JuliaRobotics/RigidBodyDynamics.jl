@@ -38,7 +38,6 @@ for VectorType in (:FreeVector3D, :Point3D)
         transform(x::$VectorType, t::Transform3D) = t * x
 
         Base.eltype(::Type{$VectorType{V}}) where {V} = eltype(V)
-        StaticArrays.similar_type(x::Type{$VectorType{V}}, ::Type{T}) where {V, T} = $VectorType{SVector{3, T}}
     end
 end
 
