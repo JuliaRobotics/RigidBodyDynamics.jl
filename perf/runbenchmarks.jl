@@ -33,19 +33,19 @@ function create_benchmark_suite()
     jac = GeometricJacobian(default_frame(lhand), default_frame(rfoot), root_frame(mechanism),
         Matrix{ScalarType}(undef, 3, nv), Matrix{ScalarType}(undef, 3, nv))
 
-    suite["mass_matrix"] = @benchmarkable(begin
+    suite["mass_matrix!"] = @benchmarkable(begin
         setdirty!($state)
         mass_matrix!($(result.massmatrix), $state)
     end, setup = rand!($state))
 
-    suite["dynamics_bias"] = @benchmarkable(begin
+    suite["dynamics_bias!"] = @benchmarkable(begin
         setdirty!($state)
         dynamics_bias!($result, $state)
     end, setup = begin
         rand!($state)
     end)
 
-    suite["inverse_dynamics"] = @benchmarkable(begin
+    suite["inverse_dynamics!"] = @benchmarkable(begin
         setdirty!($state)
         inverse_dynamics!($torques, $(result.jointwrenches), $(result.accelerations), $state, v̇, externalwrenches)
     end, setup = begin
@@ -55,7 +55,7 @@ function create_benchmark_suite()
         rand!($state)
     end)
 
-    suite["dynamics"] = @benchmarkable(begin
+    suite["dynamics!"] = @benchmarkable(begin
         setdirty!($state)
         dynamics!($result, $state, τ, externalwrenches)
     end, setup = begin
@@ -65,17 +65,17 @@ function create_benchmark_suite()
         externalwrenches = RigidBodyDynamics.BodyDict(convert(BodyID, body) => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
     end)
 
-    suite["momentum_matrix"] = @benchmarkable(begin
+    suite["momentum_matrix!"] = @benchmarkable(begin
         setdirty!($state)
         momentum_matrix!($mat, $state)
     end, setup = rand!($state))
 
-    suite["geometric_jacobian"] = @benchmarkable(begin
+    suite["geometric_jacobian!"] = @benchmarkable(begin
         setdirty!($state)
         geometric_jacobian!($jac, $state, $p)
     end, setup = rand!($state))
 
-    suite["mass_matrix and geometric_jacobian"] = @benchmarkable(begin
+    suite["mass_matrix! and geometric_jacobian!"] = @benchmarkable(begin
         setdirty!($state)
         mass_matrix!($(result.massmatrix), $state)
         geometric_jacobian!($jac, $state, $p)
@@ -101,6 +101,11 @@ function create_benchmark_suite()
     suite["gravitational_potential_energy"] = @benchmarkable(begin
         setdirty!($state)
         gravitational_potential_energy($state)
+    end, setup = rand!($state))
+
+    suite["center_of_mass"] = @benchmarkable(begin
+        setdirty!($state)
+        center_of_mass($state)
     end, setup = rand!($state))
 
     mcmechanism, _ = maximal_coordinates(mechanism)
