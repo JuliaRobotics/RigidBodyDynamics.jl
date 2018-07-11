@@ -28,19 +28,18 @@ Compute the center of mass of an iterable subset of a `Mechanism`'s bodies in
 the given state. Ignores the root body of the mechanism.
 """
 function center_of_mass(state::MechanismState, itr)
+    update_transforms!(state)
     T = cache_eltype(state)
     mechanism = state.mechanism
     frame = root_frame(mechanism)
     com = Point3D(frame, zero(SVector{3, T}))
     mass = zero(T)
     for body in itr
-        if !isroot(body, mechanism)
-            inertia = spatial_inertia(body)
-            if inertia.mass > 0
-                bodycom = transform_to_root(state, body) * center_of_mass(inertia)
-                com += inertia.mass * FreeVector3D(bodycom)
-                mass += inertia.mass
-            end
+        inertia = spatial_inertia(body)
+        if inertia.mass > 0
+            bodycom = transform_to_root(state, body, false) * center_of_mass(inertia)
+            com += inertia.mass * FreeVector3D(bodycom)
+            mass += inertia.mass
         end
     end
     com /= mass
@@ -52,7 +51,7 @@ $(SIGNATURES)
 
 Compute the center of mass of the whole `Mechanism` in the given state.
 """
-center_of_mass(state::MechanismState) = center_of_mass(state, bodies(state.mechanism))
+center_of_mass(state::MechanismState) = center_of_mass(state, non_root_bodies(state.mechanism))
 
 const geometric_jacobian_doc = """Compute a geometric Jacobian (also known as a
 basic, or spatial Jacobian) associated with a directed path in the `Mechanism`'s
