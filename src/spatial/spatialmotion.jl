@@ -203,20 +203,19 @@ function _log(t::Transform3D)
 
     # Translational part from Bullo and Murray, "Proportional derivative (PD) control on the Euclidean group.",
     # (2.4) and (2.5), which provide a closed form solution of the inverse of the A matrix in proposition 2.9 of Murray et al.
-    θ_over_2 = θ / 2
-    sθ_over_2 = sin(θ_over_2)
-    cθ_over_2 = cos(θ_over_2)
+    θ_2 = θ / 2
+    sθ_2, cθ_2 = sincos(θ_2)
     θ_squared = θ^2
     if abs(rem2pi(θ, RoundNearest)) < eps(typeof(θ))
-        α = one(θ_over_2)
+        α = one(θ_2)
         ϕtrans = p
     else
-        α = θ_over_2 * cθ_over_2 / sθ_over_2
+        α = θ_2 * cθ_2 / sθ_2
         ϕtrans = p - ϕrot × p / 2 + (1 - α) / θ_squared * ϕrot × (ϕrot × p) # Bullo, Murray, (2.5)
     end
 
     ξ = Twist(t.from, t.to, t.to, ϕrot, ϕtrans) # twist in base frame; see section 4.3
-    ξ, θ, θ_squared, θ_over_2, sθ_over_2, cθ_over_2, α
+    ξ, θ, θ_squared, θ_2, sθ_2, cθ_2, α
 end
 
 """

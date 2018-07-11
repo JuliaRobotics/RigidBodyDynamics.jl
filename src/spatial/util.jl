@@ -88,10 +88,11 @@ function rotation_vector_rate(rotation_vector::AbstractVector{T}, angular_veloci
     ω = angular_velocity_in_body
     @boundscheck length(ϕ) == 3 || error("ϕ has wrong length")
     @boundscheck length(ω) == 3 || error("ω has wrong length")
-    Θ = norm(ϕ)
+    θ = norm(ϕ)
     ϕ̇ = ω
-    if Θ > eps(Θ)
-        ϕ̇ += T(0.5) * (ϕ × ω) + 1 / Θ^2 * (1 - (Θ * sin(Θ)) / (2 * (1 - cos(Θ)))) * ϕ × (ϕ × ω)
+    if θ > eps(θ)
+        s, c = sincos(θ)
+        ϕ̇ += T(0.5) * (ϕ × ω) + 1 / θ^2 * (1 - (θ * s) / (2 * (1 - c))) * ϕ × (ϕ × ω)
     end
     ϕ̇
 end
