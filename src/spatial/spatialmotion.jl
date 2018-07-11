@@ -12,9 +12,9 @@ struct GeometricJacobian{A<:AbstractMatrix}
     linear::A
 
     @inline function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
-        @boundscheck size(angular, 1) == 3 || error("size mismatch")
-        @boundscheck size(linear, 1) == 3 || error("size mismatch")
-        @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
+        @boundscheck size(angular, 1) == 3 || throw(DimensionMismatch())
+        @boundscheck size(linear, 1) == 3 || throw(DimensionMismatch())
+        @boundscheck size(angular, 2) == size(linear, 2) || throw(DimensionMismatch())
         new{A}(body, base, frame, angular, linear)
     end
 end
@@ -53,13 +53,13 @@ function transform(jac::GeometricJacobian, tf::Transform3D)
     @framecheck(jac.frame, tf.from)
     R = rotation(tf)
     ang = R * angular(jac)
-    lin = R * linear(jac) + colwise(cross, translation(tf), ang)
+    lin = R * linear(jac) + colwise(×, translation(tf), ang)
     GeometricJacobian(jac.body, jac.base, tf.to, ang, lin)
 end
 
 struct PointJacobian{M <: AbstractMatrix}
-    J::M
     frame::CartesianFrame3D
+    J::M
 end
 
 Base.Array(Jp::PointJacobian) = Matrix(Jp.J)
@@ -139,7 +139,6 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
 
         angular(m::$MotionSpaceElement) = m.angular
         linear(m::$MotionSpaceElement) = m.linear
-        StaticArrays.similar_type(::Type{$MotionSpaceElement{T1}}, ::Type{T2}) where {T1, T2} = $MotionSpaceElement{T2} # FIXME: lose this
 
         function Base.show(io::IO, m::$MotionSpaceElement)
             print(io, "$($(string(MotionSpaceElement))) of \"$(string(m.body))\" w.r.t \"$(string(m.base))\" in \"$(string(m.frame))\":\nangular: $(angular(m)), linear: $(linear(m))")
@@ -203,20 +202,19 @@ function _log(t::Transform3D)
 
     # Translational part from Bullo and Murray, "Proportional derivative (PD) control on the Euclidean group.",
     # (2.4) and (2.5), which provide a closed form solution of the inverse of the A matrix in proposition 2.9 of Murray et al.
-    θ_over_2 = θ / 2
-    sθ_over_2 = sin(θ_over_2)
-    cθ_over_2 = cos(θ_over_2)
+    θ_2 = θ / 2
+    sθ_2, cθ_2 = sincos(θ_2)
     θ_squared = θ^2
     if abs(rem2pi(θ, RoundNearest)) < eps(typeof(θ))
-        α = one(θ_over_2)
+        α = one(θ_2)
         ϕtrans = p
     else
-        α = θ_over_2 * cθ_over_2 / sθ_over_2
+        α = θ_2 * cθ_2 / sθ_2
         ϕtrans = p - ϕrot × p / 2 + (1 - α) / θ_squared * ϕrot × (ϕrot × p) # Bullo, Murray, (2.5)
     end
 
     ξ = Twist(t.from, t.to, t.to, ϕrot, ϕtrans) # twist in base frame; see section 4.3
-    ξ, θ, θ_squared, θ_over_2, sθ_over_2, cθ_over_2, α
+    ξ, θ, θ_squared, θ_2, sθ_2, cθ_2, α
 end
 
 """

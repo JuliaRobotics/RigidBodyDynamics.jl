@@ -90,7 +90,7 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
         for col in eachindex(vrange)
             @inbounds vindex = vrange[col]
             @inbounds Scol = transformfun(state.motion_subspaces.data[vindex])
-            direction == :up && (Scol = -Scol)
+            direction == PathDirections.up && (Scol = -Scol)
             set_col!(jac, vindex, Scol)
         end
     end
@@ -177,7 +177,7 @@ function _point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePa
         for col in eachindex(vrange)
             vindex = vrange[col]
             Scol = transformfun(state.motion_subspaces.data[vindex])
-            direction == :up && (Scol = -Scol)
+            direction == PathDirections.up && (Scol = -Scol)
             newcol =  -p̂ * angular(Scol) + linear(Scol)
             for row in 1:3
                 Jp.J[row, vindex] = newcol[row]
@@ -217,7 +217,7 @@ $point_jacobian_doc
 function point_jacobian(state::MechanismState{X, M, C},
                         path::TreePath{RigidBody{M}, Joint{M}},
                         point::Point3D) where {X, M, C}
-    Jp = PointJacobian(Matrix{C}(undef, 3, num_velocities(state)), point.frame)
+    Jp = PointJacobian(point.frame, Matrix{C}(undef, 3, num_velocities(state)))
     point_jacobian!(Jp, state, path, point)
     Jp
 end
@@ -602,7 +602,7 @@ function constraint_jacobian!(jac::AbstractMatrix, rowranges, state::MechanismSt
                 treejoint = path.edges[i]
                 vrange = velocity_range(state, treejoint)
                 direction = directions(path)[i]
-                sign = ifelse(direction == :up, -1, 1)
+                sign = ifelse(direction == PathDirections.up, -1, 1)
                 for col in eachindex(vrange)
                     vindex = vrange[col]
                     Scol = state.motion_subspaces.data[vindex]
@@ -629,7 +629,7 @@ function constraint_bias!(bias::SegmentedVector, state::MechanismState)
     @inbounds for nontreejointid in state.nontreejointids
         path = state.constraint_jacobian_structure[nontreejointid]
         predid, succid = predsucc(nontreejointid, state)
-        crossterm = cross(twist_wrt_world(state, succid, false), twist_wrt_world(state, predid, false))
+        crossterm = twist_wrt_world(state, succid, false) × twist_wrt_world(state, predid, false)
         biasaccel = crossterm + (-bias_acceleration(state, predid, false) + bias_acceleration(state, succid, false)) # 8.47 in Featherstone
         for cindex in constraint_range(state, nontreejointid)
             Tcol = constraint_wrench_subspaces[cindex]

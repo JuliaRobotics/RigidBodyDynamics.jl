@@ -38,7 +38,6 @@ for VectorType in (:FreeVector3D, :Point3D)
         transform(x::$VectorType, t::Transform3D) = t * x
 
         Base.eltype(::Type{$VectorType{V}}) where {V} = eltype(V)
-        StaticArrays.similar_type(x::Type{$VectorType{V}}, ::Type{T}) where {V, T} = $VectorType{SVector{3, T}}
     end
 end
 
@@ -72,8 +71,8 @@ Base.:\(t::Transform3D, point::Point3D) = begin @framecheck point.frame t.to; Po
 # FreeVector3D-specific
 FreeVector3D(p::Point3D) = FreeVector3D(p.frame, p.v)
 Base.:-(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, v1.v - v2.v) end
-LinearAlgebra.cross(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, cross(v1.v, v2.v)) end
-LinearAlgebra.dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); dot(v1.v, v2.v) end
+LinearAlgebra.cross(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); FreeVector3D(v1.frame, v1.v × v2.v) end
+LinearAlgebra.dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); v1.v ⋅ v2.v end
 Base.:*(t::Transform3D, vector::FreeVector3D) = begin @framecheck(t.from, vector.frame); FreeVector3D(t.to, rotation(t) * vector.v) end
 Base.:\(t::Transform3D, point::FreeVector3D) = begin @framecheck point.frame t.to; FreeVector3D(t.from, rotation(t) \ point.v) end
 LinearAlgebra.norm(v::FreeVector3D) = norm(v.v)
@@ -84,4 +83,4 @@ Base.:+(p1::FreeVector3D, p2::FreeVector3D) = begin @framecheck(p1.frame, p2.fra
 Base.:+(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); Point3D(p.frame, p.v + v.v) end
 Base.:+(v::FreeVector3D, p::Point3D) = p + v
 Base.:-(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); Point3D(p.frame, p.v - v.v) end
-LinearAlgebra.cross(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); FreeVector3D(p.frame, cross(p.v, v.v)) end
+LinearAlgebra.cross(p::Point3D, v::FreeVector3D) = begin @framecheck(p.frame, v.frame); FreeVector3D(p.frame, p.v × v.v) end

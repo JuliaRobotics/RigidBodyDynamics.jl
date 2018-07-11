@@ -5,9 +5,9 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
         linear::A
 
         @inline function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
-            @boundscheck size(angular, 1) == 3 || error("size mismatch")
-            @boundscheck size(linear, 1) == 3 || error("size mismatch")
-            @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
+            @boundscheck size(angular, 1) == 3 || throw(DimensionMismatch())
+            @boundscheck size(linear, 1) == 3 || throw(DimensionMismatch())
+            @boundscheck size(angular, 2) == size(linear, 2) || throw(DimensionMismatch())
             new{A}(frame, angular, linear)
         end
     end
@@ -49,7 +49,7 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
             @framecheck(mat.frame, tf.from)
             R = rotation(tf)
             Av = R * linear(mat)
-            Aω = R * angular(mat) + colwise(cross, translation(tf), Av)
+            Aω = R * angular(mat) + colwise(×, translation(tf), Av)
             $ForceSpaceMatrix(tf.to, Aω, Av)
         end
     end
@@ -130,7 +130,6 @@ for ForceSpaceElement in (:Momentum, :Wrench)
         end
 
         Base.eltype(::Type{$ForceSpaceElement{T}}) where {T} = T
-        StaticArrays.similar_type(::Type{$ForceSpaceElement{T1}}, ::Type{T2}) where {T1, T2} = $ForceSpaceElement{T2} # FIXME: lose this
         angular(f::$ForceSpaceElement) = f.angular
         linear(f::$ForceSpaceElement) = f.linear
 
@@ -157,7 +156,7 @@ for ForceSpaceElement in (:Momentum, :Wrench)
             @framecheck(f.frame, tf.from)
             rot = rotation(tf)
             lin = rot * linear(f)
-            ang = rot * angular(f) + cross(translation(tf), lin)
+            ang = rot * angular(f) + translation(tf) × lin
             $ForceSpaceElement(tf.to, ang, lin)
         end
 
