@@ -217,7 +217,7 @@ $point_jacobian_doc
 function point_jacobian(state::MechanismState{X, M, C},
                         path::TreePath{RigidBody{M}, Joint{M}},
                         point::Point3D) where {X, M, C}
-    Jp = PointJacobian(Matrix{C}(undef, 3, num_velocities(state)), point.frame)
+    Jp = PointJacobian(point.frame, Matrix{C}(undef, 3, num_velocities(state)))
     point_jacobian!(Jp, state, path, point)
     Jp
 end

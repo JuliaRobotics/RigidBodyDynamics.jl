@@ -58,8 +58,8 @@ function transform(jac::GeometricJacobian, tf::Transform3D)
 end
 
 struct PointJacobian{M <: AbstractMatrix}
-    J::M
     frame::CartesianFrame3D
+    J::M
 end
 
 Base.Array(Jp::PointJacobian) = Matrix(Jp.J)
