@@ -12,9 +12,9 @@ struct GeometricJacobian{A<:AbstractMatrix}
     linear::A
 
     @inline function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
-        @boundscheck size(angular, 1) == 3 || error("size mismatch")
-        @boundscheck size(linear, 1) == 3 || error("size mismatch")
-        @boundscheck size(angular, 2) == size(linear, 2) || error("size mismatch")
+        @boundscheck size(angular, 1) == 3 || throw(DimensionMismatch())
+        @boundscheck size(linear, 1) == 3 || throw(DimensionMismatch())
+        @boundscheck size(angular, 2) == size(linear, 2) || throw(DimensionMismatch())
         new{A}(body, base, frame, angular, linear)
     end
 end

@@ -7,6 +7,7 @@ export
     FreeVector3D,
     Point3D,
     GeometricJacobian,
+    PointJacobian,
     Twist,
     SpatialAcceleration,
     MomentumMatrix, # TODO: consider combining with WrenchMatrix
@@ -23,7 +24,6 @@ export
     angular,
     linear,
     point_velocity,
-    PointJacobian,
     change_base,
     log_with_time_derivative,
     center_of_mass,

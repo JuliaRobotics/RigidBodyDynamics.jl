@@ -69,12 +69,12 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
         remove_vertex!(graph, vertex)
         @test vertex ∉ vertices(graph)
         for v in vertices(graph)
-            v_orig = vertices(original)[findfirst(v_orig -> data(v) == data(v_orig), vertices(original))]
+            v_orig = vertices(original)[findfirst(v_orig -> v.data == v_orig.data, vertices(original))]
             for (e, e_orig) in zip(in_edges(v, graph), in_edges(v_orig, original))
-                @test data(e) == data(e_orig)
+                @test e.data == e_orig.data
             end
             for (e, e_orig) in zip(out_edges(v, graph), out_edges(v_orig, original))
-                @test data(e) == data(e_orig)
+                @test e.data == e_orig.data
             end
         end
     end
@@ -99,9 +99,9 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
         end
 
         for e in edges(graph)
-            e_orig = edges(original)[findfirst(e_orig -> data(e) == data(e_orig), edges(original))]
-            @test data(source(e, graph)) == data(source(e_orig, original))
-            @test data(target(e, graph)) == data(target(e_orig, original))
+            e_orig = edges(original)[findfirst(e_orig -> e.data == e_orig.data, edges(original))]
+            @test source(e, graph).data == source(e_orig, original).data
+            @test target(e, graph).data == target(e_orig, original).data
         end
     end
 
@@ -131,11 +131,11 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
         @test edge ∉ out_edges(oldsource, graph)
         @test edge ∉ in_edges(oldtarget, graph)
 
-        @test data.(vertices(original)) == data.(vertices(graph))
+        @test map(x -> x.data, vertices(original)) == map(x -> x.data, vertices(graph))
         for e in filter(e -> e != edge, edges(graph))
-            e_orig = edges(original)[findfirst(e_orig -> data(e) == data(e_orig), edges(original))]
-            @test data(source(e, graph)) == data(source(e_orig, original))
-            @test data(target(e, graph)) == data(target(e_orig, original))
+            e_orig = edges(original)[findfirst(e_orig -> e.data == e_orig.data, edges(original))]
+            @test source(e, graph).data == source(e_orig, original).data
+            @test target(e, graph).data == target(e_orig, original).data
         end
     end
 
@@ -157,14 +157,14 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
             replace_edge!(graph, old_edge, new_edge)
 
             @test Graphs.edge_index(old_edge) == -1
-            @test all(data.(vertices(graph)) .== data.(vertices(original)))
+            @test all(map(x -> x.data, vertices(graph)) .== map(x -> x.data, vertices(original)))
             @test new_edge ∈ in_edges(dest, graph)
             @test old_edge ∉ in_edges(dest, graph)
             @test new_edge ∈ out_edges(src, graph)
             @test old_edge ∉ out_edges(src, graph)
             @test source(new_edge, graph) == src
             @test target(new_edge, graph) == dest
-            @test isnan(data(new_edge))
+            @test isnan(new_edge.data)
         end
     end
 
@@ -193,15 +193,15 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
 
         tree2 = SpanningTree(graph2, root2)
 
-        @test all(data.(vertices(tree1)) == data.(vertices(tree2)))
+        @test all(map(x -> x.data, vertices(tree1)) == map(x -> x.data, vertices(tree2)))
         for (v1, v2) in zip(vertices(tree1), vertices(tree2))
             if v1 == root(tree1)
                 @test v2 == root(tree2)
             else
-                @test data(edge_to_parent(v1, tree1)) == data(edge_to_parent(v2, tree2))
+                @test edge_to_parent(v1, tree1).data == edge_to_parent(v2, tree2).data
 
-                outedgedata1 = data.(collect(edges_to_children(v1, tree1)))
-                outedgedata2 = data.(collect(edges_to_children(v2, tree2)))
+                outedgedata1 = map(x -> x.data, collect(edges_to_children(v1, tree1)))
+                outedgedata2 = map(x -> x.data, collect(edges_to_children(v2, tree2)))
                 @test isempty(setdiff(outedgedata1, outedgedata2))
 
                 @test isempty(setdiff(out_edges(v1, graph1), edges_to_children(v1, tree1)))
@@ -227,8 +227,8 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
                 @test source(p) == src
                 @test target(p) == dest
 
-                source_to_lca = collect(edge for edge in p if direction(edge, p) == :up)
-                target_to_lca = reverse!(collect(edge for edge in p if direction(edge, p) == :down))
+                source_to_lca = collect(edge for edge in p if direction(edge, p) == PathDirections.up)
+                target_to_lca = reverse!(collect(edge for edge in p if direction(edge, p) == PathDirections.down))
 
                 for (v, v_ancestors, pathsegment) in [(src, src_ancestors, source_to_lca); (dest, dest_ancestors, target_to_lca)]
                     if v == root(tree)
@@ -284,7 +284,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
             @test old_edge ∉ out_edges(src, tree)
             @test source(new_edge, tree) == src
             @test target(new_edge, tree) == dest
-            @test data(new_edge) == d
+            @test new_edge.data == d
             @test edge_to_parent(dest, tree) == new_edge
             @test new_edge ∈ edges_to_children(src, tree)
         end
@@ -308,11 +308,11 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
             new_target_ind = Graphs.vertex_index(target(newedge, graph2))
 
             if flipped
-                @test data(oldedge) == -data(newedge)
+                @test oldedge.data == -newedge.data
                 @test new_source_ind == old_target_ind
                 @test new_target_ind == old_source_ind
             else
-                @test data(oldedge) == data(newedge)
+                @test oldedge.data == newedge.data
                 @test new_source_ind == old_source_ind
                 @test new_target_ind == old_target_ind
             end

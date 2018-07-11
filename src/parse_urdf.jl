@@ -143,7 +143,7 @@ function parse_urdf(scalartype::Type{T}, filename) where {T}
     for vertex in vertices
         add_vertex!(graph, vertex)
     end
-    name_to_vertex = Dict(attribute(data(v), "name") => v for v in vertices)
+    name_to_vertex = Dict(attribute(v.data, "name") => v for v in vertices)
     for xml_joint in xml_joints
         parent = name_to_vertex[attribute(find_element(xml_joint, "parent"), "link")]
         child = name_to_vertex[attribute(find_element(xml_joint, "child"), "link")]
@@ -158,9 +158,9 @@ function parse_urdf(scalartype::Type{T}, filename) where {T}
     # create mechanism from spanning tree
     rootbody = RigidBody{T}("world")
     mechanism = Mechanism(rootbody)
-    parse_root_link(mechanism, data(Graphs.root(tree)))
+    parse_root_link(mechanism, Graphs.root(tree).data)
     for edge in edges(tree)
-        parse_joint_and_link(mechanism, data(source(edge, tree)), data(target(edge, tree)), data(edge))
+        parse_joint_and_link(mechanism, source(edge, tree).data, target(edge, tree).data, edge.data)
     end
     mechanism
 end

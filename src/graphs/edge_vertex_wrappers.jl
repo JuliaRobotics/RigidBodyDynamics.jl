@@ -9,7 +9,6 @@ for typename in (:Edge, :Vertex)
             id::Int64
         end
         $typename(data) = $typename(data, -1)
-        data(x::$typename) = x.data
         $getid(x::$typename) = x.id
         $setid(x::$typename, index::Int64) = (x.id = index)
     end

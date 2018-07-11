@@ -1,8 +1,17 @@
+module PathDirections
+export PathDirection
+@enum PathDirection::Bool begin
+    up # going towards the root of the tree
+    down # going away from the root of the tree
+end
+end
+using .PathDirections
+
 struct TreePath{V, E}
     source::V
     target::V
     edges::Vector{E} # in order
-    directions::Vector{Symbol} # Symbol: :up if going from source to LCA, :down if going from LCA to target
+    directions::Vector{PathDirection}
     indexmap::Vector{Int}
 end
 
@@ -14,18 +23,15 @@ target(path::TreePath) = path.target
 @inline directions(path::TreePath) = path.directions
 @inline direction(edge::E, path::TreePath{<:Any, E}) where {E} = path.directions[findfirst(path, edge)] # TODO: findfirst update
 
-Base.start(path::TreePath) = start(path.edges)
-Base.next(path::TreePath, state) = next(path.edges, state)
-Base.done(path::TreePath, state) = done(path.edges, state)
+Base.iterate(path::TreePath) = iterate(path.edges)
+Base.iterate(path::TreePath, state) = iterate(path.edges, state)
 Base.eltype(path::TreePath) = eltype(path.edges)
 Base.length(path::TreePath) = length(path.edges)
-# Base.size(path::TreePath) = size(path.edges)
-# Base.last(path::TreePath) = last(path.edges)
 
 function Base.show(io::IO, path::TreePath)
     println(io, "Path from $(path.source) to $(path.target):")
     for edge in path
-        directionchar = ifelse(direction(edge, path) == :up, '↑', '↓')
+        directionchar = ifelse(direction(edge, path) == PathDirections.up, '↑', '↓')
         print(io, "$directionchar ")
         show(IOContext(io, :compact => true), edge)
         println(io)
@@ -51,7 +57,7 @@ function TreePath(src::V, target::V, tree::SpanningTree{V, E}) where {V, E}
     reverse!(lca_to_target)
 
     edges = collect(E, flatten((source_to_lca, lca_to_target)))
-    directions = collect(Symbol, flatten(((:up for e in source_to_lca), (:down for e in lca_to_target))))
+    directions = collect(PathDirection, flatten(((PathDirections.up for e in source_to_lca), (PathDirections.down for e in lca_to_target))))
     indexmap = Vector(sparsevec(Dict(edge_index(e) => i for (i, e) in enumerate(edges)), num_edges(tree)))
     TreePath{V, E}(src, target, edges, directions, indexmap)
 end

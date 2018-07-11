@@ -157,10 +157,6 @@ export
     BodyID,
     segments
 
-@static if !isdefined(Base, :parentindices)
-    parentindices(x) = Base.parentindexes(x)
-end
-
 include("custom_collections.jl")
 include("graphs/Graphs.jl")
 include("spatial/Spatial.jl")

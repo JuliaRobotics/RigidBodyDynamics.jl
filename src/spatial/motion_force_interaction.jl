@@ -37,7 +37,10 @@ end
 Base.eltype(::Type{SpatialInertia{T}}) where {T} = T
 @inline Base.convert(::SpatialInertia{T}, inertia::SpatialInertia{T}) where {T} = inertia
 @inline function Base.convert(::Type{SpatialInertia{T}}, inertia::SpatialInertia) where {T}
-    SpatialInertia(inertia.frame, convert(SMatrix{3, 3, T}, inertia.moment), convert(SVector{3, T}, inertia.cross_part), convert(T, inertia.mass))
+    SpatialInertia(inertia.frame,
+        convert(SMatrix{3, 3, T}, inertia.moment),
+        convert(SVector{3, T}, inertia.cross_part),
+        convert(T, inertia.mass))
 end
 function Base.convert(::Type{SMatrix{6, 6, T}}, inertia::SpatialInertia) where {T}
     J = inertia.moment
@@ -72,10 +75,10 @@ end
 
 function Base.:+(inertia1::SpatialInertia, inertia2::SpatialInertia)
     @framecheck(inertia1.frame, inertia2.frame)
-    moment = inertia1.moment + inertia2.moment
-    cross_part = inertia1.cross_part + inertia2.cross_part
-    mass = inertia1.mass + inertia2.mass
-    SpatialInertia(inertia1.frame, moment, cross_part, mass)
+    SpatialInertia(inertia1.frame,
+        inertia1.moment + inertia2.moment,
+        inertia1.cross_part + inertia2.cross_part,
+        inertia1.mass + inertia2.mass)
 end
 
 """
@@ -190,8 +193,8 @@ function newton_euler(inertia::SpatialInertia, spatial_accel::SpatialAcceleratio
 
     ang, lin = mul_inertia(I.moment, I.cross_part, I.mass, angular(Ṫ), linear(Ṫ))
     angular_momentum, linear_momentum = mul_inertia(I.moment, I.cross_part, I.mass, angular(T), linear(T))
-    ang += cross(angular(T), angular_momentum) + cross(linear(T), linear_momentum)
-    lin += cross(angular(T), linear_momentum)
+    ang += angular(T) × angular_momentum + linear(T) × linear_momentum
+    lin += angular(T) × linear_momentum
     Wrench(frame, ang, lin)
 end
 
@@ -251,5 +254,5 @@ function kinetic_energy(inertia::SpatialInertia, twist::Twist)
     J = inertia.moment
     c = inertia.cross_part
     m = inertia.mass
-    (dot(ω, J * ω) + dot(v, m * v + 2 * cross(ω, c))) / 2
+    (ω ⋅ (J * ω) + v ⋅ (m * v + 2 * (ω × c))) / 2
 end

@@ -90,7 +90,7 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
         for col in eachindex(vrange)
             @inbounds vindex = vrange[col]
             @inbounds Scol = transformfun(state.motion_subspaces.data[vindex])
-            direction == :up && (Scol = -Scol)
+            direction == PathDirections.up && (Scol = -Scol)
             set_col!(jac, vindex, Scol)
         end
     end
@@ -177,7 +177,7 @@ function _point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePa
         for col in eachindex(vrange)
             vindex = vrange[col]
             Scol = transformfun(state.motion_subspaces.data[vindex])
-            direction == :up && (Scol = -Scol)
+            direction == PathDirections.up && (Scol = -Scol)
             newcol =  -p̂ * angular(Scol) + linear(Scol)
             for row in 1:3
                 Jp.J[row, vindex] = newcol[row]
@@ -602,7 +602,7 @@ function constraint_jacobian!(jac::AbstractMatrix, rowranges, state::MechanismSt
                 treejoint = path.edges[i]
                 vrange = velocity_range(state, treejoint)
                 direction = directions(path)[i]
-                sign = ifelse(direction == :up, -1, 1)
+                sign = ifelse(direction == PathDirections.up, -1, 1)
                 for col in eachindex(vrange)
                     vindex = vrange[col]
                     Scol = state.motion_subspaces.data[vindex]

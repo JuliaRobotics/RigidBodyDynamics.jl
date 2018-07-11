@@ -1,8 +1,5 @@
 module CustomCollections
 
-using TypeSortedCollections
-using DocStringExtensions
-
 export
     ConstVector,
     NullDict,
@@ -20,9 +17,8 @@ export
     segments,
     ranges
 
-@static if !isdefined(Base, :parentindices)
-    parentindices(x) = Base.parentindexes(x)
-end
+using TypeSortedCollections
+using DocStringExtensions
 
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
@@ -62,14 +58,14 @@ end
 $(TYPEDEF)
 
 An immutable `AbstractVector` for which all elements are the same, represented
-compactly and as an isbits type if the element type is `isbits`.
+compactly and as a bitstype if the element type is a bitstype.
 """
 struct ConstVector{T} <: AbstractVector{T}
     val::T
     length::Int64
 end
 Base.size(A::ConstVector) = (A.length, )
-@inline Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
+Base.@propagate_inbounds Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
 Base.IndexStyle(::Type{<:ConstVector}) = IndexLinear()
 
 
@@ -84,8 +80,7 @@ struct NullDict{K, V} <: AbstractDict{K, V}
 end
 Base.haskey(::NullDict, k) = false
 Base.length(::NullDict) = 0
-Base.start(::NullDict) = nothing
-Base.done(::NullDict, state) = true
+Base.iterate(::NullDict) = nothing
 
 
 ## CacheElement
@@ -116,6 +111,7 @@ a `Vector`. `IndexDict` is an ordered associative collection, with the order det
 The nature of the keys enables very fast lookups and stores.
 
 # Examples
+
 ```julia-repl
 julia> IndexDict(2 : 4, [4, 5, 6])
 RigidBodyDynamics.CustomCollections.IndexDict{Int64,UnitRange{Int64},Int64} with 3 entries:
@@ -158,7 +154,6 @@ isdirty(d::CacheIndexDict) = d.dirty
 # Constructors
 for IDict in (:IndexDict, :CacheIndexDict)
     @eval begin
-
         function $IDict{K, KeyRange, V}(keys::KeyRange) where {K, KeyRange<:AbstractUnitRange{K}, V}
             $IDict{K, KeyRange, V}(keys, Vector{V}(undef, length(keys)))
         end
@@ -201,9 +196,7 @@ end
 
 @inline Base.isempty(d::AbstractIndexDict) = isempty(d.values)
 @inline Base.length(d::AbstractIndexDict) = length(d.values)
-@inline Base.start(d::AbstractIndexDict) = 1
-@inline Base.next(d::AbstractIndexDict{K}, i) where {K} = (d.keys[i] => d.values[i], i + 1)
-@inline Base.done(d::AbstractIndexDict, i) = i == length(d) + 1
+@inline Base.iterate(d::AbstractIndexDict, i = 1) = i > length(d) ? nothing : (d.keys[i] => d.values[i], i + 1)
 @inline Base.keys(d::AbstractIndexDict{K}) where {K} = d.keys
 @inline Base.values(d::AbstractIndexDict) = d.values
 @inline Base.haskey(d::AbstractIndexDict, key) = key ∈ d.keys
@@ -344,27 +337,6 @@ end
 
 const AbstractMatrixBlock{T, M} = SubArray{T,2,M,Tuple{UnitRange{Int},UnitRange{Int}},false}
 
-function _is_contiguous_and_diagonal(parent::AbstractMatrix, block_indices)
-    expected_starts = first.(axes(parent))
-    for inds in block_indices
-        if first.(inds) !== expected_starts
-            return false
-        end
-        expected_starts = last.(inds) .+ 1
-    end
-    if expected_starts !== last.(axes(parent)) .+ 1
-        return false
-    end
-    return true
-end
-
-
-function check_contiguous_block_ranges(parent::AbstractMatrix, block_indices)
-    if !_is_contiguous_and_diagonal(parent, block_indices)
-        throw(ArgumentError("The `block_indices` should be a vector of index ranges corresponding to non-overlapping contiguous diagonal blocks"))
-    end
-end
-
 """
 $(TYPEDEF)
 
@@ -398,5 +370,25 @@ Base.@propagate_inbounds Base.getindex(v::SegmentedBlockDiagonalMatrix, i::Int) 
 Base.@propagate_inbounds Base.setindex!(v::SegmentedBlockDiagonalMatrix, value, i::Int) = v.parent[i] = value
 Base.IndexStyle(::Type{<:SegmentedBlockDiagonalMatrix}) = IndexLinear()
 blocks(m::SegmentedBlockDiagonalMatrix) = m.blocks
+
+function check_contiguous_block_ranges(parent::AbstractMatrix, block_indices)
+    if !_is_contiguous_and_diagonal(parent, block_indices)
+        throw(ArgumentError("The `block_indices` should be a vector of index ranges corresponding to non-overlapping contiguous diagonal blocks"))
+    end
+end
+
+function _is_contiguous_and_diagonal(parent::AbstractMatrix, block_indices)
+    expected_starts = first.(axes(parent))
+    for inds in block_indices
+        if first.(inds) !== expected_starts
+            return false
+        end
+        expected_starts = last.(inds) .+ 1
+    end
+    if expected_starts !== last.(axes(parent)) .+ 1
+        return false
+    end
+    return true
+end
 
 end # module

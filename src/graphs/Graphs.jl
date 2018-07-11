@@ -1,5 +1,9 @@
 module Graphs
 
+# modules
+export
+    PathDirections
+
 # types
 export
     DirectedGraph,
@@ -10,7 +14,6 @@ export
 
 # functions
 export
-    data, # TODO: remove
     vertextype,
     edgetype,
     vertices,

@@ -106,7 +106,7 @@ Return the closest value to ``x`` within the interval described by ``b``.
 Base.clamp(x, b::Bounds) = clamp(x, b.lower, b.upper)
 Base.intersect(b1::Bounds, b2::Bounds) = Bounds(max(b1.lower, b2.lower), min(b1.upper, b2.upper))
 
-# Create a new Int-backed index type, along with range method specializations
+# Create a new Int-backed index type, along with necessary methods to support creating ranges
 macro indextype(ID)
     esc(quote
         struct $ID <: Integer
@@ -124,8 +124,5 @@ macro indextype(ID)
         Base.:<=(x::$ID, y::$ID) = x.value <= y.value
         Base.:-(x::$ID, y::$ID) = x.value - y.value
         Base.:+(x::$ID, y::Int) = $ID(x.value + y)
-
-        # Want the state of the iterator to be a plain Int, not an $ID. Same for length.
-        # Some Base methods aren't designed for this before https://github.com/JuliaLang/julia/pull/27302, so:
     end)
 end
