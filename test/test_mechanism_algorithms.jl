@@ -29,6 +29,10 @@ end
 
     @testset "basic stuff" begin
         mechanism = randmech()
+        for joint in joints(mechanism)
+            @test eltype(joint_type(joint)) == Float64
+        end
+
         x = MechanismState(mechanism)
         rand!(x)
         q = vcat([configuration(x, joint) for joint in tree_joints(mechanism)]...)
