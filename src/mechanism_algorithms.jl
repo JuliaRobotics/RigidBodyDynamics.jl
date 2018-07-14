@@ -253,22 +253,20 @@ function mass_matrix!(M::Symmetric, state::MechanismState)
     @inbounds for i in state.treejointids
         bodyid = successorid(i, state)
         Ici = crb_inertia(state, bodyid, false)
-        ancestor_joint_mask = values(state.ancestor_joint_masks[i]) # TODO
         vrangei = velocity_range(state, i)
         for coli in eachindex(vrangei)
             vindexi = vrangei[coli]
             Sicol = motion_subspaces[vindexi]
             Ficol = Ici * Sicol
-            for j in Base.OneTo(i) # TODO: iterate directly over relevant joint ids
-                if ancestor_joint_mask[j]
-                    vrangej = velocity_range(state, j)
-                    for colj in eachindex(vrangej)
-                        vindexj = vrangej[colj]
-                        Sjcol = motion_subspaces[vindexj]
-                        # TODO: make nicer:
-                        @framecheck Ficol.frame Sjcol.frame
-                        M.data[vindexi, vindexj] = (transpose(angular(Ficol)) * angular(Sjcol) + transpose(linear(Ficol)) * linear(Sjcol))[1]
-                    end
+            for j in state.ancestors[i]
+                vrangej = velocity_range(state, j)
+                for colj in eachindex(vrangej)
+                    vindexj = vrangej[colj]
+                    Sjcol = motion_subspaces[vindexj]
+                    # TODO: make nicer:
+                    @framecheck Ficol.frame Sjcol.frame
+                    M.data[vindexi, vindexj] =
+                        (transpose(angular(Ficol)) * angular(Sjcol) + transpose(linear(Ficol)) * linear(Sjcol))[1]
                 end
             end
         end

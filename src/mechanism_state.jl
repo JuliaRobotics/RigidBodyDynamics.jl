@@ -47,7 +47,7 @@ struct MechanismState{X, M, C, JointCollection}
     qranges::JointDict{UnitRange{Int}}
     vranges::JointDict{UnitRange{Int}}
     constraintranges::IndexDict{JointID, UnitRange{JointID}, UnitRange{Int}}
-    ancestor_joint_masks::JointDict{JointDict{Bool}} # TODO: use a Matrix-backed type
+    ancestors::JointDict{Vector{JointID}}
     constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: use a Matrix-backed type
 
     # minimal representation of state
@@ -91,9 +91,8 @@ struct MechanismState{X, M, C, JointCollection}
         nontreejointids = lasttreejointid + 1 : lastjointid
         predecessor_and_successor_ids = JointDict{Pair{BodyID, BodyID}}(
             JointID(j) => (BodyID(predecessor(j, m)) => BodyID(successor(j, m))) for j in joints(m))
-        ancestor_joint_mask = joint -> JointDict{Bool}(
-            JointID(j) => j ∈ path(m, successor(joint, m), root_body(m)) for j in tree_joints(m))
-        ancestor_joint_masks = JointDict{JointDict{Bool}}(JointID(j) => ancestor_joint_mask(j) for j in tree_joints(m))
+        ancestors = JointDict{Vector{JointID}}(
+            JointID(j) => JointID.(path(m, successor(j, m), root_body(m)).edges) for j in tree_joints(m))
         constraint_jacobian_structure = JointDict{TreePath{RigidBody{M}, Joint{M}}}(
             JointID(j) => path(m, predecessor(j, m), successor(j, m)) for j in joints(m))
         qsegmented = SegmentedVector(q, tree_joints(m), num_positions)
@@ -150,7 +149,7 @@ struct MechanismState{X, M, C, JointCollection}
         new{X, M, C, JointCollection}(
             modcount(m), m, nonrootbodies, treejoints, nontreejoints,
             jointids, treejointids, nontreejointids,
-            predecessor_and_successor_ids, qranges, vranges, constraintranges, ancestor_joint_masks, constraint_jacobian_structure,
+            predecessor_and_successor_ids, qranges, vranges, constraintranges, ancestors, constraint_jacobian_structure,
             qsegmented, vsegmented, s,
             joint_transforms, joint_twists, joint_bias_accelerations, tree_joint_transforms, non_tree_joint_transforms,
             motion_subspaces, constraint_wrench_subspaces,
