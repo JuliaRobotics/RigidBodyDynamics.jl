@@ -399,8 +399,7 @@ function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}
     qs = values(segments(state.q))
     vs = values(segments(state.v))
     v̇s = values(segments(v̇))
-    discard = DiscardVector(length(qs))
-    broadcast!(discard, state, out, joints, qs, vs, v̇s) do state, accels, joint, qjoint, vjoint, v̇joint
+    foreach_with_extra_args(state, out, joints, qs, vs, v̇s) do state, accels, joint, qjoint, vjoint, v̇joint
         bodyid = successorid(JointID(joint), state)
         accels[bodyid] = joint_spatial_acceleration(joint, qjoint, vjoint, v̇joint)
     end
@@ -454,20 +453,20 @@ function joint_wrenches_and_torques!(
     # Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
     @boundscheck length(torquesout) == num_velocities(state) || error("length of torque vector is wrong")
 
+    wrenches = net_wrenches_in_joint_wrenches_out
     for jointid in reverse(state.treejointids)
         parentbodyid, bodyid = predsucc(jointid, state)
-        jointwrench = net_wrenches_in_joint_wrenches_out[bodyid]
+        jointwrench = wrenches[bodyid]
         if parentbodyid != BodyID(1) # TODO: ugly
             # TODO: consider also doing this for the root:
-            net_wrenches_in_joint_wrenches_out[parentbodyid] += jointwrench # action = -reaction
+            wrenches[parentbodyid] += jointwrench # action = -reaction
         end
     end
 
     joints = state.treejoints
     qs = values(segments(state.q))
     τs = values(segments(torquesout))
-    discard = DiscardVector(length(qs))
-    broadcast!(discard, state, net_wrenches_in_joint_wrenches_out, joints, qs, τs) do state, wrenches, joint, qjoint, τjoint
+    foreach_with_extra_args(state, wrenches, joints, qs, τs) do state, wrenches, joint, qjoint, τjoint
         # TODO: awkward to transform back to body frame; consider switching to body-frame implementation
         bodyid = successorid(JointID(joint), state)
         tf = inv(transform_to_root(state, bodyid, false))
