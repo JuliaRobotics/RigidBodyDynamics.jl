@@ -514,14 +514,14 @@ $(SIGNATURES)
 
 Return the range of indices into the joint configuration vector ``q`` corresponding to joint `joint`.
 """
-@inline configuration_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.qranges[joint]
+@inline configuration_range(state::MechanismState, joint::Union{<:Joint, JointID}) = ranges(configuration(state))[joint]
 
 """
 $(SIGNATURES)
 
 Return the range of indices into the joint velocity vector ``v`` corresponding to joint `joint`.
 """
-@inline velocity_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.vranges[joint]
+@inline velocity_range(state::MechanismState, joint::Union{<:Joint, JointID}) = ranges(velocity(state))[joint]
 
 """
 $(SIGNATURES)
@@ -639,7 +639,10 @@ end
     for joint in tree_joints(state.mechanism)
         jointid = JointID(joint)
         parentid, bodyid = predsucc(jointid, state)
-        transforms_to_root[bodyid] = transforms_to_root[parentid] * joint_to_predecessor(joint) * state.joint_transforms[jointid]
+        transforms_to_root[bodyid] =
+            transforms_to_root[parentid] *
+            joint_to_predecessor(joint) *
+            state.joint_transforms[jointid]
     end
     state.transforms_to_root.dirty = false
 
