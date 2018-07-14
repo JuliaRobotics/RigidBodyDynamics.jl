@@ -36,14 +36,14 @@ function create_benchmark_suite()
     suite["mass_matrix!"] = @benchmarkable(begin
         setdirty!($state)
         mass_matrix!($(result.massmatrix), $state)
-    end, setup = rand!($state))
+    end, setup = rand!($state), evals = 10)
 
     suite["dynamics_bias!"] = @benchmarkable(begin
         setdirty!($state)
         dynamics_bias!($result, $state)
     end, setup = begin
         rand!($state)
-    end)
+    end, evals = 10)
 
     suite["inverse_dynamics!"] = @benchmarkable(begin
         setdirty!($state)
@@ -53,7 +53,7 @@ function create_benchmark_suite()
         rand!(v̇)
         externalwrenches = RigidBodyDynamics.BodyDict(convert(BodyID, body) => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
         rand!($state)
-    end)
+    end, evals = 10)
 
     suite["dynamics!"] = @benchmarkable(begin
         setdirty!($state)
@@ -63,17 +63,17 @@ function create_benchmark_suite()
         τ = similar(velocity($state))
         rand!(τ)
         externalwrenches = RigidBodyDynamics.BodyDict(convert(BodyID, body) => rand(Wrench{ScalarType}, root_frame($mechanism)) for body in bodies($mechanism))
-    end)
+    end, evals = 10)
 
     suite["momentum_matrix!"] = @benchmarkable(begin
         setdirty!($state)
         momentum_matrix!($mat, $state)
-    end, setup = rand!($state))
+    end, setup = rand!($state), evals = 10)
 
     suite["geometric_jacobian!"] = @benchmarkable(begin
         setdirty!($state)
         geometric_jacobian!($jac, $state, $p)
-    end, setup = rand!($state))
+    end, setup = rand!($state), evals = 10)
 
     suite["mass_matrix! and geometric_jacobian!"] = @benchmarkable(begin
         setdirty!($state)
@@ -81,32 +81,32 @@ function create_benchmark_suite()
         geometric_jacobian!($jac, $state, $p)
     end, setup = begin
         rand!($state)
-    end)
+    end, evals = 10)
 
     suite["momentum"] = @benchmarkable(begin
         setdirty!($state)
         momentum($state)
-    end, setup = rand!($state))
+    end, setup = rand!($state), evals = 10)
 
     suite["momentum_rate_bias"] = @benchmarkable(begin
         setdirty!($state)
         momentum_rate_bias($state)
-    end, setup = rand!($state))
+    end, setup = rand!($state), evals = 10)
 
     suite["kinetic_energy"] = @benchmarkable(begin
         setdirty!($state)
         kinetic_energy($state)
-    end, setup = rand!($state))
+    end, setup = rand!($state), evals = 10)
 
     suite["gravitational_potential_energy"] = @benchmarkable(begin
         setdirty!($state)
         gravitational_potential_energy($state)
-    end, setup = rand!($state))
+    end, setup = rand!($state), evals = 10)
 
     suite["center_of_mass"] = @benchmarkable(begin
         setdirty!($state)
         center_of_mass($state)
-    end, setup = rand!($state))
+    end, setup = rand!($state), evals = 10)
 
     mcmechanism, _ = maximal_coordinates(mechanism)
     mcstate = MechanismState{ScalarType}(mcmechanism)
@@ -115,29 +115,21 @@ function create_benchmark_suite()
     suite["constraint_jacobian!"] = @benchmarkable(begin
         setdirty!($mcstate)
         RigidBodyDynamics.constraint_jacobian!($(mcresult.constraintjacobian), $(mcresult.constraintrowranges), $mcstate)
-    end, setup = rand!($mcstate))
+    end, setup = rand!($mcstate), evals = 10)
 
     suite["constraint_bias!"] = @benchmarkable(begin
         setdirty!($mcstate)
         RigidBodyDynamics.constraint_bias!($(mcresult.constraintbias), $mcstate)
-    end, setup = rand!($mcstate))
+    end, setup = rand!($mcstate), evals = 10)
 
     suite
 end
 
 function runbenchmarks()
     suite = create_benchmark_suite()
-
-    # paramspath = joinpath(dirname(@__FILE__), "benchmarkparams.json")
-    # if isfile(paramspath)
-    #     BenchmarkTools.loadparams!(suite, BenchmarkTools.load(paramspath), :evals);
-    # else
-    #     tune!(suite, verbose = true)
-    #     BenchmarkTools.save(paramspath, BenchmarkTools.params(suite))
-    # end
-
     Profile.clear_malloc_data()
-    results = run(suite, verbose = true)
+    overhead = BenchmarkTools.estimate_overhead()
+    results = run(suite, verbose=true, overhead=overhead, gctrial=false)
     for result in results
         println("$(first(result)):")
         display(last(result))
