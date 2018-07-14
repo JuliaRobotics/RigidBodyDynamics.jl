@@ -8,7 +8,6 @@ export
     IndexDict,
     CacheIndexDict,
     SegmentedVector,
-    DiscardVector,
     SegmentedBlockDiagonalMatrix
 
 export
@@ -319,20 +318,6 @@ end
 function Base.similar(v::SegmentedVector{K, T, KeyRange}, ::Type{S} = T) where {K, T, KeyRange, S}
     SegmentedVector{K, S, KeyRange}(similar(parent(v), S), ranges(v))
 end
-
-"""
-$(TYPEDEF)
-
-`DiscardVector` is an `AbstractVector` whose `setindex!` simply discards the value.
-This is useful for `broadcast!` calls where the output of the broadcasted function is not interesting,
-specifically when the broadcasted function is in-place and there are arguments that need to be treated
-as scalars, so that a simple foreach doesn't do the job.
-"""
-struct DiscardVector <: AbstractVector{Any}
-    length::Int
-end
-@inline Base.setindex!(v::DiscardVector, value, i::Int) = nothing
-@inline Base.size(v::DiscardVector) = (v.length,)
 
 
 const AbstractMatrixBlock{T, M} = SubArray{T,2,M,Tuple{UnitRange{Int},UnitRange{Int}},false}

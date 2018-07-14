@@ -630,9 +630,8 @@ end
     @modcountcheck state state.mechanism
 
     # update tree joint transforms
-    treejoints = state.treejoints
     qs = values(segments(state.q))
-    state.tree_joint_transforms .= joint_transform.(treejoints, qs)
+    @inbounds map!(joint_transform, state.tree_joint_transforms, state.treejoints, qs)
 
     # update transforms to root
     transforms_to_root = state.transforms_to_root
@@ -645,9 +644,7 @@ end
 
     # update non-tree joint transforms
     if !isempty(state.nontreejointids)
-        nontreejoints = state.nontreejoints
-        broadcast!(state.non_tree_joint_transforms, state, nontreejoints) do state, joint
-
+        broadcast!(state.non_tree_joint_transforms, state, state.nontreejoints) do state, joint
             predid, succid = predsucc(JointID(joint), state)
             before_to_root = state.transforms_to_root[predid] * joint_to_predecessor(joint)
             after_to_root = state.transforms_to_root[succid] * joint_to_successor(joint)
@@ -663,10 +660,9 @@ end
     nothing
 end
 @noinline function _update_joint_twists!(state::MechanismState)
-    treejoints = state.treejoints
     qs = values(segments(state.q))
     vs = values(segments(state.v))
-    @inbounds values(state.joint_twists) .= joint_twist.(treejoints, qs, vs)
+    @inbounds map!(joint_twist, values(state.joint_twists), state.treejoints, qs, vs)
     state.joint_twists.dirty = false
     nothing
 end
@@ -676,10 +672,9 @@ end
     nothing
 end
 @noinline function _update_joint_bias_accelerations!(state::MechanismState)
-    treejoints = state.treejoints
     qs = values(segments(state.q))
     vs = values(segments(state.v))
-    @inbounds values(state.joint_bias_accelerations) .= bias_acceleration.(treejoints, qs, vs)
+    @inbounds map!(bias_acceleration, values(state.joint_bias_accelerations), state.treejoints, qs, vs)
     state.joint_bias_accelerations.dirty = false
     nothing
 end
@@ -695,9 +690,8 @@ end
 end
 @noinline function _update_motion_subspaces!(state::MechanismState)
     update_transforms!(state)
-    treejoints = state.treejoints
     qs = values(segments(state.q))
-    foreach_with_extra_args(state, treejoints, qs) do state, joint, qjoint
+    foreach_with_extra_args(state, state.treejoints, qs) do state, joint, qjoint
         S = _motion_subspace(state, joint, qjoint)
         @inbounds vrange = velocity_range(state, joint)
         @inbounds for col = Base.OneTo(size(S, 2))
@@ -851,20 +845,18 @@ Base.@propagate_inbounds function gravitational_potential_energy(state::Mechanis
 end
 
 function configuration_derivative!(q̇::SegmentedVector{JointID}, state::MechanismState)
-    joints = state.treejoints
     q̇s = values(segments(q̇))
     qs = values(segments(state.q))
     vs = values(segments(state.v))
-    foreach((joint, q̇, q, v) -> velocity_to_configuration_derivative!(q̇, joint, q, v), joints, q̇s, qs, vs)
+    foreach((joint, q̇, q, v) -> velocity_to_configuration_derivative!(q̇, joint, q, v), state.treejoints, q̇s, qs, vs)
 end
 
 function configuration_derivative_to_velocity_adjoint!(
         fq::SegmentedVector{JointID}, state::MechanismState, fv::SegmentedVector{JointID})
-    joints = state.treejoints
     fqs = values(segments(fq))
     qs = values(segments(state.q))
     fvs = values(segments(fv))
-    foreach((joint, fq, q, fv) -> configuration_derivative_to_velocity_adjoint!(fq, joint, q, fv), joints, fqs, qs, fvs)
+    foreach((joint, fq, q, fv) -> configuration_derivative_to_velocity_adjoint!(fq, joint, q, fv), state.treejoints, fqs, qs, fvs)
 end
 
 function configuration_derivative(state::MechanismState{X}) where {X}
@@ -874,9 +866,8 @@ function configuration_derivative(state::MechanismState{X}) where {X}
 end
 
 function velocity_to_configuration_derivative_jacobian!(J::SegmentedBlockDiagonalMatrix, state::MechanismState)
-    joints = state.treejoints
     qs = values(segments(state.q))
-    foreach(joints, qs, CustomCollections.blocks(J)) do joint, qjoint, block
+    foreach(state.treejoints, qs, CustomCollections.blocks(J)) do joint, qjoint, block
         copyto!(block, velocity_to_configuration_derivative_jacobian(joint, qjoint))
     end
     nothing
@@ -891,9 +882,8 @@ function velocity_to_configuration_derivative_jacobian(state::MechanismState{X, 
 end
 
 function configuration_derivative_to_velocity_jacobian!(J::SegmentedBlockDiagonalMatrix, state::MechanismState)
-    joints = state.treejoints
     qs = values(segments(state.q))
-    foreach(joints, qs, CustomCollections.blocks(J)) do joint, qjoint, block
+    foreach(state.treejoints, qs, CustomCollections.blocks(J)) do joint, qjoint, block
         copyto!(block, configuration_derivative_to_velocity_jacobian(joint, qjoint))
     end
     nothing
@@ -1017,11 +1007,10 @@ function local_coordinates!(
         ϕ::SegmentedVector{JointID}, ϕd::SegmentedVector{JointID}, state::MechanismState, q0::SegmentedVector{JointID})
     ϕs = values(segments(ϕ))
     ϕds = values(segments(ϕd))
-    joints = state.treejoints
     q0s = values(segments(q0))
     qs = values(segments(state.q))
     vs = values(segments(state.v))
-    foreach((joint, ϕ, ϕ̇, q0, q, v) -> local_coordinates!(ϕ, ϕ̇, joint, q0, q, v), joints, ϕs, ϕds, q0s, qs, vs)
+    foreach((joint, ϕ, ϕ̇, q0, q, v) -> local_coordinates!(ϕ, ϕ̇, joint, q0, q, v), state.treejoints, ϕs, ϕds, q0s, qs, vs)
 end
 
 """
@@ -1032,8 +1021,7 @@ configuration vector ``q``.
 """ # TODO: refer to the method that takes a joint once it's moved to its own Joints module
 function global_coordinates!(state::MechanismState, q0::SegmentedVector{JointID}, ϕ::SegmentedVector{JointID})
     qs = values(segments(state.q))
-    joints = state.treejoints
     q0s = values(segments(q0))
     ϕs = values(segments(ϕ))
-    foreach((joint, q, q0, ϕ) -> global_coordinates!(q, joint, q0, ϕ), joints, qs, q0s, ϕs)
+    foreach((joint, q, q0, ϕ) -> global_coordinates!(q, joint, q0, ϕ), state.treejoints, qs, q0s, ϕs)
 end
