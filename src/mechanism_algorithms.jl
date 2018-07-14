@@ -163,12 +163,11 @@ $point_jacobian_doc
 
 $noalloc_doc
 """
-function _point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePath,
+function point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePath,
                          point::Point3D, transformfun)
     @framecheck Jp.frame point.frame
     update_motion_subspaces!(state)
     fill!(Jp.J, 0)
-    p̂ = Spatial.hat(point.v)
     @inbounds for i in eachindex(path.edges)
         joint = path.edges[i]
         vrange = velocity_range(state, joint)
@@ -177,7 +176,7 @@ function _point_jacobian!(Jp::PointJacobian, state::MechanismState, path::TreePa
             vindex = vrange[col]
             Scol = transformfun(state.motion_subspaces.data[vindex])
             direction == PathDirections.up && (Scol = -Scol)
-            newcol =  -p̂ * angular(Scol) + linear(Scol)
+            newcol = angular(Scol) × point.v + linear(Scol)
             for row in 1:3
                 Jp.J[row, vindex] = newcol[row]
             end
@@ -198,11 +197,11 @@ $noalloc_doc
 """
 function point_jacobian!(out::PointJacobian, state::MechanismState, path::TreePath, point::Point3D)
     if out.frame == root_frame(state.mechanism)
-        _point_jacobian!(out, state, path, point, identity)
+        point_jacobian!(out, state, path, point, identity)
     else
         root_to_desired = inv(transform_to_root(state, out.frame))
         let root_to_desired = root_to_desired
-            _point_jacobian!(out, state, path, point, S -> transform(S, root_to_desired))
+            point_jacobian!(out, state, path, point, S -> transform(S, root_to_desired))
         end
     end
 end
