@@ -566,9 +566,6 @@ Base.@propagate_inbounds function bias_acceleration(state::MechanismState, joint
     state.joint_bias_accelerations[joint]
 end
 
-Base.@deprecate transform(state::MechanismState, joint::Joint) joint_transform(state, joint) # TODO: undeprecate?
-
-
 """
 $(SIGNATURES)
 
