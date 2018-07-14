@@ -137,7 +137,6 @@ effort_bounds(joint::Joint) = joint.effort_bounds
 
 JointID(joint::Joint) = joint.id[]
 Base.convert(::Type{JointID}, joint::Joint) = JointID(joint)
-Base.@deprecate id(joint::Joint) JointID(joint)
 @inline RigidBodyDynamics.Graphs.edge_id_type(::Type{<:Joint}) = JointID
 @inline RigidBodyDynamics.Graphs.edge_id(joint::Joint) = convert(JointID, joint)
 @inline RigidBodyDynamics.Graphs.set_edge_id!(joint::Joint, id::JointID) = (joint.id[] = id)
