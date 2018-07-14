@@ -7,7 +7,7 @@ $(TYPEDEF)
 The abstract supertype of all concrete joint types.
 """
 abstract type JointType{T} end
-Base.eltype(::Type{JointType{T}}) where {T} = T
+Base.eltype(::Type{<:JointType{T}}) where {T} = T
 num_velocities(::T) where {T<:JointType} = num_velocities(T)
 num_positions(::T) where {T<:JointType} = num_positions(T)
 num_constraints(::Type{T}) where {T<:JointType} = 6 - num_velocities(T)
