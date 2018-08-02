@@ -11,5 +11,5 @@ You can also run the notebooks locally by performing the following steps:
 3. [install IJulia](https://github.com/JuliaLang/IJulia.jl)
 4. in the Julia REPL, run
    ```
-   using IJulia; notebook(dir=Pkg.dir("RigidBodyDynamics", "notebooks"))
+   using IJulia, RigidBodyDynamics; notebook(dir=joinpath(dirname(pathof(RigidBodyDynamics)), "..", "notebooks"))
    ```
