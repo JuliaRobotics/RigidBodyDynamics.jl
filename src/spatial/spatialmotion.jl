@@ -62,6 +62,9 @@ struct PointJacobian{M <: AbstractMatrix}
     J::M
 end
 
+Base.@deprecate PointJacobian{M}(J::M, frame::CartesianFrame3D) where {M<:AbstractMatrix} PointJacobian(frame, J)
+Base.@deprecate PointJacobian(J::AbstractMatrix, frame::CartesianFrame3D) PointJacobian(frame, J)
+
 Base.Array(Jp::PointJacobian) = Matrix(Jp.J)
 
 function point_velocity(Jp::PointJacobian, v::AbstractVector)
