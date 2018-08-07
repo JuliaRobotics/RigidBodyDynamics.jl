@@ -24,6 +24,7 @@ export
     angular,
     linear,
     point_velocity,
+    point_acceleration,
     change_base,
     log_with_time_derivative,
     center_of_mass,

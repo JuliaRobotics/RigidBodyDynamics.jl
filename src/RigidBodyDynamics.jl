@@ -129,6 +129,8 @@ export
     center_of_mass,
     geometric_jacobian,
     geometric_jacobian!,
+    point_velocity,
+    point_acceleration,
     point_jacobian,
     point_jacobian!,
     relative_acceleration,

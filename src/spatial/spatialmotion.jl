@@ -309,13 +309,27 @@ end
 """
 $(SIGNATURES)
 
-Given a twist ``T_{j}^{k,i}`` of frame ``j`` with respect to frame ``i``, expressed in frame ``k``,
+Given the twist ``T_{j}^{k,i}`` of frame ``j`` with respect to frame ``i``, expressed in frame ``k``,
 and the location of a point fixed in frame ``j``, also expressed in frame ``k``, compute the velocity
 of the point relative to frame ``i``.
 """
 function point_velocity(twist::Twist, point::Point3D)
     @framecheck twist.frame point.frame
     FreeVector3D(twist.frame, angular(twist) × point.v + linear(twist))
+end
+
+"""
+$(SIGNATURES)
+
+Given the twist ``dot{T}_{j}^{k,i}`` of frame ``j`` with respect to frame ``i``, expressed in frame ``k``
+and its time derivative (a spatial acceleration), as well as the location of a point fixed in frame ``j``,
+also expressed in frame ``k``, compute the acceleration of the point relative to frame ``i``.
+"""
+function point_acceleration(twist::Twist, accel::SpatialAcceleration, point::Point3D)
+    @framecheck twist.base accel.base
+    @framecheck twist.body accel.body
+    @framecheck twist.frame accel.frame
+    FreeVector3D(accel.frame, angular(accel) × point.v + linear(accel) + angular(twist) × point_velocity(twist, point).v)
 end
 
 
