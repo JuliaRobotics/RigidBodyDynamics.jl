@@ -236,11 +236,7 @@ end
             ξhat = [ξhat; zeros(1, 4)]
             H_mat = [rotation(H) translation(H)]
             H_mat = [H_mat; zeros(1, 3) 1.]
-            if VERSION < v"0.7-"
-                @test isapprox(expm(ξhat), H_mat)
-            else
-                @test isapprox(exp(ξhat), H_mat)
-            end
+            @test isapprox(exp(ξhat), H_mat)
         end
 
         # test without rotation but with nonzero translation:
