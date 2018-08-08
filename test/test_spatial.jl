@@ -194,6 +194,23 @@ end
         @test Ṫ + zero(Ṫ) == Ṫ
     end
 
+    @testset "point_velocity, point_acceleration" begin
+        body = CartesianFrame3D("body")
+        base = CartesianFrame3D("base")
+        frame = CartesianFrame3D("some other frame") # yes, the math does check out if this is different from the other two; ṗ will just be rotated to this frame
+        T = rand(Twist{Float64}, body, base, frame)
+        Ṫ = rand(SpatialAcceleration{Float64}, body, base, frame)
+        p = Point3D(frame, rand(SVector{3}))
+        ṗ = point_velocity(T, p)
+        p̈ = point_acceleration(T, Ṫ, p)
+        @test p̈.frame == frame
+        p_dual = Point3D(p.frame, ForwardDiff.Dual.(p.v, ṗ.v))
+        T_dual = Twist(T.body, T.base, T.frame, ForwardDiff.Dual.(angular(T), angular(Ṫ)), ForwardDiff.Dual.(linear(T), linear(Ṫ)))
+        ṗ_dual = point_velocity(T_dual, p_dual)
+        p̈_check = FreeVector3D(ṗ_dual.frame, map(x -> ForwardDiff.partials(x, 1), ṗ_dual.v))
+        @test p̈ ≈ p̈_check atol=1e-12
+    end
+
     @testset "kinetic energy" begin
         I = rand(SpatialInertia{Float64}, f2)
         T = rand(Twist{Float64}, f2, f1, f2)
