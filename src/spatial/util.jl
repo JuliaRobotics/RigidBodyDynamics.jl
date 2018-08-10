@@ -92,7 +92,7 @@ function rotation_vector_rate(rotation_vector::AbstractVector{T}, angular_veloci
     ϕ̇ = ω
     if θ > eps(θ)
         s, c = sincos(θ)
-        ϕ̇ += T(0.5) * (ϕ × ω) + 1 / θ^2 * (1 - (θ * s) / (2 * (1 - c))) * ϕ × (ϕ × ω)
+        ϕ̇ += (ϕ × ω) / 2 + 1 / θ^2 * (1 - (θ * s) / (2 * (1 - c))) * ϕ × (ϕ × ω)
     end
     ϕ̇
 end

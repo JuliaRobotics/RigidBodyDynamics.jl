@@ -73,9 +73,6 @@ Base.one(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) w
 Base.one(::Type{Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) = one(Transform3D{Float64}, from, to)
 Base.one(::Type{T}, frame::CartesianFrame3D) where {T<:Transform3D} = one(T, frame, frame)
 
-Base.@deprecate eye(T::Type{<:Transform3D}, from::CartesianFrame3D, to::CartesianFrame3D) one(T, from, to)
-Base.@deprecate eye(::Type{T}, frame::CartesianFrame3D) where {T<:Transform3D} one(T, frame)
-
 function Random.rand(::Type{Transform3D{T}}, from::CartesianFrame3D, to::CartesianFrame3D) where T
     rot = rand(RotMatrix3{T})
     trans = rand(SVector{3, T})
