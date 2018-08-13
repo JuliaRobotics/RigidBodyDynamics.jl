@@ -11,6 +11,7 @@ end
     f4 = CartesianFrame3D("4")
 
     @testset "rotation vector rate" begin
+        Random.seed!(62)
         hat = RigidBodyDynamics.Spatial.hat
         rotation_vector_rate = RigidBodyDynamics.Spatial.rotation_vector_rate
         for ϕ in (rand(SVector{3}), zero(SVector{3})) # exponential coordinates (rotation vector)
@@ -46,6 +47,7 @@ end
     end
 
     @testset "show" begin
+        Random.seed!(63)
         show(devnull, rand(SpatialInertia{Float64}, f1))
         show(devnull, rand(Twist{Float64}, f2, f1, f3))
         show(devnull, rand(SpatialAcceleration{Float64}, f2, f1, f3))
@@ -59,6 +61,7 @@ end
     end
 
     @testset "spatial inertia" begin
+        Random.seed!(64)
         I2 = rand(SpatialInertia{Float64}, f2)
         H21 = rand(Transform3D, f2, f1)
         I1 = transform(I2, H21)
@@ -76,6 +79,7 @@ end
     end
 
     @testset "twist" begin
+        Random.seed!(65)
         T1 = rand(Twist{Float64}, f2, f1, f3)
         T2 = rand(Twist{Float64}, f3, f2, f3)
         T3 = T1 + T2
@@ -103,6 +107,7 @@ end
     end
 
     @testset "wrench" begin
+        Random.seed!(66)
         W = rand(Wrench{Float64}, f2)
         H21 = rand(Transform3D, f2, f1)
         @test isapprox(Array(transform(W, H21)), Ad(inv(H21))' * Array(W))
@@ -133,6 +138,7 @@ end
     end
 
     @testset "momentum" begin
+        Random.seed!(67)
         T = rand(Twist{Float64}, f2, f1, f2)
         I = rand(SpatialInertia{Float64}, f2)
         T2 = rand(Twist{Float64}, f2, f1, f1)
@@ -147,6 +153,7 @@ end
     end
 
     @testset "geometric jacobian, power" begin
+        Random.seed!(68)
         n = 14
         J = GeometricJacobian(f2, f1, f3, rand(SMatrix{3, n}), rand(SMatrix{3, n}))
         v = rand(size(J, 2))
@@ -167,6 +174,7 @@ end
     end
 
     @testset "mul! with transpose(mat)" begin
+        Random.seed!(69)
         mat = WrenchMatrix(f1, rand(SMatrix{3, 4}), rand(SMatrix{3, 4}))
         vec = rand(SpatialAcceleration{Float64}, f2, f3, f1)
         k = fill(NaN, size(mat, 2))
@@ -175,6 +183,7 @@ end
     end
 
     @testset "momentum matrix" begin
+        Random.seed!(70)
         n = 13
         A = MomentumMatrix(f3, rand(SMatrix{3, n}), rand(SMatrix{3, n}))
         v = rand(size(A, 2))
@@ -185,6 +194,7 @@ end
     end
 
     @testset "spatial acceleration" begin
+        Random.seed!(71)
         I = rand(SpatialInertia{Float64}, f2)
         Ṫ = rand(SpatialAcceleration{Float64}, f2, f1, f2)
         T = rand(Twist{Float64}, f2, f1, f2)
@@ -212,6 +222,7 @@ end
     end
 
     @testset "kinetic energy" begin
+        Random.seed!(72)
         I = rand(SpatialInertia{Float64}, f2)
         T = rand(Twist{Float64}, f2, f1, f2)
         H = rand(Transform3D, f2, f1)
@@ -221,8 +232,8 @@ end
     end
 
     @testset "log / exp" begin
+        Random.seed!(74) # TODO: https://github.com/JuliaRobotics/RigidBodyDynamics.jl/issues/135
         hat = RigidBodyDynamics.Spatial.hat
-        Random.seed!(1) # TODO: https://github.com/JuliaRobotics/RigidBodyDynamics.jl/issues/135
         for θ in [LinRange(0., 10 * eps(), 100);
                   LinRange(0., π - eps(), 100)]
             # have magnitude of parts of twist be bounded by θ to check for numerical issues
@@ -277,6 +288,7 @@ end
     end
 
     @testset "RodriguesVec linearization" begin
+        Random.seed!(75)
         ϵ = 1e-3
         for i = 1 : 100
             e = RotMatrix(AngleAxis(ϵ, randn(), randn(), randn()))

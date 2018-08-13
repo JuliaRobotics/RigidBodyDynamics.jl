@@ -19,6 +19,7 @@
     end
 
     @testset "attach!" begin
+        Random.seed!(47)
         body0 = RigidBody{Float64}("root")
         mechanism = Mechanism(body0)
         joint1 = Joint("joint1", rand(Revolute{Float64}))
@@ -52,6 +53,7 @@
     end
 
     @testset "attach! mechanism" begin
+        Random.seed!(48)
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...)
         nq = num_positions(mechanism)
         nv = num_velocities(mechanism)
@@ -110,6 +112,7 @@
     end
 
     @testset "remove fixed joints" begin
+        Random.seed!(49)
         joint_types = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 10]]
         shuffle!(joint_types)
         mechanism = rand_tree_mechanism(Float64, joint_types...)
@@ -128,6 +131,7 @@
     end
 
     @testset "replace joint" begin
+        Random.seed!(50)
         jointtypes = [QuaternionFloating{Float64}; QuaternionSpherical{Float64}; Planar{Float64}; [Revolute{Float64} for i = 1 : 10]]
         shuffle!(jointtypes)
         mechanism = rand_tree_mechanism(Float64, jointtypes...)
@@ -144,6 +148,7 @@
     end
 
     @testset "submechanism" begin
+        Random.seed!(51)
         for testnum = 1 : 100
             # joint_types = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 10]] # FIXME: use this
             joint_types = [Revolute{Float64} for i = 1 : 4]
@@ -172,6 +177,7 @@
     end
 
     @testset "reattach" begin
+        Random.seed!(52)
         for testnum = 1 : 10
             # create random floating mechanism
             joint_types = [[Prismatic{Float64} for i = 1 : 10]; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 10]]
@@ -252,6 +258,7 @@
     end # reattach
 
     @testset "maximal coordinates" begin
+        Random.seed!(53)
         # create random tree mechanism and equivalent mechanism in maximal coordinates
         tree_mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; QuaternionSpherical{Float64}; Planar{Float64}; [Revolute{Float64} for i = 1 : 10]; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
         mc_mechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(tree_mechanism)
@@ -292,6 +299,7 @@
     end # maximal coordinates
 
     @testset "generic scalar dynamics" begin # TODO: move to a better place
+        Random.seed!(54)
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
         mechanism, newfloatingjoints, bodymap, jointmap = maximal_coordinates(mechanism)
 
@@ -313,6 +321,7 @@
     end
 
     @testset "modcount" begin
+        Random.seed!(55)
         mechanism = rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 10]]...);
         state = MechanismState(mechanism)
         attach!(mechanism, root_body(mechanism), RigidBody(rand(SpatialInertia{Float64}, CartesianFrame3D())), Joint("bla", QuaternionFloating{Float64}()))

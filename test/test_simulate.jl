@@ -1,5 +1,6 @@
 @testset "simulation" begin
     @testset "simulate" begin
+        Random.seed!(60)
         # use simulate function (Munthe-Kaas integrator)
         acrobot = parse_urdf(Float64, joinpath(@__DIR__, "urdf", "Acrobot.urdf"))
         x = MechanismState(acrobot)
@@ -34,7 +35,7 @@
         # Drop a single rigid body with a contact point at the center of mass
         # onto the floor with a conservative contact model. Check energy
         # balances and bounce heights.
-
+        Random.seed!(61)
         world = RigidBody{Float64}("world")
         mechanism = Mechanism(world)
         bodyframe = CartesianFrame3D()

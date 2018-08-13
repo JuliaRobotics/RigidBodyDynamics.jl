@@ -18,6 +18,7 @@
     end
 
     @testset "x-axis rotation" begin
+        Random.seed!(56)
         gains = PDGains(2, 3)
         e = RotX(rand())
         ė = rand() * SVector(1, 0, 0)
@@ -25,6 +26,7 @@
     end
 
     @testset "orientation control" begin
+        Random.seed!(57)
         mechanism = rand_floating_tree_mechanism(Float64) # single floating body
         joint = first(tree_joints(mechanism))
         body = successor(joint, mechanism)
@@ -65,6 +67,7 @@
     end
 
     @testset "pose control" begin
+        Random.seed!(58)
         mechanism = rand_floating_tree_mechanism(Float64) # single floating body
         joint = first(tree_joints(mechanism))
         body = successor(joint, mechanism)
@@ -104,6 +107,7 @@
     end
 
     @testset "linearized SE(3) control" begin
+        Random.seed!(59)
         for i = 1 : 100
             randpsd3() = (x = rand(SMatrix{3, 3}); x' * x)
             baseframe = CartesianFrame3D("base")

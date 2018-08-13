@@ -2,6 +2,7 @@ module TestCaches
 
 using Test
 using RigidBodyDynamics
+import Random
 
 function randmech()
     rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 5]; [Fixed{Float64} for i = 1 : 5]; [QuaternionSpherical{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]; [Planar{Float64} for i = 1 : 5]]...)
@@ -23,18 +24,21 @@ function cachetest(cache, eltypefun)
 end
 
 @testset "StateCache" begin
+    Random.seed!(1)
     mechanism = randmech()
     cache = StateCache(mechanism)
     cachetest(cache, RigidBodyDynamics.state_vector_eltype)
 end
 
 @testset "DynamicsResultCache" begin
+    Random.seed!(2)
     mechanism = randmech()
     cache = DynamicsResultCache(mechanism)
     cachetest(cache, result -> eltype(result.v̇))
 end
 
 @testset "SegmentedVectorCache" begin
+    Random.seed!(3)
     mechanism = randmech()
     state = MechanismState(mechanism)
     cache = SegmentedVectorCache(RigidBodyDynamics.ranges(velocity(state)))
