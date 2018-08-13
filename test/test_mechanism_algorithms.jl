@@ -4,6 +4,7 @@ end
 
 @testset "mechanism algorithms" begin
     @testset "show" begin
+        Random.seed!(17)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -28,6 +29,7 @@ end
     end
 
     @testset "basic stuff" begin
+        Random.seed!(18)
         mechanism = randmech()
         for joint in joints(mechanism)
             @test eltype(joint_type(joint)) == Float64
@@ -84,6 +86,7 @@ end
     end
 
     @testset "copyto! / Vector" begin
+        Random.seed!(19)
         mechanism = randmech()
         x1 = MechanismState(mechanism)
         rand!(x1)
@@ -100,6 +103,7 @@ end
     end
 
     @testset "q̇ <-> v" begin
+        Random.seed!(20)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -147,6 +151,7 @@ end
     end
 
     @testset "set_configuration! / set_velocity!" begin
+        Random.seed!(21)
         mechanism = randmech()
         x = MechanismState(mechanism)
         for joint in joints(mechanism)
@@ -192,6 +197,7 @@ end
     end
 
     @testset "normalize_configuration!" begin
+        Random.seed!(22)
         mechanism = randmech()
         let x = MechanismState(mechanism) # required to achieve zero allocations
             configuration(x) .= 1
@@ -210,6 +216,7 @@ end
     end
 
     @testset "joint_torque! / motion_subspace" begin
+        Random.seed!(23)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -225,6 +232,7 @@ end
     end
 
     @testset "isfloating" begin
+        Random.seed!(24)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -237,6 +245,7 @@ end
     end
 
     @testset "geometric_jacobian / relative_twist" begin
+        Random.seed!(25)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -272,6 +281,7 @@ end
     end
 
     @testset "point jacobian" begin
+        Random.seed!(26)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -312,6 +322,7 @@ end
         end
 
         @testset "point expressed in world frame" begin
+            Random.seed!(27)
             for i = 1 : 10
                 bs = Set(bodies(mechanism))
                 body = rand([bs...])
@@ -336,6 +347,7 @@ end
     end
 
     @testset "motion_subspace / constraint_wrench_subspace" begin
+        Random.seed!(28)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -369,6 +381,7 @@ end
     # end
 
     @testset "relative_acceleration" begin
+        Random.seed!(29)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -401,6 +414,7 @@ end
     end
 
     @testset "motion subspace / twist wrt world" begin
+        Random.seed!(30)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -414,6 +428,7 @@ end
     end
 
     @testset "composite rigid body inertias" begin
+        Random.seed!(31)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -434,6 +449,7 @@ end
     end
 
     @testset "momentum_matrix / summing momenta" begin
+        Random.seed!(32)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -470,6 +486,7 @@ end
     end
 
     @testset "mass matrix / kinetic energy" begin
+        Random.seed!(33)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -496,6 +513,7 @@ end
     end
 
     @testset "spatial_inertia!" begin
+        Random.seed!(34)
         mechanism = randmech()
         body = rand(collect(non_root_bodies(mechanism)))
         newinertia = rand(SpatialInertia{eltype(mechanism)}, spatial_inertia(body).frame)
@@ -504,6 +522,7 @@ end
     end
 
     @testset "inverse dynamics / acceleration term" begin
+        Random.seed!(35)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -519,6 +538,7 @@ end
     end
 
     @testset "inverse dynamics / Coriolis term" begin
+        Random.seed!(36)
         mechanism = rand_tree_mechanism(Float64, [[Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...) # skew symmetry property tested later on doesn't hold when q̇ ≠ v
         x = MechanismState{Float64}(mechanism)
         rand!(x)
@@ -556,6 +576,7 @@ end
     end
 
     @testset "inverse dynamics / gravity term" begin
+        Random.seed!(37)
         mechanism = rand_tree_mechanism(Float64, [[Revolute{Float64} for i = 1 : 10]; [Prismatic{Float64} for i = 1 : 10]]...)
         x = MechanismState(mechanism)
         rand!(x)
@@ -578,6 +599,7 @@ end
     end
 
     @testset "momentum matrix" begin
+        Random.seed!(38)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -607,6 +629,7 @@ end
     end
 
     @testset "inverse dynamics / external wrenches" begin
+        Random.seed!(39)
         mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
         x = MechanismState(mechanism)
         rand!(x)
@@ -627,6 +650,7 @@ end
     end
 
     @testset "dynamics / inverse dynamics" begin
+        Random.seed!(40)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -639,6 +663,7 @@ end
     end
 
     @testset "dynamics_bias / inverse_dynamics" begin
+        Random.seed!(41)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -651,6 +676,7 @@ end
     end
 
     @testset "dynamics ode method" begin
+        Random.seed!(42)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -668,6 +694,7 @@ end
     end
 
     @testset "power flow" begin
+        Random.seed!(43)
         mechanism = randmech()
         x = MechanismState(mechanism)
         rand!(x)
@@ -694,6 +721,7 @@ end
     end
 
     @testset "local / global coordinates" begin
+        Random.seed!(44)
         mechanism = randmech()
         state = MechanismState(mechanism)
         rand!(state)
@@ -733,6 +761,7 @@ end
     end
 
     @testset "configuration_derivative_to_velocity_adjoint!" begin
+        Random.seed!(45)
         mechanism = randmech()
         x = MechanismState(mechanism)
         configuration(x) .= rand(num_positions(x)) # needs to work for configuration vectors that do not satisfy the state constraints as well
@@ -759,6 +788,7 @@ end
     end
 
     @testset "issue #330" begin
+        Random.seed!(46)
         mechanism = rand_tree_mechanism(Revolute{Float64})
         f330(x::AbstractArray{T}) where {T} = begin
             result = DynamicsResult{T}(mechanism)

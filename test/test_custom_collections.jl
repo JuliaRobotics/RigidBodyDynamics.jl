@@ -1,5 +1,6 @@
 using Test
 using RigidBodyDynamics
+import Random
 
 # A pathologically weird matrix which uses base -1 indexing
 # for its first dimension and base 2 indexing for its second
@@ -62,6 +63,7 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
     end
 
     @testset "SegmentedBlockDiagonalMatrix" begin
+        Random.seed!(1)
         A = rand(10, 10)
         block_indices = [(1:1, 1:1),  # square
                          (2:4, 2:2),  # non-square

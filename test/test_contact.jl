@@ -1,5 +1,6 @@
 @testset "contact" begin
     @testset "HalfSpace3D" begin
+        Random.seed!(1)
         frame = CartesianFrame3D()
         point = Point3D(frame, rand(), rand(), rand())
         normal = FreeVector3D(frame, 0., 0., 1.)

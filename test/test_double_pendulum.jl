@@ -1,4 +1,5 @@
 @testset "double pendulum" begin
+    Random.seed!(1)
     lc1 = -0.5
     l1 = -1.
     m1 = 1.
