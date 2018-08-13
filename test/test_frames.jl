@@ -1,5 +1,5 @@
 @testset "frames" begin
-    Random.seed!(1)
+    Random.seed!(7)
     f1name = "1"
     f1 = CartesianFrame3D(f1name)
     f2 = CartesianFrame3D()
