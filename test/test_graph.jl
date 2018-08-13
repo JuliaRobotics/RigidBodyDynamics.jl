@@ -2,7 +2,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
 
 @testset "graphs" begin
     @testset "disconnected" begin
-        Random.seed!(1)
+        Random.seed!(8)
         graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
         verts = [Vertex(rand(Int64)) for i = 1 : 10]
         for v in verts
@@ -23,7 +23,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
 
 
     @testset "tree graph" begin
-        Random.seed!(1)
+        Random.seed!(9)
         graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
         root = Vertex(rand(Int64))
         add_vertex!(graph, root)
@@ -51,7 +51,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
     end
 
     @testset "remove_vertex!" begin
-        Random.seed!(1)
+        Random.seed!(10)
         graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
         edge = Edge(rand())
         add_edge!(graph, Vertex(rand(Int64)), Vertex(rand(Int64)), edge)
@@ -83,7 +83,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
     end
 
     @testset "remove_edge!" begin
-        Random.seed!(1)
+        Random.seed!(11)
         graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
         for i = 1 : 100
             add_vertex!(graph, Vertex(i))
@@ -110,7 +110,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
     end
 
     @testset "rewire!" begin
-        Random.seed!(1)
+        Random.seed!(12)
         graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
         for i = 1 : 100
             add_vertex!(graph, Vertex(i))
@@ -145,7 +145,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
     end
 
     @testset "replace_edge!" begin
-        Random.seed!(1)
+        Random.seed!(13)
         graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
         for i = 1 : 100
             add_vertex!(graph, Vertex(i))
@@ -175,7 +175,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
     end
 
     @testset "SpanningTree" begin
-        Random.seed!(1)
+        Random.seed!(14)
         rootdata = 0
 
         # graph1: tree grown incrementally
@@ -327,7 +327,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
     end
 
     @testset "reindex!" begin
-        Random.seed!(1)
+        Random.seed!(15)
         graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
         for i = 1 : 100
             add_vertex!(graph, Vertex(i))
@@ -345,7 +345,7 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
     end
 
     @testset "map-like constructor" begin
-        Random.seed!(1)
+        Random.seed!(16)
         graph = DirectedGraph{Vertex{Int32}, Edge{Float32}}()
         for i = Int32(1) : Int32(100)
             add_vertex!(graph, Vertex(i))

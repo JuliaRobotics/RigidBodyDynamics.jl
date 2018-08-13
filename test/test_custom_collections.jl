@@ -63,7 +63,7 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
     end
 
     @testset "SegmentedBlockDiagonalMatrix" begin
-        Random.seed!(1)
+        Random.seed!(5)
         A = rand(10, 10)
         block_indices = [(1:1, 1:1),  # square
                          (2:4, 2:2),  # non-square
