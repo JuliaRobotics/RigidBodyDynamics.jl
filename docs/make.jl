@@ -27,6 +27,6 @@ deploydocs(
     repo = "github.com/JuliaRobotics/RigidBodyDynamics.jl.git",
     target = "build",
     make = nothing,
-    julia = "0.6",
+    julia = "1.0",
     osname = "linux"
 )

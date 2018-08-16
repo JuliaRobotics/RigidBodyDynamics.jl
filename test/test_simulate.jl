@@ -123,4 +123,106 @@
             end
         end
     end
+
+    @testset "four-bar linkage" begin
+        # gravitational acceleration
+        g = -9.81
+
+        # link lengths
+        l_0 = 1.10
+        l_1 = 0.5
+        l_2 = 1.20
+        l_3 = 0.75
+
+        # link masses
+        m_1 = 0.5
+        m_2 = 1.0
+        m_3 = 0.75
+
+        # link center of mass offsets from the preceding joint axes
+        c_1 = 0.25
+        c_2 = 0.60
+        c_3 = 0.375
+
+        # moments of inertia about the center of mass of each link
+        I_1 = 0.333
+        I_2 = 0.537
+        I_3 = 0.4
+
+        # scalar type
+        T = Float64
+
+        # Rotation axis: negative y-axis
+        axis = SVector(zero(T), -one(T), zero(T))
+
+        world = RigidBody{T}("world")
+        mechanism = Mechanism(world; gravity = SVector(0., 0., g))
+        rootframe = root_frame(mechanism)
+
+        # link1 and joint1
+        joint1 = Joint("joint1", Revolute(axis))
+        inertia1 = SpatialInertia(CartesianFrame3D("inertia1_centroidal"), I_1*axis*axis', zero(SVector{3, T}), m_1)
+        link1 = RigidBody(inertia1)
+        before_joint1_to_world = one(Transform3D, frame_before(joint1), default_frame(world))
+        c1_to_joint = Transform3D(inertia1.frame, frame_after(joint1), SVector(c_1, 0, 0))
+        attach!(mechanism, world, link1, joint1, joint_pose = before_joint1_to_world, successor_pose = c1_to_joint)
+
+        # link2 and joint2
+        joint2 = Joint("joint2", Revolute(axis))
+        inertia2 = SpatialInertia(CartesianFrame3D("inertia2_centroidal"), I_2*axis*axis', zero(SVector{3, T}), m_2)
+        link2 = RigidBody(inertia2)
+        before_joint2_to_after_joint1 = Transform3D(frame_before(joint2), frame_after(joint1), SVector(l_1, 0., 0.))
+        c2_to_joint = Transform3D(inertia2.frame, frame_after(joint2), SVector(c_2, 0, 0))
+        attach!(mechanism, link1, link2, joint2, joint_pose = before_joint2_to_after_joint1, successor_pose = c2_to_joint)
+
+        # link3 and joint3
+        joint3 = Joint("joint3", Revolute(axis))
+        inertia3 = SpatialInertia(CartesianFrame3D("inertia3_centroidal"), I_3*axis*axis', zero(SVector{3, T}), m_3)
+        link3 = RigidBody(inertia3)
+        before_joint3_to_world = Transform3D(frame_before(joint3), default_frame(world), SVector(l_0, 0., 0.))
+        c3_to_joint = Transform3D(inertia3.frame, frame_after(joint3), SVector(c_3, 0, 0))
+        attach!(mechanism, world, link3, joint3, joint_pose = before_joint3_to_world, successor_pose = c3_to_joint)
+
+        # loop joint between link2 and link3
+        joint4 = Joint("joint4", Revolute(axis))
+        before_joint4_to_joint2 = Transform3D(frame_before(joint4), frame_after(joint2), SVector(l_2, 0., 0.))
+        joint3_to_after_joint4 = Transform3D(frame_after(joint3), frame_after(joint4), SVector(-l_3, 0., 0.))
+        attach!(mechanism, link2, link3, joint4, joint_pose = before_joint4_to_joint2, successor_pose = joint3_to_after_joint4)
+
+        # initial state
+        set_initial_state! = function (state::MechanismState)
+            # found through nonlinear optimization. Slightly inaccurate.
+            set_configuration!(state, joint1, 1.6707963267948966) # θ
+            set_configuration!(state, joint2, -1.4591054166649482) # γ
+            set_configuration!(state, joint3, 1.5397303602625536) # ϕ
+            set_velocity!(state, joint1, 0.5)
+            set_velocity!(state, joint2, -0.47295)
+            set_velocity!(state, joint3, 0.341)
+        end
+
+        # no stabilization
+        state = MechanismState(mechanism)
+        set_initial_state!(state)
+        zero_velocity!(state)
+        energy0 = gravitational_potential_energy(state)
+        ts, qs, vs = simulate(state, 1., Δt = 1e-3, stabilization_gains=nothing)
+        @test kinetic_energy(state) ≉ 0 atol=1e-2
+        energy1 = gravitational_potential_energy(state) + kinetic_energy(state)
+        @test energy0 ≈ energy1 atol=1e-8
+        @test transform(state, Point3D(Float64, frame_before(joint4)), rootframe) ≈
+              transform(state, Point3D(Float64, frame_after(joint4)), rootframe) atol=1e-10 # no significant separation after a short simulation
+
+        # with default stabilization: start with some separation
+        set_initial_state!(state)
+        set_configuration!(state, joint1, 1.7)
+        @test transform(state, Point3D(Float64, frame_before(joint4)), rootframe) ≉
+              transform(state, Point3D(Float64, frame_after(joint4)), rootframe) atol=1e-2 # significant separation initially
+        simulate(state, 15., Δt = 1e-3)
+        @test transform(state, Point3D(Float64, frame_before(joint4)), rootframe) ≈
+              transform(state, Point3D(Float64, frame_after(joint4)), rootframe) atol=1e-5 # reduced separation after 15 seconds
+        energy15 = gravitational_potential_energy(state) + kinetic_energy(state)
+        simulate(state, 10, Δt = 1e-3)
+        energy20 = gravitational_potential_energy(state) + kinetic_energy(state)
+        @test energy20 ≈ energy15 atol=1e-5 # stabilization doesn't significantly affect energy after converging
+    end
 end

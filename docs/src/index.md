@@ -31,7 +31,7 @@ Current functionality of RigidBodyDynamics includes:
 * dynamics
 * simulation, either using an off-the-shelf ODE integrator or using an included custom Munthe-Kaas integrator that properly handles second-order ODEs defined on a manifold.
 
-There is currently partial support for closed-loop systems (parallel mechanisms). Support for contact is very limited (possibly subject to major changes in the future), implemented using penalty methods.
+Closed-loop systems (parallel mechanisms) are supported, with optional Baumgarte stabilization of the loop joint constraints. Support for contact is very limited (possibly subject to major changes in the future), implemented using penalty methods.
 
 ## Installation
 
