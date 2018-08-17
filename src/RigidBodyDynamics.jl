@@ -167,6 +167,7 @@ using .Spatial # contains additional functions that are reexported
 using .CustomCollections
 using .Contact
 using .Graphs
+using .PDControl
 
 import .Spatial: rotation, translation, transform, center_of_mass, newton_euler, kinetic_energy
 

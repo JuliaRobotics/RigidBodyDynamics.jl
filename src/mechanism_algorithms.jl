@@ -621,16 +621,67 @@ function constraint_jacobian!(result::DynamicsResult, state::MechanismState)
     constraint_jacobian!(result.constraintjacobian, result.constraintrowranges, state)
 end
 
-function constraint_bias!(bias::SegmentedVector, state::MechanismState)
+"""
+$(SIGNATURES)
+
+Return the default Baumgarte constraint stabilization gains. These gains result in
+critical damping, and correspond to ``T_{stab} = 0.1`` in Featherstone (2008), section 8.3.
+"""
+function default_constraint_stabilization_gains(scalartype::Type{T}) where T
+    ConstDict{JointID}(SE3PDGains(PDGains(T(100), T(20)), PDGains(T(100), T(20))))
+end
+
+const stabilization_gains_doc = """
+The `stabilization_gains` keyword argument can be used to set PD gains for Baumgarte
+stabilization, which can be used to prevent separation of non-tree (loop) joints.
+See Featherstone (2008), section 8.3 for more information. There are several options
+for specifying gains:
+
+* `nothing` can be used to completely disable Baumgarte stabilization.
+* Gains can be specifed on a per-joint basis using any `AbstractDict{JointID, <:RigidBodyDynamics.PDControl.SE3PDGains}`,
+  which maps the `JointID` for the non-tree joints of the mechanism to the gains for that joint.
+* As a special case of the second option, the same gains can be used for all joints
+  by passing in a `RigidBodyDynamics.CustomCollections.ConstDict{JointID}`.
+
+The [`default_constraint_stabilization_gains`](@ref) function is called to produce the default gains,
+which use the last option.
+"""
+
+function constraint_bias!(bias::SegmentedVector, state::MechanismState{X};
+        stabilization_gains::Union{AbstractDict{JointID, <:SE3PDGains}, Nothing}=default_constraint_stabilization_gains(X)) where X
+    update_transforms!(state)
     update_twists_wrt_world!(state)
     update_bias_accelerations_wrt_world!(state)
     update_constraint_wrench_subspaces!(state)
     constraint_wrench_subspaces = state.constraint_wrench_subspaces.data
-    @inbounds for nontreejointid in state.nontreejointids
-        path = state.constraint_jacobian_structure[nontreejointid]
+    for nontreejointid in state.nontreejointids
         predid, succid = predsucc(nontreejointid, state)
-        crossterm = twist_wrt_world(state, succid, false) × twist_wrt_world(state, predid, false)
-        biasaccel = crossterm + (-bias_acceleration(state, predid, false) + bias_acceleration(state, succid, false)) # 8.47 in Featherstone
+
+        predtwist = twist_wrt_world(state, predid, false)
+        succtwist = twist_wrt_world(state, succid, false)
+        crossterm = succtwist × predtwist
+
+        succbias = bias_acceleration(state, succid, false)
+        predbias = bias_acceleration(state, predid, false)
+        jointbias = -predbias + succbias
+
+        biasaccel = crossterm + jointbias # what's inside parentheses in 8.47 in Featherstone
+
+        if stabilization_gains !== nothing
+            # TODO: make this nicer (less manual frame juggling and no manual transformations)
+            jointtransform = joint_transform(state, nontreejointid, false)
+            jointtwist = -predtwist + succtwist
+            jointtwist = Twist(jointtransform.from, jointtransform.to, jointtwist.frame, jointtwist.angular, jointtwist.linear) # make frames line up
+            successor_to_root = transform_to_root(state, jointtransform.from) # TODO: expensive
+            jointtwist = transform(jointtwist, inv(successor_to_root)) # twist needs to be in successor frame for pd method
+            stabaccel = pd(stabilization_gains[nontreejointid], jointtransform, jointtwist, SE3PDMethod{:Linearized}()) # in successor frame
+            stabaccel = SpatialAcceleration(stabaccel.body, stabaccel.base, biasaccel.frame,
+                Spatial.transform_spatial_motion(stabaccel.angular, stabaccel.linear,
+                rotation(successor_to_root), translation(successor_to_root))...) # back to world frame. TODO: ugly way to do this
+            stabaccel = SpatialAcceleration(biasaccel.body, biasaccel.body, stabaccel.frame, stabaccel.angular, stabaccel.linear) # make frames line up
+            @inbounds biasaccel = biasaccel + -stabaccel
+        end
+
         for cindex in constraint_range(state, nontreejointid)
             Tcol = constraint_wrench_subspaces[cindex]
             # TODO: make nicer:
@@ -640,7 +691,11 @@ function constraint_bias!(bias::SegmentedVector, state::MechanismState)
     end
     bias
 end
-constraint_bias!(result::DynamicsResult, state::MechanismState) = constraint_bias!(result.constraintbias, state)
+
+function constraint_bias!(result::DynamicsResult, state::MechanismState{X};
+        stabilization_gains::Union{AbstractDict{JointID, <:SE3PDGains}, Nothing}=default_constraint_stabilization_gains(X)) where X
+    constraint_bias!(result.constraintbias, state)
+end
 
 function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M, C}) where {X, M, C, T}
     update_transforms!(state)
@@ -786,6 +841,7 @@ function dynamics_solve!(result::DynamicsResult{T, S}, τ::AbstractVector{T}) wh
     nothing
 end
 
+
 """
 $(SIGNATURES)
 
@@ -803,10 +859,13 @@ given joint configuration vector ``q``, joint velocity vector ``v``, and
 
 The `externalwrenches` argument can be used to specify additional
 wrenches that act on the `Mechanism`'s bodies.
+
+$stabilization_gains_doc
 """
 function dynamics!(result::DynamicsResult, state::MechanismState{X},
         torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
-        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
+        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}();
+        stabilization_gains=default_constraint_stabilization_gains(X)) where X
     configuration_derivative!(result.q̇, state)
     contact_dynamics!(result, state)
     for jointid in state.treejointids
@@ -818,7 +877,7 @@ function dynamics!(result::DynamicsResult, state::MechanismState{X},
     mass_matrix!(result, state)
     if has_loops(state.mechanism)
         constraint_jacobian!(result, state)
-        constraint_bias!(result, state)
+        constraint_bias!(result, state; stabilization_gains=stabilization_gains)
     end
     dynamics_solve!(result, parent(torques))
     nothing
@@ -841,9 +900,10 @@ and returns a `Vector` ``\\dot{x}``.
 function dynamics!(ẋ::StridedVector{X},
         result::DynamicsResult, state::MechanismState{X}, x::AbstractVector{X},
         torques::AbstractVector = ConstVector(zero(X), num_velocities(state)),
-        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where X
+        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}();
+        stabilization_gains=default_constraint_stabilization_gains(X)) where X
     copyto!(state, x)
-    dynamics!(result, state, torques, externalwrenches)
+    dynamics!(result, state, torques, externalwrenches; stabilization_gains=stabilization_gains)
     copyto!(ẋ, result)
     ẋ
 end

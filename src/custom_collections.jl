@@ -2,6 +2,7 @@ module CustomCollections
 
 export
     ConstVector,
+    ConstDict,
     NullDict,
     CacheElement,
     AbstractIndexDict,
@@ -66,6 +67,17 @@ end
 Base.size(A::ConstVector) = (A.length, )
 Base.@propagate_inbounds Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
 Base.IndexStyle(::Type{<:ConstVector}) = IndexLinear()
+
+
+## ConstDict
+"""
+An immutable `AbstractDict` for which the value is the same, no matter what the key is.
+"""
+struct ConstDict{K, V} <: AbstractDict{K, V}
+    val::V
+    ConstDict{K}(val::V) where {K, V} = new{K, V}(val)
+end
+Base.getindex(d::ConstDict{K}, key) where K = d.val
 
 
 ## NullDict
