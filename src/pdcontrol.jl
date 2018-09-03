@@ -117,7 +117,7 @@ function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::SE3PDMethod{:Linear
     ψ = linearized_rodrigues_vec(R)
 
     ang = pd(angular(gains), FreeVector3D(bodyframe, ψ.sx, ψ.sy, ψ.sz), FreeVector3D(bodyframe, angular(ė)))
-    lin = pd(linear(gains), FreeVector3D(bodyframe, p), FreeVector3D(bodyframe, linear(ė)))
+    lin = pd(linear(gains), FreeVector3D(bodyframe, R' * p), FreeVector3D(bodyframe, linear(ė)))
     SpatialAcceleration(ė.body, ė.base, ang, lin)
 end
 

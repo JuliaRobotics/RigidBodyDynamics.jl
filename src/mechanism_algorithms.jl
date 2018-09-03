@@ -694,7 +694,7 @@ end
 
 function constraint_bias!(result::DynamicsResult, state::MechanismState{X};
         stabilization_gains::Union{AbstractDict{JointID, <:SE3PDGains}, Nothing}=default_constraint_stabilization_gains(X)) where X
-    constraint_bias!(result.constraintbias, state)
+    constraint_bias!(result.constraintbias, state; stabilization_gains=stabilization_gains)
 end
 
 function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M, C}) where {X, M, C, T}
