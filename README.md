@@ -10,6 +10,10 @@ RigidBodyDynamics.jl is a rigid body dynamics library in pure Julia. It aims to 
 See the [latest stable documentation](https://JuliaRobotics.github.io/RigidBodyDynamics.jl/stable/) for a list of features, installation instructions, and a quick-start guide. Installation should only take a couple of minutes, including installing Julia itself. See the [notebooks directory](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/tree/master/notebooks) for some usage examples.
 
 ## News
+
+* August 17, 2018: [tagged version 1.0.0](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/releases/tag/v1.0.0). RigidBodyDynamics.jl will adhere to semantic versioning from this point on.
+* August 10, 2018: Robin Deits gave [a talk](https://www.youtube.com/watch?v=dmWQtI3DFFo) at JuliaCon 2018 demonstrating RigidBodyDynamics.jl and related packages.
+* August 4, 2018: [tagged version 0.9.0](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/releases/tag/v0.9.0).
 * July 10, 2018: [tagged version 0.8.0](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/releases/tag/v0.8.0). Drops support for Julia 0.6. Supports Julia 0.7 with no deprecation warnings (requires at least Julia 0.7.0-beta.105, *does not work on 0.7.0-beta*). Note that a few example notebooks don't work yet because of additional dependencies that haven't been updated for Julia 0.7. Also note the significant performance improvements (e.g., ~32% for `mass_matrix!`).
 * July 9, 2018: [tagged version 0.7.0](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/releases/tag/v0.7.0). Supports Julia 0.7 (with some deprecation warnings). This is the last version to support Julia 0.6.
 * May 14, 2018: [tagged version 0.6.1](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/releases/tag/v0.6.1).
