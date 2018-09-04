@@ -117,7 +117,7 @@
             xdes = rand(Transform3D{Float64}, bodyframe, baseframe)
             Tdes = rand(Twist{Float64}, bodyframe, baseframe, bodyframe)
 
-            ϵ = 1e-4
+            ϵ = 1e-2
             x = xdes * Transform3D(bodyframe, bodyframe, AngleAxis(ϵ, randn(), randn(), randn()), ϵ * randn(SVector{3}))
             T = rand(Twist{Float64}, bodyframe, baseframe, bodyframe)
 
