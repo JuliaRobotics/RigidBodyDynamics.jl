@@ -512,6 +512,27 @@ end
 """
 $(SIGNATURES)
 
+Reprojects the configuration vector ``q`` away from singularity.
+
+For example:
+* for a part of ``q`` corresponding to a revolute joint, this method is a no-op;
+* for a part of ``q`` corresponding to a spherical joint that uses a unit spquat
+to parameterize the orientation of its successor with respect to its predecessor,
+`reproject!` will reproject the spquat so that it is indeed away from singularity.
+
+!!! warning
+This method does not ensure that the configuration or velocity satisfy joint
+configuration or velocity limits/bounds.
+"""
+function reproject!(state::MechanismState)
+    foreach(state.treejoints, values(segments(state.q))) do joint, qjoint
+        reproject!(qjoint, joint)
+    end
+end
+
+"""
+$(SIGNATURES)
+
 Return the range of indices into the joint configuration vector ``q`` corresponding to joint `joint`.
 """
 @inline configuration_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.qranges[joint]

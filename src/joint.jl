@@ -46,6 +46,7 @@ end
 
 normalize_configuration!(q::AbstractVector, ::JointType) = nothing
 is_configuration_normalized(::JointType, q::AbstractVector, rtol, atol) = true
+reproject!(q::AbstractVector, ::JointType) = nothing
 
 """
 $(TYPEDEF)
@@ -504,4 +505,15 @@ end
 function is_configuration_normalized(joint::Joint, q::AbstractVector{X}; rtol::Real = sqrt(eps(X)), atol::Real = zero(X)) where {X}
     @boundscheck check_num_positions(joint, q)
     is_configuration_normalized(joint.joint_type, q, rtol, atol)
+end
+
+"""
+$(SIGNATURES)
+
+Reprojects the configuration vector ``q`` associated with `joint` so that it
+is away from singularity.
+"""
+function reproject!(q::AbstractVector, joint::Joint)
+    @boundscheck check_num_positions(joint, q)
+    reproject!(q, joint.joint_type)
 end

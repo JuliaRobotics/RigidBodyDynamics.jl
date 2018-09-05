@@ -117,7 +117,23 @@ end
     angular, linear
 end
 
+@inline function safe_convert_to_quaternion(rot::Rotation{3, T}) where {T}
+    convert(Quat{T}, rot)
+end
+
+function safe_convert_to_quaternion(spq::SPQuat{T}) where {T}
+    # Note: convert(Quat{T}, rot) does not work because
+    # convert(Quat{T}, SPQuat(1.0, 1.0, 1.0)) = Quat(+0.5, -0.5, -0.5, -0.5) instead of Quat(-0.5, +0.5, +0.5, +0.5)
+    w = 1 - (spq.x*spq.x + spq.y*spq.y + spq.z*spq.z)
+    x = 2*spq.x
+    y = 2*spq.y
+    z = 2*spq.z
+    inv_norm = 1 / sqrt(w*w + x*x + y*y + z*z)
+    Quat{T}(w * inv_norm, x * inv_norm, y * inv_norm, z * inv_norm, false)
+end
+
 function quaternion_derivative end
+function spquat_derivative end
 function angular_velocity_in_body end
 
 @inline function velocity_jacobian(::typeof(quaternion_derivative), q::Quat)
@@ -128,6 +144,13 @@ function angular_velocity_in_body end
         -q.y  q.x  q.w]) / 2
 end
 
+@inline function velocity_jacobian(::typeof(spquat_derivative), q::SPQuat)
+    quat = safe_convert_to_quaternion(q)
+    dQuat_dW = velocity_jacobian(quaternion_derivative, quat)
+    dSPQuat_dQuat = Rotations.jacobian(SPQuat, quat)
+    dSPQuat_dQuat * dQuat_dW
+end
+
 @inline function velocity_jacobian(::typeof(angular_velocity_in_body), q::Quat)
     2 * @SMatrix [
     -q.x  q.w  q.z -q.y;
@@ -135,14 +158,31 @@ end
     -q.z  q.y -q.x  q.w]
 end
 
+@inline function velocity_jacobian(::typeof(angular_velocity_in_body), q::SPQuat)
+    quat = safe_convert_to_quaternion(q)
+    dW_dQuat = velocity_jacobian(angular_velocity_in_body, quat)
+    dQuat_dSPQuat = Rotations.jacobian(Quat, q)
+    dW_dQuat * dQuat_dSPQuat
+end
+
 @inline function quaternion_derivative(q::Quat, angular_velocity_in_body::AbstractVector)
     @boundscheck length(angular_velocity_in_body) == 3 || error("size mismatch")
     velocity_jacobian(quaternion_derivative, q) * angular_velocity_in_body
 end
 
+@inline function spquat_derivative(q::SPQuat, angular_velocity_in_body::AbstractVector)
+    @boundscheck length(angular_velocity_in_body) == 3 || error("size mismatch")
+    velocity_jacobian(spquat_derivative, q) * angular_velocity_in_body
+end
+
 @inline function angular_velocity_in_body(q::Quat, quat_derivative::AbstractVector)
     @boundscheck length(quat_derivative) == 4 || error("size mismatch")
     velocity_jacobian(angular_velocity_in_body, q) * quat_derivative
+end
+
+@inline function angular_velocity_in_body(q::SPQuat, spq_derivative::AbstractVector)
+    @boundscheck length(spq_derivative) == 3 || error("size mismatch")
+    velocity_jacobian(angular_velocity_in_body, q) * spq_derivative
 end
 
 function linearized_rodrigues_vec(r::RotMatrix) # TODO: consider moving to Rotations
