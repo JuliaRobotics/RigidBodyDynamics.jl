@@ -37,6 +37,13 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
         @test values(expected) == values(i32dict2)
     end
 
+    @testset "ConstDict" begin
+        c = RigidBodyDynamics.ConstDict{Int}(2.0)
+        @test c[1] == 2.0
+        @test c[-1] == 2.0
+        show(IOBuffer(), c)
+    end
+
     @testset "SegmentedVector" begin
         x = [1., 2., 3., 4.]
         viewlength = i -> 2
