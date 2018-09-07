@@ -61,7 +61,7 @@ mutable struct DynamicsResult{T, M}
             b => Vector{Vector{DefaultSoftContactStateDeriv{T}}}() for b in bodies(mechanism))
         startind = Ref(1)
         for body in bodies(mechanism)
-            for point::DefaultContactPoint{T} in contact_points(body)
+            for point::DefaultContactPoint{M} in contact_points(body)
                 model = contact_model(point)
                 n = num_states(model)
                 push!(contact_state_derivs[body], collect(begin
