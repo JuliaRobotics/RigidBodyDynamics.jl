@@ -9,6 +9,21 @@ RigidBodyDynamics.jl is a rigid body dynamics library in pure Julia. It aims to 
 
 See the [latest stable documentation](https://JuliaRobotics.github.io/RigidBodyDynamics.jl/stable/) for a list of features, installation instructions, and a quick-start guide. Installation should only take a couple of minutes, including installing Julia itself. See the [notebooks directory](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/tree/master/notebooks) for some usage examples.
 
+
+## Related packages
+
+RigidBodyDynamics.jl is part of the [JuliaRobotics GitHub organization](http://www.juliarobotics.org/).
+
+Packages built on top of RigidBodyDynamics.jl include:
+
+* [RigidBodySim.jl](https://github.com/JuliaRobotics/RigidBodySim.jl) - simulator built on top of RigidBodyDynamics.jl.
+* [MeshCatMechanisms.jl](https://github.com/JuliaRobotics/MeshCatMechanisms.jl) - 3D visualization of articulated mechanisms using MeshCat.jl (built on top of [three.js](https://threejs.org/)) and RigidBodyDynamics.jl.
+* [RigidBodyTreeInspector.jl](https://github.com/rdeits/RigidBodyTreeInspector.jl) - 3D visualization of RigidBodyDynamics.jl `Mechanism`s using [Director](https://github.com/RobotLocomotion/director).
+* [MotionCaptureJointCalibration.jl](https://github.com/JuliaRobotics/MotionCaptureJointCalibration.jl) - kinematic calibration for robots using motion capture data, built on top of RigidBodyDynamics.jl
+* [QPControl.jl](https://github.com/tkoolen/QPControl.jl) - quadratic-programming-based robot controllers implemented using RigidBodyDynamics.jl.
+* [StrandbeestRobot.jl](https://github.com/rdeits/StrandbeestRobot.jl) - simulations of a 12-legged parallel walking mechanism inspired by Theo Jansens's [Strandbeest](https://www.strandbeest.com/) using RigidBodyDynamics.jl.
+
+
 ## News
 
 * August 17, 2018: [tagged version 1.0.0](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/releases/tag/v1.0.0). RigidBodyDynamics.jl will adhere to semantic versioning from this point on.

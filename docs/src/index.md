@@ -68,12 +68,6 @@ from the following resources:
 * Featherstone, Roy. *Rigid body dynamics algorithms*. Springer, 2008.
 * Duindam, Vincent. *Port-based modeling and control for efficient bipedal walking robots*. Diss. University of Twente, 2006.
 
-## Related packages
-
-* [MeshCatMechanisms.jl](https://github.com/JuliaRobotics/MeshCatMechanisms.jl) - 3D Visualization of mechanisms and URDFs using MeshCat.jl and RigidBodyDynamics.jl
-* [RigidBodySim.jl](https://github.com/JuliaRobotics/RigidBodySim.jl) - simulator built on top of RigidBodyDynamics.jl
-* [MotionCaptureJointCalibration.jl](https://github.com/JuliaRobotics/MotionCaptureJointCalibration.jl) - kinematic calibration for robots using motion capture data, built on top of RigidBodyDynamics.jl
-* [RigidBodyTreeInspector.jl](https://github.com/rdeits/RigidBodyTreeInspector.jl) - 3D visualization of RigidBodyDynamics.jl `Mechanism`s using [Director](https://github.com/RobotLocomotion/director).
 
 ## Contents
 
