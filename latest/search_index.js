@@ -65,14 +65,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#Related-packages-1",
-    "page": "Home",
-    "title": "Related packages",
-    "category": "section",
-    "text": "MeshCatMechanisms.jl - 3D Visualization of mechanisms and URDFs using MeshCat.jl and RigidBodyDynamics.jl\nRigidBodySim.jl - simulator built on top of RigidBodyDynamics.jl\nMotionCaptureJointCalibration.jl - kinematic calibration for robots using motion capture data, built on top of RigidBodyDynamics.jl\nRigidBodyTreeInspector.jl - 3D visualization of RigidBodyDynamics.jl Mechanisms using Director."
-},
-
-{
     "location": "index.html#Contents-1",
     "page": "Home",
     "title": "Contents",
@@ -981,7 +973,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "method",
-    "text": "Create a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
+    "text": "rand_chain_mechanism(?, jointtypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
 },
 
 {
@@ -1005,7 +997,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "method",
-    "text": "rand_tree_mechanism(?, jointtypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n\n\n"
+    "text": "Create a random tree Mechanism.\n\n\n\n\n\n"
 },
 
 {
@@ -1269,7 +1261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -1277,7 +1269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
