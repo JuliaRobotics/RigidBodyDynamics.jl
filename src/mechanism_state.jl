@@ -512,21 +512,17 @@ end
 """
 $(SIGNATURES)
 
-Reprojects the configuration vector ``q`` away from singularity.
+Applies the principal_value functions from [Rotations.jl](https://github.com/FugroRoames/Rotations.jl/blob/d080990517f89b56c37962ad53a7fd24bd94b9f7/src/principal_value.jl)
+to joint angles. This currently only applies to `SPQuatFloating` joints.
 
 For example:
 * for a part of ``q`` corresponding to a revolute joint, this method is a no-op;
-* for a part of ``q`` corresponding to a spherical joint that uses a unit spquat
-to parameterize the orientation of its successor with respect to its predecessor,
-`reproject!` will reproject the spquat so that it is indeed away from singularity.
-
-!!! warning
-This method does not ensure that the configuration or velocity satisfy joint
-configuration or velocity limits/bounds.
+* for a part of ``q`` corresponding to a `SPQuatFloating` joint this function applies
+`principal_value the orientation.
 """
-function reproject!(state::MechanismState)
+function principal_value!(state::MechanismState)
     foreach(state.treejoints, values(segments(state.q))) do joint, qjoint
-        reproject!(qjoint, joint)
+        principal_value!(qjoint, joint)
     end
 end
 

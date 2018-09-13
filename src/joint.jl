@@ -46,7 +46,7 @@ end
 
 normalize_configuration!(q::AbstractVector, ::JointType) = nothing
 is_configuration_normalized(::JointType, q::AbstractVector, rtol, atol) = true
-reproject!(q::AbstractVector, ::JointType) = nothing
+principal_value!(q::AbstractVector, ::JointType) = nothing
 
 """
 $(TYPEDEF)
@@ -510,10 +510,10 @@ end
 """
 $(SIGNATURES)
 
-Reprojects the configuration vector ``q`` associated with `joint` so that it
-is away from singularity.
+Applies the principal_value functions from [Rotations.jl](https://github.com/FugroRoames/Rotations.jl/blob/d080990517f89b56c37962ad53a7fd24bd94b9f7/src/principal_value.jl)
+to joint angles. This currently only applies to `SPQuatFloating` joints.
 """
-function reproject!(q::AbstractVector, joint::Joint)
+function principal_value!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
-    reproject!(q, joint.joint_type)
+    principal_value!(q, joint.joint_type)
 end

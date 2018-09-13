@@ -1006,11 +1006,7 @@ function joint_torque!(τ::AbstractVector, jt::SPQuatFloating, q::AbstractVector
     nothing
 end
 
-function reproject!(q::AbstractVector, jt::SPQuatFloating)
+function principal_value!(q::AbstractVector, jt::SPQuatFloating)
     spq = rotation(jt, q)
-    if 1 < spq.x*spq.x + spq.y*spq.y + spq.z*spq.z
-        quat = convert(Quat, spq)  # flip occurs here
-        spq_reproject = convert(SPQuat, quat)
-        set_rotation!(q, jt, spq_reproject)
-    end
+    set_rotation!(q, jt, principal_value(spq))
 end

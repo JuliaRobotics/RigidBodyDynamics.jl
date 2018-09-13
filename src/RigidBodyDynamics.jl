@@ -125,7 +125,7 @@ export
     set_additional_state!,
     zero!, # TODO: remove
     normalize_configuration!,
-    reproject!,
+    principal_value!,
     center_of_mass,
     geometric_jacobian,
     geometric_jacobian!,
