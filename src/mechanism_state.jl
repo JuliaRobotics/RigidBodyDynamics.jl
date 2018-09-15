@@ -512,6 +512,23 @@ end
 """
 $(SIGNATURES)
 
+Applies the principal_value functions from [Rotations.jl](https://github.com/FugroRoames/Rotations.jl/blob/d080990517f89b56c37962ad53a7fd24bd94b9f7/src/principal_value.jl)
+to joint angles. This currently only applies to `SPQuatFloating` joints.
+
+For example:
+* for a part of ``q`` corresponding to a revolute joint, this method is a no-op;
+* for a part of ``q`` corresponding to a `SPQuatFloating` joint this function applies
+`principal_value the orientation.
+"""
+function principal_value!(state::MechanismState)
+    foreach(state.treejoints, values(segments(state.q))) do joint, qjoint
+        principal_value!(qjoint, joint)
+    end
+end
+
+"""
+$(SIGNATURES)
+
 Return the range of indices into the joint configuration vector ``q`` corresponding to joint `joint`.
 """
 @inline configuration_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.qranges[joint]

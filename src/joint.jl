@@ -46,6 +46,7 @@ end
 
 normalize_configuration!(q::AbstractVector, ::JointType) = nothing
 is_configuration_normalized(::JointType, q::AbstractVector, rtol, atol) = true
+principal_value!(q::AbstractVector, ::JointType) = nothing
 
 """
 $(TYPEDEF)
@@ -504,4 +505,15 @@ end
 function is_configuration_normalized(joint::Joint, q::AbstractVector{X}; rtol::Real = sqrt(eps(X)), atol::Real = zero(X)) where {X}
     @boundscheck check_num_positions(joint, q)
     is_configuration_normalized(joint.joint_type, q, rtol, atol)
+end
+
+"""
+$(SIGNATURES)
+
+Applies the principal_value functions from [Rotations.jl](https://github.com/FugroRoames/Rotations.jl/blob/d080990517f89b56c37962ad53a7fd24bd94b9f7/src/principal_value.jl)
+to joint angles. This currently only applies to `SPQuatFloating` joints.
+"""
+function principal_value!(q::AbstractVector, joint::Joint)
+    @boundscheck check_num_positions(joint, q)
+    principal_value!(q, joint.joint_type)
 end

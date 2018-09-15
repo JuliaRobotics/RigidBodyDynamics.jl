@@ -118,6 +118,7 @@ end
 end
 
 function quaternion_derivative end
+function spquat_derivative end
 function angular_velocity_in_body end
 
 @inline function velocity_jacobian(::typeof(quaternion_derivative), q::Quat)
@@ -128,6 +129,13 @@ function angular_velocity_in_body end
         -q.y  q.x  q.w]) / 2
 end
 
+@inline function velocity_jacobian(::typeof(spquat_derivative), q::SPQuat)
+    quat = Quat(q)
+    dQuat_dW = velocity_jacobian(quaternion_derivative, quat)
+    dSPQuat_dQuat = Rotations.jacobian(SPQuat, quat)
+    dSPQuat_dQuat * dQuat_dW
+end
+
 @inline function velocity_jacobian(::typeof(angular_velocity_in_body), q::Quat)
     2 * @SMatrix [
     -q.x  q.w  q.z -q.y;
@@ -135,14 +143,31 @@ end
     -q.z  q.y -q.x  q.w]
 end
 
+@inline function velocity_jacobian(::typeof(angular_velocity_in_body), q::SPQuat)
+    quat = Quat(q)
+    dW_dQuat = velocity_jacobian(angular_velocity_in_body, quat)
+    dQuat_dSPQuat = Rotations.jacobian(Quat, q)
+    dW_dQuat * dQuat_dSPQuat
+end
+
 @inline function quaternion_derivative(q::Quat, angular_velocity_in_body::AbstractVector)
     @boundscheck length(angular_velocity_in_body) == 3 || error("size mismatch")
     velocity_jacobian(quaternion_derivative, q) * angular_velocity_in_body
 end
 
+@inline function spquat_derivative(q::SPQuat, angular_velocity_in_body::AbstractVector)
+    @boundscheck length(angular_velocity_in_body) == 3 || error("size mismatch")
+    velocity_jacobian(spquat_derivative, q) * angular_velocity_in_body
+end
+
 @inline function angular_velocity_in_body(q::Quat, quat_derivative::AbstractVector)
     @boundscheck length(quat_derivative) == 4 || error("size mismatch")
     velocity_jacobian(angular_velocity_in_body, q) * quat_derivative
+end
+
+@inline function angular_velocity_in_body(q::SPQuat, spq_derivative::AbstractVector)
+    @boundscheck length(spq_derivative) == 3 || error("size mismatch")
+    velocity_jacobian(angular_velocity_in_body, q) * spq_derivative
 end
 
 function linearized_rodrigues_vec(r::RotMatrix) # TODO: consider moving to Rotations

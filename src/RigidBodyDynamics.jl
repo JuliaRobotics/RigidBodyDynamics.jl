@@ -25,6 +25,7 @@ export
 # specific joint types
 export
     QuaternionFloating,
+    SPQuatFloating,
     Revolute,
     Prismatic,
     Fixed,
@@ -124,6 +125,7 @@ export
     set_additional_state!,
     zero!, # TODO: remove
     normalize_configuration!,
+    principal_value!,
     center_of_mass,
     geometric_jacobian,
     geometric_jacobian!,

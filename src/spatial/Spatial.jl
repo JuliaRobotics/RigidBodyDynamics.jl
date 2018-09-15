@@ -34,6 +34,7 @@ export
     kinetic_energy,
     rotation_vector_rate,
     quaternion_derivative,
+    spquat_derivative,
     angular_velocity_in_body,
     velocity_jacobian,
     linearized_rodrigues_vec
