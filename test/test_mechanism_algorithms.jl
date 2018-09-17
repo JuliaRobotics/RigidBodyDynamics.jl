@@ -735,8 +735,13 @@ end
             rand_configuration!(q0, joint)
             local_coordinates!(ϕ, ϕ̇, joint, q0, q, v)
             q_back = Vector{Float64}(undef, num_positions(joint))
-            global_coordinates!(q_back, joint, q0, ϕ)
-            @test_skip isapprox(q, q_back)
+           global_coordinates!(q_back, joint, q0, ϕ)
+           principal_value!(q_back, joint)
+
+            let expected = copy(q)
+                principal_value!(expected, joint)
+                @test isapprox(q_back, expected)
+            end
 
             # compare ϕ̇ to autodiff
             q̇ = Vector{Float64}(undef, num_positions(joint))
@@ -796,7 +801,7 @@ end
         end
         @test ForwardDiff.hessian(f330, [1.]) == zeros(1, 1)
     end
-    
+
     @testset "principal_value!" begin
         Random.seed!(47)
         state_orig = MechanismState(randmech())
@@ -814,14 +819,22 @@ end
             joint_type_k = joint_type(joint_k)
             q_orig = state_orig.q[joint_k]
             q_prin = state_prin.q[joint_k]
-            if isa(joint_type_k, SPQuatFloating)
+            if joint_type_k isa SPQuatFloating
                 rot_orig = rotation(joint_type_k, q_orig)
                 rot_prin = rotation(joint_type_k, q_prin)
                 @test isapprox(rot_orig, rot_prin)
                 @test (rot_prin.x^2 + rot_prin.y^2 + rot_prin.z^2) < (1.0 + 1.0e-14)
                 @test (1.0 + 1.0e-14) < (rot_orig.x^2 + rot_orig.y^2 + rot_orig.z^2)
+            elseif joint_type_k isa QuaternionFloating || joint_type_k isa QuaternionSpherical
+                rot_orig = rotation(joint_type_k, q_orig)
+                rot_prin = rotation(joint_type_k, q_prin)
+                @test isapprox(rot_orig, rot_prin)
+                @test rot_prin.w > 0
             else
                 @test q_orig == q_prin
+            end
+            if joint_type_k isa QuaternionFloating
+                @test translation(joint_type_k, q_orig) === translation(joint_type_k, q_prin)
             end
         end
     end

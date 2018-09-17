@@ -249,6 +249,11 @@ function is_configuration_normalized(jt::QuaternionFloating, q::AbstractVector, 
     isapprox(quatnorm(rotation(jt, q, false)), one(eltype(q)); rtol = rtol, atol = atol)
 end
 
+function principal_value!(q::AbstractVector, jt::QuaternionFloating)
+    quat = rotation(jt, q)
+    set_rotation!(q, jt, principal_value(quat))
+    nothing
+end
 
 #=
 OneDegreeOfFreedomFixedAxis
@@ -813,6 +818,11 @@ function is_configuration_normalized(jt::QuaternionSpherical, q::AbstractVector,
     isapprox(quatnorm(rotation(jt, q, false)), one(eltype(q)); rtol = rtol, atol = atol)
 end
 
+function principal_value!(q::AbstractVector, jt::QuaternionSpherical)
+    quat = rotation(jt, q)
+    set_rotation!(q, jt, principal_value(quat))
+    nothing
+end
 
 """
 $(TYPEDEF)
@@ -1009,4 +1019,5 @@ end
 function principal_value!(q::AbstractVector, jt::SPQuatFloating)
     spq = rotation(jt, q)
     set_rotation!(q, jt, principal_value(spq))
+    nothing
 end
