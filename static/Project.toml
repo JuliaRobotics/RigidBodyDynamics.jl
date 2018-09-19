@@ -1,4 +1,3 @@
 [deps]
 PackageCompiler = "9b87118b-4619-50d2-8e1e-99f35a4d4d9d"
 RigidBodyDynamics = "366cf18f-59d5-5db9-a4de-86a9f6786172"
-UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"

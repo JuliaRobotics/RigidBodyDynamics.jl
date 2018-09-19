@@ -3,8 +3,8 @@ using PackageCompiler
 builddir = "build"
 mkpath(builddir)
 
-build_executable(
-    "main.jl",
+build_shared_lib(
+    "main.jl", "main",
     snoopfile = "snoopfile.jl",
     startup_file = "no",
     builddir = builddir,
