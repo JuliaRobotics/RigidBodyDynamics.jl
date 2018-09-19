@@ -1,3 +1,3 @@
 include("main.jl")
-using StaticRBD
+using .StaticRBD
 StaticRBD.julia_main(String[])

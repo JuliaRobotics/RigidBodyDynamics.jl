@@ -1,7 +1,11 @@
+import Pkg
+Pkg.activate(@__DIR__)
+
 module StaticRBD
 
 using UnicodePlots
 using RigidBodyDynamics
+using Random
 
 Base.@ccallable function julia_main(ARGS::Vector{String})::Cint
     mechanism = parse_urdf(Float64, "doublependulum.urdf")
