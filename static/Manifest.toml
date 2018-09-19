@@ -157,9 +157,7 @@ version = "0.2.0"
 
 [[RigidBodyDynamics]]
 deps = ["DocStringExtensions", "LightXML", "LinearAlgebra", "LoopThrottle", "Pkg", "Profile", "Random", "Reexport", "Rotations", "SparseArrays", "StaticArrays", "Test", "TypeSortedCollections"]
-git-tree-sha1 = "af5018b1f18f6efdb349fe83eabbe6a7962add60"
-repo-rev = "tk/static-1.0"
-repo-url = ".."
+path = ".."
 uuid = "366cf18f-59d5-5db9-a4de-86a9f6786172"
 version = "1.0.2+"
 
