@@ -2,7 +2,7 @@
     @testset "simulate" begin
         Random.seed!(60)
         # use simulate function (Munthe-Kaas integrator)
-        acrobot = parse_urdf(Float64, joinpath(@__DIR__, "urdf", "Acrobot.urdf"))
+        acrobot = parse_urdf(joinpath(@__DIR__, "urdf", "Acrobot.urdf"), remove_fixed_tree_joints=false)
         x = MechanismState(acrobot)
         rand!(x)
         total_energy_before = gravitational_potential_energy(x) + kinetic_energy(x)
