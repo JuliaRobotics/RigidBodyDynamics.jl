@@ -13,5 +13,7 @@ The compilation process takes 3:10.51 on my Linux machine.
 # TODO:
 
 * create snoop file by running the driver on a couple of different inputs, then recompile with JIT disabled
+* handle floating joints (`-f` flag)
+* parse CSV
 * actual timing code
 * makefile

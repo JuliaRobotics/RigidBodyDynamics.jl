@@ -50,9 +50,9 @@ Base.@ccallable function mass_matrix(M::Any, state::Any)::Cvoid
     nothing
 end
 
-Base.@ccallable function dynamics(result::Any, state::Any)::Cvoid
+Base.@ccallable function dynamics(result::Any, state::Any, τ::Any)::Cvoid
     setdirty!(state)
-    dynamics!(result, state)
+    dynamics!(result, state, τ)
     nothing
 end
 

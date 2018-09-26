@@ -24,7 +24,7 @@ extern jl_value_t* create_dynamics_result(jl_value_t*);
 
 extern void inverse_dynamics(jl_value_t*, jl_value_t*, jl_value_t*, jl_value_t*, jl_value_t*);
 extern void mass_matrix(jl_value_t*, jl_value_t*);
-extern void dynamics(jl_value_t*, jl_value_t*);
+extern void dynamics(jl_value_t*, jl_value_t*, jl_value_t*);
 
 // modified from https://github.com/JuliaLang/julia/blob/8d6c1cebfd5cd97ebe33c9b84aa0f82335ed41a9/src/julia.h#L689
 //#ifndef JL_GC_PUSH7
@@ -141,9 +141,19 @@ int main(int argc, char *argv[])
     double *q_data = (double*)jl_array_data(jl_call1(parent, q));
     double *v_data = (double*)jl_array_data(jl_call1(parent, v));
     double *vd_desired_data = (double*)jl_array_data(jl_call1(parent, vd_desired));
-    double *vd_data = (double*)jl_array_data(jl_call1(parent, vd));
     double *tau_data = (double*)jl_array_data(jl_call1(parent, tau));
+    double *vd_data = (double*)jl_array_data(jl_call1(parent, vd));
     double *M_data = (double*)jl_array_data(jl_call1(parent, M));
+
+    // Dummy inputs. TODO: copy from CSV data.
+    for (i = 0; i < nq; i = i + 1) {
+        q_data[i] = 1.0;
+    }
+    for (i = 0; i < nv; i = i + 1) {
+        v_data[i] = 2.0;
+        vd_desired_data[i] = 3.0;
+        tau_data[i] = 4.0;
+    }
 
     // Call inverse_dynamics.
     inverse_dynamics(tau, jointwrenches, accelerations, state, vd_desired);
@@ -152,7 +162,7 @@ int main(int argc, char *argv[])
     mass_matrix(M, state);
 
     // Call dynamics.
-    dynamics(result, state);
+    dynamics(result, state, tau);
 
     // Pop GC roots.
     JL_GC_POP();
