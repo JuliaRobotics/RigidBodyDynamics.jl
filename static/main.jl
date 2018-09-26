@@ -46,6 +46,37 @@ function run_dynamics_benchmark(result::DynamicsResult, state::MechanismState, s
     end
 end
 
+Base.@ccallable function create_mechanism(c_urdf::Cstring, c_floating::Cint)::Any
+    urdf = unsafe_string(c_urdf)
+    floating = Bool(c_floating)
+    mechanism = parse_urdf(Float64, urdf)
+    @assert !floating # TODO
+    remove_fixed_tree_joints!(mechanism)
+    mechanism
+end
+
+Base.@ccallable function create_state(mechanism::Any)::Any
+    mechanism::Mechanism{Float64}
+    MechanismState(mechanism)
+end
+
+Base.@ccallable function create_dynamics_result(mechanism::Any)::Any
+    mechanism::Mechanism{Float64}
+    @show mechanism
+    println("creating result")
+    DynamicsResult(mechanism)
+end
+
+Base.@ccallable function inverse_dynamics(τ::Vector{Float64}, state::Any, result::Any, q::Vector{Float64}, v::Vector{Float64}, v̇::Vector{Float64})::Cvoid
+    state::MechanismState{Float64, Float64, Float64} # TODO
+    result::DynamicsResult{Float64, Float64}
+    @inbounds copyto!(configuration(state), q)
+    @inbounds copyto!(velocity(state), v)
+    setdirty!(state)
+    inverse_dynamics!(τ, result.jointwrenches, result.accelerations, state, v̇)
+    nothing
+end
+
 Base.@ccallable function inverse_dynamics_benchmark(args::Vector{String})::Cvoid
     mechanism, statevecs, num_passes = parse_args(args)
     state = MechanismState(mechanism)
@@ -67,6 +98,16 @@ Base.@ccallable function dynamics_benchmark(args::Vector{String})::Cvoid
     state = MechanismState(mechanism)
     result = DynamicsResult(mechanism)
     run_dynamics_benchmark(result, state, statevecs, num_passes)
+    nothing
+end
+
+Base.@ccallable function foo(x::Cint, y::Cint)::Cint
+    x + y
+end
+
+Base.@ccallable function printstring(c_string::Cstring)::Cvoid
+    string = unsafe_string(c_string)
+    println(string)
     nothing
 end
 
