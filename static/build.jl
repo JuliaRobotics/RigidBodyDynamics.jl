@@ -4,7 +4,7 @@ builddir = "build"
 mkpath(builddir)
 
 build_shared_lib(
-    "main.jl", "main",
+    "staticrbd.jl", "staticrbdjl",
     snoopfile = "snoopfile.jl",
     startup_file = "no",
     builddir = builddir,

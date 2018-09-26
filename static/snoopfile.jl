@@ -1,4 +1,4 @@
-include("main.jl")
+include("staticrbd.jl")
 using .StaticRBD
 
 config = Dict("doublependulum.urdf" => "test.csv")
