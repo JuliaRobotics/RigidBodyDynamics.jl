@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     // initialization
     libsupport_init();
 
-    //jl_options.compile_enabled = JL_OPTIONS_COMPILE_OFF; //TODO
+    jl_options.compile_enabled = JL_OPTIONS_COMPILE_OFF;
     // JULIAC_PROGRAM_LIBNAME defined on command-line for compilation
     jl_options.image_file = JULIAC_PROGRAM_LIBNAME;
     julia_init(JL_IMAGE_JULIA_HOME);

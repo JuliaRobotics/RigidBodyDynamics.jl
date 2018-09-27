@@ -15,9 +15,9 @@ version = "0.8.10"
 
 [[BinaryProvider]]
 deps = ["Libdl", "Pkg", "SHA", "Test"]
-git-tree-sha1 = "b530fbeb6f41ab5a83fbe3db1fcbe879334bcd2d"
+git-tree-sha1 = "48c147e63431adbcee69bc40b04c3f0fec0a4982"
 uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
-version = "0.4.2"
+version = "0.5.0"
 
 [[BufferedStreams]]
 deps = ["Compat", "Pkg", "Test"]
@@ -27,9 +27,9 @@ version = "1.0.0"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
-git-tree-sha1 = "ae262fa91da6a74e8937add6b613f58cd56cdad4"
+git-tree-sha1 = "ff2595695fc4f14427358ce2593f867085c45dcb"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "1.1.0"
+version = "1.2.0"
 
 [[Dates]]
 deps = ["Printf"]
@@ -111,7 +111,9 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[PackageCompiler]]
 deps = ["ArgParse", "Libdl", "Pkg", "Serialization", "SnoopCompile", "Test", "WinRPM"]
-path = "/home/twan/.julia/dev/PackageCompiler"
+git-tree-sha1 = "2ca88cb78aa33a7f3e40916b66356fde3c26b9c5"
+repo-rev = "master"
+repo-url = "https://github.com/JuliaLang/PackageCompiler.jl.git"
 uuid = "9b87118b-4619-50d2-8e1e-99f35a4d4d9d"
 version = "0.4.0+"
 
@@ -149,9 +151,9 @@ version = "1.0.2+"
 
 [[Rotations]]
 deps = ["LinearAlgebra", "Pkg", "Random", "StaticArrays", "Statistics", "Test"]
-git-tree-sha1 = "ea5c3fec99390050a95ced28561484788b6d15b2"
+git-tree-sha1 = "b629771d0de88979cbdbf72ceddc54de58fde149"
 uuid = "6038ab10-8711-5258-84ad-4b1120ba62dc"
-version = "0.9.0"
+version = "0.9.1"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -197,10 +199,10 @@ uuid = "b718987f-49a8-5099-9789-dcd902bef87d"
 version = "0.3.0"
 
 [[TypeSortedCollections]]
-deps = ["Compat", "Pkg", "Test"]
-git-tree-sha1 = "e28ed2daf970fed774280a24309fda6e642a1bef"
+deps = ["Pkg", "Test"]
+git-tree-sha1 = "bc360a93d6f2f45e1313875964853f745890f143"
 uuid = "94a5cd58-49a0-5741-bd07-fa4f4be8babf"
-version = "0.6.0"
+version = "1.0.0"
 
 [[URIParser]]
 deps = ["Test", "Unicode"]
