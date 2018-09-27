@@ -45,7 +45,7 @@ $(SIGNATURES)
 
 Return the Butcher tableau for the standard fourth order Runge-Kutta integrator.
 """
-function runge_kutta_4(scalartype::Type{T}) where {T}
+function runge_kutta_4(scalar_type::Type{T}) where {T}
     a = zeros(T, 4, 4)
     a[2, 1] = 1/2
     a[3, 2] = 1/2

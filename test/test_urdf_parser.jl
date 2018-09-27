@@ -1,6 +1,6 @@
 @testset "URDF parser" begin
     @testset "joint bounds" begin
-        acrobot = parse_urdf(Float64, joinpath(@__DIR__, "urdf", "Acrobot.urdf"))
+        acrobot = parse_urdf(joinpath(@__DIR__, "urdf", "Acrobot.urdf"), remove_fixed_tree_joints=false)
         @test position_bounds(findjoint(acrobot, "shoulder")) == [RigidBodyDynamics.Bounds(-Inf, Inf)]
         @test velocity_bounds(findjoint(acrobot, "shoulder")) == [RigidBodyDynamics.Bounds(-Inf, Inf)]
         @test effort_bounds(findjoint(acrobot, "shoulder")) == [RigidBodyDynamics.Bounds(-Inf, Inf)]
@@ -8,7 +8,7 @@
         @test velocity_bounds(findjoint(acrobot, "elbow")) == [RigidBodyDynamics.Bounds(-Inf, Inf)]
         @test effort_bounds(findjoint(acrobot, "elbow")) == [RigidBodyDynamics.Bounds(-Inf, Inf)]
 
-        acrobot_with_limits = parse_urdf(Float64, joinpath(@__DIR__, "urdf", "Acrobot_with_limits.urdf"))
+        acrobot_with_limits = parse_urdf(joinpath(@__DIR__, "urdf", "Acrobot_with_limits.urdf"), remove_fixed_tree_joints=false)
         @test position_bounds(findjoint(acrobot_with_limits, "shoulder")) == [RigidBodyDynamics.Bounds(-6.28, 6.28)]
         @test velocity_bounds(findjoint(acrobot_with_limits, "shoulder")) == [RigidBodyDynamics.Bounds(-10, 10)]
         @test effort_bounds(findjoint(acrobot_with_limits, "shoulder")) == [RigidBodyDynamics.Bounds(0, 0)]
@@ -18,7 +18,7 @@
     end
 
     @testset "planar joints" begin
-        robot = parse_urdf(Float64, joinpath(@__DIR__, "urdf", "planar_slider.urdf"))
+        robot = parse_urdf(joinpath(@__DIR__, "urdf", "planar_slider.urdf"), remove_fixed_tree_joints=false)
         # the first joint is the fixed joint between the world and the base link
         jt = joint_type(joints(robot)[1])
         @test jt isa Fixed
