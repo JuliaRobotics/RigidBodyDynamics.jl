@@ -104,10 +104,10 @@ function parse_body(::Type{T}, xml_link::XMLElement, frame::CartesianFrame3D = C
     RigidBody(linkname, inertia)
 end
 
-function parse_root_link(mechanism::Mechanism{T}, xml_link::XMLElement, rootjointtype::JointType{T}=Fixed{T}()) where {T}
+function parse_root_link(mechanism::Mechanism{T}, xml_link::XMLElement, root_joint_type::JointType{T}=Fixed{T}()) where {T}
     parent = root_body(mechanism)
     body = parse_body(T, xml_link)
-    joint = Joint("$(string(body))_to_world", rootjointtype)
+    joint = Joint("$(string(body))_to_world", root_joint_type)
     joint_to_parent = one(Transform3D{T}, frame_before(joint), default_frame(parent))
     attach!(mechanism, parent, body, joint, joint_pose = joint_to_parent)
 end
@@ -131,13 +131,13 @@ Create a `Mechanism` by parsing a [URDF](http://wiki.ros.org/urdf) file.
 
 Keyword arguments:
 
-* `scalartype`: the scalar type used to store the `Mechanism`'s kinematic and inertial properties. Default: `Float64`.
-* `rootjointtype`: the joint type used to connect the parsed `Mechanism` to the world. Default: `Fixed{scalartype}()`.
+* `scalar_type`: the scalar type used to store the `Mechanism`'s kinematic and inertial properties. Default: `Float64`.
+* `root_joint_type`: the joint type used to connect the parsed `Mechanism` to the world. Default: `Fixed{scalar_type}()`.
 * `remove_fixed_tree_joints`: whether to remove any fixed joints present in the kinematic tree using [`remove_fixed_tree_joints!`](@ref). Default: `true`.
 """
 function parse_urdf(filename::AbstractString;
-        scalartype::Type{T}=Float64,
-        rootjointtype::JointType{T}=Fixed{scalartype}(),
+        scalar_type::Type{T}=Float64,
+        root_joint_type::JointType{T}=Fixed{scalar_type}(),
         remove_fixed_tree_joints=true) where T
     xdoc = parse_file(filename)
     xroot = LightXML.root(xdoc)
@@ -167,7 +167,7 @@ function parse_urdf(filename::AbstractString;
     # create mechanism from spanning tree
     rootbody = RigidBody{T}("world")
     mechanism = Mechanism(rootbody)
-    parse_root_link(mechanism, Graphs.root(tree).data, rootjointtype)
+    parse_root_link(mechanism, Graphs.root(tree).data, root_joint_type)
     for edge in edges(tree)
         parse_joint_and_link(mechanism, source(edge, tree).data, target(edge, tree).data, edge.data)
     end
@@ -179,17 +179,17 @@ function parse_urdf(filename::AbstractString;
     mechanism
 end
 
-@noinline function parse_urdf(scalartype::Type, filename::AbstractString)
-    replacement = if scalartype == Float64
+@noinline function parse_urdf(scalar_type::Type, filename::AbstractString)
+    replacement = if scalar_type == Float64
         "parse_urdf(filename, remove_fixed_tree_joints=false)"
     else
-        "parse_urdf(filename, scalartype=$scalartype, remove_fixed_tree_joints=false)"
+        "parse_urdf(filename, scalar_type=$scalar_type, remove_fixed_tree_joints=false)"
     end
     msg = """
-    `parse_urdf(scalartype, filename)` is deprecated, use $replacement instead.
+    `parse_urdf(scalar_type, filename)` is deprecated, use $replacement instead.
     This is to reproduce the exact same behavior as before.
     You may want to consider leaving `remove_fixed_tree_joints` to its default value (`true`).
     """
     Base.depwarn(msg, :parse_urdf)
-    parse_urdf(filename; scalartype=scalartype, remove_fixed_tree_joints=false)
+    parse_urdf(filename; scalar_type=scalar_type, remove_fixed_tree_joints=false)
 end

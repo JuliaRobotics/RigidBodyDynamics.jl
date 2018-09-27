@@ -627,7 +627,7 @@ $(SIGNATURES)
 Return the default Baumgarte constraint stabilization gains. These gains result in
 critical damping, and correspond to ``T_{stab} = 0.1`` in Featherstone (2008), section 8.3.
 """
-function default_constraint_stabilization_gains(scalartype::Type{T}) where T
+function default_constraint_stabilization_gains(scalar_type::Type{T}) where T
     ConstDict{JointID}(SE3PDGains(PDGains(T(100), T(20)), PDGains(T(100), T(20))))
 end
 

@@ -9,7 +9,7 @@ const ScalarType = Float64
 function create_floating_atlas()
     url = "https://raw.githubusercontent.com/RobotLocomotion/drake/6e3ca768cbaabf15d0f2bed0fb5bd703fa022aa5/drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"
     urdf = RigidBodyDynamics.cached_download(url, "atlas.urdf")
-    atlas = parse_urdf(urdf, scalartype=ScalarType, rootjointtype=QuaternionFloating{ScalarType}())
+    atlas = parse_urdf(urdf, scalar_type=ScalarType, root_joint_type=QuaternionFloating{ScalarType}())
     atlas
 end
 
