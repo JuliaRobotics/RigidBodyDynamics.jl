@@ -949,7 +949,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.parse_urdf",
     "category": "function",
-    "text": "parse_urdf(scalartype, filename)\n\n\nCreate a Mechanism by parsing a URDF file.\n\n\n\n\n\n"
+    "text": "parse_urdf(filename; scalar_type, root_joint_type, remove_fixed_tree_joints)\n\n\nCreate a Mechanism by parsing a URDF file.\n\nKeyword arguments:\n\nscalar_type: the scalar type used to store the Mechanism\'s kinematic and inertial properties. Default: Float64.\nroot_joint_type: the joint type used to connect the parsed Mechanism to the world. Default: Fixed{scalar_type}().\nremove_fixed_tree_joints: whether to remove any fixed joints present in the kinematic tree using remove_fixed_tree_joints!. Default: true.\n\n\n\n\n\n"
 },
 
 {
