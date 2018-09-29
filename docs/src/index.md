@@ -37,7 +37,7 @@ Closed-loop systems (parallel mechanisms) are supported, with optional Baumgarte
 
 ### Installing Julia
 
-Download links and more detailed instructions are available on the [Julia](http://julialang.org/) website. Downloading Julia 0.6, the latest stable release at the time of writing, is currently recommended. However, RigidBodyDynamics.jl has already been updated to work with the latest 0.7 nightly versions, and future versions will exclusively support Julia 0.7.
+Download links and more detailed instructions are available on the [Julia website](http://julialang.org/). The latest version of RigidBodyDynamics.jl requires Julia 0.7, but we recommend downloading 1.0 (the latest stable Julia release at the time of writing). Version 0.7 of RigidBodyDynamics.jl is the last to support Julia 0.6.
 
 !!! warning
 
@@ -45,16 +45,22 @@ Download links and more detailed instructions are available on the [Julia](http:
 
 ### Installing RigidBodyDynamics
 
-To install the latest tagged release of RigidBodyDynamics, start Julia and enter `Pkg` mode by pressing `]`, and then simply run
+To install the latest tagged release of RigidBodyDynamics, start Julia and enter `Pkg` mode by pressing `]`. Then simply run
 
 ```julia
 add RigidBodyDynamics
 ```
 
-To check out the master branch and work on the bleeding edge (generally, not recommended), additionally run
+To use the latest master version and work on the bleeding edge (generally, not recommended), instead run
 
 ```julia
-develop RigidBodyDynamics
+add RigidBodyDynamics#master
+```
+
+A third option is to clone the repository (to the directory printed by `julia -e 'import Pkg; println(Pkg.devdir())'`):
+
+```julia
+dev RigidBodyDynamics
 ```
 
 ## About
