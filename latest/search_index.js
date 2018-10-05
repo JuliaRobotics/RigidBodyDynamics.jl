@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Design features",
     "category": "section",
-    "text": "Some of the key design features of this package are:pure Julia implementation, enabling seamless support for e.g. automatic differentiation using ForwardDiff.jl and symbolic dynamics using SymPy.jl.\neasy creation and modification of general rigid body mechanisms (including basic URDF parsing).\nextensive checks that verify that coordinate systems match before computation, with the goal of making reference frame mistakes impossible\nflexible caching of intermediate results to prevent doing double work\nfairly small codebase and few dependencies\nsingularity-free rotation parameterizations"
+    "text": "Some of the key design features of this package are:pure Julia implementation, enabling seamless support for e.g. automatic differentiation using ForwardDiff.jl and symbolic dynamics using SymPy.jl.\neasy creation and modification of general rigid body mechanisms.\nbasic parsing of and writing to the URDF file format.\nextensive checks that verify that coordinate systems match before computation, with the goal of making reference frame mistakes impossible\nflexible caching of intermediate results to prevent doing double work\nfairly small codebase and few dependencies\nsingularity-free rotation parameterizations"
 },
 
 {
@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Functionality",
     "category": "section",
-    "text": "Current functionality of RigidBodyDynamics includes:kinematics/transforming points and free vectors from one coordinate system to another\ntransforming wrenches, momenta (spatial force vectors) and twists and their derivatives (spatial motion vectors) from one coordinate system to another\nrelative twists/spatial accelerations between bodies\nkinetic/potential energy\ncenter of mass\ngeometric/basic/spatial Jacobians\nmomentum\nmomentum matrix\nmomentum rate bias (= momentum matrix time derivative multiplied by joint velocity vector)\nmass matrix (composite rigid body algorithm)\ninverse dynamics (recursive Newton-Euler)\ndynamics\nsimulation, either using an off-the-shelf ODE integrator or using an included custom Munthe-Kaas integrator that properly handles second-order ODEs defined on a manifold.Closed-loop systems (parallel mechanisms) are supported, with optional Baumgarte stabilization of the loop joint constraints. Support for contact is very limited (possibly subject to major changes in the future), implemented using penalty methods."
+    "text": "Current functionality of RigidBodyDynamics.jl includes:kinematics/transforming points and free vectors from one coordinate system to another\ntransforming wrenches, momenta (spatial force vectors) and twists and their derivatives (spatial motion vectors) from one coordinate system to another\nrelative twists/spatial accelerations between bodies\nkinetic/potential energy\ncenter of mass\ngeometric/basic/spatial Jacobians\nmomentum\nmomentum matrix\nmomentum rate bias (= momentum matrix time derivative multiplied by joint velocity vector)\nmass matrix (composite rigid body algorithm)\ninverse dynamics (recursive Newton-Euler)\ndynamics\nsimulation, either using an off-the-shelf ODE integrator or using an included custom Munthe-Kaas integrator that properly handles second-order ODEs defined on a manifold.Closed-loop systems (parallel mechanisms) are supported, with optional Baumgarte stabilization of the loop joint constraints. Support for contact is very limited (possibly subject to major changes in the future), implemented using penalty methods."
 },
 
 {
@@ -69,7 +69,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Contents",
     "category": "section",
-    "text": "Pages = [\n  \"quickstart.md\",\n  \"spatial.md\",\n  \"joints.md\",\n  \"rigidbody.md\",\n  \"mechanism.md\",\n  \"mechanismstate.md\",\n  \"algorithms.md\",\n  \"caches.md\",\n  \"simulation.md\",\n  \"benchmarks.md\"]\nDepth = 2"
+    "text": "Pages = [\n  \"quickstart.md\",\n  \"spatial.md\",\n  \"joints.md\",\n  \"rigidbody.md\",\n  \"mechanism.md\",\n  \"mechanismstate.md\",\n  \"algorithms.md\",\n  \"caches.md\",\n  \"simulation.md\",\n  \"urdf.md\",\n  \"benchmarks.md\"]\nDepth = 2"
 },
 
 {
@@ -945,14 +945,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.URDF.parse_urdf",
-    "page": "Mechanism",
-    "title": "RigidBodyDynamics.URDF.parse_urdf",
-    "category": "function",
-    "text": "parse_urdf(filename; scalar_type, root_joint_type, remove_fixed_tree_joints)\n\n\nCreate a Mechanism by parsing a URDF file.\n\nKeyword arguments:\n\nscalar_type: the scalar type used to store the Mechanism\'s kinematic and inertial properties. Default: Float64.\nroot_joint_type: the joint type used to connect the parsed Mechanism to the world. Default: Fixed{scalar_type}().\nremove_fixed_tree_joints: whether to remove any fixed joints present in the kinematic tree using remove_fixed_tree_joints!. Default: true.\n\n\n\n\n\n"
-},
-
-{
     "location": "mechanism.html#RigidBodyDynamics.attach!-Union{Tuple{T}, Tuple{Mechanism{T},RigidBody{T},Mechanism{T}}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
@@ -981,7 +973,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "method",
-    "text": "rand_chain_mechanism(?, jointtypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
+    "text": "Create a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
 },
 
 {
@@ -989,7 +981,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "method",
-    "text": "Create a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
+    "text": "rand_floating_tree_mechanism(?, nonfloatingjointtypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
 },
 
 {
@@ -1045,7 +1037,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "Creating and modifying Mechanisms",
     "category": "section",
-    "text": "parse_urdfModules = [RigidBodyDynamics]\nOrder   = [:function]\nPages   = [\"mechanism_modification.jl\"]"
+    "text": "See also URDF parsing and writing for URDF file format support.Modules = [RigidBodyDynamics]\nOrder   = [:function]\nPages   = [\"mechanism_modification.jl\"]"
 },
 
 {
@@ -2086,6 +2078,38 @@ var documenterSearchIndex = {"docs": [
     "title": "Lower level ODE integration interface",
     "category": "section",
     "text": "MuntheKaasIntegrator\nButcherTableau\nOdeResultsSink\nRingBufferStorage\nExpandingStorageModules = [RigidBodyDynamics.OdeIntegrators]\nOrder   = [:function]\nPages   = [\"ode_integrators.jl\"]"
+},
+
+{
+    "location": "urdf.html#",
+    "page": "URDF parsing and writing",
+    "title": "URDF parsing and writing",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "urdf.html#RigidBodyDynamics.URDF.parse_urdf",
+    "page": "URDF parsing and writing",
+    "title": "RigidBodyDynamics.URDF.parse_urdf",
+    "category": "function",
+    "text": "parse_urdf(filename; scalar_type, root_joint_type, remove_fixed_tree_joints)\n\n\nCreate a Mechanism by parsing a URDF file.\n\nKeyword arguments:\n\nscalar_type: the scalar type used to store the Mechanism\'s kinematic and inertial properties. Default: Float64.\nroot_joint_type: the joint type used to connect the parsed Mechanism to the world. Default: Fixed{scalar_type}().\nremove_fixed_tree_joints: whether to remove any fixed joints present in the kinematic tree using remove_fixed_tree_joints!. Default: true.\n\n\n\n\n\n"
+},
+
+{
+    "location": "urdf.html#RigidBodyDynamics.URDF.write_urdf",
+    "page": "URDF parsing and writing",
+    "title": "RigidBodyDynamics.URDF.write_urdf",
+    "category": "function",
+    "text": "Serialize a Mechanism to the URDF file format.\n\nLimitations:\n\nfor <link> tags, only the <inertial> tag is written; there is no support for <visual> and <collision> tags.\nfor <joint> tags, only the <origin>, <parent>, <child>, and <limit> tags are written. There is no support for the <calibration> and <safety_controller> tags.\n\nThese limitations are simply due to the fact that Mechanisms do not store the required information to write these tags.\n\n\n\n\n\n"
+},
+
+{
+    "location": "urdf.html#URDF-parsing-and-writing-1",
+    "page": "URDF parsing and writing",
+    "title": "URDF parsing and writing",
+    "category": "section",
+    "text": "parse_urdf\nwrite_urdf"
 },
 
 {
