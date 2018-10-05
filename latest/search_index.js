@@ -945,9 +945,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.parse_urdf",
+    "location": "mechanism.html#RigidBodyDynamics.URDF.parse_urdf",
     "page": "Mechanism",
-    "title": "RigidBodyDynamics.parse_urdf",
+    "title": "RigidBodyDynamics.URDF.parse_urdf",
     "category": "function",
     "text": "parse_urdf(filename; scalar_type, root_joint_type, remove_fixed_tree_joints)\n\n\nCreate a Mechanism by parsing a URDF file.\n\nKeyword arguments:\n\nscalar_type: the scalar type used to store the Mechanism\'s kinematic and inertial properties. Default: Float64.\nroot_joint_type: the joint type used to connect the parsed Mechanism to the world. Default: Fixed{scalar_type}().\nremove_fixed_tree_joints: whether to remove any fixed joints present in the kinematic tree using remove_fixed_tree_joints!. Default: true.\n\n\n\n\n\n"
 },
@@ -981,7 +981,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "method",
-    "text": "Create a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
+    "text": "rand_chain_mechanism(?, jointtypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
 },
 
 {
@@ -989,7 +989,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "method",
-    "text": "rand_floating_tree_mechanism(?, nonfloatingjointtypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
+    "text": "Create a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
 },
 
 {
