@@ -52,6 +52,13 @@ function process_joint_type!(xml_joint::XMLElement, joint::Joint{<:Any, <:Fixed}
     xml_joint
 end
 
+function process_joint_type!(xml_joint::XMLElement, joint::Joint{<:Any, <:Planar})
+    jtype = joint_type(joint)
+    xml_axis = new_child(xml_joint, "axis")
+    set_vector_attribute(xml_axis, "xyz", jtype.x_axis × jtype.y_axis)
+    xml_joint
+end
+
 function process_joint_type!(xml_joint::XMLElement, joint::Joint{T, JT}) where {T, JT<:Union{Revolute, Prismatic}}
     jtype = joint_type(joint)
     xml_axis = new_child(xml_joint, "axis")
@@ -127,16 +134,29 @@ function LightXML.XMLDocument(mechanism::Mechanism)
     xdoc
 end
 
+
+"""
+Serialize a `Mechanism` to the [URDF](https://wiki.ros.org/urdf/XML/model) file format.
+
+Limitations:
+
+* for `<link>` tags, only the `<inertial>` tag is written; there is no support for `<visual>` and `<collision>` tags.
+* for `<joint>` tags, only the `<origin>`, `<parent>`, `<child>`, and `<limit>` tags are written. There is no support for the `<calibration>` and `<safety_controller>` tags.
+
+These limitations are simply due to the fact that `Mechanism`s do not store the required information to write these tags.
+"""
+function write_urdf end
+
 """
 $(SIGNATURES)
 
-Serialize a `Mechanism` to the [URDF](http://wiki.ros.org/urdf) file format and write it to the stream `io`.
+Write a URDF representation of `mechanism` to the stream `io` (a `Base.IO`).
 """
 write_urdf(io::IO, mechanism::Mechanism) = show(io, XMLDocument(mechanism))
 
 """
 $(SIGNATURES)
 
-Serialize a `Mechanism` to the [URDF](http://wiki.ros.org/urdf) file format and write it to the file `filename`.
+Write a URDF representation of `mechanism` to a file.
 """
 write_urdf(filename::AbstractString, mechanism::Mechanism) = open(io -> write_urdf(io, mechanism), filename, "w")

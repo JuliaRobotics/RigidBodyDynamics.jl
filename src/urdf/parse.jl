@@ -127,7 +127,7 @@ end
 """
 $(SIGNATURES)
 
-Create a `Mechanism` by parsing a [URDF](http://wiki.ros.org/urdf) file.
+Create a `Mechanism` by parsing a [URDF](https://wiki.ros.org/urdf/XML/model) file.
 
 Keyword arguments:
 
