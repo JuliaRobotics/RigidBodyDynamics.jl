@@ -18,6 +18,7 @@ makedocs(
         "Custom collection types" => "customcollections.md",
         "Cache types" => "caches.md",
         "Simulation" => "simulation.md",
+        "URDF parsing and writing" => "urdf.md",
         "Benchmarks" => "benchmarks.md"
       ]
 )
