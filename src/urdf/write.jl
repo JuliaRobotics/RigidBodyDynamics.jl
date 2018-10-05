@@ -126,7 +126,7 @@ function LightXML.XMLDocument(mechanism::Mechanism; robot_name::Union{Nothing, A
 
     xdoc = XMLDocument()
     xroot = create_root(xdoc, "robot")
-    if name !== nothing
+    if robot_name !== nothing
         set_attribute(xroot, "name", robot_name)
     end
     for body in bodies(canonicalized)
