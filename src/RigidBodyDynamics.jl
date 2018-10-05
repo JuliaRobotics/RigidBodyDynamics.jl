@@ -5,7 +5,6 @@ using LinearAlgebra
 using StaticArrays
 using Rotations
 using TypeSortedCollections
-using LightXML
 using DocStringExtensions
 using Reexport
 import Base.Iterators: filter, flatten
@@ -84,8 +83,7 @@ export
     replace_joint!,
     maximal_coordinates,
     submechanism,
-    remove_fixed_tree_joints!,
-    parse_urdf
+    remove_fixed_tree_joints!
 
 # contact-related functionality
 export # note: contact-related functionality may be changed significantly in the future
@@ -165,7 +163,7 @@ include("spatial/Spatial.jl")
 include("contact.jl")
 include("pdcontrol.jl")
 
-using .Spatial # contains additional functions that are reexported
+@reexport using .Spatial
 using .CustomCollections
 using .Contact
 using .Graphs
@@ -183,8 +181,13 @@ include("mechanism_state.jl")
 include("dynamics_result.jl")
 include("caches.jl")
 include("mechanism_algorithms.jl")
-include("parse_urdf.jl")
 include("ode_integrators.jl")
 include("simulate.jl")
+
+include("urdf/URDF.jl")
+@reexport using .URDF
+
+# import these for MechanismGeometries compatibility. TODO: stop importing these after updating MechanismGeometries.
+import .URDF: parse_scalar, parse_vector, parse_pose
 
 end # module

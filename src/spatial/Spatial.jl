@@ -1,4 +1,4 @@
-@reexport module Spatial
+module Spatial
 
 # types
 export
