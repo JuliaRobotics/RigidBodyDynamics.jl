@@ -53,7 +53,7 @@ function parse_joint_type(::Type{T}, xml_joint::XMLElement) where {T}
         R = Rotations.rotation_between(SVector(0, 0, 1), urdf_axis)
         return Planar{T}(R * SVector(1, 0, 0), R * SVector(0, 1, 0))
     else
-        error("joint type $joint_type not recognized")
+        error("joint type $(string(joint_type)) not recognized")
     end
 end
 

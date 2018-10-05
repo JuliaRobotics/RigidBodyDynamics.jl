@@ -53,6 +53,7 @@ function process_joint_type!(xml_joint::XMLElement, joint::Joint{<:Any, <:Fixed}
 end
 
 function process_joint_type!(xml_joint::XMLElement, joint::Joint{<:Any, <:Planar})
+    set_attribute(xml_joint, "type", "planar")
     jtype = joint_type(joint)
     xml_axis = new_child(xml_joint, "axis")
     set_vector_attribute(xml_axis, "xyz", jtype.x_axis × jtype.y_axis)
@@ -75,7 +76,7 @@ function process_joint_type!(xml_joint::XMLElement, joint::Joint{T, JT}) where {
     xml_limit = new_child(xml_joint, "limit")
     set_position_limits = true
     if JT <: Revolute
-        if qbound !== realline
+        if qbound == realline
             set_attribute(xml_joint, "type", "continuous")
             set_position_limits = false # continuous joints don't allow `lower` and `upper`
         else
@@ -117,7 +118,7 @@ function LightXML.XMLElement(joint::Joint, mechanism::Mechanism)
     xml_joint
 end
 
-function LightXML.XMLDocument(mechanism::Mechanism)
+function LightXML.XMLDocument(mechanism::Mechanism; robot_name::Union{Nothing, AbstractString}=nothing)
     @assert !has_loops(mechanism)
 
     canonicalized = deepcopy(mechanism)
@@ -125,6 +126,9 @@ function LightXML.XMLDocument(mechanism::Mechanism)
 
     xdoc = XMLDocument()
     xroot = create_root(xdoc, "robot")
+    if name !== nothing
+        set_attribute(xroot, "name", robot_name)
+    end
     for body in bodies(canonicalized)
         add_child(xroot, XMLElement(body))
     end
@@ -147,16 +151,26 @@ These limitations are simply due to the fact that `Mechanism`s do not store the 
 """
 function write_urdf end
 
+const write_urdf_name_kwarg_doc = "Optionally, the `robot_name` keyword argument can be used to specify the robot's name."
+
 """
 $(SIGNATURES)
 
 Write a URDF representation of `mechanism` to the stream `io` (a `Base.IO`).
+
+$write_urdf_name_kwarg_doc
 """
-write_urdf(io::IO, mechanism::Mechanism) = show(io, XMLDocument(mechanism))
+write_urdf(io::IO, mechanism::Mechanism; robot_name=nothing) = show(io, XMLDocument(mechanism; robot_name=robot_name))
 
 """
 $(SIGNATURES)
 
 Write a URDF representation of `mechanism` to a file.
+
+$write_urdf_name_kwarg_doc
 """
-write_urdf(filename::AbstractString, mechanism::Mechanism) = open(io -> write_urdf(io, mechanism), filename, "w")
+function write_urdf(filename::AbstractString, mechanism::Mechanism; robot_name=nothing)
+    open(filename, "w") do io
+        write_urdf(io, mechanism, robot_name=robot_name)
+    end
+end
