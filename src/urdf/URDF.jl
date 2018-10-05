@@ -8,10 +8,13 @@ using DocStringExtensions
 using RigidBodyDynamics.Graphs
 
 using RigidBodyDynamics: Bounds, upper, lower
+using RigidBodyDynamics: has_loops, canonicalize_graph!, joint_to_predecessor
 
 export
-    parse_urdf
+    parse_urdf,
+    write_urdf
 
 include("parse.jl")
+include("write.jl")
 
 end # module

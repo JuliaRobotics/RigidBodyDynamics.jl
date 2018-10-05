@@ -165,12 +165,13 @@ function parse_urdf(filename::AbstractString;
     tree = SpanningTree(graph, first(roots))
 
     # create mechanism from spanning tree
-    rootbody = RigidBody{T}("world")
+    rootbody = RigidBody{T}("") # initially, set root body name to an empty string, so as not to clash with URDF links named "world"
     mechanism = Mechanism(rootbody)
     parse_root_link(mechanism, Graphs.root(tree).data, root_joint_type)
     for edge in edges(tree)
         parse_joint_and_link(mechanism, source(edge, tree).data, target(edge, tree).data, edge.data)
     end
+    rootbody.name = "world"
 
     if remove_fixed_tree_joints
         remove_fixed_tree_joints!(mechanism)

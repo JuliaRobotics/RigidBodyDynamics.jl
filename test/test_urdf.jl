@@ -1,4 +1,4 @@
-@testset "URDF parser" begin
+@testset "URDF parse" begin
     @testset "joint bounds" begin
         acrobot = parse_urdf(joinpath(@__DIR__, "urdf", "Acrobot.urdf"), remove_fixed_tree_joints=false)
         @test position_bounds(findjoint(acrobot, "shoulder")) == [RigidBodyDynamics.Bounds(-Inf, Inf)]
@@ -103,3 +103,32 @@
     end
 end
 
+function test_urdf_serialize_deserialize(mechanism1::Mechanism; remove_fixed_tree_joints::Bool)
+    state1 = MechanismState(mechanism1)
+    v̇_vec = rand(num_velocities(mechanism1))
+    rand!(state1)
+    v̇1 = copyto!(similar(velocity(state1)), v̇_vec)
+    τ1 = inverse_dynamics(state1, v̇1)
+
+    mktemp() do urdf2, io
+        write_urdf(io, mechanism1)
+        close(io)
+        mechanism2 = parse_urdf(urdf2, remove_fixed_tree_joints=remove_fixed_tree_joints)
+        state2 = MechanismState(mechanism2)
+        copyto!(state2, Vector(state1))
+        v̇2 = copyto!(similar(velocity(state2)), v̇_vec)
+        τ2 = inverse_dynamics(state2, v̇2)
+        @test τ1 ≈ τ2 atol=1e-10
+    end
+end
+
+@testset "URDF write" begin
+    Random.seed!(124)
+    urdf = joinpath(@__DIR__, "urdf", "Acrobot.urdf")
+    for remove_fixed_joints_before in (true, false)
+        mechanism = parse_urdf(urdf, remove_fixed_tree_joints=remove_fixed_joints_before)
+        for remove_fixed_joints_after in (true, false)
+            test_urdf_serialize_deserialize(mechanism, remove_fixed_tree_joints=remove_fixed_joints_after)
+        end
+    end
+end
