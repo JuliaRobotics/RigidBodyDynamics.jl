@@ -7,7 +7,8 @@ RigidBodyDynamics implements various rigid body dynamics and kinematics algorith
 Some of the key design features of this package are:
 
 * pure Julia implementation, enabling seamless support for e.g. automatic differentiation using [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl) and symbolic dynamics using [SymPy.jl](https://github.com/JuliaPy/SymPy.jl).
-* easy creation and modification of general rigid body mechanisms (including basic [URDF](http://wiki.ros.org/urdf) parsing).
+* easy creation and modification of general rigid body mechanisms.
+* basic parsing of and writing to the [URDF](http://wiki.ros.org/urdf) file format.
 * extensive checks that verify that coordinate systems match before computation, with the goal of making reference frame mistakes impossible
 * flexible caching of intermediate results to prevent doing double work
 * fairly small codebase and few dependencies
@@ -15,7 +16,7 @@ Some of the key design features of this package are:
 
 ## Functionality
 
-Current functionality of RigidBodyDynamics includes:
+Current functionality of RigidBodyDynamics.jl includes:
 
 * kinematics/transforming points and free vectors from one coordinate system to another
 * transforming wrenches, momenta (spatial force vectors) and twists and their derivatives (spatial motion vectors) from one coordinate system to another
@@ -88,6 +89,7 @@ Pages = [
   "algorithms.md",
   "caches.md",
   "simulation.md",
+  "urdf.md",
   "benchmarks.md"]
 Depth = 2
 ```

@@ -1,4 +1,4 @@
-@testset "URDF parser" begin
+@testset "URDF parse" begin
     @testset "joint bounds" begin
         acrobot = parse_urdf(joinpath(@__DIR__, "urdf", "Acrobot.urdf"), remove_fixed_tree_joints=false)
         @test position_bounds(findjoint(acrobot, "shoulder")) == [RigidBodyDynamics.Bounds(-Inf, Inf)]
@@ -103,3 +103,50 @@
     end
 end
 
+function test_urdf_serialize_deserialize(mechanism1::Mechanism; remove_fixed_tree_joints::Bool)
+    state1 = MechanismState(mechanism1)
+    v̇_vec = rand(num_velocities(mechanism1))
+    rand!(state1)
+    v̇1 = copyto!(similar(velocity(state1)), v̇_vec)
+    τ1 = inverse_dynamics(state1, v̇1)
+
+    mktempdir() do dir
+        urdf2 = joinpath(dir, "test.urdf")
+        write_urdf(urdf2, mechanism1, robot_name="test")
+        mechanism2 = parse_urdf(urdf2, remove_fixed_tree_joints=remove_fixed_tree_joints)
+        state2 = MechanismState(mechanism2)
+        copyto!(state2, Vector(state1))
+        v̇2 = copyto!(similar(velocity(state2)), v̇_vec)
+        τ2 = inverse_dynamics(state2, v̇2)
+        @test τ1 ≈ τ2 atol=1e-10
+
+        for joint1 in tree_joints(mechanism1)
+            if remove_fixed_tree_joints && joint_type(joint1) isa Fixed
+                continue
+            else
+                joint2 = findjoint(mechanism2, string(joint1))
+                @test position_bounds(joint1) == position_bounds(joint2)
+                @test velocity_bounds(joint1) == velocity_bounds(joint2)
+                @test effort_bounds(joint1) == effort_bounds(joint2)
+            end
+        end
+    end
+end
+
+@testset "URDF write" begin
+    Random.seed!(124)
+    urdfdir = joinpath(@__DIR__, "urdf")
+    for basename in readdir(urdfdir)
+        last(splitext(basename)) == ".urdf" || continue
+        urdf = joinpath(urdfdir, basename)
+        for floating in (true, false)
+            root_joint_type = floating ? QuaternionFloating{Float64}() : Fixed{Float64}()
+            for remove_fixed_joints_before in (true, false)
+                mechanism = parse_urdf(urdf, remove_fixed_tree_joints=remove_fixed_joints_before, root_joint_type=root_joint_type)
+                for remove_fixed_joints_after in (true, false)
+                    test_urdf_serialize_deserialize(mechanism, remove_fixed_tree_joints=remove_fixed_joints_after)
+                end
+            end
+        end
+    end
+end

@@ -15,9 +15,7 @@ Mechanism
 
 ## [Creating and modifying `Mechanism`s](@id mechanism_create)
 
-```@docs
-parse_urdf
-```
+See also [URDF parsing and writing](@ref) for URDF file format support.
 
 ```@autodocs
 Modules = [RigidBodyDynamics]

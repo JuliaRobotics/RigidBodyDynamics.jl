@@ -53,7 +53,7 @@ function parse_joint_type(::Type{T}, xml_joint::XMLElement) where {T}
         R = Rotations.rotation_between(SVector(0, 0, 1), urdf_axis)
         return Planar{T}(R * SVector(1, 0, 0), R * SVector(0, 1, 0))
     else
-        error("joint type $joint_type not recognized")
+        error("joint type $(string(joint_type)) not recognized")
     end
 end
 
@@ -127,7 +127,7 @@ end
 """
 $(SIGNATURES)
 
-Create a `Mechanism` by parsing a [URDF](http://wiki.ros.org/urdf) file.
+Create a `Mechanism` by parsing a [URDF](https://wiki.ros.org/urdf/XML/model) file.
 
 Keyword arguments:
 
@@ -165,12 +165,13 @@ function parse_urdf(filename::AbstractString;
     tree = SpanningTree(graph, first(roots))
 
     # create mechanism from spanning tree
-    rootbody = RigidBody{T}("world")
+    rootbody = RigidBody{T}("") # initially, set root body name to an empty string, so as not to clash with URDF links named "world"
     mechanism = Mechanism(rootbody)
     parse_root_link(mechanism, Graphs.root(tree).data, root_joint_type)
     for edge in edges(tree)
         parse_joint_and_link(mechanism, source(edge, tree).data, target(edge, tree).data, edge.data)
     end
+    rootbody.name = "world"
 
     if remove_fixed_tree_joints
         remove_fixed_tree_joints!(mechanism)
