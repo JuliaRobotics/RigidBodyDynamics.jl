@@ -118,7 +118,7 @@ function LightXML.XMLElement(joint::Joint, mechanism::Mechanism)
     xml_joint
 end
 
-function LightXML.XMLDocument(mechanism::Mechanism; robot_name::Union{Nothing, AbstractString}=nothing)
+function LightXML.XMLDocument(mechanism::Mechanism; robot_name::Union{Nothing, AbstractString}=nothing, include_root::Bool=true)
     @assert !has_loops(mechanism)
 
     canonicalized = deepcopy(mechanism)
@@ -129,10 +129,14 @@ function LightXML.XMLDocument(mechanism::Mechanism; robot_name::Union{Nothing, A
     if robot_name !== nothing
         set_attribute(xroot, "name", robot_name)
     end
-    for body in bodies(canonicalized)
+    bodies_to_include = include_root ? bodies(canonicalized) : non_root_bodies(canonicalized)
+    for body in bodies_to_include
         add_child(xroot, XMLElement(body))
     end
     for joint in tree_joints(canonicalized)
+        if !include_root
+            predecessor(joint, canonicalized) == root_body(canonicalized) && continue
+        end
         add_child(xroot, XMLElement(joint, canonicalized))
     end
     xdoc
@@ -160,7 +164,9 @@ Write a URDF representation of `mechanism` to the stream `io` (a `Base.IO`).
 
 $write_urdf_name_kwarg_doc
 """
-write_urdf(io::IO, mechanism::Mechanism; robot_name=nothing) = show(io, XMLDocument(mechanism; robot_name=robot_name))
+function write_urdf(io::IO, mechanism::Mechanism; robot_name=nothing, include_root=include_root)
+    show(io, XMLDocument(mechanism; robot_name=robot_name, include_root=include_root))
+end
 
 """
 $(SIGNATURES)
@@ -169,8 +175,8 @@ Write a URDF representation of `mechanism` to a file.
 
 $write_urdf_name_kwarg_doc
 """
-function write_urdf(filename::AbstractString, mechanism::Mechanism; robot_name=nothing)
+function write_urdf(filename::AbstractString, mechanism::Mechanism; robot_name=nothing, include_root=true)
     open(filename, "w") do io
-        write_urdf(io, mechanism, robot_name=robot_name)
+        write_urdf(io, mechanism, robot_name=robot_name, include_root=include_root)
     end
 end
