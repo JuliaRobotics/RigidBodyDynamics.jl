@@ -2,7 +2,7 @@ function set_vector_attribute(element::XMLElement, attr::AbstractString, vec::Ab
     set_attribute(element, attr, join(vec, ' '))
 end
 
-function LightXML.XMLElement(body::RigidBody)
+function to_urdf(body::RigidBody)
     xml_link = new_element("link")
     set_attribute(xml_link, "name", string(body))
     isroot = !has_defined_inertia(body)
@@ -97,7 +97,7 @@ function process_joint_type!(xml_joint::XMLElement, joint::Joint{T, JT}) where {
     xml_joint
 end
 
-function LightXML.XMLElement(joint::Joint, mechanism::Mechanism)
+function to_urdf(joint::Joint, mechanism::Mechanism)
     parent = predecessor(joint, mechanism)
     child = successor(joint, mechanism)
     to_parent = joint_to_predecessor(joint)
@@ -118,7 +118,7 @@ function LightXML.XMLElement(joint::Joint, mechanism::Mechanism)
     xml_joint
 end
 
-function LightXML.XMLDocument(mechanism::Mechanism; robot_name::Union{Nothing, AbstractString}=nothing, include_root::Bool=true)
+function to_urdf(mechanism::Mechanism; robot_name::Union{Nothing, AbstractString}=nothing, include_root::Bool=true)
     @assert !has_loops(mechanism)
 
     canonicalized = deepcopy(mechanism)
@@ -132,11 +132,11 @@ function LightXML.XMLDocument(mechanism::Mechanism; robot_name::Union{Nothing, A
     bodies_to_include = include_root ? bodies(canonicalized) : non_root_bodies(canonicalized)
     for body in bodies(canonicalized)
         !include_root && isroot(body, canonicalized) && continue
-        add_child(xroot, XMLElement(body))
+        add_child(xroot, to_urdf(body))
     end
     for joint in tree_joints(canonicalized)
         !include_root && isroot(predecessor(joint, canonicalized), canonicalized) && continue
-        add_child(xroot, XMLElement(joint, canonicalized))
+        add_child(xroot, to_urdf(joint, canonicalized))
     end
     xdoc
 end
@@ -169,7 +169,7 @@ Write a URDF representation of `mechanism` to the stream `io` (a `Base.IO`).
 $write_urdf_name_kwarg_doc
 """
 function write_urdf(io::IO, mechanism::Mechanism; robot_name=nothing, include_root=true)
-    show(io, XMLDocument(mechanism; robot_name=robot_name, include_root=include_root))
+    show(io, to_urdf(mechanism; robot_name=robot_name, include_root=include_root))
 end
 
 """
