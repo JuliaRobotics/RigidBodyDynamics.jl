@@ -27,19 +27,13 @@ MomentumMatrix
 
 for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
     @eval begin
-        Base.convert(::Type{$ForceSpaceMatrix{A}}, mat::$ForceSpaceMatrix{A}) where {A} = mat
-        function Base.convert(::Type{$ForceSpaceMatrix{A}}, mat::$ForceSpaceMatrix) where {A}
+        function $ForceSpaceMatrix{A}(mat::$ForceSpaceMatrix) where A
             $ForceSpaceMatrix(mat.frame, convert(A, angular(mat)), convert(A, linear(mat)))
         end
-        Base.Array(mat::$ForceSpaceMatrix) = [Array(angular(mat)); Array(linear(mat))]
 
-        Base.eltype(::Type{$ForceSpaceMatrix{A}}) where {A} = eltype(A)
-        Base.size(mat::$ForceSpaceMatrix) = (6, size(angular(mat), 2))
-        Base.size(mat::$ForceSpaceMatrix, d) = size(mat)[d]
-        Base.transpose(mat::$ForceSpaceMatrix) = Transpose(mat)
-
-        angular(mat::$ForceSpaceMatrix) = mat.angular
-        linear(mat::$ForceSpaceMatrix) = mat.linear
+        function $ForceSpaceMatrix{A}(mat::$ForceSpaceMatrix{A}) where A
+            $ForceSpaceMatrix(mat.frame, A(angular(mat)), A(linear(mat)))
+        end
 
         function Base.show(io::IO, m::$ForceSpaceMatrix)
             print(io, "$($(string(ForceSpaceMatrix))) expressed in \"$(string(m.frame))\":\n$(Array(m))")
@@ -109,7 +103,7 @@ for ForceSpaceElement in (:Momentum, :Wrench)
     @eval begin
         function $ForceSpaceElement(frame::CartesianFrame3D, angular::AbstractVector{T1}, linear::AbstractVector{T2}) where {T1, T2}
             T = promote_type(T1, T2)
-            $ForceSpaceElement{T}(frame, convert(SVector{3, T}, angular), convert(SVector{3, T}, linear))
+            $ForceSpaceElement{T}(frame, SVector{3, T}(angular), SVector{3, T}(linear))
         end
 
         """
@@ -122,16 +116,6 @@ for ForceSpaceElement in (:Momentum, :Wrench)
             @framecheck angular.frame linear.frame
             $ForceSpaceElement(angular.frame, angular.v, linear.v)
         end
-
-        Base.convert(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement{T}) where {T} = f
-
-        function Base.convert(::Type{$ForceSpaceElement{T}}, f::$ForceSpaceElement) where {T}
-            $ForceSpaceElement(f.frame, convert(SVector{3, T}, angular(f)), convert(SVector{3, T}, linear(f)))
-        end
-
-        Base.eltype(::Type{$ForceSpaceElement{T}}) where {T} = T
-        angular(f::$ForceSpaceElement) = f.angular
-        linear(f::$ForceSpaceElement) = f.linear
 
         function Base.show(io::IO, f::$ForceSpaceElement)
             print(io, "$($(string(ForceSpaceElement))) expressed in \"$(string(f.frame))\":\nangular: $(angular(f)), linear: $(linear(f))")
@@ -172,7 +156,6 @@ for ForceSpaceElement in (:Momentum, :Wrench)
 
         Base.:-(f::$ForceSpaceElement) = $ForceSpaceElement(f.frame, -angular(f), -linear(f))
 
-        Base.Array(f::$ForceSpaceElement) = vcat(angular(f), linear(f))
         function Base.isapprox(x::$ForceSpaceElement, y::$ForceSpaceElement; atol = 1e-12)
             x.frame == y.frame && isapprox(angular(x), angular(y), atol = atol) && isapprox(linear(x), linear(y), atol = atol)
         end

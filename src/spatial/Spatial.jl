@@ -56,5 +56,6 @@ include("threevectors.jl")
 include("spatialmotion.jl")
 include("spatialforce.jl")
 include("motion_force_interaction.jl")
+include("common.jl")
 
 end # module

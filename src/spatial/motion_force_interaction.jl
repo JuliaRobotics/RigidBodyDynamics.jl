@@ -35,22 +35,36 @@ end
 
 # SpatialInertia-specific functions
 Base.eltype(::Type{SpatialInertia{T}}) where {T} = T
-@inline Base.convert(::SpatialInertia{T}, inertia::SpatialInertia{T}) where {T} = inertia
-@inline function Base.convert(::Type{SpatialInertia{T}}, inertia::SpatialInertia) where {T}
-    SpatialInertia(inertia.frame,
-        convert(SMatrix{3, 3, T}, inertia.moment),
-        convert(SVector{3, T}, inertia.cross_part),
-        convert(T, inertia.mass))
+
+# Construct/convert given another SpatialInertia
+SpatialInertia{T}(inertia::SpatialInertia{T}) where {T} = inertia
+@inline function SpatialInertia{T}(inertia::SpatialInertia) where {T}
+    SpatialInertia{T}(inertia.frame,
+        SMatrix{3, 3, T}(inertia.moment),
+        SVector{3, T}(inertia.cross_part),
+        T(inertia.mass))
 end
-function Base.convert(::Type{SMatrix{6, 6, T}}, inertia::SpatialInertia) where {T}
-    J = inertia.moment
-    C = hat(inertia.cross_part)
-    m = inertia.mass
+@inline Base.convert(::Type{S}, inertia::SpatialInertia) where {S<:SpatialInertia} = S(inertia)
+
+# Construct/convert to SMatrix
+function StaticArrays.SMatrix{6, 6, T, 36}(inertia::SpatialInertia) where {T}
+    # TODO: can probably improve performance if needed.
+    J = SMatrix{3, 3, T}(inertia.moment)
+    C = hat(SVector{3, T}(inertia.cross_part))
+    m = T(inertia.mass)
     [J  C; C' m * one(SMatrix{3, 3, T})]
 end
-Base.convert(::Type{T}, inertia::SpatialInertia) where {T<:Matrix} = convert(T, convert(SMatrix{6, 6, eltype(T)}, inertia))
+StaticArrays.SMatrix{6, 6, T}(inertia::SpatialInertia) where {T} = SMatrix{6, 6, T, 36}(inertia)
+StaticArrays.SMatrix{6, 6}(inertia::SpatialInertia{T}) where {T} = SMatrix{6, 6, T}(inertia)
+StaticArrays.SMatrix(inertia::SpatialInertia) = SMatrix{6, 6}(inertia)
+StaticArrays.SArray(inertia::SpatialInertia) = SMatrix(inertia)
+Base.convert(::Type{A}, inertia::SpatialInertia) where {A<:SArray} = A(inertia)
 
-Base.Array(inertia::SpatialInertia{T}) where {T} = convert(Matrix{T}, inertia)
+# Construct/convert to Matrix
+Base.Matrix{T}(inertia::SpatialInertia) where {T} = Matrix(SMatrix{6, 6, T}(inertia))
+Base.Matrix(inertia::SpatialInertia) = Matrix(SMatrix{6, 6}(inertia))
+Base.Array{T}(inertia::SpatialInertia) where {T} = Matrix(SMatrix{6, 6, T}(inertia))
+Base.Array(inertia::SpatialInertia) = Matrix(SMatrix(inertia))
 
 """
 $(SIGNATURES)

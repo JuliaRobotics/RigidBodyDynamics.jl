@@ -482,10 +482,15 @@ $(SIGNATURES)
 
 Create a `Vector` that represents the same state as `state` (ordered `[q; v; s]`).
 """
-function Base.Vector(state::MechanismState{X}) where {X}
-    dest = Vector{X}(undef, num_positions(state) + num_velocities(state) + num_additional_states(state))
+function Base.Vector{T}(state::MechanismState) where T
+    dest = Vector{T}(undef, num_positions(state) + num_velocities(state) + num_additional_states(state))
     copyto!(dest, state)
 end
+
+Base.Vector(state::MechanismState{X}) where {X} = Vector{X}(state)
+Base.Array{T}(state::MechanismState) where {T} = Vector{T}(state)
+Base.Array(state::MechanismState{X}) where {X} = Array{X}(state)
+Base.convert(::Type{T}, state::MechanismState) where {T<:Array} = T(state)
 
 """
 $(SIGNATURES)
