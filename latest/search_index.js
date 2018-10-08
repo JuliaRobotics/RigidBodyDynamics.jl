@@ -1261,7 +1261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -1269,7 +1269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -2101,7 +2101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "URDF parsing and writing",
     "title": "RigidBodyDynamics.URDF.write_urdf",
     "category": "function",
-    "text": "Serialize a Mechanism to the URDF file format.\n\nLimitations:\n\nfor <link> tags, only the <inertial> tag is written; there is no support for <visual> and <collision> tags.\nfor <joint> tags, only the <origin>, <parent>, <child>, and <limit> tags are written. There is no support for the <calibration> and <safety_controller> tags.\n\nThese limitations are simply due to the fact that Mechanisms do not store the required information to write these tags.\n\n\n\n\n\n"
+    "text": "Serialize a Mechanism to the URDF file format.\n\nLimitations:\n\nfor <link> tags, only the <inertial> tag is written; there is no support for <visual> and <collision> tags.\nfor <joint> tags, only the <origin>, <parent>, <child>, and <limit> tags are written. There is no support for the <calibration> and <safety_controller> tags.\n\nThese limitations are simply due to the fact that Mechanisms do not store the required information to write these tags.\n\nKeyword arguments:\n\nrobot_name: used to set the name attribute of the root <robot> tag in the URDF. Default: nothing (name attribute will not be set).\ninclude_root: whether to include root_body(mechanism) in the URDF. If false, joints with root_body(mechanism) as their predecessor will also be omitted. Default: true.\n\n\n\n\n\n"
 },
 
 {
