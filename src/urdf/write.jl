@@ -130,13 +130,12 @@ function LightXML.XMLDocument(mechanism::Mechanism; robot_name::Union{Nothing, A
         set_attribute(xroot, "name", robot_name)
     end
     bodies_to_include = include_root ? bodies(canonicalized) : non_root_bodies(canonicalized)
-    for body in bodies_to_include
+    for body in bodies(canonicalized)
+        !include_root && isroot(body, canonicalized) && continue
         add_child(xroot, XMLElement(body))
     end
     for joint in tree_joints(canonicalized)
-        if !include_root
-            predecessor(joint, canonicalized) == root_body(canonicalized) && continue
-        end
+        !include_root && isroot(predecessor(joint, canonicalized), canonicalized) && continue
         add_child(xroot, XMLElement(joint, canonicalized))
     end
     xdoc
@@ -152,6 +151,11 @@ Limitations:
 * for `<joint>` tags, only the `<origin>`, `<parent>`, `<child>`, and `<limit>` tags are written. There is no support for the `<calibration>` and `<safety_controller>` tags.
 
 These limitations are simply due to the fact that `Mechanism`s do not store the required information to write these tags.
+
+Keyword arguments:
+
+* `robot_name`: used to set the `name` attribute of the root `<robot>` tag in the URDF. Default: `nothing` (name attribute will not be set).
+* `include_root`: whether to include `root_body(mechanism)` in the URDF. If `false`, joints with `root_body(mechanism)` as their predecessor will also be omitted. Default: `true`.
 """
 function write_urdf end
 
@@ -164,7 +168,7 @@ Write a URDF representation of `mechanism` to the stream `io` (a `Base.IO`).
 
 $write_urdf_name_kwarg_doc
 """
-function write_urdf(io::IO, mechanism::Mechanism; robot_name=nothing, include_root=include_root)
+function write_urdf(io::IO, mechanism::Mechanism; robot_name=nothing, include_root=true)
     show(io, XMLDocument(mechanism; robot_name=robot_name, include_root=include_root))
 end
 
