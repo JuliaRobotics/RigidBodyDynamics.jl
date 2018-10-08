@@ -25,12 +25,14 @@ struct SpatialInertia{T}
     moment::SMatrix{3, 3, T, 9}
     cross_part::SVector{3, T} # mass times center of mass
     mass::T
+
+    @inline function SpatialInertia{T}(frame::CartesianFrame3D, moment::AbstractMatrix, cross_part::AbstractVector, mass) where T
+        new{T}(frame, moment, cross_part, mass)
+    end
 end
 
-@inline function SpatialInertia(frame::CartesianFrame3D, moment::AbstractMatrix{T}, cross_part::AbstractVector{T}, mass::T) where T
-    @boundscheck size(moment) == (3, 3) || error("size mismatch")
-    @boundscheck size(cross_part) == (3,) || error("size mismatch")
-    new{T}(frame, moment, cross_part, mass)
+@inline function SpatialInertia(frame::CartesianFrame3D, moment::AbstractMatrix{T1}, cross_part::AbstractVector{T2}, mass::T3) where {T1, T2, T3}
+    SpatialInertia{promote_type(T1, T2, T3)}(frame, moment, cross_part, mass)
 end
 
 # SpatialInertia-specific functions

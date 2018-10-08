@@ -101,6 +101,11 @@ struct Twist{T}
     frame::CartesianFrame3D
     angular::SVector{3, T}
     linear::SVector{3, T}
+
+    @inline function Twist{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D,
+            angular::AbstractVector, linear::AbstractVector) where T
+        new{T}(body, base, frame, angular, linear)
+    end
 end
 
 """
@@ -116,11 +121,23 @@ struct SpatialAcceleration{T}
     frame::CartesianFrame3D
     angular::SVector{3, T}
     linear::SVector{3, T}
+
+    @inline function SpatialAcceleration{T}(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D,
+            angular::AbstractVector, linear::AbstractVector) where T
+        new{T}(body, base, frame, angular, linear)
+    end
 end
 
 
 for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     @eval begin
+        # Construct with possibly eltype-heterogeneous inputs
+        @inline function $MotionSpaceElement(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D,
+                angular::AbstractVector{T1}, linear::AbstractVector{T2}) where {T1, T2}
+            $MotionSpaceElement{promote_type(T1, T2)}(body, base, frame, angular, linear)
+        end
+
+        # Construct given FreeVector3Ds
         function $MotionSpaceElement(body::CartesianFrame3D, base::CartesianFrame3D, angular::FreeVector3D, linear::FreeVector3D)
             @framecheck angular.frame linear.frame
             $MotionSpaceElement(body, base, angular.frame, angular.v, linear.v)

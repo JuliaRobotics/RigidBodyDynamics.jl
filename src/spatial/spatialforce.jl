@@ -70,6 +70,10 @@ struct Momentum{T}
     frame::CartesianFrame3D
     angular::SVector{3, T}
     linear::SVector{3, T}
+
+    @inline function Momentum{T}(frame::CartesianFrame3D, angular::AbstractVector, linear::AbstractVector) where T
+        new{T}(frame, angular, linear)
+    end
 end
 
 """
@@ -97,13 +101,17 @@ struct Wrench{T}
     frame::CartesianFrame3D
     angular::SVector{3, T}
     linear::SVector{3, T}
+
+    @inline function Wrench{T}(frame::CartesianFrame3D, angular::AbstractVector, linear::AbstractVector) where T
+        new{T}(frame, angular, linear)
+    end
 end
 
 for ForceSpaceElement in (:Momentum, :Wrench)
     @eval begin
-        function $ForceSpaceElement(frame::CartesianFrame3D, angular::AbstractVector{T1}, linear::AbstractVector{T2}) where {T1, T2}
-            T = promote_type(T1, T2)
-            $ForceSpaceElement{T}(frame, SVector{3, T}(angular), SVector{3, T}(linear))
+        # Construct with possibly eltype-heterogeneous inputs
+        @inline function $ForceSpaceElement(frame::CartesianFrame3D, angular::AbstractVector{T1}, linear::AbstractVector{T2}) where {T1, T2}
+            $ForceSpaceElement{promote_type(T1, T2)}(frame, angular, linear)
         end
 
         """
