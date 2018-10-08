@@ -103,22 +103,38 @@
     end
 end
 
-function test_urdf_serialize_deserialize(mechanism1::Mechanism; remove_fixed_tree_joints::Bool)
+function test_inverse_dynamics_match(mechanism1::Mechanism, mechanism2::Mechanism; atol::Real=0, rtol::Real=atol>0 ? 0 : √eps)
     state1 = MechanismState(mechanism1)
     v̇_vec = rand(num_velocities(mechanism1))
     rand!(state1)
     v̇1 = copyto!(similar(velocity(state1)), v̇_vec)
     τ1 = inverse_dynamics(state1, v̇1)
 
+    state2 = MechanismState(mechanism2)
+    copyto!(state2, Vector(state1))
+    v̇2 = copyto!(similar(velocity(state2)), v̇_vec)
+    τ2 = inverse_dynamics(state2, v̇2)
+
+    @test τ1 ≈ τ2 rtol=rtol atol=atol
+end
+
+function test_kinematic_graph_layout_match(mechanism1::Mechanism, mechanism2::Mechanism)
+    for (j1, j2) in zip(joints(mechanism1), joints(mechanism2))
+        @test string(j1) == string(j2)
+        @test string(predecessor(j1, mechanism1)) == string(predecessor(j2, mechanism2))
+        @test string(successor(j1, mechanism1)) == string(successor(j2, mechanism2))
+        @test joint_type(j1) == joint_type(j2)
+    end
+end
+
+function test_urdf_serialize_deserialize(mechanism1::Mechanism; remove_fixed_tree_joints::Bool)
+    state1 = MechanismState(mechanism1)
+
     mktempdir() do dir
         urdf2 = joinpath(dir, "test.urdf")
         write_urdf(urdf2, mechanism1, robot_name="test")
         mechanism2 = parse_urdf(urdf2, remove_fixed_tree_joints=remove_fixed_tree_joints)
-        state2 = MechanismState(mechanism2)
-        copyto!(state2, Vector(state1))
-        v̇2 = copyto!(similar(velocity(state2)), v̇_vec)
-        τ2 = inverse_dynamics(state2, v̇2)
-        @test τ1 ≈ τ2 atol=1e-10
+        test_inverse_dynamics_match(mechanism1, mechanism2, atol=1e-10)
 
         for joint1 in tree_joints(mechanism1)
             if remove_fixed_tree_joints && joint_type(joint1) isa Fixed
@@ -134,18 +150,64 @@ function test_urdf_serialize_deserialize(mechanism1::Mechanism; remove_fixed_tre
 end
 
 @testset "URDF write" begin
-    Random.seed!(124)
-    urdfdir = joinpath(@__DIR__, "urdf")
-    for basename in readdir(urdfdir)
-        last(splitext(basename)) == ".urdf" || continue
-        urdf = joinpath(urdfdir, basename)
-        for floating in (true, false)
-            root_joint_type = floating ? QuaternionFloating{Float64}() : Fixed{Float64}()
-            for remove_fixed_joints_before in (true, false)
-                mechanism = parse_urdf(urdf, remove_fixed_tree_joints=remove_fixed_joints_before, root_joint_type=root_joint_type)
-                for remove_fixed_joints_after in (true, false)
-                    test_urdf_serialize_deserialize(mechanism, remove_fixed_tree_joints=remove_fixed_joints_after)
+    @testset "Basics" begin
+        Random.seed!(124)
+        urdfdir = joinpath(@__DIR__, "urdf")
+        for basename in readdir(urdfdir)
+            last(splitext(basename)) == ".urdf" || continue
+            urdf = joinpath(urdfdir, basename)
+            for floating in (true, false)
+                root_joint_type = floating ? QuaternionFloating{Float64}() : Fixed{Float64}()
+                for remove_fixed_joints_before in (true, false)
+                    mechanism = parse_urdf(urdf, remove_fixed_tree_joints=remove_fixed_joints_before, root_joint_type=root_joint_type)
+                    for remove_fixed_joints_after in (true, false)
+                        test_urdf_serialize_deserialize(mechanism, remove_fixed_tree_joints=remove_fixed_joints_after)
+                    end
                 end
+            end
+        end
+    end
+
+    @testset "include_root" begin
+        Random.seed!(1245)
+        urdfdir = joinpath(@__DIR__, "urdf")
+        for basename in readdir(urdfdir)
+            last(splitext(basename)) == ".urdf" || continue
+            urdf = joinpath(urdfdir, basename)
+
+            unmodified_mechanism = parse_urdf(urdf, remove_fixed_tree_joints=false)
+            floating_mechanism = parse_urdf(urdf, remove_fixed_tree_joints=false, root_joint_type=QuaternionFloating{Float64}())
+
+            # Write unmodified mechanism to URDF using `include_root=false`, then parse
+            # using the default `Fixed` joint type as the root joint type. Ensure we get
+            # the same kinematic tree.
+            mktempdir() do dir
+                urdf2 = joinpath(dir, "test.urdf")
+                write_urdf(urdf2, unmodified_mechanism, include_root=false)
+                unmodified_mechanism_back = parse_urdf(urdf2, remove_fixed_tree_joints=false)
+                test_kinematic_graph_layout_match(unmodified_mechanism, unmodified_mechanism_back)
+                test_inverse_dynamics_match(unmodified_mechanism, unmodified_mechanism_back, atol=1e-10)
+            end
+
+            # Write floating-base mechanism to URDF using `include_root=true` (default), then parse
+            # using the default `Fixed` joint type as the root joint type:
+            mktempdir() do dir
+                urdf2 = joinpath(dir, "test.urdf")
+                write_urdf(urdf2, floating_mechanism)
+                floating_mechanism_back = parse_urdf(urdf2)
+                # Note: floating_mechanism_back has an extra fixed joint at the root, compared to floating_mechanism,
+                # but is dynamically equivalent.
+                test_inverse_dynamics_match(floating_mechanism, floating_mechanism_back, atol=1e-10)
+            end
+
+            # Write floating-base mechanism to URDF using `include_root=false`, then parse and compare
+            # to unmodified mechanism:
+            mktempdir() do dir
+                urdf2 = joinpath(dir, "test.urdf")
+                write_urdf(urdf2, floating_mechanism, include_root=false)
+                unmodified_mechanism_back = parse_urdf(urdf2, remove_fixed_tree_joints=false)
+                test_kinematic_graph_layout_match(unmodified_mechanism, unmodified_mechanism_back)
+                test_inverse_dynamics_match(unmodified_mechanism, unmodified_mechanism_back, atol=1e-10)
             end
         end
     end
