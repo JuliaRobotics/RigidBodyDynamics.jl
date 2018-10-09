@@ -137,11 +137,27 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "spatial.html#RigidBodyDynamics.Spatial.CartesianFrame3D-Tuple{String}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.Spatial.CartesianFrame3D",
+    "category": "method",
+    "text": "CartesianFrame3D(name)\n\n\nCreate a CartesianFrame3D with the given name.\n\n\n\n\n\n"
+},
+
+{
+    "location": "spatial.html#RigidBodyDynamics.Spatial.CartesianFrame3D-Tuple{}",
+    "page": "Spatial vector algebra",
+    "title": "RigidBodyDynamics.Spatial.CartesianFrame3D",
+    "category": "method",
+    "text": "CartesianFrame3D()\n\n\nCreate an anonymous CartesianFrame3D.\n\n\n\n\n\n"
+},
+
+{
     "location": "spatial.html#Coordinate-frames-1",
     "page": "Spatial vector algebra",
     "title": "Coordinate frames",
     "category": "section",
-    "text": "CartesianFrame3D"
+    "text": "CartesianFrame3D\nCartesianFrame3D(::String)\nCartesianFrame3D()"
 },
 
 {
@@ -705,27 +721,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.QuaternionFloating",
+    "location": "joints.html#RigidBodyDynamics.JointType",
     "page": "Joints",
-    "title": "RigidBodyDynamics.QuaternionFloating",
+    "title": "RigidBodyDynamics.JointType",
     "category": "type",
-    "text": "struct QuaternionFloating{T} <: JointType{T}\n\nA floating joint type that uses a unit quaternion representation for orientation.\n\nFloating joints are 6-degree-of-freedom joints that are in a sense degenerate, as they impose no constraints on the relative motion between two bodies.\n\nThe full, 7-dimensional configuration vector of a QuaternionFloating joint type consists of a unit quaternion representing the orientation that rotates vectors from the frame \'directly after\' the joint to the frame \'directly before\' it, and a 3D position vector representing the origin of the frame after the joint in the frame before the joint.\n\nThe 6-dimensional velocity vector of a QuaternionFloating joint is the twist of the frame after the joint with respect to the frame before it, expressed in the frame after the joint.\n\n\n\n\n\n"
+    "text": "abstract type JointType\n\nThe abstract supertype of all concrete joint types.\n\n\n\n\n\n"
 },
 
 {
-    "location": "joints.html#RigidBodyDynamics.Revolute",
+    "location": "joints.html#JointTypes-1",
     "page": "Joints",
-    "title": "RigidBodyDynamics.Revolute",
-    "category": "type",
-    "text": "struct Revolute{T} <: RigidBodyDynamics.OneDegreeOfFreedomFixedAxis{T}\n\nA Revolute joint type allows rotation about a fixed axis.\n\n\n\n\n\n"
-},
-
-{
-    "location": "joints.html#RigidBodyDynamics.Prismatic",
-    "page": "Joints",
-    "title": "RigidBodyDynamics.Prismatic",
-    "category": "type",
-    "text": "struct Prismatic{T} <: RigidBodyDynamics.OneDegreeOfFreedomFixedAxis{T}\n\nA Prismatic joint type allows translation along a fixed axis.\n\n\n\n\n\n"
+    "title": "JointTypes",
+    "category": "section",
+    "text": "JointType"
 },
 
 {
@@ -737,11 +745,83 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "joints.html#Fixed-1",
+    "page": "Joints",
+    "title": "Fixed",
+    "category": "section",
+    "text": "Fixed"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.Revolute",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.Revolute",
+    "category": "type",
+    "text": "struct Revolute{T} <: RigidBodyDynamics.OneDegreeOfFreedomFixedAxis{T}\n\nA Revolute joint type allows rotation about a fixed axis.\n\n\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.Revolute-Tuple{Any}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.Revolute",
+    "category": "method",
+    "text": "Revolute(axis)\n\n\nConstruct a new Revolute joint type, allowing rotation about axis (expressed in the frame before the joint).\n\n\n\n\n\n"
+},
+
+{
+    "location": "joints.html#Revolute-1",
+    "page": "Joints",
+    "title": "Revolute",
+    "category": "section",
+    "text": "Revolute\nRevolute(axis)"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.Prismatic",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.Prismatic",
+    "category": "type",
+    "text": "struct Prismatic{T} <: RigidBodyDynamics.OneDegreeOfFreedomFixedAxis{T}\n\nA Prismatic joint type allows translation along a fixed axis.\n\n\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.Prismatic-Tuple{Any}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.Prismatic",
+    "category": "method",
+    "text": "Construct a new Prismatic joint type, allowing translation along axis (expressed in the frame before the joint).\n\n\n\n\n\n"
+},
+
+{
+    "location": "joints.html#Prismatic-1",
+    "page": "Joints",
+    "title": "Prismatic",
+    "category": "section",
+    "text": "Prismatic\nPrismatic(axis)"
+},
+
+{
     "location": "joints.html#RigidBodyDynamics.Planar",
     "page": "Joints",
     "title": "RigidBodyDynamics.Planar",
     "category": "type",
     "text": "struct Planar{T} <: JointType{T}\n\nThe Planar joint type allows translation along two orthogonal vectors, referred to as x and y, as well as rotation about an axis z = x times y.\n\nThe components of the 3-dimensional configuration vector q associated with a Planar joint are the x- and y-coordinates of the translation, and the angle of rotation theta about z, in that order.\n\nThe components of the 3-dimension velocity vector v associated with a Planar joint are the x- and y-coordinates of the linear part of the joint twist, expressed in the frame after the joint, followed by the z-component of the angular part of this joint twist.\n\nwarning: Warning\nFor the Planar joint type, v neq dotq! Although the angular parts of v and dotq are the same, their linear parts differ. The linear part of v is the linear part of dotq, rotated to the frame after the joint. This parameterization was chosen to allow the translational component of the joint transform to be independent of the rotation angle theta (i.e., the rotation is applied after the translation), while still retaining a constant motion subspace expressed in the frame after the joint.\n\n\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.Planar-Union{Tuple{T}, Tuple{AbstractArray{T,1} where T,AbstractArray{T,1} where T}} where T",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.Planar",
+    "category": "method",
+    "text": "Planar(x_axis, y_axis)\n\n\nConstruct a new Planar joint type with the xy-plane in which translation is allowed defined by 3-vectors x and y expressed in the frame before the joint.\n\n\n\n\n\n"
+},
+
+{
+    "location": "joints.html#Planar-1",
+    "page": "Joints",
+    "title": "Planar",
+    "category": "section",
+    "text": "Planar\nPlanar{T}(x_axis::AbstractVector, y_axis::AbstractVector) where {T}"
 },
 
 {
@@ -753,11 +833,43 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "joints.html#JointTypes-1",
+    "location": "joints.html#QuaternionSpherical-1",
     "page": "Joints",
-    "title": "JointTypes",
+    "title": "QuaternionSpherical",
     "category": "section",
-    "text": "QuaternionFloating\nRevolute\nPrismatic\nFixed\nPlanar\nQuaternionSpherical"
+    "text": "QuaternionSpherical"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.QuaternionFloating",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.QuaternionFloating",
+    "category": "type",
+    "text": "struct QuaternionFloating{T} <: JointType{T}\n\nA floating joint type that uses a unit quaternion representation for orientation.\n\nFloating joints are 6-degree-of-freedom joints that are in a sense degenerate, as they impose no constraints on the relative motion between two bodies.\n\nThe full, 7-dimensional configuration vector of a QuaternionFloating joint type consists of a unit quaternion representing the orientation that rotates vectors from the frame \'directly after\' the joint to the frame \'directly before\' it, and a 3D position vector representing the origin of the frame after the joint in the frame before the joint.\n\nThe 6-dimensional velocity vector of a QuaternionFloating joint is the twist of the frame after the joint with respect to the frame before it, expressed in the frame after the joint.\n\n\n\n\n\n"
+},
+
+{
+    "location": "joints.html#QuaternionFloating-1",
+    "page": "Joints",
+    "title": "QuaternionFloating",
+    "category": "section",
+    "text": "QuaternionFloating"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.SPQuatFloating",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.SPQuatFloating",
+    "category": "type",
+    "text": "struct SPQuatFloating{T} <: JointType{T}\n\nA floating joint type that uses a SPQuat representation for orientation.\n\nFloating joints are 6-degree-of-freedom joints that are in a sense degenerate, as they impose no constraints on the relative motion between two bodies.\n\nThe 6-dimensional configuration vector of a SPQuatFloating joint type consists of a SPQuat representing the orientation that rotates vectors from the frame \'directly after\' the joint to the frame \'directly before\' it, and a 3D position vector representing the origin of the frame after the joint in the frame before the joint.\n\nThe 6-dimensional velocity vector of a SPQuatFloating joint is the twist of the frame after the joint with respect to the frame before it, expressed in the frame after the joint.\n\n\n\n\n\n"
+},
+
+{
+    "location": "joints.html#SPQuatFloating-1",
+    "page": "Joints",
+    "title": "SPQuatFloating",
+    "category": "section",
+    "text": "SPQuatFloating"
 },
 
 {
@@ -945,6 +1057,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanism.html#RigidBodyDynamics.Mechanism-Tuple{Any}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.Mechanism",
+    "category": "method",
+    "text": "Create a new Mechanism containing only a root body, to which other bodies can be attached with joints.\n\n\n\n\n\n"
+},
+
+{
     "location": "mechanism.html#RigidBodyDynamics.attach!-Union{Tuple{T}, Tuple{Mechanism{T},RigidBody{T},Mechanism{T}}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.attach!",
@@ -969,7 +1089,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s142} where #s142<:JointType{T},N} where N}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s146} where #s146<:JointType{T},N} where N}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "method",
@@ -977,11 +1097,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s142} where #s142<:JointType{T},N} where N}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s146} where #s146<:JointType{T},N} where N}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "method",
-    "text": "Create a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
+    "text": "rand_floating_tree_mechanism(?, nonfloatingjointtypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
 },
 
 {
@@ -993,11 +1113,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s142} where #s142<:JointType{T},N} where N}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s146} where #s146<:JointType{T},N} where N}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "method",
-    "text": "rand_tree_mechanism(?, jointtypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n\n\n"
+    "text": "Create a random tree Mechanism.\n\n\n\n\n\n"
 },
 
 {
@@ -1037,7 +1157,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "Creating and modifying Mechanisms",
     "category": "section",
-    "text": "See also URDF parsing and writing for URDF file format support.Modules = [RigidBodyDynamics]\nOrder   = [:function]\nPages   = [\"mechanism_modification.jl\"]"
+    "text": "See also URDF parsing and writing for URDF file format support.Mechanism(root_body; gravity)Modules = [RigidBodyDynamics]\nOrder   = [:function]\nPages   = [\"mechanism_modification.jl\"]"
 },
 
 {
@@ -1273,7 +1393,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{MechanismState,Union{JointID, #s142} where #s142<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{MechanismState,Union{JointID, #s146} where #s146<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration",
     "category": "method",
@@ -1289,7 +1409,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.configuration_range-Tuple{MechanismState,Union{JointID, #s142} where #s142<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration_range-Tuple{MechanismState,Union{JointID, #s146} where #s146<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration_range",
     "category": "method",
@@ -1489,7 +1609,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{MechanismState,Union{JointID, #s142} where #s142<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{MechanismState,Union{JointID, #s146} where #s146<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity",
     "category": "method",
@@ -1505,7 +1625,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.velocity_range-Tuple{MechanismState,Union{JointID, #s142} where #s142<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity_range-Tuple{MechanismState,Union{JointID, #s146} where #s146<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity_range",
     "category": "method",
@@ -1569,7 +1689,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.constraint_range-Tuple{MechanismState,Union{JointID, #s142} where #s142<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.constraint_range-Tuple{MechanismState,Union{JointID, #s146} where #s146<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.constraint_range",
     "category": "method",
@@ -1673,7 +1793,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{X}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s14} where #s14<:SpatialAcceleration,AbstractDict{BodyID,#s13} where #s13<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s12} where #s12<:SpatialAcceleration,AbstractDict{BodyID,#s187} where #s187<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractDict{BodyID,#s188} where #s188<:Wrench}} where X",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{X}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s14} where #s14<:SpatialAcceleration,AbstractDict{BodyID,#s13} where #s13<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s12} where #s12<:SpatialAcceleration,AbstractDict{BodyID,#s191} where #s191<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractDict{BodyID,#s192} where #s192<:Wrench}} where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias!",
     "category": "method",
@@ -1721,7 +1841,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s187} where #s187<:Wrench}} where T",
+    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s191} where #s191<:Wrench}} where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "method",
@@ -2013,7 +2133,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Simulation",
     "title": "RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator",
     "category": "type",
-    "text": "A Lie-group-aware ODE integrator.\n\nMuntheKaasIntegrator is used to properly integrate the dynamics of globally parameterized rigid joints (Duindam, Port-Based Modeling and Control for Efficient Bipedal Walking Robots, 2006, Definition 2.9). Global parameterizations of e.g. SO(3) are needed to avoid singularities, but this leads to the problem that the tangent space no longer has the same dimension as the ambient space of the global parameterization. A Munthe-Kaas integrator solves this problem by converting back and forth between local and global coordinates at every integration time step.\n\nThe idea is to do the dynamics and compute the stages of the integration scheme in terms of local coordinates centered around the global parameterization of the configuration at the end of the previous time step (e.g. exponential coordinates), combine the stages into a new set of local coordinates as usual for Runge-Kutta methods, and then convert the local coordinates back to global coordinates.\n\nFrom Iserles et al., \'Lie-group methods\' (2000).\n\nAnother useful reference is Park and Chung, \'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems\' (2005).\n\n\n\n\n\n"
+    "text": "struct MuntheKaasIntegrator{N, T, F, S<:OdeResultsSink, X, L, M<:(RigidBodyDynamics.OdeIntegrators.MuntheKaasStageCache{N,T,Q,V,S} where S<:(AbstractArray{T,1} where T) where V<:(AbstractArray{T,1} where T) where Q<:(AbstractArray{T,1} where T))}\n\nA Lie-group-aware ODE integrator.\n\nMuntheKaasIntegrator is used to properly integrate the dynamics of globally parameterized rigid joints (Duindam, Port-Based Modeling and Control for Efficient Bipedal Walking Robots, 2006, Definition 2.9). Global parameterizations of e.g. SO(3) are needed to avoid singularities, but this leads to the problem that the tangent space no longer has the same dimension as the ambient space of the global parameterization. A Munthe-Kaas integrator solves this problem by converting back and forth between local and global coordinates at every integration time step.\n\nThe idea is to do the dynamics and compute the stages of the integration scheme in terms of local coordinates centered around the global parameterization of the configuration at the end of the previous time step (e.g. exponential coordinates), combine the stages into a new set of local coordinates as usual for Runge-Kutta methods, and then convert the local coordinates back to global coordinates.\n\nFrom Iserles et al., \'Lie-group methods\' (2000).\n\nAnother useful reference is Park and Chung, \'Geometric Integration on Euclidean Group with Application to Articulated Multibody Systems\' (2005).\n\n\n\n\n\n"
+},
+
+{
+    "location": "simulation.html#RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator-Union{Tuple{L}, Tuple{X}, Tuple{S}, Tuple{F}, Tuple{T}, Tuple{N}, Tuple{X,F,ButcherTableau{N,T,L},S}} where L where X where S<:OdeResultsSink where F where T where N",
+    "page": "Simulation",
+    "title": "RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator",
+    "category": "method",
+    "text": "MuntheKaasIntegrator(state, dynamics!, tableau, sink)\n\n\nCreate a MuntheKaasIntegrator given:\n\na callable dynamics!(vd, t, state) that updates the joint acceleration vector vd at time t and in state state;\na ButcherTableau tableau, specifying the integrator coefficients;\nan OdeResultsSink sink which processes the results of the integration procedure at each time step.\n\nstate must be of a type for which the following functions are defined:\n\nconfiguration(state), returns the configuration vector in global coordinates;\nvelocity(state), returns the velocity vector;\nadditional_state(state), returns the vector of additional states;\nset_velocity!(state, v), sets velocity vector to v;\nset_additional_state!(state, s), sets vector of additional states to s;\nglobal_coordinates!(state, q0, ϕ), sets global coordinates in state based on local coordinates ϕ centered around global coordinates q0;\nlocal_coordinates!(ϕ, ϕd, state, q0), converts state\'s global configuration q and velocity v to local coordinates centered around global coordinates q0.\n\n\n\n\n\n"
 },
 
 {
@@ -2077,7 +2205,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Simulation",
     "title": "Lower level ODE integration interface",
     "category": "section",
-    "text": "MuntheKaasIntegrator\nButcherTableau\nOdeResultsSink\nRingBufferStorage\nExpandingStorageModules = [RigidBodyDynamics.OdeIntegrators]\nOrder   = [:function]\nPages   = [\"ode_integrators.jl\"]"
+    "text": "MuntheKaasIntegrator\nMuntheKaasIntegrator(state::X, dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S) where {N, T, F, S<:OdeResultsSink, X, L}\nButcherTableau\nOdeResultsSink\nRingBufferStorage\nExpandingStorageModules = [RigidBodyDynamics.OdeIntegrators]\nOrder   = [:function]\nPages   = [\"ode_integrators.jl\"]"
 },
 
 {
