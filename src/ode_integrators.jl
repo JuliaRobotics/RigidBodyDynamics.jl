@@ -167,6 +167,8 @@ mutable struct MuntheKaasStageCache{N, T, Q<:AbstractVector, V<:AbstractVector, 
 end
 
 """
+$(TYPEDEF)
+
 A Lie-group-aware ODE integrator.
 
 `MuntheKaasIntegrator` is used to properly integrate the dynamics of globally
@@ -194,7 +196,9 @@ struct MuntheKaasIntegrator{N, T, F, S<:OdeResultsSink, X, L, M<:MuntheKaasStage
     state::X
     stages::M
 
-    """
+    @doc """
+    $(SIGNATURES)
+
     Create a `MuntheKaasIntegrator` given:
 
     * a callable `dynamics!(vd, t, state)` that updates the joint acceleration vector `vd` at time `t` and in state `state`;
@@ -210,7 +214,7 @@ struct MuntheKaasIntegrator{N, T, F, S<:OdeResultsSink, X, L, M<:MuntheKaasStage
     * `set_additional_state!(state, s)`, sets vector of additional states to `s`;
     * `global_coordinates!(state, q0, ϕ)`, sets global coordinates in state based on local coordinates `ϕ` centered around global coordinates `q0`;
     * `local_coordinates!(ϕ, ϕd, state, q0)`, converts state's global configuration `q` and velocity `v` to local coordinates centered around global coordinates `q0`.
-    """
+    """ ->
     function MuntheKaasIntegrator(state::X, dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S) where {N, T, F, S<:OdeResultsSink, X, L}
         @assert isexplicit(tableau)
         stages = MuntheKaasStageCache{N, T}(state)

@@ -4,6 +4,7 @@ makedocs(
     # options
     modules = [RigidBodyDynamics, RigidBodyDynamics.OdeIntegrators],
     format = :html,
+    checkdocs = :exported,
     sitename ="RigidBodyDynamics.jl",
     authors = "Twan Koolen and contributors.",
     pages = [

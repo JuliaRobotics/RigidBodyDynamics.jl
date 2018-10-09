@@ -12,12 +12,12 @@ mutable struct Mechanism{T}
     gravitational_acceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
     modcount::Int
 
-    """
+    @doc """
     $(SIGNATURES)
 
     Create a new `Mechanism` containing only a root body, to which other bodies can
     be attached with joints.
-    """
+    """ ->
     function Mechanism(root_body::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81))) where {T}
         graph = DirectedGraph{RigidBody{T}, Joint{T}}()
         add_vertex!(graph, root_body)

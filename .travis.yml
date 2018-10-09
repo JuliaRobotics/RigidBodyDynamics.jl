@@ -19,5 +19,13 @@ notifications:
   # - julia -e 'ENV["PYTHON"]=""; Pkg.clone(pwd()); Pkg.build("RigidBodyDynamics"); Pkg.test("RigidBodyDynamics"; coverage=true)'
   # Note: PYTHON env is to ensure that PyCall uses the Conda.jl package's Miniconda distribution within Julia. Otherwise the sympy Python module won't be installed/imported properly.
 after_success:
-  - julia --project -e 'import Pkg; Pkg.add("Documenter"); include("docs/make.jl")'
   - julia --project -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+jobs:
+  include:
+    - stage: Documentation
+      julia: 1.0
+      os: linux
+      script:
+        - julia --project=docs -e 'using Pkg; Pkg.instantiate()'
+        - julia --project=docs --color=yes docs/make.jl
+  after_success: skip

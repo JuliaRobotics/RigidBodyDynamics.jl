@@ -20,11 +20,11 @@ quantities are expressed.
 struct CartesianFrame3D
     id::Int64
 
-    """
+    @doc """
     $(SIGNATURES)
 
     Create a `CartesianFrame3D` with the given name.
-    """
+    """ ->
     function CartesianFrame3D(name::String)
         ret = new(next_frame_id.x)
         next_frame_id.x = Base.Checked.checked_add(next_frame_id.x, 1)
@@ -32,11 +32,11 @@ struct CartesianFrame3D
         ret
     end
 
-    """
+    @doc """
     $(SIGNATURES)
 
     Create an anonymous `CartesianFrame3D`.
-    """
+    """ ->
     function CartesianFrame3D()
         ret = new(next_frame_id.x)
         next_frame_id.x = Base.Checked.checked_add(next_frame_id.x, 1)
