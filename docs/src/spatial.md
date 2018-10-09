@@ -13,6 +13,8 @@ Order   = [:type, :function, :macro]
 
 ```@docs
 CartesianFrame3D
+CartesianFrame3D(::String)
+CartesianFrame3D()
 ```
 
 ### Transforms

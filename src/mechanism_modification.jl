@@ -69,7 +69,7 @@ of the `childmechanism` to the bodies and joints that were added to `mechanism`.
 Essentially replaces the root body of a copy of `childmechanism` with `parentbody` (which
 belongs to `mechanism`).
 
-Note: gravitational acceleration for childmechanism is ignored.
+Note: gravitational acceleration for `childmechanism` is ignored.
 """
 function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechanism::Mechanism{T};
         child_root_pose = one(Transform3D{T}, default_frame(root_body(childmechanism)), default_frame(parentbody))) where {T}

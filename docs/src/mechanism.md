@@ -17,6 +17,10 @@ Mechanism
 
 See also [URDF parsing and writing](@ref) for URDF file format support.
 
+```@docs
+Mechanism(root_body; gravity)
+```
+
 ```@autodocs
 Modules = [RigidBodyDynamics]
 Order   = [:function]

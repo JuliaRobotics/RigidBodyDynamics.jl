@@ -17,6 +17,7 @@ simulate
 
 ```@docs
 MuntheKaasIntegrator
+MuntheKaasIntegrator(state::X, dynamics!::F, tableau::ButcherTableau{N, T, L}, sink::S) where {N, T, F, S<:OdeResultsSink, X, L}
 ButcherTableau
 OdeResultsSink
 RingBufferStorage

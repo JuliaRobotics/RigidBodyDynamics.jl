@@ -24,10 +24,50 @@ Pages   = ["joint.jl"]
 ## `JointType`s
 
 ```@docs
-QuaternionFloating
-Revolute
-Prismatic
+JointType
+```
+
+### Fixed
+
+```@docs
 Fixed
+```
+
+### Revolute
+
+```@docs
+Revolute
+Revolute(axis)
+```
+
+### Prismatic
+
+```@docs
+Prismatic
+Prismatic(axis)
+```
+
+### Planar
+
+```@docs
 Planar
+Planar{T}(x_axis::AbstractVector, y_axis::AbstractVector) where {T}
+```
+
+### QuaternionSpherical
+
+```@docs
 QuaternionSpherical
+```
+
+### QuaternionFloating
+
+```@docs
+QuaternionFloating
+```
+
+### SPQuatFloating
+
+```@docs
+SPQuatFloating
 ```

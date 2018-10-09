@@ -167,6 +167,8 @@ mutable struct MuntheKaasStageCache{N, T, Q<:AbstractVector, V<:AbstractVector, 
 end
 
 """
+$(TYPEDEF)
+
 A Lie-group-aware ODE integrator.
 
 `MuntheKaasIntegrator` is used to properly integrate the dynamics of globally
@@ -195,6 +197,8 @@ struct MuntheKaasIntegrator{N, T, F, S<:OdeResultsSink, X, L, M<:MuntheKaasStage
     stages::M
 
     @doc """
+    $(SIGNATURES)
+
     Create a `MuntheKaasIntegrator` given:
 
     * a callable `dynamics!(vd, t, state)` that updates the joint acceleration vector `vd` at time `t` and in state `state`;
