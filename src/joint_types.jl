@@ -305,12 +305,12 @@ struct Prismatic{T} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
     rotation_from_z_aligned::RotMatrix3{T}
 
-    """
+    @doc """
     $(SIGNATURES)
 
     Construct a new `Prismatic` joint type, allowing translation along `axis`
     (expressed in the frame before the joint).
-    """
+    """ ->
     function Prismatic(axis::AbstractVector{T}) where {T}
         a = normalize(axis)
         new{T}(a, rotation_between(SVector(zero(T), zero(T), one(T)), SVector{3, T}(a)))
@@ -375,12 +375,12 @@ struct Revolute{T} <: OneDegreeOfFreedomFixedAxis{T}
     axis::SVector{3, T}
     rotation_from_z_aligned::RotMatrix3{T}
 
-    """
+    @doc """
     $(SIGNATURES)
 
     Construct a new `Revolute` joint type, allowing rotation about `axis`
     (expressed in the frame before the joint).
-    """
+    """ ->
     function Revolute(axis::AbstractVector{T}) where {T}
         a = normalize(axis)
         new{T}(a, rotation_between(SVector(zero(T), zero(T), one(T)), SVector{3, T}(a)))
@@ -533,12 +533,12 @@ struct Planar{T} <: JointType{T}
     y_axis::SVector{3, T}
     rot_axis::SVector{3, T}
 
-    """
+    @doc """
     $(SIGNATURES)
 
     Construct a new `Planar` joint type with the ``xy``-plane in which translation is allowed defined
     by 3-vectors `x` and `y` expressed in the frame before the joint.
-    """
+    """ ->
     function Planar{T}(x_axis::AbstractVector, y_axis::AbstractVector) where {T}
         x, y = map(axis -> normalize(SVector{3}(axis)), (x_axis, y_axis))
         @assert isapprox(x ⋅ y, 0; atol = 100 * eps(T))
