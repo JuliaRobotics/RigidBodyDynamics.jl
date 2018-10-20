@@ -50,11 +50,10 @@ end
 
 # Construct/convert to SMatrix
 function StaticArrays.SMatrix{6, 6, T, 36}(inertia::SpatialInertia) where {T}
-    # TODO: can probably improve performance if needed.
     J = SMatrix{3, 3, T}(inertia.moment)
     C = hat(SVector{3, T}(inertia.cross_part))
     m = T(inertia.mass)
-    [J  C; C' m * one(SMatrix{3, 3, T})]
+    [[J C]; [C' SMatrix{3, 3}(m * I)]]
 end
 StaticArrays.SMatrix{6, 6, T}(inertia::SpatialInertia) where {T} = SMatrix{6, 6, T, 36}(inertia)
 StaticArrays.SMatrix{6, 6}(inertia::SpatialInertia{T}) where {T} = SMatrix{6, 6, T}(inertia)
@@ -62,11 +61,17 @@ StaticArrays.SMatrix(inertia::SpatialInertia) = SMatrix{6, 6}(inertia)
 StaticArrays.SArray(inertia::SpatialInertia) = SMatrix(inertia)
 Base.convert(::Type{A}, inertia::SpatialInertia) where {A<:SArray} = A(inertia)
 
-# Construct/convert to Matrix
-Base.Matrix{T}(inertia::SpatialInertia) where {T} = Matrix(SMatrix{6, 6, T}(inertia))
-Base.Matrix(inertia::SpatialInertia) = Matrix(SMatrix{6, 6}(inertia))
-Base.Array{T}(inertia::SpatialInertia) where {T} = Matrix(SMatrix{6, 6, T}(inertia))
-Base.Array(inertia::SpatialInertia) = Matrix(SMatrix(inertia))
+function Base.convert(::Type{Matrix}, inertia::SpatialInertia) where {T<:Matrix}
+    Base.depwarn("This convert method is deprecated. Please use `$T(SMatrix(inertia))` instead or
+    reconsider whether conversion to Matrix is necessary.", :convert)
+    T(SMatrix(inertia))
+end
+
+function Base.Array(inertia::SpatialInertia)
+    Base.depwarn("This Array constructor is deprecated. Please use `Matrix(SMatrix(inertia))` instead or
+    reconsider whether conversion to Matrix is necessary.", :Array)
+    Matrix(SMatrix(inertia))
+end
 
 """
 $(SIGNATURES)

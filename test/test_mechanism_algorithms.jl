@@ -100,6 +100,11 @@ end
         x3 = MechanismState(mechanism)
         copyto!(x3, Vector(x2))
         @test Vector(x3) == Vector(x2)
+
+        @test Vector{Float32}(x1) isa Vector{Float32}
+        @test Vector{Float32}(x1) ≈ Vector(x1) atol=1e-6
+        @test Array(x1) == Array{Float64}(x1) == convert(Array, x1) == convert(Array{Float64}, x1)
+        @test Vector(x1) == Vector{Float64}(x1) == convert(Vector, x1) == convert(Vector{Float64}, x1)
     end
 
     @testset "q̇ <-> v" begin

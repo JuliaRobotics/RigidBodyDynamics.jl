@@ -298,4 +298,48 @@ end
             @test rotation_angle(lin_error) ≈ 0 atol = 1e-8
         end
     end
+
+    @testset "Conversions to vector/matrix" begin
+        f = CartesianFrame3D()
+        angular = [1, 2, 3]
+        linear = [4, 5, 6]
+        twist = Twist(f, f, f, angular, linear)
+        svec = SVector(angular..., linear...)
+        twist64 = Twist(f, f, f, Float64.(angular), Float64.(linear))
+        svec64 = SVector{6, Float64}(svec)
+        @test twist isa Twist{Int}
+        @test Twist{Float64}(twist) === twist64
+        @test convert(Twist{Float64}, twist) === twist64
+        @test SVector{6, Float64}(twist) === svec64
+        @test convert(SVector{6, Float64}, twist) === svec64
+        @test SVector{6}(twist) === svec
+        @test convert(SVector{6}, twist) === svec
+        @test SArray(twist) === svec
+        @test convert(SArray, twist) === svec
+
+        moment = [1 2 3;
+                  2 4 5;
+                  3 5 6]
+        crosspart = [7, 8, 9]
+        mass = 10
+        inertia = SpatialInertia(f, moment, crosspart, mass)
+        inertia64 = SpatialInertia(f, Float64.(moment), Float64.(crosspart), Float64(mass))
+        mat = SMatrix(inertia) # already tested above
+        mat64 = SMatrix{6, 6, Float64}(mat)
+        @test inertia isa SpatialInertia{Int}
+        @test SpatialInertia{Float64}(inertia) === inertia64
+        @test convert(SpatialInertia{Float64}, inertia) === inertia64
+        @test SMatrix{6, 6}(inertia) === mat
+        @test convert(SMatrix{6, 6}, inertia) === mat
+        @test SMatrix{6, 6, Float64}(inertia) === mat64
+        @test convert(SMatrix{6, 6, Float64}, inertia) === mat64
+        @test SMatrix(inertia64) === mat64
+        @test convert(SMatrix, inertia64) === mat64
+
+        J = GeometricJacobian(f, f, f, rand(1:10, 3, 4), rand(1:10, 3, 4))
+        @test convert(Array, J) == Array(J) == Matrix(J) == [J.angular; J.linear]
+        @test convert(Array{Float64}, J) == Array{Float64}(J) == Matrix{Float64}(J) == Float64[J.angular; J.linear]
+        @test Matrix(J) == [J.angular; J.linear]
+        @test Matrix(J) == [J.angular; J.linear]
+    end
 end

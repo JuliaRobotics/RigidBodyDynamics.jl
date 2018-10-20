@@ -14,12 +14,12 @@ for SpatialVector in (:Twist, :SpatialAcceleration, :Momentum, :Wrench)
         StaticArrays.SVector{6}(v::$SpatialVector{X}) where {X} = SVector{6, X}(v)
         StaticArrays.SVector(v::$SpatialVector) = SVector{6}(v)
         StaticArrays.SArray(v::$SpatialVector) = SVector(v)
+        Base.convert(::Type{SA}, v::$SpatialVector) where {SA} = SA(v)
 
-        # Construct/convert to Vector
-        Base.Vector{T}(v::$SpatialVector) where {T} = Vector(SVector{6, T}(v))
-        Base.Vector(v::$SpatialVector) = Vector(SVector{6}(v))
-        Base.Array{T}(v::$SpatialVector) where {T} = Vector(SVector{6, T}(v))
-        Base.Array(v::$SpatialVector) = Vector(SVector(v))
+        function Base.Array(v::$SpatialVector)
+            Base.depwarn("Array(v) has been deprecated. Please use SVector(v) instead.", :Array)
+            SVector(v)
+        end
     end
 end
 
@@ -39,8 +39,7 @@ for SpatialMatrix in (:GeometricJacobian, :MomentumMatrix, :WrenchMatrix)
         Base.convert(::Type{$SpatialMatrix{A}}, m::$SpatialMatrix{A}) where {A} = m
 
         # Construct/convert to Matrix
-        (::Type{M})(m::$SpatialMatrix) where {M<:Matrix} = convert(M, [angular(m); linear(m)])
-        Base.Array(m::$SpatialMatrix) = Matrix(m)
-        Base.convert(::Type{M}, m::$SpatialMatrix) where {M<:Matrix} = M(m)
+        (::Type{A})(m::$SpatialMatrix) where {A<:Array} = convert(A, [angular(m); linear(m)])
+        Base.convert(::Type{A}, m::$SpatialMatrix) where {A<:Array} = A(m)
     end
 end
