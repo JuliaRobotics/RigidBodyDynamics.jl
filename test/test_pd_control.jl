@@ -48,7 +48,7 @@
             ω = T.angular
             ωddes = pd(gains, R, Rdes, ω, ωdes)
             v̇desjoint = v̇des[joint]
-            v̇desjoint .= Array([ωddes; zero(ωddes)])
+            v̇desjoint .= SVector([ωddes; zero(ωddes)])
             wrenches = control_dynamics_result.jointwrenches
             accelerations = control_dynamics_result.accelerations
             inverse_dynamics!(torques, wrenches, accelerations, state, v̇des)
@@ -91,7 +91,7 @@
             invx = inv(x)
             v = transform(twist_wrt_world(state, body), invx)
             v̇desjoint = v̇des[joint]
-            v̇desjoint .= Array(pd(transform(gains, invx), x, xdes, v, vdes))
+            v̇desjoint .= SVector(pd(transform(gains, invx), x, xdes, v, vdes))
             wrenches = control_dynamics_result.jointwrenches
             accelerations = control_dynamics_result.accelerations
             inverse_dynamics!(torques, wrenches, accelerations, state, v̇des)

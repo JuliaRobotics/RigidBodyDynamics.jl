@@ -26,31 +26,52 @@ struct SpatialInertia{T}
     cross_part::SVector{3, T} # mass times center of mass
     mass::T
 
-    @inline function SpatialInertia(frame::CartesianFrame3D, moment::AbstractMatrix{T}, cross_part::AbstractVector{T}, mass::T) where T
-        @boundscheck size(moment) == (3, 3) || error("size mismatch")
-        @boundscheck size(cross_part) == (3,) || error("size mismatch")
+    @inline function SpatialInertia{T}(frame::CartesianFrame3D, moment::AbstractMatrix, cross_part::AbstractVector, mass) where T
         new{T}(frame, moment, cross_part, mass)
     end
 end
 
+@inline function SpatialInertia(frame::CartesianFrame3D, moment::AbstractMatrix{T1}, cross_part::AbstractVector{T2}, mass::T3) where {T1, T2, T3}
+    SpatialInertia{promote_type(T1, T2, T3)}(frame, moment, cross_part, mass)
+end
+
 # SpatialInertia-specific functions
 Base.eltype(::Type{SpatialInertia{T}}) where {T} = T
-@inline Base.convert(::SpatialInertia{T}, inertia::SpatialInertia{T}) where {T} = inertia
-@inline function Base.convert(::Type{SpatialInertia{T}}, inertia::SpatialInertia) where {T}
-    SpatialInertia(inertia.frame,
-        convert(SMatrix{3, 3, T}, inertia.moment),
-        convert(SVector{3, T}, inertia.cross_part),
-        convert(T, inertia.mass))
-end
-function Base.convert(::Type{SMatrix{6, 6, T}}, inertia::SpatialInertia) where {T}
-    J = inertia.moment
-    C = hat(inertia.cross_part)
-    m = inertia.mass
-    [J  C; C' m * one(SMatrix{3, 3, T})]
-end
-Base.convert(::Type{T}, inertia::SpatialInertia) where {T<:Matrix} = convert(T, convert(SMatrix{6, 6, eltype(T)}, inertia))
 
-Base.Array(inertia::SpatialInertia{T}) where {T} = convert(Matrix{T}, inertia)
+# Construct/convert given another SpatialInertia
+SpatialInertia{T}(inertia::SpatialInertia{T}) where {T} = inertia
+@inline function SpatialInertia{T}(inertia::SpatialInertia) where {T}
+    SpatialInertia{T}(inertia.frame,
+        SMatrix{3, 3, T}(inertia.moment),
+        SVector{3, T}(inertia.cross_part),
+        T(inertia.mass))
+end
+@inline Base.convert(::Type{S}, inertia::SpatialInertia) where {S<:SpatialInertia} = S(inertia)
+
+# Construct/convert to SMatrix
+function StaticArrays.SMatrix{6, 6, T, 36}(inertia::SpatialInertia) where {T}
+    J = SMatrix{3, 3, T}(inertia.moment)
+    C = hat(SVector{3, T}(inertia.cross_part))
+    m = T(inertia.mass)
+    [[J C]; [C' SMatrix{3, 3}(m * I)]]
+end
+StaticArrays.SMatrix{6, 6, T}(inertia::SpatialInertia) where {T} = SMatrix{6, 6, T, 36}(inertia)
+StaticArrays.SMatrix{6, 6}(inertia::SpatialInertia{T}) where {T} = SMatrix{6, 6, T}(inertia)
+StaticArrays.SMatrix(inertia::SpatialInertia) = SMatrix{6, 6}(inertia)
+StaticArrays.SArray(inertia::SpatialInertia) = SMatrix(inertia)
+Base.convert(::Type{A}, inertia::SpatialInertia) where {A<:SArray} = A(inertia)
+
+function Base.convert(::Type{Matrix}, inertia::SpatialInertia) where {T<:Matrix}
+    Base.depwarn("This convert method is deprecated. Please use `$T(SMatrix(inertia))` instead or
+    reconsider whether conversion to Matrix is necessary.", :convert)
+    T(SMatrix(inertia))
+end
+
+function Base.Array(inertia::SpatialInertia)
+    Base.depwarn("This Array constructor is deprecated. Please use `Matrix(SMatrix(inertia))` instead or
+    reconsider whether conversion to Matrix is necessary.", :Array)
+    Matrix(SMatrix(inertia))
+end
 
 """
 $(SIGNATURES)

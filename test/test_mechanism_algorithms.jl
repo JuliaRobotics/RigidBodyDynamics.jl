@@ -100,6 +100,11 @@ end
         x3 = MechanismState(mechanism)
         copyto!(x3, Vector(x2))
         @test Vector(x3) == Vector(x2)
+
+        @test Vector{Float32}(x1) isa Vector{Float32}
+        @test Vector{Float32}(x1) ≈ Vector(x1) atol=1e-6
+        @test Array(x1) == Array{Float64}(x1) == convert(Array, x1) == convert(Array{Float64}, x1)
+        @test Vector(x1) == Vector{Float64}(x1) == convert(Vector, x1) == convert(Vector{Float64}, x1)
     end
 
     @testset "q̇ <-> v" begin
@@ -401,8 +406,8 @@ end
                 set_configuration!(x_autodiff, q_autodiff)
                 set_velocity!(x_autodiff, v_autodiff)
                 twist_autodiff = relative_twist(x_autodiff, body, base)
-                accel_vec = [ForwardDiff.partials(x, 1)::Float64 for x in (Array(twist_autodiff))]
-                @test isapprox(Array(Ṫ), accel_vec; atol = 1e-12)
+                accel_vec = [ForwardDiff.partials(x, 1)::Float64 for x in (SVector(twist_autodiff))]
+                @test isapprox(SVector(Ṫ), accel_vec; atol = 1e-12)
 
                 root = root_body(mechanism)
                 f = default_frame(body)
@@ -625,7 +630,7 @@ end
 
         # rate of change of momentum computed without autodiff:
         ḣ = Wrench(momentum_matrix(x), v̇) + momentum_rate_bias(x)
-        @test isapprox(ḣArray, Array(ḣ); atol = 1e-12)
+        @test isapprox(ḣArray, SVector(ḣ); atol = 1e-12)
     end
 
     @testset "inverse dynamics / external wrenches" begin

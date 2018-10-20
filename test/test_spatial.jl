@@ -67,9 +67,9 @@ end
         I1 = transform(I2, H21)
         I3 = rand(SpatialInertia{Float64}, f2)
         @test I2.mass == I1.mass
-        @test isapprox(Array(I1), Ad(inv(H21))' * Array(I2) * Ad(inv(H21)); atol = 1e-12)
+        @test isapprox(SMatrix(I1), Ad(inv(H21))' * SMatrix(I2) * Ad(inv(H21)); atol = 1e-12)
         @test isapprox(I2, transform(I1, inv(H21)))
-        @test isapprox(Array(I2) + Array(I3), Array(I2 + I3); atol = 1e-12)
+        @test isapprox(SMatrix(I2) + SMatrix(I3), SMatrix(I2 + I3); atol = 1e-12)
         @inferred transform(zero(SpatialInertia{Float32}, f1), one(Transform3D, f1))
         @test I2 + zero(I2) == I2
 
@@ -90,7 +90,7 @@ end
         # @test isapprox(T2 + T1, T3) # used to be allowed, but makes code slower; just switch T1 and T2 around
         @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f2, f4) # wrong frame
         @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f4, f3) # wrong base
-        @test isapprox(Array(transform(T1, H31)), Ad(H31) * Array(T1))
+        @test isapprox(SVector(transform(T1, H31)), Ad(H31) * SVector(T1))
         @test T3 + zero(T3) == T3
 
         # 2.17 in Duindam:
@@ -110,7 +110,7 @@ end
         Random.seed!(66)
         W = rand(Wrench{Float64}, f2)
         H21 = rand(Transform3D, f2, f1)
-        @test isapprox(Array(transform(W, H21)), Ad(inv(H21))' * Array(W))
+        @test isapprox(SVector(transform(W, H21)), Ad(inv(H21))' * SVector(W))
         @test_throws ArgumentError transform(W, inv(H21)) # wrong frame
         @test W + zero(W) == W
 
@@ -144,10 +144,10 @@ end
         T2 = rand(Twist{Float64}, f2, f1, f1)
         H21 = rand(Transform3D, f2, f1)
         h = I * T
-        @test isapprox(Array(I) * Array(T), Array(h); atol = 1e-12)
+        @test isapprox(SMatrix(I) * SVector(T), SVector(h); atol = 1e-12)
         @test_throws ArgumentError I * T2 # wrong frame
         @test isapprox(transform(I, H21) * transform(T, H21), transform(h, H21))
-        @test isapprox(Array(transform(h, H21)), Ad(inv(H21))' * Array(h))
+        @test isapprox(SVector(transform(h, H21)), Ad(inv(H21))' * SVector(h))
         @test_throws ArgumentError transform(h, inv(H21)) # wrong frame
         @test h + zero(h) == h
     end
@@ -227,7 +227,7 @@ end
         T = rand(Twist{Float64}, f2, f1, f2)
         H = rand(Transform3D, f2, f1)
         Ek = kinetic_energy(I, T)
-        @test isapprox((1//2 * Array(T)' * Array(I) * Array(T))[1], Ek; atol = 1e-12)
+        @test isapprox((1//2 * SVector(T)' * SMatrix(I) * SVector(T))[1], Ek; atol = 1e-12)
         @test isapprox(kinetic_energy(transform(I, H), transform(T, H)), Ek; atol = 1e-12)
     end
 
@@ -297,5 +297,49 @@ end
             lin_error = AngleAxis(rv \ rv_lin)
             @test rotation_angle(lin_error) ≈ 0 atol = 1e-8
         end
+    end
+
+    @testset "Conversions to vector/matrix" begin
+        f = CartesianFrame3D()
+        angular = [1, 2, 3]
+        linear = [4, 5, 6]
+        twist = Twist(f, f, f, angular, linear)
+        svec = SVector(angular..., linear...)
+        twist64 = Twist(f, f, f, Float64.(angular), Float64.(linear))
+        svec64 = SVector{6, Float64}(svec)
+        @test twist isa Twist{Int}
+        @test Twist{Float64}(twist) === twist64
+        @test convert(Twist{Float64}, twist) === twist64
+        @test SVector{6, Float64}(twist) === svec64
+        @test convert(SVector{6, Float64}, twist) === svec64
+        @test SVector{6}(twist) === svec
+        @test convert(SVector{6}, twist) === svec
+        @test SArray(twist) === svec
+        @test convert(SArray, twist) === svec
+
+        moment = [1 2 3;
+                  2 4 5;
+                  3 5 6]
+        crosspart = [7, 8, 9]
+        mass = 10
+        inertia = SpatialInertia(f, moment, crosspart, mass)
+        inertia64 = SpatialInertia(f, Float64.(moment), Float64.(crosspart), Float64(mass))
+        mat = SMatrix(inertia) # already tested above
+        mat64 = SMatrix{6, 6, Float64}(mat)
+        @test inertia isa SpatialInertia{Int}
+        @test SpatialInertia{Float64}(inertia) === inertia64
+        @test convert(SpatialInertia{Float64}, inertia) === inertia64
+        @test SMatrix{6, 6}(inertia) === mat
+        @test convert(SMatrix{6, 6}, inertia) === mat
+        @test SMatrix{6, 6, Float64}(inertia) === mat64
+        @test convert(SMatrix{6, 6, Float64}, inertia) === mat64
+        @test SMatrix(inertia64) === mat64
+        @test convert(SMatrix, inertia64) === mat64
+
+        J = GeometricJacobian(f, f, f, rand(1:10, 3, 4), rand(1:10, 3, 4))
+        @test convert(Array, J) == Array(J) == Matrix(J) == [J.angular; J.linear]
+        @test convert(Array{Float64}, J) == Array{Float64}(J) == Matrix{Float64}(J) == Float64[J.angular; J.linear]
+        @test Matrix(J) == [J.angular; J.linear]
+        @test Matrix(J) == [J.angular; J.linear]
     end
 end
