@@ -181,16 +181,17 @@ function parse_urdf(filename::AbstractString;
 end
 
 @noinline function parse_urdf(scalar_type::Type, filename::AbstractString)
-    replacement = if scalar_type == Float64
-        "parse_urdf(filename, remove_fixed_tree_joints=false)"
-    else
-        "parse_urdf(filename, scalar_type=$scalar_type, remove_fixed_tree_joints=false)"
-    end
-    msg = """
-    `parse_urdf(scalar_type, filename)` is deprecated, use $replacement instead.
-    This is to reproduce the exact same behavior as before.
-    You may want to consider leaving `remove_fixed_tree_joints` to its default value (`true`).
-    """
-    Base.depwarn(msg, :parse_urdf)
+    # TODO: enable deprecation:
+    # replacement = if scalar_type == Float64
+    #     "parse_urdf(filename, remove_fixed_tree_joints=false)"
+    # else
+    #     "parse_urdf(filename, scalar_type=$scalar_type, remove_fixed_tree_joints=false)"
+    # end
+    # msg = """
+    # `parse_urdf(scalar_type, filename)` is deprecated, use $replacement instead.
+    # This is to reproduce the exact same behavior as before.
+    # You may want to consider leaving `remove_fixed_tree_joints` to its default value (`true`).
+    # """
+    # Base.depwarn(msg, :parse_urdf)
     parse_urdf(filename; scalar_type=scalar_type, remove_fixed_tree_joints=false)
 end
