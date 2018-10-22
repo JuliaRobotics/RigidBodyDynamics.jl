@@ -15,9 +15,8 @@ branches:
     - /^v[0-9]+\.[0-9]+\.[0-9]+$/ # version tags
 notifications:
   email: false
-# script:
-  # - julia -e 'ENV["PYTHON"]=""; Pkg.clone(pwd()); Pkg.build("RigidBodyDynamics"); Pkg.test("RigidBodyDynamics"; coverage=true)'
-  # Note: PYTHON env is to ensure that PyCall uses the Conda.jl package's Miniconda distribution within Julia. Otherwise the sympy Python module won't be installed/imported properly.
+before_script:
+  - export PYTHON="" # for SymPy
 after_success:
   - julia --project -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
 jobs:

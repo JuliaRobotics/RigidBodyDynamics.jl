@@ -67,7 +67,7 @@ end
 Base.size(A::ConstVector) = (A.length, )
 Base.@propagate_inbounds Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
 Base.IndexStyle(::Type{<:ConstVector}) = IndexLinear()
-
+Base.unalias(dest, x::ConstVector) = x
 
 ## ConstDict
 """
@@ -320,6 +320,7 @@ end
 Base.size(v::SegmentedVector) = size(v.parent)
 Base.@propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.parent[i]
 Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.parent[i] = value
+Base.dataids(x::SegmentedVector) = Base.dataids(x.parent)
 
 Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
