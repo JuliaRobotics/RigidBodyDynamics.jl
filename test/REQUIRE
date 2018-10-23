@@ -1,6 +1,4 @@
-ForwardDiff 0.5.0
-DiffRules 0.0.6 # for sinpi on Julia 0.7
-BenchmarkTools 0.2.0
-SymPy 0.5.1
 NBInclude 1.1.0
-IntervalArithmetic 0.13
+ForwardDiff 0.5.0
+BenchmarkTools
+

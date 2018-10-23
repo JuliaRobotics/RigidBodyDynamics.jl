@@ -114,7 +114,7 @@ end
 
 function parse_joint_and_link(mechanism::Mechanism{T}, xml_parent::XMLElement, xml_child::XMLElement, xml_joint::XMLElement) where {T}
     parentname = attribute(xml_parent, "name")
-    candidate_parents = collect(filter(b -> string(b) == parentname, bodies(mechanism)))
+    candidate_parents = collect(filter(b -> string(b) == parentname, non_root_bodies(mechanism))) # skip root (name not parsed from URDF)
     length(candidate_parents) == 1 || error("Duplicate name: $(parentname)")
     parent = first(candidate_parents)
     joint = parse_joint(T, xml_joint)
@@ -165,13 +165,12 @@ function parse_urdf(filename::AbstractString;
     tree = SpanningTree(graph, first(roots))
 
     # create mechanism from spanning tree
-    rootbody = RigidBody{T}("") # initially, set root body name to an empty string, so as not to clash with URDF links named "world"
+    rootbody = RigidBody{T}("world")
     mechanism = Mechanism(rootbody)
     parse_root_link(mechanism, Graphs.root(tree).data, root_joint_type)
     for edge in edges(tree)
         parse_joint_and_link(mechanism, source(edge, tree).data, target(edge, tree).data, edge.data)
     end
-    rootbody.name = "world"
 
     if remove_fixed_tree_joints
         remove_fixed_tree_joints!(mechanism)

@@ -14,7 +14,7 @@ for SpatialVector in (:Twist, :SpatialAcceleration, :Momentum, :Wrench)
         StaticArrays.SVector{6}(v::$SpatialVector{X}) where {X} = SVector{6, X}(v)
         StaticArrays.SVector(v::$SpatialVector) = SVector{6}(v)
         StaticArrays.SArray(v::$SpatialVector) = SVector(v)
-        Base.convert(::Type{SA}, v::$SpatialVector) where {SA} = SA(v)
+        Base.convert(::Type{SA}, v::$SpatialVector) where {SA <: SArray} = SA(v)
 
         function Base.Array(v::$SpatialVector)
             Base.depwarn("Array(v) has been deprecated. Please use SVector(v) instead.", :Array)
