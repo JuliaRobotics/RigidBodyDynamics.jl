@@ -138,7 +138,7 @@ Keyword arguments:
 function parse_urdf(filename::AbstractString;
         scalar_type::Type{T}=Float64,
         root_joint_type::JointType{T}=Fixed{scalar_type}(),
-        remove_fixed_tree_joints=true) where T
+        remove_fixed_tree_joints=true, joint_names_in_order=nothing) where T
     xdoc = parse_file(filename)
     xroot = LightXML.root(xdoc)
     @assert LightXML.name(xroot) == "robot"
@@ -162,7 +162,23 @@ function parse_urdf(filename::AbstractString;
     # create a spanning tree
     roots = collect(filter(v -> isempty(in_edges(v, graph)), vertices))
     length(roots) != 1 && error("Can only handle a single root")
-    tree = SpanningTree(graph, first(roots))
+    if joint_names_in_order == nothing
+        # do breadth-first search
+        tree = SpanningTree(graph, first(roots))
+    else
+        edges_in_order = Edge{XMLElement}[]
+        for joint_name in joint_names_in_order
+            for edge in edges(graph)
+                xml_joint = edge.data
+                if attribute(xml_joint, "name") == joint_name
+                    push!(edges_in_order, edge)
+                    break;
+                end
+            end
+        end
+        @assert length(edges_in_order) == num_edges(graph)
+        tree = SpanningTree(graph, first(roots), edges_in_order)
+    end
 
     # create mechanism from spanning tree
     rootbody = RigidBody{T}("world")
