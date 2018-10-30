@@ -18,7 +18,7 @@ notifications:
 before_script:
   - export PYTHON="" # for SymPy
 after_success:
-  - julia --project -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+  - julia --project -e 'using Pkg; pkg"add Coverage@0.6.0"; using Coverage; Codecov.submit(Codecov.process_folder())'
 jobs:
   include:
     - stage: Documentation
