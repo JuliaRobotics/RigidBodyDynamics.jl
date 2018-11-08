@@ -536,21 +536,21 @@ $(SIGNATURES)
 
 Return the range of indices into the joint configuration vector ``q`` corresponding to joint `joint`.
 """
-@inline configuration_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.qranges[joint]
+Base.@propagate_inbounds configuration_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.qranges[joint]
 
 """
 $(SIGNATURES)
 
 Return the range of indices into the joint velocity vector ``v`` corresponding to joint `joint`.
 """
-@inline velocity_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.vranges[joint]
+Base.@propagate_inbounds velocity_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.vranges[joint]
 
 """
 $(SIGNATURES)
 
 Return the range of row indices into the constraint Jacobian corresponding to joint `joint`.
 """
-@inline constraint_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.constraintranges[joint]
+Base.@propagate_inbounds constraint_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.constraintranges[joint]
 
 ## Accessor functions for cached variables
 
