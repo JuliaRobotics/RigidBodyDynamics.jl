@@ -58,7 +58,7 @@ end
 @propagate_inbounds set_linear_velocity!(v::AbstractVector, jt::QuaternionFloating, ν::AbstractVector) = copyto!(v, 4, ν, 1, 3)
 
 @propagate_inbounds function set_configuration!(q::AbstractVector, joint::Joint{<:Any, <:QuaternionFloating}, config::Transform3D)
-    check_num_positions(joint, q)
+    @boundscheck check_num_positions(joint, q)
     @framecheck config.from frame_after(joint)
     @framecheck config.to frame_before(joint)
     set_rotation!(q, joint_type(joint), rotation(config))
@@ -67,7 +67,7 @@ end
 end
 
 @propagate_inbounds function set_velocity!(v::AbstractVector, joint::Joint{<:Any, <:QuaternionFloating}, twist::Twist)
-    check_num_velocities(joint, v)
+    @boundscheck check_num_velocities(joint, v)
     @framecheck twist.base frame_before(joint)
     @framecheck twist.body frame_after(joint)
     @framecheck twist.frame frame_after(joint)

@@ -1,5 +1,13 @@
 function randmech()
-    rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 5]; [Fixed{Float64} for i = 1 : 5]; [QuaternionSpherical{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]; [Planar{Float64} for i = 1 : 5]; [SPQuatFloating{Float64} for i = 1:2]]...)
+    rand_tree_mechanism(Float64,
+        QuaternionFloating{Float64},
+        [Revolute{Float64} for i = 1 : 5]...,
+        [Fixed{Float64} for i = 1 : 5]...,
+        [Prismatic{Float64} for i = 1 : 5]...,
+        [Planar{Float64} for i = 1 : 5]...,
+        [SPQuatFloating{Float64} for i = 1:2]...,
+        [SinCosRevolute{Float64} for i = 1:2]...
+    )
 end
 
 @testset "mechanism algorithms" begin
@@ -197,6 +205,15 @@ end
                 set_configuration!(x, joint, quat)
                 tf = RigidBodyDynamics.joint_transform(joint, configuration(x, joint))
                 @test Quat(rotation(tf)) ≈ quat atol = 1e-12
+            end
+            if joint_type(joint) isa SinCosRevolute
+                qj = rand()
+                set_configuration!(x, joint, qj)
+                @test SVector(sincos(qj)) == configuration(x, joint)
+
+                vj = rand()
+                set_velocity!(x, joint, vj)
+                @test velocity(x, joint)[1] == vj
             end
         end
     end
@@ -634,8 +651,9 @@ end
     end
 
     @testset "inverse dynamics / external wrenches" begin
+        # test requires a floating mechanism
         Random.seed!(39)
-        mechanism = rand_chain_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; Planar{Float64}; [Prismatic{Float64} for i = 1 : 10]]...) # what really matters is that there's a floating joint first
+        mechanism = rand_floating_tree_mechanism(Float64, fill(Revolute{Float64}, 10)..., fill(Planar{Float64}, 10)..., fill(SinCosRevolute{Float64}, 5)...)
         x = MechanismState(mechanism)
         rand!(x)
         v̇ = similar(velocity(x))
@@ -740,8 +758,8 @@ end
             rand_configuration!(q0, joint)
             local_coordinates!(ϕ, ϕ̇, joint, q0, q, v)
             q_back = Vector{Float64}(undef, num_positions(joint))
-           global_coordinates!(q_back, joint, q0, ϕ)
-           principal_value!(q_back, joint)
+            global_coordinates!(q_back, joint, q0, ϕ)
+            principal_value!(q_back, joint)
 
             let expected = copy(q)
                 principal_value!(expected, joint)

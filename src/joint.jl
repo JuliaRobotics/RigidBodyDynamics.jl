@@ -145,14 +145,14 @@ end
     nothing
 end
 
-@inline function set_configuration!(q::AbstractVector, joint::Joint, config::AbstractVector)
-    check_num_positions(joint, q)
+@propagate_inbounds function set_configuration!(q::AbstractVector, joint::Joint, config::AbstractVector)
+    @boundscheck check_num_positions(joint, q)
     copyto!(q, config)
     q
 end
 
-@inline function set_velocity!(v::AbstractVector, joint::Joint, vel::AbstractVector)
-    check_num_velocities(joint, v)
+@propagate_inbounds function set_velocity!(v::AbstractVector, joint::Joint, vel::AbstractVector)
+    @boundscheck check_num_velocities(joint, v)
     copyto!(v, vel)
     v
 end

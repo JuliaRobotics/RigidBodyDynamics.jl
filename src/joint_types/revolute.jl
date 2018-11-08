@@ -2,6 +2,10 @@
 $(TYPEDEF)
 
 A `Revolute` joint type allows rotation about a fixed axis.
+
+The configuration vector for the `Revolute` joint type simply consists of the angle
+of rotation about the specified axis. The velocity vector consists of the angular
+rate, and is thus the time derivative of the configuration vector.
 """
 struct Revolute{T} <: JointType{T}
     axis::SVector{3, T}
@@ -33,36 +37,22 @@ num_velocities(::Type{<:Revolute}) = 1
 has_fixed_subspaces(jt::Revolute) = true
 isfloating(::Type{<:Revolute}) = false
 
-@propagate_inbounds function set_configuration!(q::AbstractVector, joint::Joint{<:Any, <:Revolute}, pos::Number)
-    check_num_positions(joint, q)
-    @inbounds q[1] = pos
+@propagate_inbounds function set_configuration!(q::AbstractVector, joint::Joint{<:Any, <:Revolute}, θ::Number)
+    @boundscheck check_num_positions(joint, q)
+    @inbounds q[1] = θ
     q
 end
 
-@propagate_inbounds function set_velocity!(v::AbstractVector, joint::Joint{<:Any, <:Revolute}, vel::Number)
-    check_num_positions(joint, v)
-    @inbounds v[1] = vel
+@propagate_inbounds function set_velocity!(v::AbstractVector, joint::Joint{<:Any, <:Revolute}, θ̇::Number)
+    check_num_velocities(joint, v)
+    @inbounds v[1] = θ̇
     v
 end
 
 @propagate_inbounds function rand_configuration!(q::AbstractVector, ::Revolute)
-    randn!(q)
+    q[1] = rand(-π : π)
     nothing
  end
-
-@inline function bias_acceleration(jt::Revolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
-    zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
-end
-
-@inline function velocity_to_configuration_derivative_jacobian(::Revolute{T}, ::AbstractVector) where T
-    @SMatrix([one(T)])
-end
-
-@inline function configuration_derivative_to_velocity_jacobian(::Revolute{T}, ::AbstractVector) where T
-    @SMatrix([one(T)])
-end
 
 @propagate_inbounds function joint_transform(jt::Revolute, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D, q::AbstractVector)
     aa = AngleAxis(q[1], jt.axis[1], jt.axis[2], jt.axis[3], false)
@@ -73,6 +63,12 @@ end
         q::AbstractVector, v::AbstractVector)
     angular = jt.axis * v[1]
     Twist(frame_after, frame_before, frame_after, angular, zero(angular))
+end
+
+@inline function bias_acceleration(jt::Revolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
+    S = promote_type(T, X)
+    zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
 end
 
 @propagate_inbounds function joint_spatial_acceleration(jt::Revolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
@@ -103,3 +99,12 @@ end
     τ[1] = dot(angular(joint_wrench), jt.axis)
     nothing
 end
+
+@inline function velocity_to_configuration_derivative_jacobian(::Revolute{T}, ::AbstractVector) where T
+    @SMatrix([one(T)])
+end
+
+@inline function configuration_derivative_to_velocity_jacobian(::Revolute{T}, ::AbstractVector) where T
+    @SMatrix([one(T)])
+end
+
