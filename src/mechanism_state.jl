@@ -49,6 +49,8 @@ struct MechanismState{X, M, C, JointCollection}
     constraintranges::IndexDict{JointID, UnitRange{JointID}, UnitRange{Int}}
     ancestor_joint_masks::JointDict{JointDict{Bool}} # TODO: use a Matrix-backed type
     constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: use a Matrix-backed type
+    q_index_to_joint_id::Vector{JointID}
+    v_index_to_joint_id::Vector{JointID}
 
     # minimal representation of state
     q::SegmentedVector{JointID, X, Base.OneTo{JointID}, Vector{X}} # configurations
@@ -104,6 +106,16 @@ struct MechanismState{X, M, C, JointCollection}
             rangevec = UnitRange{Int}[start : (start += num_constraints(j)) - 1 for j in non_tree_joints(m)]
             IndexDict(nontreejointids, rangevec)
         end
+        q_index_to_joint_id = Vector{JointID}(undef, length(q))
+        v_index_to_joint_id = Vector{JointID}(undef, length(v))
+        for jointid in treejointids
+            for qindex in qranges[jointid]
+                q_index_to_joint_id[qindex] = jointid
+            end
+            for vindex in vranges[jointid]
+                v_index_to_joint_id[vindex] = jointid
+            end
+        end
 
         # joint-related cache
         joint_transforms = JointCacheDict{Transform3D{C}}(jointids)
@@ -151,6 +163,7 @@ struct MechanismState{X, M, C, JointCollection}
             modcount(m), m, nonrootbodies, treejoints, nontreejoints,
             jointids, treejointids, nontreejointids,
             predecessor_and_successor_ids, qranges, vranges, constraintranges, ancestor_joint_masks, constraint_jacobian_structure,
+            q_index_to_joint_id, v_index_to_joint_id,
             qsegmented, vsegmented, s,
             joint_transforms, joint_twists, joint_bias_accelerations, tree_joint_transforms, non_tree_joint_transforms,
             motion_subspaces, constraint_wrench_subspaces,
@@ -544,6 +557,20 @@ $(SIGNATURES)
 Return the range of indices into the joint velocity vector ``v`` corresponding to joint `joint`.
 """
 Base.@propagate_inbounds velocity_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.vranges[joint]
+
+"""
+$(SIGNATURES)
+
+Return the `JointID` of the joint associated with the given index into the configuration vector ``q``.
+"""
+Base.@propagate_inbounds configuration_index_to_joint_id(state::MechanismState, qindex::Integer) = state.q_index_to_joint_id[qindex]
+
+"""
+$(SIGNATURES)
+
+Return the `JointID` of the joint associated with the given index into the velocity vector ``v``.
+"""
+Base.@propagate_inbounds velocity_index_to_joint_id(state::MechanismState, qindex::Integer) = state.v_index_to_joint_id[qindex]
 
 """
 $(SIGNATURES)
