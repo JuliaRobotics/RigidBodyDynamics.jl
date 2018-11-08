@@ -1,6 +1,5 @@
 @indextype JointID
 
-# TODO: document which methods are needed for a new JointType.
 """
 $(TYPEDEF)
 
@@ -11,42 +10,6 @@ Base.eltype(::Type{<:JointType{T}}) where {T} = T
 num_velocities(::T) where {T<:JointType} = num_velocities(T)
 num_positions(::T) where {T<:JointType} = num_positions(T)
 num_constraints(::Type{T}) where {T<:JointType} = 6 - num_velocities(T)
-
-# Default implementations
-function flip_direction(jt::JointType{T}) where {T}
-    error("Flipping direction is not supported for $(typeof(jt))")
-end
-
-zero_configuration!(q::AbstractVector, ::JointType) = (q .= 0; nothing)
-
-function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
-        jt::JointType, q0::AbstractVector, q::AbstractVector, v::AbstractVector)
-    ϕ .= q .- q0
-    velocity_to_configuration_derivative!(ϕ̇, jt, q, v)
-    nothing
-end
-
-function global_coordinates!(q::AbstractVector, jt::JointType, q0::AbstractVector, ϕ::AbstractVector)
-    q .= q0 .+ ϕ
-end
-
-function configuration_derivative_to_velocity_adjoint!(out, jt::JointType, q::AbstractVector, f)
-    out .= f
-end
-
-function configuration_derivative_to_velocity!(v::AbstractVector, ::JointType, q::AbstractVector, q̇::AbstractVector)
-    v .= q̇
-    nothing
-end
-
-function velocity_to_configuration_derivative!(q̇::AbstractVector, ::JointType, q::AbstractVector, v::AbstractVector)
-    q̇ .= v
-    nothing
-end
-
-normalize_configuration!(q::AbstractVector, ::JointType) = nothing
-is_configuration_normalized(::JointType, q::AbstractVector, rtol, atol) = true
-principal_value!(q::AbstractVector, ::JointType) = nothing
 
 """
 $(TYPEDEF)
@@ -221,9 +184,9 @@ $(SIGNATURES)
 Return a `Transform3D` representing the homogeneous transform from the frame
 after the joint to the frame before the joint for joint configuration vector ``q``.
 """
-function joint_transform(joint::Joint, q::AbstractVector)
+@propagate_inbounds function joint_transform(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    joint_transform(joint.joint_type, frame_after(joint), frame_before(joint), q)
+    @inbounds return joint_transform(joint.joint_type, frame_after(joint), frame_before(joint), q)
 end
 
 """
@@ -236,9 +199,9 @@ the velocity vector ``v``, that maps ``v`` to the twist of the joint's successor
 with respect to its predecessor. The returned motion subspace is expressed in
 the frame after the joint, which is attached to the joint's successor.
 """
-@inline function motion_subspace(joint::Joint, q::AbstractVector)
+@propagate_inbounds function motion_subspace(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    motion_subspace(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q)
+    @inbounds return motion_subspace(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q)
 end
 
 """
@@ -255,10 +218,10 @@ its successor.
 
 The constraint wrench subspace is orthogonal to the motion subspace.
 """
-function constraint_wrench_subspace(joint::Joint, joint_transform::Transform3D)
+@propagate_inbounds function constraint_wrench_subspace(joint::Joint, joint_transform::Transform3D)
     @framecheck joint_transform.from frame_after(joint)
     @framecheck joint_transform.to frame_before(joint)
-    constraint_wrench_subspace(joint.joint_type, joint_transform)
+    @inbounds return constraint_wrench_subspace(joint.joint_type, joint_transform)
 end
 
 """
@@ -268,10 +231,10 @@ Return the acceleration of the joint's successor with respect to its predecessor
 in configuration ``q`` and at velocity ``v``, when the joint acceleration
 ``\\dot{v}`` is zero.
 """
-function bias_acceleration(joint::Joint, q::AbstractVector, v::AbstractVector)
+@propagate_inbounds function bias_acceleration(joint::Joint, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    bias_acceleration(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q, v)
+    @inbounds return bias_acceleration(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q, v)
 end
 
 """
@@ -292,11 +255,11 @@ Note that this mapping is linear.
 
 See also [`velocity_to_configuration_derivative!`](@ref), the inverse mapping.
 """
-function configuration_derivative_to_velocity!(v::AbstractVector, joint::Joint, q::AbstractVector, q̇::AbstractVector)
+@propagate_inbounds function configuration_derivative_to_velocity!(v::AbstractVector, joint::Joint, q::AbstractVector, q̇::AbstractVector)
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q̇)
-    configuration_derivative_to_velocity!(v, joint.joint_type, q, q̇)
+    @inbounds return configuration_derivative_to_velocity!(v, joint.joint_type, q, q̇)
 end
 
 """
@@ -322,11 +285,11 @@ so ``f_q = J_{\\dot{q} \\rightarrow v}^{*} f_v``.
 
 To compute ``J_{\\dot{q} \\rightarrow v}`` see [`configuration_derivative_to_velocity_jacobian`](@ref).
 """
-function configuration_derivative_to_velocity_adjoint!(fq, joint::Joint, q::AbstractVector, fv)
+@propagate_inbounds function configuration_derivative_to_velocity_adjoint!(fq, joint::Joint, q::AbstractVector, fv)
     @boundscheck check_num_positions(joint, fq)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, fv)
-    configuration_derivative_to_velocity_adjoint!(fq, joint_type(joint), q, fv)
+    @inbounds return configuration_derivative_to_velocity_adjoint!(fq, joint_type(joint), q, fv)
 end
 
 """
@@ -339,11 +302,11 @@ Note that this mapping is linear.
 
 See also [`configuration_derivative_to_velocity!`](@ref), the inverse mapping.
 """
-function velocity_to_configuration_derivative!(q̇::AbstractVector, joint::Joint, q::AbstractVector, v::AbstractVector)
+@propagate_inbounds function velocity_to_configuration_derivative!(q̇::AbstractVector, joint::Joint, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_positions(joint, q̇)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    velocity_to_configuration_derivative!(q̇, joint.joint_type, q, v)
+    @inbounds return velocity_to_configuration_derivative!(q̇, joint.joint_type, q, v)
 end
 
 
@@ -357,9 +320,9 @@ derivative for the given joint:
 \\dot{q} = J_{v \\rightarrow \\dot{q}} v
 ```
 """
-function velocity_to_configuration_derivative_jacobian(joint::Joint, q::AbstractVector)
+@propagate_inbounds function velocity_to_configuration_derivative_jacobian(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    velocity_to_configuration_derivative_jacobian(joint.joint_type, q)
+    @inbounds return velocity_to_configuration_derivative_jacobian(joint.joint_type, q)
 end
 
 """
@@ -372,9 +335,9 @@ configuration derivative to velocity for the given joint:
 v = J_{\\dot{q} \\rightarrow v} \\dot{q}
 ```
 """
-function configuration_derivative_to_velocity_jacobian(joint::Joint, q::AbstractVector)
+@propagate_inbounds function configuration_derivative_to_velocity_jacobian(joint::Joint, q::AbstractVector)
     @boundscheck check_num_positions(joint, q)
-    configuration_derivative_to_velocity_jacobian(joint.joint_type, q)
+    @inbounds return configuration_derivative_to_velocity_jacobian(joint.joint_type, q)
 end
 
 """
@@ -383,9 +346,9 @@ $(SIGNATURES)
 Set ``q`` to the 'zero' configuration, corresponding to an identity joint
 transform.
 """
-function zero_configuration!(q::AbstractVector, joint::Joint)
+@propagate_inbounds function zero_configuration!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
-    zero_configuration!(q, joint.joint_type)
+    @inbounds return zero_configuration!(q, joint.joint_type)
 end
 
 """
@@ -394,9 +357,9 @@ $(SIGNATURES)
 Set ``q`` to a random configuration. The distribution used depends on the
 joint type.
 """
-function rand_configuration!(q::AbstractVector, joint::Joint)
+@propagate_inbounds function rand_configuration!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
-    rand_configuration!(q, joint.joint_type)
+    @inbounds return rand_configuration!(q, joint.joint_type)
 end
 
 """
@@ -407,10 +370,10 @@ expressed in the frame after the joint.
 
 Note that this is the same as `Twist(motion_subspace(joint, q), v)`.
 """
-function joint_twist(joint::Joint, q::AbstractVector, v::AbstractVector)
+@propagate_inbounds function joint_twist(joint::Joint, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    joint_twist(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q, v)
+    @inbounds return joint_twist(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q, v)
 end
 
 """
@@ -419,11 +382,11 @@ $(SIGNATURES)
 Return the spatial acceleration of `joint`'s  successor with respect to its predecessor,
 expressed in the frame after the joint.
 """
-function joint_spatial_acceleration(joint::Joint, q::AbstractVector, v::AbstractVector, vd::AbstractVector)
+@propagate_inbounds function joint_spatial_acceleration(joint::Joint, q::AbstractVector, v::AbstractVector, vd::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
     @boundscheck check_num_velocities(joint, vd)
-    joint_spatial_acceleration(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q, v, vd)
+    @inbounds return joint_spatial_acceleration(joint.joint_type, frame_after(joint), joint_to_predecessor(joint).to, q, v, vd)
 end
 
 """
@@ -432,11 +395,11 @@ $(SIGNATURES)
 Given the wrench exerted across the joint on the joint's successor, compute the
 vector of joint torques ``\\tau`` (in place), in configuration `q`.
 """
-function joint_torque!(τ::AbstractVector, joint::Joint, q::AbstractVector, joint_wrench::Wrench)
+@propagate_inbounds function joint_torque!(τ::AbstractVector, joint::Joint, q::AbstractVector, joint_wrench::Wrench)
     @boundscheck check_num_velocities(joint, τ)
     @boundscheck check_num_positions(joint, q)
     @framecheck(joint_wrench.frame, frame_after(joint))
-    joint_torque!(τ, joint.joint_type, q, joint_wrench)
+    @inbounds return joint_torque!(τ, joint.joint_type, q, joint_wrench)
 end
 
 
@@ -457,14 +420,14 @@ exponential coordinates could be used as the local coordinate vector ``\\phi``.
 
 See also [`global_coordinates!`](@ref).
 """
-function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
+@propagate_inbounds function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
         joint::Joint, q0::AbstractVector, q::AbstractVector, v::AbstractVector)
     @boundscheck check_num_velocities(joint, ϕ)
     @boundscheck check_num_velocities(joint, ϕ̇)
     @boundscheck check_num_positions(joint, q0)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_velocities(joint, v)
-    local_coordinates!(ϕ, ϕ̇, joint.joint_type, q0, q, v)
+    @inbounds return local_coordinates!(ϕ, ϕ̇, joint.joint_type, q0, q, v)
 end
 
 """
@@ -476,11 +439,11 @@ around ``q_0``.
 
 See also [`local_coordinates!`](@ref).
 """
-function global_coordinates!(q::AbstractVector, joint::Joint, q0::AbstractVector, ϕ::AbstractVector)
+@propagate_inbounds function global_coordinates!(q::AbstractVector, joint::Joint, q0::AbstractVector, ϕ::AbstractVector)
     @boundscheck check_num_positions(joint, q)
     @boundscheck check_num_positions(joint, q0)
     @boundscheck check_num_velocities(joint, ϕ)
-    global_coordinates!(q, joint.joint_type, q0, ϕ)
+    @inbounds return global_coordinates!(q, joint.joint_type, q0, ϕ)
 end
 
 """
@@ -497,14 +460,14 @@ $(SIGNATURES)
 Renormalize the configuration vector ``q`` associated with `joint` so that it
 lies on the joint's configuration manifold.
 """
-function normalize_configuration!(q::AbstractVector, joint::Joint)
+@propagate_inbounds function normalize_configuration!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
-    normalize_configuration!(q, joint.joint_type)
+    @inbounds return normalize_configuration!(q, joint.joint_type)
 end
 
-function is_configuration_normalized(joint::Joint, q::AbstractVector{X}; rtol::Real = sqrt(eps(X)), atol::Real = zero(X)) where {X}
+@propagate_inbounds function is_configuration_normalized(joint::Joint, q::AbstractVector{X}; rtol::Real = sqrt(eps(X)), atol::Real = zero(X)) where {X}
     @boundscheck check_num_positions(joint, q)
-    is_configuration_normalized(joint.joint_type, q, rtol, atol)
+    @inbounds return is_configuration_normalized(joint.joint_type, q, rtol, atol)
 end
 
 """
@@ -513,7 +476,7 @@ $(SIGNATURES)
 Applies the principal_value functions from [Rotations.jl](https://github.com/FugroRoames/Rotations.jl/blob/d080990517f89b56c37962ad53a7fd24bd94b9f7/src/principal_value.jl)
 to joint angles. This currently only applies to `SPQuatFloating` joints.
 """
-function principal_value!(q::AbstractVector, joint::Joint)
+@propagate_inbounds function principal_value!(q::AbstractVector, joint::Joint)
     @boundscheck check_num_positions(joint, q)
-    principal_value!(q, joint.joint_type)
+    @inbounds return principal_value!(q, joint.joint_type)
 end
