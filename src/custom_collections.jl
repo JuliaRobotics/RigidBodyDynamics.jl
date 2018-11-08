@@ -20,6 +20,8 @@ export
 using TypeSortedCollections
 using DocStringExtensions
 
+using Base: @propagate_inbounds
+
 ## TypeSortedCollections addendum
 # `foreach_with_extra_args` below is a hack to avoid allocations associated with creating closures over
 # heap-allocated variables. Hopefully this will not be necessary in a future version of Julia.
@@ -65,7 +67,7 @@ struct ConstVector{T} <: AbstractVector{T}
     length::Int64
 end
 Base.size(A::ConstVector) = (A.length, )
-Base.@propagate_inbounds Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
+@propagate_inbounds Base.getindex(A::ConstVector, i::Int) = (@boundscheck checkbounds(A, i); A.val)
 Base.IndexStyle(::Type{<:ConstVector}) = IndexLinear()
 Base.unalias(dest, x::ConstVector) = x
 
@@ -214,9 +216,9 @@ end
 @inline Base.haskey(d::AbstractIndexDict, key) = key ∈ d.keys
 @inline keyindex(key::K, keyrange::Base.OneTo{K}) where {K} = Int(key)
 @inline keyindex(key::K, keyrange::UnitRange{K}) where {K} = Int(key - first(keyrange) + 1)
-Base.@propagate_inbounds Base.getindex(d::AbstractIndexDict{K}, key::K) where {K} = d.values[keyindex(key, d.keys)]
-Base.@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) where {K} = d.values[keyindex(key, d.keys)] = value
-Base.@propagate_inbounds Base.get(d::AbstractIndexDict{K}, key::K, default) where {K} = d[key]
+@propagate_inbounds Base.getindex(d::AbstractIndexDict{K}, key::K) where {K} = d.values[keyindex(key, d.keys)]
+@propagate_inbounds Base.setindex!(d::AbstractIndexDict{K}, value, key::K) where {K} = d.values[keyindex(key, d.keys)] = value
+@propagate_inbounds Base.get(d::AbstractIndexDict{K}, key::K, default) where {K} = d[key]
 
 
 ## SegmentedVector
@@ -318,8 +320,8 @@ function SegmentedVector{K, T, KeyRange}(parent::P, ranges::AbstractDict{K, Unit
 end
 
 Base.size(v::SegmentedVector) = size(v.parent)
-Base.@propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.parent[i]
-Base.@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.parent[i] = value
+@propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.parent[i]
+@propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.parent[i] = value
 Base.dataids(x::SegmentedVector) = Base.dataids(x.parent)
 
 Base.parent(v::SegmentedVector) = v.parent
@@ -365,8 +367,8 @@ end
 
 Base.parent(m::SegmentedBlockDiagonalMatrix) = m.parent
 Base.size(m::SegmentedBlockDiagonalMatrix) = size(m.parent)
-Base.@propagate_inbounds Base.getindex(v::SegmentedBlockDiagonalMatrix, i::Int) = v.parent[i]
-Base.@propagate_inbounds Base.setindex!(v::SegmentedBlockDiagonalMatrix, value, i::Int) = v.parent[i] = value
+@propagate_inbounds Base.getindex(v::SegmentedBlockDiagonalMatrix, i::Int) = v.parent[i]
+@propagate_inbounds Base.setindex!(v::SegmentedBlockDiagonalMatrix, value, i::Int) = v.parent[i] = value
 Base.IndexStyle(::Type{<:SegmentedBlockDiagonalMatrix}) = IndexLinear()
 blocks(m::SegmentedBlockDiagonalMatrix) = m.blocks
 

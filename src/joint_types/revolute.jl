@@ -1,0 +1,105 @@
+"""
+$(TYPEDEF)
+
+A `Revolute` joint type allows rotation about a fixed axis.
+"""
+struct Revolute{T} <: JointType{T}
+    axis::SVector{3, T}
+    rotation_from_z_aligned::RotMatrix3{T}
+
+    @doc """
+    $(SIGNATURES)
+
+    Construct a new `Revolute` joint type, allowing rotation about `axis`
+    (expressed in the frame before the joint).
+    """ ->
+    function Revolute(axis::AbstractVector{T}) where {T}
+        a = normalize(axis)
+        new{T}(a, rotation_between(SVector(zero(T), zero(T), one(T)), SVector{3, T}(a)))
+    end
+end
+
+Base.show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.axis)")
+
+function Random.rand(::Type{Revolute{T}}) where {T}
+    axis = normalize(randn(SVector{3, T}))
+    Revolute(axis)
+end
+
+RigidBodyDynamics.flip_direction(jt::Revolute) = Revolute(-jt.axis)
+
+num_positions(::Type{<:Revolute}) = 1
+num_velocities(::Type{<:Revolute}) = 1
+has_fixed_subspaces(jt::Revolute) = true
+isfloating(::Type{<:Revolute}) = false
+
+@propagate_inbounds function set_configuration!(q::AbstractVector, joint::Joint{<:Any, <:Revolute}, pos::Number)
+    check_num_positions(joint, q)
+    @inbounds q[1] = pos
+    q
+end
+
+@propagate_inbounds function set_velocity!(v::AbstractVector, joint::Joint{<:Any, <:Revolute}, vel::Number)
+    check_num_positions(joint, v)
+    @inbounds v[1] = vel
+    v
+end
+
+@propagate_inbounds function rand_configuration!(q::AbstractVector, ::Revolute)
+    randn!(q)
+    nothing
+ end
+
+@inline function bias_acceleration(jt::Revolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
+    S = promote_type(T, X)
+    zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
+end
+
+@inline function velocity_to_configuration_derivative_jacobian(::Revolute{T}, ::AbstractVector) where T
+    @SMatrix([one(T)])
+end
+
+@inline function configuration_derivative_to_velocity_jacobian(::Revolute{T}, ::AbstractVector) where T
+    @SMatrix([one(T)])
+end
+
+@propagate_inbounds function joint_transform(jt::Revolute, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D, q::AbstractVector)
+    aa = AngleAxis(q[1], jt.axis[1], jt.axis[2], jt.axis[3], false)
+    Transform3D(frame_after, frame_before, convert(RotMatrix3{eltype(aa)}, aa))
+end
+
+@propagate_inbounds function joint_twist(jt::Revolute, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector)
+    angular = jt.axis * v[1]
+    Twist(frame_after, frame_before, frame_after, angular, zero(angular))
+end
+
+@propagate_inbounds function joint_spatial_acceleration(jt::Revolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
+    S = promote_type(T, X, XD)
+    angular = convert(SVector{3, S}, jt.axis * vd[1])
+    SpatialAcceleration(frame_after, frame_before, frame_after, angular, zero(angular))
+end
+
+@inline function motion_subspace(jt::Revolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector{X}) where {T, X}
+    S = promote_type(T, X)
+    angular = SMatrix{3, 1, S}(jt.axis)
+    linear = zero(SMatrix{3, 1, S})
+    GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
+end
+
+@inline function constraint_wrench_subspace(jt::Revolute{T}, joint_transform::Transform3D{X}) where {T, X}
+    S = promote_type(T, X)
+    R = convert(RotMatrix3{S}, jt.rotation_from_z_aligned)
+    Rcols12 = R[:, SVector(1, 2)]
+    angular = hcat(Rcols12, zero(SMatrix{3, 3, S}))
+    linear = hcat(zero(SMatrix{3, 2, S}), R)
+    WrenchMatrix(joint_transform.from, angular, linear)
+end
+
+@propagate_inbounds function joint_torque!(τ::AbstractVector, jt::Revolute, q::AbstractVector, joint_wrench::Wrench)
+    τ[1] = dot(angular(joint_wrench), jt.axis)
+    nothing
+end
