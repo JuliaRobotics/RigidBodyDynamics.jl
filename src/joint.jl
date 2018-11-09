@@ -6,7 +6,9 @@ $(TYPEDEF)
 The abstract supertype of all concrete joint types.
 """
 abstract type JointType{T} end
+
 Base.eltype(::Type{<:JointType{T}}) where {T} = T
+isfloating(::T) where {T<:JointType} = isfloating(T)
 num_velocities(::T) where {T<:JointType} = num_velocities(T)
 num_positions(::T) where {T<:JointType} = num_positions(T)
 num_constraints(::Type{T}) where {T<:JointType} = 6 - num_velocities(T)
@@ -452,7 +454,7 @@ $(SIGNATURES)
 Whether the joint is a floating joint, i.e., whether it imposes no constraints
 on the relative motions of its successor and predecessor bodies.
 """
-isfloating(joint::Joint) = isfloating(typeof(joint.joint_type))
+isfloating(joint::Joint) = isfloating(joint.joint_type)
 
 """
 $(SIGNATURES)

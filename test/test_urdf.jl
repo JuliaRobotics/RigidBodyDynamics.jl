@@ -157,9 +157,8 @@ end
             last(splitext(basename)) == ".urdf" || continue
             urdf = joinpath(urdfdir, basename)
             for floating in (true, false)
-                root_joint_type = floating ? QuaternionFloating{Float64}() : Fixed{Float64}()
                 for remove_fixed_joints_before in (true, false)
-                    mechanism = parse_urdf(urdf, remove_fixed_tree_joints=remove_fixed_joints_before, root_joint_type=root_joint_type)
+                    mechanism = parse_urdf(urdf, remove_fixed_tree_joints=remove_fixed_joints_before, floating=floating)
                     for remove_fixed_joints_after in (true, false)
                         test_urdf_serialize_deserialize(mechanism, remove_fixed_tree_joints=remove_fixed_joints_after)
                     end
@@ -176,7 +175,7 @@ end
             urdf = joinpath(urdfdir, basename)
 
             unmodified_mechanism = parse_urdf(urdf, remove_fixed_tree_joints=false)
-            floating_mechanism = parse_urdf(urdf, remove_fixed_tree_joints=false, root_joint_type=QuaternionFloating{Float64}())
+            floating_mechanism = parse_urdf(urdf, remove_fixed_tree_joints=false, floating=true)
 
             # Write unmodified mechanism to URDF using `include_root=false`, then parse
             # using the default `Fixed` joint type as the root joint type. Ensure we get

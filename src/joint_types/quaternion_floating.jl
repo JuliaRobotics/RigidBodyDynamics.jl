@@ -77,7 +77,7 @@ end
 end
 
 @propagate_inbounds function joint_transform(jt::QuaternionFloating, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D, q::AbstractVector)
-    Transform3D(frame_after, frame_before, rotation(jt, q), translation(jt, q))
+    Transform3D(frame_after, frame_before, rotation(jt, q, false), translation(jt, q))
 end
 
 @inline function motion_subspace(jt::QuaternionFloating{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
