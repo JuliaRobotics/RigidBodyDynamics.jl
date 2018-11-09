@@ -11,17 +11,19 @@ struct Revolute{T} <: JointType{T}
     axis::SVector{3, T}
     rotation_from_z_aligned::RotMatrix3{T}
 
-    @doc """
-    $(SIGNATURES)
-
-    Construct a new `Revolute` joint type, allowing rotation about `axis`
-    (expressed in the frame before the joint).
-    """ ->
-    function Revolute(axis::AbstractVector{T}) where {T}
+    function Revolute{T}(axis::AbstractVector) where {T}
         a = normalize(axis)
         new{T}(a, rotation_between(SVector(zero(T), zero(T), one(T)), SVector{3, T}(a)))
     end
 end
+
+"""
+$(SIGNATURES)
+
+Construct a new `Revolute` joint type, allowing rotation about `axis`
+(expressed in the frame before the joint).
+"""
+Revolute(axis::AbstractVector{T}) where {T} = Revolute{T}(axis)
 
 Base.show(io::IO, jt::Revolute) = print(io, "Revolute joint with axis $(jt.axis)")
 

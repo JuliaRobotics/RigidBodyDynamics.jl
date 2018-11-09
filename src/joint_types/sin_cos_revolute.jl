@@ -12,17 +12,19 @@ struct SinCosRevolute{T} <: JointType{T}
     axis::SVector{3, T}
     rotation_from_z_aligned::RotMatrix3{T}
 
-    @doc """
-    $(SIGNATURES)
-
-    Construct a new `SinCosRevolute` joint type, allowing rotation about `axis`
-    (expressed in the frame before the joint).
-    """ ->
-    function SinCosRevolute(axis::AbstractVector{T}) where {T}
+    function SinCosRevolute{T}(axis::AbstractVector) where {T}
         a = normalize(axis)
         new{T}(a, rotation_between(SVector(zero(T), zero(T), one(T)), SVector{3, T}(a)))
     end
 end
+
+"""
+$(SIGNATURES)
+
+Construct a new `SinCosRevolute` joint type, allowing rotation about `axis`
+(expressed in the frame before the joint).
+"""
+SinCosRevolute(axis::AbstractVector{T}) where {T} = SinCosRevolute{T}(axis)
 
 Base.show(io::IO, jt::SinCosRevolute) = print(io, "SinCosRevolute joint with axis $(jt.axis)")
 
