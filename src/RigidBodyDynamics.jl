@@ -31,7 +31,8 @@ export
     Prismatic,
     Fixed,
     Planar,
-    QuaternionSpherical
+    QuaternionSpherical,
+    SinCosRevolute
 
 # basic functionality related to mechanism structure
 export

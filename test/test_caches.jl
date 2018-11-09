@@ -6,7 +6,15 @@ using RigidBodyDynamics.Contact
 import Random
 
 function randmech()
-    rand_tree_mechanism(Float64, [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 5]; [Fixed{Float64} for i = 1 : 5]; [QuaternionSpherical{Float64} for i = 1 : 5]; [Prismatic{Float64} for i = 1 : 5]; [Planar{Float64} for i = 1 : 5]]...)
+    rand_tree_mechanism(Float64,
+        QuaternionFloating{Float64},
+        [Revolute{Float64} for i = 1 : 5]...,
+        [Fixed{Float64} for i = 1 : 5]...,
+        [Prismatic{Float64} for i = 1 : 5]...,
+        [Planar{Float64} for i = 1 : 5]...,
+        [SPQuatFloating{Float64} for i = 1:2]...,
+        [SinCosRevolute{Float64} for i = 1:2]...
+    )
 end
 
 function cachetest(cache, eltypefun)
@@ -42,10 +50,10 @@ end
     @testset "Mechanism with contact points (Issue #483)" begin
         Random.seed!(3)
         mechanism = randmech()
-        contactmodel = SoftContactModel(hunt_crossley_hertz(k = 500e3), 
+        contactmodel = SoftContactModel(hunt_crossley_hertz(k = 500e3),
             ViscoelasticCoulombModel(0.8, 20e3, 100.))
         body = rand(bodies(mechanism))
-        add_contact_point!(body, 
+        add_contact_point!(body,
             ContactPoint(Point3D(default_frame(body), 0.0, 0.0, 0.0), contactmodel))
         cache = DynamicsResultCache(mechanism)
         cachetest(cache, result -> eltype(result.v̇))

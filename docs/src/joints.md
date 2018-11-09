@@ -71,3 +71,10 @@ QuaternionFloating
 ```@docs
 SPQuatFloating
 ```
+
+### SinCosRevolute
+
+```@docs
+SinCosRevolute
+SinCosRevolute(axis)
+```

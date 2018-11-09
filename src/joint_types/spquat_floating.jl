@@ -27,22 +27,21 @@ has_fixed_subspaces(jt::SPQuatFloating) = true
 isfloating(::Type{<:SPQuatFloating}) = true
 
 @propagate_inbounds function rotation(jt::SPQuatFloating, q::AbstractVector)
-    @inbounds spq = SPQuat(q[1], q[2], q[3])
-    spq
+    SPQuat(q[1], q[2], q[3])
 end
 
 @propagate_inbounds function set_rotation!(q::AbstractVector, jt::SPQuatFloating, rot::Rotation{3, T}) where T
     spq = convert(SPQuat{T}, rot)
-    @inbounds q[1] = spq.x
-    @inbounds q[2] = spq.y
-    @inbounds q[3] = spq.z
+    q[1] = spq.x
+    q[2] = spq.y
+    q[3] = spq.z
     nothing
 end
 
 @propagate_inbounds function set_rotation!(q::AbstractVector, jt::SPQuatFloating, rot::AbstractVector)
-    @inbounds q[1] = rot[1]
-    @inbounds q[2] = rot[2]
-    @inbounds q[3] = rot[3]
+    q[1] = rot[1]
+    q[2] = rot[2]
+    q[3] = rot[3]
     nothing
 end
 
@@ -56,7 +55,7 @@ end
 @propagate_inbounds set_linear_velocity!(v::AbstractVector, jt::SPQuatFloating, ν::AbstractVector) = copyto!(v, 4, ν, 1, 3)
 
 @inline function set_configuration!(q::AbstractVector, joint::Joint{<:Any, <:SPQuatFloating}, config::Transform3D)
-    check_num_positions(joint, q)
+    @boundscheck check_num_positions(joint, q)
     @framecheck config.from frame_after(joint)
     @framecheck config.to frame_before(joint)
     @inbounds set_rotation!(q, joint_type(joint), rotation(config))
@@ -65,12 +64,12 @@ end
 end
 
 @propagate_inbounds function set_velocity!(v::AbstractVector, joint::Joint{<:Any, <:SPQuatFloating}, twist::Twist)
-    check_num_velocities(joint, v)
+    @boundscheck check_num_velocities(joint, v)
     @framecheck twist.base frame_before(joint)
     @framecheck twist.body frame_after(joint)
     @framecheck twist.frame frame_after(joint)
-    set_angular_velocity!(v, joint_type(joint), angular(twist))
-    set_linear_velocity!(v, joint_type(joint), linear(twist))
+    @inbounds set_angular_velocity!(v, joint_type(joint), angular(twist))
+    @inbounds set_linear_velocity!(v, joint_type(joint), linear(twist))
     v
 end
 

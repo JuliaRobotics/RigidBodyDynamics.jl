@@ -34,13 +34,13 @@ isfloating(::Type{<:Prismatic}) = false
 RigidBodyDynamics.flip_direction(jt::Prismatic) = Prismatic(-jt.axis)
 
 @propagate_inbounds function set_configuration!(q::AbstractVector, joint::Joint{<:Any, <:Prismatic}, pos::Number)
-    check_num_positions(joint, q)
+    @boundscheck check_num_positions(joint, q)
     @inbounds q[1] = pos
     q
 end
 
 @propagate_inbounds function set_velocity!(v::AbstractVector, joint::Joint{<:Any, <:Prismatic}, vel::Number)
-    check_num_positions(joint, v)
+    @boundscheck check_num_velocities(joint, v)
     @inbounds v[1] = vel
     v
 end

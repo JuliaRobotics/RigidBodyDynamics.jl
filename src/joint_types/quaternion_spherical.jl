@@ -37,7 +37,7 @@ end
 end
 
 @propagate_inbounds function set_configuration!(q::AbstractVector, joint::Joint{<:Any, <:QuaternionSpherical}, rot::Rotation{3})
-    check_num_positions(joint, q)
+    @boundscheck check_num_positions(joint, q)
     @inbounds set_rotation!(q, joint_type(joint), rot)
     q
 end
