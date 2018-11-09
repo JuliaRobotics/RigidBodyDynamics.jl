@@ -87,23 +87,26 @@
     @test isapprox(τ, M * v̇ + C * v + G, atol = 1e-12)
 
     # compare against URDF
-    double_pendulum_urdf = parse_urdf(joinpath(@__DIR__, "urdf", "Acrobot.urdf"), remove_fixed_tree_joints=false)
-    x_urdf = MechanismState(double_pendulum_urdf)
-    for (i, j) in enumerate(joints(double_pendulum))
-        urdf_joints = collect(joints(double_pendulum_urdf))
-        index = findfirst(joint -> string(joint) == string(j), urdf_joints)
-        j_urdf = urdf_joints[index]
-        set_configuration!(x_urdf, j_urdf, configuration(x, j))
-        set_velocity!(x_urdf, j_urdf, velocity(x, j))
+    for revolute_joint_type in [Revolute{Float64}, SinCosRevolute{Float64}]
+        double_pendulum_urdf = parse_urdf(joinpath(@__DIR__, "urdf", "Acrobot.urdf"),
+            remove_fixed_tree_joints=false, revolute_joint_type=revolute_joint_type)
+        x_urdf = MechanismState(double_pendulum_urdf)
+        for (i, j) in enumerate(joints(double_pendulum))
+            urdf_joints = collect(joints(double_pendulum_urdf))
+            index = findfirst(joint -> string(joint) == string(j), urdf_joints)
+            j_urdf = urdf_joints[index]
+            set_configuration!(x_urdf, j_urdf, configuration(x, j)[1])
+            set_velocity!(x_urdf, j_urdf, velocity(x, j))
+        end
+        v̇ = similar(velocity(x_urdf))
+        rand!(v̇)
+        τ = inverse_dynamics(x_urdf, v̇)
+        urdf_bodies = collect(bodies(double_pendulum_urdf))
+        urdf_upper_link = urdf_bodies[findfirst(b -> string(b) == string(body1), urdf_bodies)]
+        urdf_lower_link = urdf_bodies[findfirst(b -> string(b) == string(body2), urdf_bodies)]
+        @test isapprox(T1, kinetic_energy(x_urdf, urdf_upper_link), atol = 1e-12)
+        @test isapprox(T2, kinetic_energy(x_urdf, urdf_lower_link), atol = 1e-12)
+        @test isapprox(M, mass_matrix(x_urdf), atol = 1e-12)
+        @test isapprox(τ, M * v̇ + C * v + G, atol = 1e-12)
     end
-    v̇ = similar(velocity(x_urdf))
-    rand!(v̇)
-    τ = inverse_dynamics(x_urdf, v̇)
-    urdf_bodies = collect(bodies(double_pendulum_urdf))
-    urdf_upper_link = urdf_bodies[findfirst(b -> string(b) == string(body1), urdf_bodies)]
-    urdf_lower_link = urdf_bodies[findfirst(b -> string(b) == string(body2), urdf_bodies)]
-    @test isapprox(T1, kinetic_energy(x_urdf, urdf_upper_link), atol = 1e-12)
-    @test isapprox(T2, kinetic_energy(x_urdf, urdf_lower_link), atol = 1e-12)
-    @test isapprox(M, mass_matrix(x_urdf), atol = 1e-12)
-    @test isapprox(τ, M * v̇ + C * v + G, atol = 1e-12)
 end
