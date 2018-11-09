@@ -757,7 +757,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Joints",
     "title": "RigidBodyDynamics.Revolute",
     "category": "type",
-    "text": "struct Revolute{T} <: JointType{T}\n\nA Revolute joint type allows rotation about a fixed axis.\n\n\n\n\n\n"
+    "text": "struct Revolute{T} <: JointType{T}\n\nA Revolute joint type allows rotation about a fixed axis.\n\nThe configuration vector for the Revolute joint type simply consists of the angle of rotation about the specified axis. The velocity vector consists of the angular rate, and is thus the time derivative of the configuration vector.\n\n\n\n\n\n"
 },
 
 {
@@ -870,6 +870,30 @@ var documenterSearchIndex = {"docs": [
     "title": "SPQuatFloating",
     "category": "section",
     "text": "SPQuatFloating"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.SinCosRevolute",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.SinCosRevolute",
+    "category": "type",
+    "text": "struct SinCosRevolute{T} <: JointType{T}\n\nA SinCosRevolute joint type allows rotation about a fixed axis.\n\nIn contrast to the Revolute joint type, the configuration vector for the SinCosRevolute joint type consists of the sine and cosine of the angle of rotation about the specified axis (in that order). The velocity vector for the SinCosRevolute joint type is the same as for the Revolute joint type, i.e., the time derivative of the angle about the axis.\n\n\n\n\n\n"
+},
+
+{
+    "location": "joints.html#RigidBodyDynamics.SinCosRevolute-Tuple{Any}",
+    "page": "Joints",
+    "title": "RigidBodyDynamics.SinCosRevolute",
+    "category": "method",
+    "text": "Construct a new SinCosRevolute joint type, allowing rotation about axis (expressed in the frame before the joint).\n\n\n\n\n\n"
+},
+
+{
+    "location": "joints.html#SinCosRevolute-1",
+    "page": "Joints",
+    "title": "SinCosRevolute",
+    "category": "section",
+    "text": "SinCosRevolute\nSinCosRevolute(axis)"
 },
 
 {
@@ -1089,15 +1113,15 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s119} where #s119<:JointType{T},N} where N}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_chain_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s118} where #s118<:JointType{T},N} where N}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "method",
-    "text": "rand_chain_mechanism(?, jointtypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
+    "text": "Create a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s119} where #s119<:JointType{T},N} where N}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_floating_tree_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s118} where #s118<:JointType{T},N} where N}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "method",
@@ -1113,11 +1137,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s119} where #s119<:JointType{T},N} where N}} where T",
+    "location": "mechanism.html#RigidBodyDynamics.rand_tree_mechanism-Union{Tuple{T}, Tuple{Type{T},Vararg{Type{#s118} where #s118<:JointType{T},N} where N}} where T",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "method",
-    "text": "Create a random tree Mechanism.\n\n\n\n\n\n"
+    "text": "rand_tree_mechanism(?, jointtypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n\n\n"
 },
 
 {
@@ -1393,7 +1417,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{MechanismState,Union{JointID, #s119} where #s119<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{MechanismState,Union{JointID, #s118} where #s118<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration",
     "category": "method",
@@ -1409,7 +1433,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.configuration_range-Tuple{MechanismState,Union{JointID, #s119} where #s119<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration_range-Tuple{MechanismState,Union{JointID, #s118} where #s118<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration_range",
     "category": "method",
@@ -1609,7 +1633,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{MechanismState,Union{JointID, #s119} where #s119<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{MechanismState,Union{JointID, #s118} where #s118<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity",
     "category": "method",
@@ -1625,7 +1649,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.velocity_range-Tuple{MechanismState,Union{JointID, #s119} where #s119<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity_range-Tuple{MechanismState,Union{JointID, #s118} where #s118<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity_range",
     "category": "method",
@@ -1689,7 +1713,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.constraint_range-Tuple{MechanismState,Union{JointID, #s119} where #s119<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.constraint_range-Tuple{MechanismState,Union{JointID, #s118} where #s118<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.constraint_range",
     "category": "method",
@@ -1793,7 +1817,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{X}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s14} where #s14<:SpatialAcceleration,AbstractDict{BodyID,#s13} where #s13<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s12} where #s12<:SpatialAcceleration,AbstractDict{BodyID,#s164} where #s164<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractDict{BodyID,#s165} where #s165<:Wrench}} where X",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{X}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s14} where #s14<:SpatialAcceleration,AbstractDict{BodyID,#s13} where #s13<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s12} where #s12<:SpatialAcceleration,AbstractDict{BodyID,#s163} where #s163<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractDict{BodyID,#s164} where #s164<:Wrench}} where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias!",
     "category": "method",
@@ -1841,7 +1865,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s164} where #s164<:Wrench}} where T",
+    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s163} where #s163<:Wrench}} where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "method",
