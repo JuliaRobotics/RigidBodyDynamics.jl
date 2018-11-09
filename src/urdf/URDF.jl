@@ -9,6 +9,7 @@ using RigidBodyDynamics.Graphs
 
 using RigidBodyDynamics: Bounds, upper, lower
 using RigidBodyDynamics: has_loops, canonicalize_graph!, joint_to_predecessor
+using RigidBodyDynamics: DEFAULT_GRAVITATIONAL_ACCELERATION
 using LinearAlgebra: ×
 
 export

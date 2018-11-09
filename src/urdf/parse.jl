@@ -139,6 +139,7 @@ Keyword arguments:
 * `revolute_joint_type`: what `JointType` to use for revolute joints. Default: `Revolute{scalar_type}`.
 * `root_joint_type`: the joint type used to connect the parsed `Mechanism` to the world. Default: `floating_joint_type()` if `floating`, `Fixed{scalar_type}()` otherwise.
 * `remove_fixed_tree_joints`: whether to remove any fixed joints present in the kinematic tree using [`remove_fixed_tree_joints!`](@ref). Default: `true`.
+* `gravity`: gravitational acceleration as a 3-vector expressed in the `Mechanism`'s root frame. Default: `$(DEFAULT_GRAVITATIONAL_ACCELERATION)`.
 """
 function parse_urdf(filename::AbstractString;
         scalar_type::Type{T}=Float64,
@@ -146,7 +147,8 @@ function parse_urdf(filename::AbstractString;
         floating_joint_type::Type{<:JointType{T}}=QuaternionFloating{scalar_type},
         revolute_joint_type::Type{<:JointType{T}}=Revolute{scalar_type},
         root_joint_type::JointType{T}=floating ? floating_joint_type() : Fixed{scalar_type}(),
-        remove_fixed_tree_joints=true) where T
+        remove_fixed_tree_joints=true,
+        gravity::AbstractVector=DEFAULT_GRAVITATIONAL_ACCELERATION) where T
 
     if floating && !isfloating(root_joint_type)
         error("Ambiguous input arguments: `floating` specified, but `root_joint_type` is not a floating joint type.")
@@ -179,7 +181,7 @@ function parse_urdf(filename::AbstractString;
 
     # create mechanism from spanning tree
     rootbody = RigidBody{T}("world")
-    mechanism = Mechanism(rootbody)
+    mechanism = Mechanism(rootbody, gravity=gravity)
     parse_root_link(mechanism, Graphs.root(tree).data, root_joint_type)
     for edge in edges(tree)
         parse_joint_and_link(mechanism, source(edge, tree).data, target(edge, tree).data, edge.data, floating_joint_type, revolute_joint_type)

@@ -1,3 +1,5 @@
+const DEFAULT_GRAVITATIONAL_ACCELERATION = SVector(0.0, 0.0, -9.81)
+
 """
 $(TYPEDEF)
 
@@ -17,12 +19,15 @@ mutable struct Mechanism{T}
 
     Create a new `Mechanism` containing only a root body, to which other bodies can
     be attached with joints.
+
+    The `gravity` keyword argument can be used to set the gravitational acceleration
+    (a 3-vector expressed in the `Mechanism`'s root frame). Default: `$(DEFAULT_GRAVITATIONAL_ACCELERATION)`.
     """ ->
-    function Mechanism(root_body::RigidBody{T}; gravity::SVector{3, T} = SVector(zero(T), zero(T), T(-9.81))) where {T}
+    function Mechanism(root_body::RigidBody{T}; gravity::AbstractVector=DEFAULT_GRAVITATIONAL_ACCELERATION) where {T}
         graph = DirectedGraph{RigidBody{T}, Joint{T}}()
         add_vertex!(graph, root_body)
         tree = SpanningTree(graph, root_body)
-        gravitational_acceleration = FreeVector3D(default_frame(root_body), gravity)
+        gravitational_acceleration = FreeVector3D(default_frame(root_body), convert(SVector{3, T}, gravity))
         environment = ContactEnvironment{T}()
         new{T}(graph, tree, environment, gravitational_acceleration, 0)
     end
