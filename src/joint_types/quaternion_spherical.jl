@@ -43,7 +43,7 @@ end
 end
 
 @propagate_inbounds function joint_transform(jt::QuaternionSpherical, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D, q::AbstractVector)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     Transform3D(frame_after, frame_before, quat)
 end
 
@@ -69,7 +69,7 @@ end
 end
 
 @propagate_inbounds function configuration_derivative_to_velocity!(v::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, q̇::AbstractVector)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     quatdot = SVector(q̇[1], q̇[2], q̇[3], q̇[4])
     v .= angular_velocity_in_body(quat, quatdot)
     nothing
@@ -83,18 +83,18 @@ end
 end
 
 @propagate_inbounds function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, v::AbstractVector)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     q̇ .= quaternion_derivative(quat, v)
     nothing
 end
 
 @propagate_inbounds function velocity_to_configuration_derivative_jacobian(jt::QuaternionSpherical, q::AbstractVector)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     velocity_jacobian(quaternion_derivative, quat)
 end
 
 @propagate_inbounds function configuration_derivative_to_velocity_jacobian(jt::QuaternionSpherical, q::AbstractVector)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     velocity_jacobian(angular_velocity_in_body, quat)
 end
 
@@ -134,7 +134,7 @@ end
 # uses exponential coordinates centered around q0
 @propagate_inbounds function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
         jt::QuaternionSpherical, q0::AbstractVector, q::AbstractVector, v::AbstractVector)
-    quat = inv(rotation(jt, q0)) * rotation(jt, q)
+    quat = inv(rotation(jt, q0, false)) * rotation(jt, q, false)
     rv = RodriguesVec(quat)
     ϕstatic = SVector(rv.sx, rv.sy, rv.sz)
     ϕ .= ϕstatic
@@ -143,7 +143,7 @@ end
 end
 
 @propagate_inbounds function global_coordinates!(q::AbstractVector, jt::QuaternionSpherical, q0::AbstractVector, ϕ::AbstractVector)
-    quat0 = rotation(jt, q0)
+    quat0 = rotation(jt, q0, false)
     quat = quat0 * Quat(RodriguesVec(ϕ[1], ϕ[2], ϕ[3]))
     set_rotation!(q, jt, quat)
     nothing
@@ -156,7 +156,7 @@ end
 end
 
 @propagate_inbounds function principal_value!(q::AbstractVector, jt::QuaternionSpherical)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     set_rotation!(q, jt, principal_value(quat))
     nothing
 end
