@@ -100,7 +100,7 @@ end
 end
 
 @propagate_inbounds function configuration_derivative_to_velocity!(v::AbstractVector, jt::QuaternionFloating, q::AbstractVector, q̇::AbstractVector)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     quatdot = SVector(q̇[1], q̇[2], q̇[3], q̇[4])
     ω = angular_velocity_in_body(quat, quatdot)
     posdot = translation(jt, q̇)
@@ -121,7 +121,7 @@ end
 end
 
 @propagate_inbounds function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::QuaternionFloating, q::AbstractVector, v::AbstractVector)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     ω = angular_velocity(jt, v)
     linear = linear_velocity(jt, v)
     quatdot = quaternion_derivative(quat, ω)
@@ -132,7 +132,7 @@ end
 end
 
 @propagate_inbounds function velocity_to_configuration_derivative_jacobian(jt::QuaternionFloating, q::AbstractVector)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     vj = velocity_jacobian(quaternion_derivative, quat)
     R = RotMatrix(quat)
     # TODO: use hvcat once it's as fast
@@ -147,7 +147,7 @@ end
 end
 
 @propagate_inbounds function configuration_derivative_to_velocity_jacobian(jt::QuaternionFloating, q::AbstractVector)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     vj = velocity_jacobian(angular_velocity_in_body, quat)
     R_inv = RotMatrix(inv(quat))
     # TODO: use hvcat once it's as fast
@@ -251,7 +251,7 @@ end
 end
 
 @propagate_inbounds function principal_value!(q::AbstractVector, jt::QuaternionFloating)
-    quat = rotation(jt, q)
+    quat = rotation(jt, q, false)
     set_rotation!(q, jt, principal_value(quat))
     nothing
 end
