@@ -259,8 +259,6 @@ for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAccelera
     end
 end
 
-
-
 """
 $(SIGNATURES)
 
