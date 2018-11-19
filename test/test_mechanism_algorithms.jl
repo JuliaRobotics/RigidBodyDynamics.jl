@@ -156,9 +156,15 @@ end
                 vj = v[vrange]
 
                 Jv_to_q̇_j = RigidBodyDynamics.velocity_to_configuration_derivative_jacobian(joint, qj)
-                @test Jv_to_q̇_j * vj ≈ q̇j
                 Jq̇_to_v_j = RigidBodyDynamics.configuration_derivative_to_velocity_jacobian(joint, qj)
-                @test Jq̇_to_v_j * q̇j ≈ vj
+
+                if num_velocities(joint) > 0
+                    @test Jv_to_q̇_j * vj ≈ q̇j
+                    @test Jq̇_to_v_j * q̇j ≈ vj
+                else
+                    @test size(Jv_to_q̇_j) == (0, 0)
+                    @test size(Jq̇_to_v_j) == (0, 0)
+                end
             end
         end
     end
@@ -379,7 +385,13 @@ end
             S = motion_subspace(joint, configuration(x, joint))
             tf = joint_transform(joint, qjoint)
             T = constraint_wrench_subspace(joint, tf)
-            @test isapprox(angular(T)' * angular(S) + linear(T)' * linear(S), zeros(num_constraints(joint), num_velocities(joint)); atol = 1e-12)
+            if 0 < num_constraints(joint) < 6
+                @test isapprox(angular(T)' * angular(S) + linear(T)' * linear(S), zeros(num_constraints(joint), num_velocities(joint)); atol = 1e-12)
+            elseif num_constraints(joint) == 0
+                @test size(T) == (6, 0)
+            else
+                @test size(S) == (6, 0)
+            end
         end
     end
 

@@ -11,7 +11,9 @@ struct GeometricJacobian{A<:AbstractMatrix}
     angular::A
     linear::A
 
-    @inline function GeometricJacobian(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
+    @inline function GeometricJacobian{A}(
+            body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D,
+            angular::AbstractMatrix, linear::AbstractMatrix) where A<:AbstractMatrix
         @boundscheck size(angular, 1) == 3 || throw(DimensionMismatch())
         @boundscheck size(linear, 1) == 3 || throw(DimensionMismatch())
         @boundscheck size(angular, 2) == size(linear, 2) || throw(DimensionMismatch())
@@ -20,11 +22,19 @@ struct GeometricJacobian{A<:AbstractMatrix}
 end
 
 # GeometricJacobian-specific functions
-function GeometricJacobian{A}(jac::GeometricJacobian) where A
-    GeometricJacobian(jac.body, jac.base, jac.frame, convert(A, angular(jac)), convert(A, linear(jac)))
+@inline function GeometricJacobian(
+        body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D,
+        angular::A, linear::A) where {A<:AbstractMatrix}
+    GeometricJacobian{A}(body, base, frame, angular, linear)
 end
 
-function GeometricJacobian{A}(jac::GeometricJacobian{A}) where A
+@inline function GeometricJacobian(
+        body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D,
+        angular::A1, linear::A2) where {A1<:AbstractMatrix, A2<:AbstractMatrix}
+    GeometricJacobian(body, base, frame, promote(angular, linear)...)
+end
+
+@inline function GeometricJacobian{A}(jac::GeometricJacobian) where A
     GeometricJacobian(jac.body, jac.base, jac.frame, A(angular(jac)), A(linear(jac)))
 end
 

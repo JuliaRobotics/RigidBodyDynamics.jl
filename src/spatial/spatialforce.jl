@@ -4,7 +4,7 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
         angular::A
         linear::A
 
-        @inline function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
+        @inline function $ForceSpaceMatrix{A}(frame::CartesianFrame3D, angular::AbstractMatrix, linear::AbstractMatrix) where {A<:AbstractMatrix}
             @boundscheck size(angular, 1) == 3 || throw(DimensionMismatch())
             @boundscheck size(linear, 1) == 3 || throw(DimensionMismatch())
             @boundscheck size(angular, 2) == size(linear, 2) || throw(DimensionMismatch())
@@ -27,11 +27,15 @@ MomentumMatrix
 
 for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
     @eval begin
-        function $ForceSpaceMatrix{A}(mat::$ForceSpaceMatrix) where A
-            $ForceSpaceMatrix(mat.frame, convert(A, angular(mat)), convert(A, linear(mat)))
+        @inline function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A, linear::A) where {A<:AbstractMatrix}
+            $ForceSpaceMatrix{A}(frame, angular, linear)
         end
 
-        function $ForceSpaceMatrix{A}(mat::$ForceSpaceMatrix{A}) where A
+        @inline function $ForceSpaceMatrix(frame::CartesianFrame3D, angular::A1, linear::A2) where {A1<:AbstractMatrix, A2<:AbstractMatrix}
+            $ForceSpaceMatrix(frame, promote(angular, linear)...)
+        end
+
+        @inline function $ForceSpaceMatrix{A}(mat::$ForceSpaceMatrix) where A
             $ForceSpaceMatrix(mat.frame, A(angular(mat)), A(linear(mat)))
         end
 
