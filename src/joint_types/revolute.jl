@@ -52,7 +52,7 @@ end
 end
 
 @propagate_inbounds function rand_configuration!(q::AbstractVector, ::Revolute)
-    q[1] = rand(-π : π)
+    q[1] = randn()
     nothing
  end
 
