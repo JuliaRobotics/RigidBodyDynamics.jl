@@ -161,7 +161,7 @@
 
         # link1 and joint1
         joint1 = Joint("joint1", Revolute(axis))
-        inertia1 = SpatialInertia(CartesianFrame3D("inertia1_centroidal"), I_1*axis*axis', zero(SVector{3, T}), m_1)
+        inertia1 = SpatialInertia(CartesianFrame3D("inertia1_centroidal"), moment=I_1*axis*axis', com=zero(SVector{3, T}), mass=m_1)
         link1 = RigidBody(inertia1)
         before_joint1_to_world = one(Transform3D, frame_before(joint1), default_frame(world))
         c1_to_joint = Transform3D(inertia1.frame, frame_after(joint1), SVector(c_1, 0, 0))
@@ -169,7 +169,7 @@
 
         # link2 and joint2
         joint2 = Joint("joint2", Revolute(axis))
-        inertia2 = SpatialInertia(CartesianFrame3D("inertia2_centroidal"), I_2*axis*axis', zero(SVector{3, T}), m_2)
+        inertia2 = SpatialInertia(CartesianFrame3D("inertia2_centroidal"), moment=I_2*axis*axis', com=zero(SVector{3, T}), mass=m_2)
         link2 = RigidBody(inertia2)
         before_joint2_to_after_joint1 = Transform3D(frame_before(joint2), frame_after(joint1), SVector(l_1, 0., 0.))
         c2_to_joint = Transform3D(inertia2.frame, frame_after(joint2), SVector(c_2, 0, 0))
@@ -177,7 +177,7 @@
 
         # link3 and joint3
         joint3 = Joint("joint3", Revolute(axis))
-        inertia3 = SpatialInertia(CartesianFrame3D("inertia3_centroidal"), I_3*axis*axis', zero(SVector{3, T}), m_3)
+        inertia3 = SpatialInertia(CartesianFrame3D("inertia3_centroidal"), moment=I_3*axis*axis', com=zero(SVector{3, T}), mass=m_3)
         link3 = RigidBody(inertia3)
         before_joint3_to_world = Transform3D(frame_before(joint3), default_frame(world), SVector(l_0, 0., 0.))
         c3_to_joint = Transform3D(inertia3.frame, frame_after(joint3), SVector(c_3, 0, 0))

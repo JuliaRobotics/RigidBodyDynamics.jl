@@ -76,6 +76,16 @@ end
         # Test that the constructor works with dynamic arrays (which are
         # converted to static arrays internally)
         I4 = @inferred(SpatialInertia(f2, Matrix(1.0I, 3, 3), zeros(3), 1.0))
+
+        # Ensure that the kwarg constructor matches the positional argument constructor.
+        inertia = rand(SpatialInertia{Float64}, f1)
+        centroidal = CartesianFrame3D("centroidal")
+        to_centroidal = Transform3D(f1, centroidal, -center_of_mass(inertia).v)
+        inertia_centroidal = transform(inertia, to_centroidal)
+        @test inertia_centroidal.frame == centroidal
+        @test center_of_mass(inertia_centroidal) ≈ Point3D(Float64, centroidal) atol=1e-12
+        inertia_back = SpatialInertia(inertia.frame, moment_about_com=inertia_centroidal.moment, com=center_of_mass(inertia).v, mass=inertia.mass)
+        @test inertia ≈ inertia_back atol=1e-12
     end
 
     @testset "twist" begin
