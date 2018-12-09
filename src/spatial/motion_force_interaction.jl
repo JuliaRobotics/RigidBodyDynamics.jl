@@ -94,7 +94,7 @@ function Base.isapprox(x::SpatialInertia, y::SpatialInertia; atol = 1e-12)
     x.frame == y.frame && isapprox(x.moment, y.moment; atol = atol) && isapprox(x.cross_part, y.cross_part; atol = atol) && isapprox(x.mass, y.mass; atol = atol)
 end
 
-function Base.:+(inertia1::SpatialInertia, inertia2::SpatialInertia)
+@inline function Base.:+(inertia1::SpatialInertia, inertia2::SpatialInertia)
     @framecheck(inertia1.frame, inertia2.frame)
     SpatialInertia(inertia1.frame,
         inertia1.moment + inertia2.moment,
@@ -107,7 +107,7 @@ $(SIGNATURES)
 
 Transform the `SpatialInertia` to a different frame.
 """
-function transform(inertia::SpatialInertia, t::Transform3D)
+@inline function transform(inertia::SpatialInertia, t::Transform3D)
     @framecheck(t.from, inertia.frame)
     J = inertia.moment
     m = inertia.mass
@@ -171,13 +171,13 @@ for (ForceSpaceMatrix, ForceSpaceElement) in (:MomentumMatrix => :Momentum, :Mom
     end
 end
 
-function Base.:*(inertia::SpatialInertia, twist::Twist)
+@inline function Base.:*(inertia::SpatialInertia, twist::Twist)
     @framecheck(inertia.frame, twist.frame)
     ang, lin = mul_inertia(inertia.moment, inertia.cross_part, inertia.mass, angular(twist), linear(twist))
     Momentum(inertia.frame, ang, lin)
 end
 
-function Base.:*(inertia::SpatialInertia, jac::GeometricJacobian)
+@inline function Base.:*(inertia::SpatialInertia, jac::GeometricJacobian)
     @framecheck(inertia.frame, jac.frame)
     Jω = angular(jac)
     Jv = linear(jac)
@@ -198,7 +198,7 @@ to an inertial frame, achieve spatial acceleration ``\\dot{T}``.
 
 This wrench is also equal to the rate of change of momentum of the body.
 """
-function newton_euler(inertia::SpatialInertia, spatial_accel::SpatialAcceleration, twist::Twist)
+@inline function newton_euler(inertia::SpatialInertia, spatial_accel::SpatialAcceleration, twist::Twist)
     I = inertia
     T = twist
     Ṫ = spatial_accel
@@ -219,9 +219,9 @@ function newton_euler(inertia::SpatialInertia, spatial_accel::SpatialAcceleratio
     Wrench(frame, ang, lin)
 end
 
-torque!(τ::AbstractVector, jac::GeometricJacobian, wrench::Wrench) = mul!(τ, transpose(jac), wrench)
+@inline torque!(τ::AbstractVector, jac::GeometricJacobian, wrench::Wrench) = mul!(τ, transpose(jac), wrench)
 
-function torque(jac::GeometricJacobian, wrench::Wrench)
+@inline function torque(jac::GeometricJacobian, wrench::Wrench)
     τ = Vector{promote_type(eltype(jac), eltype(wrench))}(undef, size(jac, 2))
     torque!(τ, jac, wrench)
     τ
@@ -265,7 +265,7 @@ $(SIGNATURES)
 Compute the kinetic energy of a body with spatial inertia ``I``, which has
 twist ``T`` with respect to an inertial frame.
 """
-function kinetic_energy(inertia::SpatialInertia, twist::Twist)
+@inline function kinetic_energy(inertia::SpatialInertia, twist::Twist)
     @framecheck(inertia.frame, twist.frame)
     # TODO: should assert that twist.base is an inertial frame somehow
     ω = angular(twist)

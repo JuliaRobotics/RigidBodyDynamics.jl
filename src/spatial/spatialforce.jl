@@ -43,7 +43,7 @@ for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
             print(io, "$($(string(ForceSpaceMatrix))) expressed in \"$(string(m.frame))\":\n$(Array(m))")
         end
 
-        function transform(mat::$ForceSpaceMatrix, tf::Transform3D)
+        @inline function transform(mat::$ForceSpaceMatrix, tf::Transform3D)
             @framecheck(mat.frame, tf.from)
             R = rotation(tf)
             Av = R * linear(mat)
@@ -148,7 +148,7 @@ for ForceSpaceElement in (:Momentum, :Wrench)
 
         Transform the $($(string(ForceSpaceElement))) to a different frame.
         """
-        function transform(f::$ForceSpaceElement, tf::Transform3D)
+        @inline function transform(f::$ForceSpaceElement, tf::Transform3D)
             @framecheck(f.frame, tf.from)
             rot = rotation(tf)
             lin = rot * linear(f)
@@ -156,17 +156,17 @@ for ForceSpaceElement in (:Momentum, :Wrench)
             $ForceSpaceElement(tf.to, ang, lin)
         end
 
-        function Base.:+(f1::$ForceSpaceElement, f2::$ForceSpaceElement)
+        @inline function Base.:+(f1::$ForceSpaceElement, f2::$ForceSpaceElement)
             @framecheck(f1.frame, f2.frame)
             $ForceSpaceElement(f1.frame, angular(f1) + angular(f2), linear(f1) + linear(f2))
         end
 
-        function Base.:-(f1::$ForceSpaceElement, f2::$ForceSpaceElement)
+        @inline function Base.:-(f1::$ForceSpaceElement, f2::$ForceSpaceElement)
             @framecheck(f1.frame, f2.frame)
             $ForceSpaceElement(f1.frame, angular(f1) - angular(f2), linear(f1) - linear(f2))
         end
 
-        Base.:-(f::$ForceSpaceElement) = $ForceSpaceElement(f.frame, -angular(f), -linear(f))
+        @inline Base.:-(f::$ForceSpaceElement) = $ForceSpaceElement(f.frame, -angular(f), -linear(f))
 
         function Base.isapprox(x::$ForceSpaceElement, y::$ForceSpaceElement; atol = 1e-12)
             x.frame == y.frame && isapprox(angular(x), angular(y), atol = atol) && isapprox(linear(x), linear(y), atol = atol)

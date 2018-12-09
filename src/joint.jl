@@ -164,21 +164,21 @@ $(SIGNATURES)
 
 Return the length of the configuration vector of `joint`.
 """
-num_positions(joint::Joint) = num_positions(joint.joint_type)
+@inline num_positions(joint::Joint) = num_positions(joint.joint_type)
 
 """
 $(SIGNATURES)
 
 Return the length of the velocity vector of `joint`.
 """
-num_velocities(joint::Joint) = num_velocities(joint.joint_type)
+@inline num_velocities(joint::Joint) = num_velocities(joint.joint_type)
 
 """
 $(SIGNATURES)
 
 Return the number of constraints imposed on the relative twist between the joint's predecessor and successor
 """
-num_constraints(joint::Joint) = 6 - num_velocities(joint)
+@inline num_constraints(joint::Joint) = 6 - num_velocities(joint)
 
 """
 $(SIGNATURES)

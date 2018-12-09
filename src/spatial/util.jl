@@ -98,13 +98,13 @@ function rotation_vector_rate(rotation_vector::AbstractVector{T}, angular_veloci
 end
 
 
-function transform_spatial_motion(angular::SVector{3}, linear::SVector{3}, rot::R, trans::SVector{3}) where {R <: Rotation{3}}
+@inline function transform_spatial_motion(angular::SVector{3}, linear::SVector{3}, rot::R, trans::SVector{3}) where {R <: Rotation{3}}
     angular = rot * angular
     linear = rot * linear + trans × angular
     angular, linear
 end
 
-function mul_inertia(J, c, m, ω, v)
+@inline function mul_inertia(J, c, m, ω, v)
     angular = J * ω + c × v
     linear = m * v - c × ω
     angular, linear
