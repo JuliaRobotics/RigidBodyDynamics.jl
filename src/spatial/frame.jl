@@ -6,8 +6,8 @@
 # This in turn makes it so that a lot of the geometry/dynamics types become isbits
 # types, making them stack allocated and allowing all sorts of
 # optimizations.
-const next_frame_id = Ref(0)
-const frame_names = Dict{Int64, String}()
+const next_frame_id = Ref(UInt32(0))
+const frame_names = Dict{UInt32, String}()
 
 """
 $(TYPEDEF)
@@ -18,7 +18,7 @@ A `CartesianFrame3D` identifies a three-dimensional Cartesian coordinate system.
 quantities are expressed.
 """
 struct CartesianFrame3D
-    id::Int64
+    id::UInt32
 
     @doc """
     $(SIGNATURES)
@@ -45,7 +45,7 @@ struct CartesianFrame3D
 end
 
 Base.print(io::IO, frame::CartesianFrame3D) = print(io, get(frame_names, frame.id, "anonymous"))
-name_and_id(frame::CartesianFrame3D) = "\"$frame\" (id = $(frame.id))"
+name_and_id(frame::CartesianFrame3D) = "\"$frame\" (id = $(Int64(frame.id)))"
 Base.show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: $(name_and_id(frame))")
 
 Base.in(x::CartesianFrame3D, y::CartesianFrame3D) = x == y
