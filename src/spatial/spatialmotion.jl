@@ -51,7 +51,7 @@ $(SIGNATURES)
 
 Transform the `GeometricJacobian` to a different frame.
 """
-function transform(jac::GeometricJacobian, tf::Transform3D)
+@inline function transform(jac::GeometricJacobian, tf::Transform3D)
     @framecheck(jac.frame, tf.from)
     R = rotation(tf)
     ang = R * angular(jac)
@@ -201,7 +201,7 @@ $(SIGNATURES)
 
 Transform the `Twist` to a different frame.
 """
-function transform(twist::Twist, tf::Transform3D)
+@inline function transform(twist::Twist, tf::Transform3D)
     @framecheck(twist.frame, tf.from)
     ang, lin = transform_spatial_motion(angular(twist), linear(twist), rotation(tf), translation(tf))
     Twist(twist.body, twist.base, tf.to, ang, lin)
@@ -315,7 +315,7 @@ function Base.exp(twist::Twist)
     Transform3D(twist.body, twist.base, rot, trans)
 end
 
-function LinearAlgebra.cross(twist1::Twist, twist2::Twist)
+@inline function LinearAlgebra.cross(twist1::Twist, twist2::Twist)
     @framecheck(twist1.frame, twist2.frame)
     ang, lin = se3_commutator(angular(twist1), linear(twist1), angular(twist2), linear(twist2))
     SpatialAcceleration(twist2.body, twist2.base, twist2.frame, ang, lin)
