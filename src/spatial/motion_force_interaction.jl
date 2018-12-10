@@ -19,6 +19,11 @@ where ``\\rho(x)`` is the density of point ``x``, and ``p(x)`` are the coordinat
 of point ``x`` expressed in frame ``i``.
 ``J`` is the mass moment of inertia, ``m`` is the total mass, and ``c`` is the
 'cross part', center of mass position scaled by ``m``.
+
+!!! warning
+
+    The `moment` field of a `SpatialInertia` is the moment of inertia **about the origin of its `frame`**,
+    not about the center of mass.
 """
 struct SpatialInertia{T}
     frame::CartesianFrame3D
@@ -31,8 +36,52 @@ struct SpatialInertia{T}
     end
 end
 
+"""
+$(SIGNATURES)
+
+Construct a `SpatialInertia` by specifying:
+
+* `frame`: the frame in which the spatial inertia is expressed.
+* `moment`: the moment of inertia expressed in `frame` (i.e., in `frame`'s axes and about the origin of `frame`).
+* `cross_part`: the center of mass expressed in `frame`, multiplied by the mass.
+* `mass`: the total mass.
+
+For more convenient construction of `SpatialInertia`s, consider using the keyword argument constructor instead.
+"""
 @inline function SpatialInertia(frame::CartesianFrame3D, moment::AbstractMatrix{T1}, cross_part::AbstractVector{T2}, mass::T3) where {T1, T2, T3}
     SpatialInertia{promote_type(T1, T2, T3)}(frame, moment, cross_part, mass)
+end
+
+"""
+$(SIGNATURES)
+
+Construct a `SpatialInertia` by specifying:
+
+* `frame`: the frame in which the spatial inertia is expressed.
+* one of:
+  * `moment`: the moment of inertia expressed in `frame` (i.e., about the origin of `frame` and in `frame`'s axes).
+  * `moment_about_com`: the moment of inertia about the center of mass, in `frame`'s axes.
+* `com`: the center of mass expressed in `frame`.
+* `mass`: the total mass.
+
+The `com` and `mass` keyword arguments are required, as well as exactly one of `moment` and `moment_about_com`
+"""
+@inline function SpatialInertia(frame::CartesianFrame3D;
+        moment::Union{AbstractMatrix, Nothing}=nothing,
+        moment_about_com::Union{AbstractMatrix, Nothing}=nothing,
+        com::AbstractVector,
+        mass)
+    if !((moment isa AbstractMatrix) ⊻ (moment_about_com isa AbstractMatrix))
+        throw(ArgumentError("Exactly one of `moment` or `moment_about_com` is required."))
+    end
+    _com = SVector{3}(com)
+    if moment !== nothing
+        _moment = moment
+    else
+        _moment = SMatrix{3, 3}(moment_about_com)
+        _moment -= mass * hat_squared(_com) # parallel axis theorem
+    end
+    SpatialInertia(frame, _moment, mass * _com, mass)
 end
 
 # SpatialInertia-specific functions
@@ -81,10 +130,10 @@ Return the center of mass of the `SpatialInertia` as a [`Point3D`](@ref).
 center_of_mass(inertia::SpatialInertia) = Point3D(inertia.frame, inertia.cross_part / inertia.mass)
 
 function Base.show(io::IO, inertia::SpatialInertia)
-    println(io, "SpatialInertia expressed in \"$(string(inertia.frame))\":")
+    println(io, "SpatialInertia expressed in $(name_and_id(inertia.frame)):")
     println(io, "mass: $(inertia.mass)")
     println(io, "center of mass: $(center_of_mass(inertia))")
-    print(io, "moment of inertia:\n$(inertia.moment)")
+    print(io, "moment of inertia (about origin of $(name_and_id(inertia.frame)):\n$(inertia.moment)")
 end
 
 Base.zero(::Type{SpatialInertia{T}}, frame::CartesianFrame3D) where {T} = SpatialInertia(frame, zero(SMatrix{3, 3, T}), zero(SVector{3, T}), zero(T))
@@ -125,32 +174,24 @@ Transform the `SpatialInertia` to a different frame.
 end
 
 function Random.rand(::Type{<:SpatialInertia{T}}, frame::CartesianFrame3D) where {T}
-    # Try to generate a random but physical moment of inertia
-    # by constructing it from its eigendecomposition
-    Q = rand(RotMatrix3{T}).mat
-    principal_moments = Vector{T}(undef, 3)
+    # Try to generate a random but physical moment of inertia by constructing it from its eigendecomposition.
 
-    # Scale the inertias to make the length scale of the
-    # equivalent inertial ellipsoid roughly ~1 unit
-    principal_moments[1:2] = rand(T, 2) / 10.
+    # Create random principal moments of inertia (about the center of mass).
+    # Scale the inertias to make the length scale of the equivalent inertial ellipsoid roughly ~1 unit
+    ixx = rand(T) / 10.
+    iyy = rand(T) / 10.
 
-    # Ensure that the principal moments of inertia obey the triangle
-    # inequalities:
+    # Ensure that the principal moments of inertia obey the triangle inequalities:
     # http://www.mathworks.com/help/physmod/sm/mech/vis/about-body-color-and-geometry.html
-    lb = abs(principal_moments[1] - principal_moments[2])
-    ub = principal_moments[1] + principal_moments[2]
-    principal_moments[3] = rand(T) * (ub - lb) + lb
+    lb = abs(ixx - iyy)
+    ub = ixx + iyy
+    izz = rand(T) * (ub - lb) + lb
 
-    # Construct the moment of inertia tensor
-    J = SMatrix{3, 3, T}(Q * Diagonal(principal_moments) * Q')
+    # Randomly rotate the principal axes.
+    R = rand(RotMatrix3{T})
+    moment_about_com = R * Diagonal(SVector(ixx, iyy, izz)) * R'
 
-    # Construct the inertia in CoM frame
-    com_frame = CartesianFrame3D()
-    spatial_inertia = SpatialInertia(com_frame, J, zero(SVector{3, T}), rand(T))
-
-    # Put the center of mass at a random offset
-    com_frame_to_desired_frame = Transform3D(com_frame, frame, rand(SVector{3, T}) - T(0.5))
-    transform(spatial_inertia, com_frame_to_desired_frame)
+    SpatialInertia(frame, moment_about_com=moment_about_com, com=rand(SVector{3, T}) .- T(0.5), mass=rand(T))
 end
 
 """
