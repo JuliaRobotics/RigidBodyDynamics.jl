@@ -1117,7 +1117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "method",
-    "text": "rand_chain_mechanism(?, jointtypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
+    "text": "Create a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
 },
 
 {
@@ -1125,7 +1125,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "method",
-    "text": "Create a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
+    "text": "rand_floating_tree_mechanism(?, nonfloatingjointtypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
 },
 
 {
@@ -1405,7 +1405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -1413,11 +1413,11 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{MechanismState,Union{JointID, #s116} where #s116<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration-Tuple{MechanismState,Union{JointID, #s123} where #s123<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration",
     "category": "method",
@@ -1433,7 +1433,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.configuration_range-Tuple{MechanismState,Union{JointID, #s116} where #s116<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration_range-Tuple{MechanismState,Union{JointID, #s123} where #s123<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration_range",
     "category": "method",
@@ -1553,7 +1553,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.relative_twist-Tuple{MechanismState,Union{BodyID, #s17} where #s17<:RigidBody,Union{BodyID, #s16} where #s16<:RigidBody}",
+    "location": "mechanismstate.html#RigidBodyDynamics.relative_twist-Tuple{MechanismState,Union{BodyID, #s117} where #s117<:RigidBody,Union{BodyID, #s116} where #s116<:RigidBody}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.relative_twist",
     "category": "method",
@@ -1633,7 +1633,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{MechanismState,Union{JointID, #s116} where #s116<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity-Tuple{MechanismState,Union{JointID, #s123} where #s123<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity",
     "category": "method",
@@ -1649,7 +1649,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.velocity_range-Tuple{MechanismState,Union{JointID, #s116} where #s116<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity_range-Tuple{MechanismState,Union{JointID, #s123} where #s123<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity_range",
     "category": "method",
@@ -1713,7 +1713,15 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate.html#RigidBodyDynamics.constraint_range-Tuple{MechanismState,Union{JointID, #s116} where #s116<:Joint}",
+    "location": "mechanismstate.html#RigidBodyDynamics.configuration_index_to_joint_id-Tuple{MechanismState,Integer}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.configuration_index_to_joint_id",
+    "category": "method",
+    "text": "configuration_index_to_joint_id(state, qindex)\n\n\nReturn the JointID of the joint associated with the given index into the configuration vector q.\n\n\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.constraint_range-Tuple{MechanismState,Union{JointID, #s123} where #s123<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.constraint_range",
     "category": "method",
@@ -1734,6 +1742,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.twist",
     "category": "function",
     "text": "twist(state, joint)\ntwist(state, joint, safe)\n\n\nReturn the joint twist for the given joint, i.e. the twist of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism.\n\n\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate.html#RigidBodyDynamics.velocity_index_to_joint_id-Tuple{MechanismState,Integer}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.velocity_index_to_joint_id",
+    "category": "method",
+    "text": "velocity_index_to_joint_id(state, qindex)\n\n\nReturn the JointID of the joint associated with the given index into the velocity vector v.\n\n\n\n\n\n"
 },
 
 {
@@ -1817,7 +1833,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{X}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s14} where #s14<:SpatialAcceleration,AbstractDict{BodyID,#s13} where #s13<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s12} where #s12<:SpatialAcceleration,AbstractDict{BodyID,#s161} where #s161<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractDict{BodyID,#s162} where #s162<:Wrench}} where X",
+    "location": "algorithms.html#RigidBodyDynamics.dynamics_bias!-Union{Tuple{X}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s16} where #s16<:SpatialAcceleration,AbstractDict{BodyID,#s15} where #s15<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s14} where #s14<:SpatialAcceleration,AbstractDict{BodyID,#s13} where #s13<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractDict{BodyID,#s12} where #s12<:Wrench}} where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias!",
     "category": "method",
@@ -1865,7 +1881,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s161} where #s161<:Wrench}} where T",
+    "location": "algorithms.html#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s123} where #s123<:Wrench}} where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "method",
