@@ -91,6 +91,15 @@ end
 
         @test @inferred(num_positions(mechanism)) == num_positions(x)
         @test @inferred(num_velocities(mechanism)) == num_velocities(x)
+
+        for joint in tree_joints(mechanism)
+            for i in configuration_range(x, joint)
+                @test RigidBodyDynamics.configuration_index_to_joint_id(x, i) == JointID(joint)
+            end
+            for i in velocity_range(x, joint)
+                @test RigidBodyDynamics.velocity_index_to_joint_id(x, i) == JointID(joint)
+            end
+        end
     end
 
     @testset "copyto! / Vector" begin
