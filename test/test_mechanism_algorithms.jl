@@ -355,6 +355,14 @@ end
                 T = Twist(J, velocity(x))
                 point_in_world = transform(x, point, root_frame(mechanism))
                 @test point_velocity(T, point_in_world) ≈ transform(x, point_velocity(J_point, velocity(x)), root_frame(mechanism))
+
+                # Test Jᵀ * f
+                f = FreeVector3D(CartesianFrame3D(), rand(), rand(), rand())
+                τ = similar(velocity(x))
+                @test_throws ArgumentError mul!(τ, transpose(J_point), f)
+                f = FreeVector3D(J_point.frame, rand(), rand(), rand())
+                mul!(τ, transpose(J_point), f)
+                @test τ == transpose(J_point.J) * f.v
             end
         end
 

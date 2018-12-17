@@ -70,11 +70,19 @@ Base.@deprecate PointJacobian(J::AbstractMatrix, frame::CartesianFrame3D) PointJ
 # Construct/convert to Matrix
 (::Type{A})(jac::PointJacobian) where {A<:Array} = A(jac.J)
 Base.convert(::Type{A}, jac::PointJacobian) where {A<:Array} = A(jac)
+Base.eltype(::Type{PointJacobian{M}}) where {M} = eltype(M)
+
+Base.transpose(jac::PointJacobian) = Transpose(jac)
 
 function point_velocity(jac::PointJacobian, v::AbstractVector)
     FreeVector3D(jac.frame, jac.J * v)
 end
 
+function LinearAlgebra.mul!(τ::AbstractVector, jac_transpose::Transpose{<:Any, <:PointJacobian}, force::FreeVector3D)
+    jac = parent(jac_transpose)
+    @framecheck jac.frame force.frame
+    mul!(τ, transpose(jac.J), force.v)
+end
 
 """
 $(TYPEDEF)
