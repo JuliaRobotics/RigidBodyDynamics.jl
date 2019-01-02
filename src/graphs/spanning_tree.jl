@@ -19,7 +19,7 @@ root(tree::SpanningTree) = tree.root
 edge_to_parent(vertex::V, tree::SpanningTree{V, E}) where {V, E} = tree.inedges[vertex_index(vertex)]
 edges_to_children(vertex::V, tree::SpanningTree{V, E}) where {V, E} = out_edges(vertex, tree)
 tree_index(edge, tree::SpanningTree{V, E}) where {V, E} = tree.edge_tree_indices[edge_index(edge)]
-tree_index(vertex::V, tree::SpanningTree{V, E}) where {V, E} = vertex == root(tree) ? 1 : tree_index(edge_to_parent(vertex, tree), tree) + 1
+tree_index(vertex::V, tree::SpanningTree{V, E}) where {V, E} = vertex === root(tree) ? 1 : tree_index(edge_to_parent(vertex, tree), tree) + 1
 
 function SpanningTree(g::DirectedGraph{V, E}, root::V, edges::AbstractVector{E}) where {V, E}
     n = num_vertices(g)
@@ -42,7 +42,7 @@ function SpanningTree(g::DirectedGraph{V, E}, root::V, edges::AbstractVector{E})
     SpanningTree(g, root, edges, inedges, outedges, edge_tree_indices)
 end
 
-function SpanningTree(g::DirectedGraph{V, E}, root::V, flipped_edge_map::AbstractDict = Dict{E, E}();
+function SpanningTree(g::DirectedGraph{V, E}, root::V, flipped_edge_map::Union{AbstractDict, Nothing} = nothing;
         next_edge = first #= breadth first =#) where {V, E}
     tree_edges = E[]
     tree_vertices = [root]
@@ -64,7 +64,9 @@ function SpanningTree(g::DirectedGraph{V, E}, root::V, flipped_edge_map::Abstrac
             rewire!(g, e, target(e, g), source(e, g))
             newedge = flip_direction(e)
             replace_edge!(g, e, newedge)
-            flipped_edge_map[e] = newedge
+            if flipped_edge_map !== nothing
+                flipped_edge_map[e] = newedge
+            end
             e = newedge
         end
 
