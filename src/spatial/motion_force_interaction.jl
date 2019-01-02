@@ -269,34 +269,42 @@ end
 end
 
 for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAcceleration}), :GeometricJacobian => :(Union{Momentum, Wrench}))
-    @eval @inline function LinearAlgebra.mul!(
-            dest::AbstractVector{T},
-            transposed_mat::LinearAlgebra.Transpose{<:Any, <:$MatrixType},
-            vec::$VectorType) where T
-        mat = parent(transposed_mat)
-        @boundscheck length(dest) == size(mat, 2) || throw(DimensionMismatch())
-        @framecheck mat.frame vec.frame
+    @eval begin
+        @inline function LinearAlgebra.mul!(
+                dest::AbstractVector{T},
+                transposed_mat::LinearAlgebra.Transpose{<:Any, <:$MatrixType},
+                vec::$VectorType) where T
+            mat = parent(transposed_mat)
+            @boundscheck length(dest) == size(mat, 2) || throw(DimensionMismatch())
+            @framecheck mat.frame vec.frame
 
-        mat_angular = angular(mat)
-        mat_linear = linear(mat)
-        vec_angular = angular(vec)
-        vec_linear = linear(vec)
+            mat_angular = angular(mat)
+            mat_linear = linear(mat)
+            vec_angular = angular(vec)
+            vec_linear = linear(vec)
 
-        @inbounds begin
-            @simd for row in eachindex(dest)
-                dest[row] =
-                    mat_angular[1, row] * vec_angular[1] +
-                    mat_angular[2, row] * vec_angular[2] +
-                    mat_angular[3, row] * vec_angular[3]
+            @inbounds begin
+                @simd for row in eachindex(dest)
+                    dest[row] =
+                        mat_angular[1, row] * vec_angular[1] +
+                        mat_angular[2, row] * vec_angular[2] +
+                        mat_angular[3, row] * vec_angular[3]
+                end
+                @simd for row in eachindex(dest)
+                    dest[row] +=
+                        mat_linear[1, row] * vec_linear[1] +
+                        mat_linear[2, row] * vec_linear[2] +
+                        mat_linear[3, row] * vec_linear[3]
+                end
             end
-            @simd for row in eachindex(dest)
-                dest[row] +=
-                    mat_linear[1, row] * vec_linear[1] +
-                    mat_linear[2, row] * vec_linear[2] +
-                    mat_linear[3, row] * vec_linear[3]
-            end
+            dest
         end
-        dest
+
+        function Base.:*(transposed_mat::LinearAlgebra.Transpose{<:Any, <:$MatrixType}, vec::$VectorType)
+            mat = parent(transposed_mat)
+            @framecheck mat.frame vec.frame
+            transpose(angular(mat)) * angular(vec) + transpose(linear(mat)) * linear(vec)
+        end
     end
 end
 
