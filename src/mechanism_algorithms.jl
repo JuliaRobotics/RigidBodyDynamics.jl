@@ -451,28 +451,18 @@ function joint_wrenches_and_torques!(
         torquesout::SegmentedVector{JointID},
         net_wrenches_in_joint_wrenches_out::AbstractDict{BodyID, <:Wrench}, # TODO: consider having a separate Associative{Joint{M}, Wrench{T}} for joint wrenches
         state::MechanismState)
-    update_transforms!(state)
+    update_motion_subspaces!(state)
     # Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
     @boundscheck length(torquesout) == num_velocities(state) || error("length of torque vector is wrong")
-
     wrenches = net_wrenches_in_joint_wrenches_out
     for jointid in reverse(state.treejointids)
         parentbodyid, bodyid = predsucc(jointid, state)
         jointwrench = wrenches[bodyid]
-        if parentbodyid != BodyID(1) # TODO: ugly
-            # TODO: consider also doing this for the root:
-            wrenches[parentbodyid] += jointwrench # action = -reaction
+        wrenches[parentbodyid] += jointwrench # action = -reaction
+        for vindex in velocity_range(state, jointid)
+            Scol = state.motion_subspaces.data[vindex]
+            torquesout[vindex] = (transpose(Scol) * jointwrench)[1]
         end
-    end
-
-    joints = state.treejoints
-    qs = values(segments(state.q))
-    τs = values(segments(torquesout))
-    foreach_with_extra_args(state, wrenches, joints, qs, τs) do state, wrenches, joint, qjoint, τjoint
-        # TODO: awkward to transform back to body frame; consider switching to body-frame implementation
-        bodyid = successorid(JointID(joint), state)
-        tf = inv(transform_to_root(state, bodyid, false))
-        joint_torque!(τjoint, joint, qjoint, transform(wrenches[bodyid], tf)) # TODO: consider using motion subspace
     end
 end
 

@@ -84,6 +84,12 @@ function LinearAlgebra.mul!(τ::AbstractVector, jac_transpose::Transpose{<:Any, 
     mul!(τ, transpose(jac.J), force.v)
 end
 
+function Base.:*(jac_transpose::Transpose{<:Any, <:PointJacobian}, force::FreeVector3D)
+    jac = parent(jac_transpose)
+    @framecheck jac.frame force.frame
+    transpose(jac.J) * force.v
+end
+
 """
 $(TYPEDEF)
 

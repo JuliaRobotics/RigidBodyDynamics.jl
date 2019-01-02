@@ -190,6 +190,7 @@ end
         k = fill(NaN, size(mat, 2))
         mul!(k, transpose(mat), vec)
         @test isapprox(k, angular(mat)' * angular(vec) + linear(mat)' * linear(vec), atol = 1e-14)
+        @test k == transpose(mat) * vec
     end
 
     @testset "momentum matrix" begin

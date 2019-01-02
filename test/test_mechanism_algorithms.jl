@@ -363,6 +363,7 @@ end
                 f = FreeVector3D(J_point.frame, rand(), rand(), rand())
                 mul!(τ, transpose(J_point), f)
                 @test τ == transpose(J_point.J) * f.v
+                @test τ == transpose(J_point) * f
             end
         end
 
