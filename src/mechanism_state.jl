@@ -82,7 +82,6 @@ struct MechanismState{X, M, C, JointCollection}
         @assert length(s) == num_additional_states(m)
 
         # mechanism layout
-        canonicalize_graph!(m)
         nonrootbodies = collect(non_root_bodies(m))
         treejoints = JointCollection(tree_joints(m))
         nontreejoints = JointCollection(non_tree_joints(m))
@@ -93,8 +92,11 @@ struct MechanismState{X, M, C, JointCollection}
         nontreejointids = lasttreejointid + 1 : lastjointid
         predecessor_and_successor_ids = JointDict{Pair{BodyID, BodyID}}(
             JointID(j) => (BodyID(predecessor(j, m)) => BodyID(successor(j, m))) for j in joints(m))
-        ancestor_joint_mask = joint -> JointDict{Bool}(
-            JointID(j) => j ∈ path(m, successor(joint, m), root_body(m)) for j in tree_joints(m))
+        ancestor_joint_mask = function (joint)
+            JointDict{Bool}(
+                JointID(j) => j ∈ path(m, successor(joint, m), root_body(m)) for j in tree_joints(m)
+            )
+        end
         ancestor_joint_masks = JointDict{JointDict{Bool}}(JointID(j) => ancestor_joint_mask(j) for j in tree_joints(m))
         constraint_jacobian_structure = JointDict{TreePath{RigidBody{M}, Joint{M}}}(
             JointID(j) => path(m, predecessor(j, m), successor(j, m)) for j in joints(m))

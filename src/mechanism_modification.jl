@@ -147,11 +147,12 @@ Also optionally, `next_edge` can be used to select which joints should become pa
 new spanning tree.
 """
 function rebuild_spanning_tree!(mechanism::Mechanism{M},
-        flipped_joint_map::AbstractDict = Dict{<:Joint{M}, <:Joint{M}}();
+        flipped_joint_map::Union{AbstractDict, Nothing} = nothing;
         next_edge = first #= breadth first =#) where {M}
     mechanism.tree = SpanningTree(mechanism.graph, root_body(mechanism), flipped_joint_map; next_edge = next_edge)
     register_modification!(mechanism)
     canonicalize_frame_definitions!(mechanism)
+    mechanism
 end
 
 """
@@ -168,12 +169,17 @@ Also optionally, `spanning_tree_next_edge` can be used to select which joints sh
 new spanning tree, if rebuilding the spanning tree is required.
 """
 function remove_joint!(mechanism::Mechanism{M}, joint::Joint{M};
-        flipped_joint_map::AbstractDict = Dict{Joint{M}, Joint{M}}(),
+        flipped_joint_map::Union{AbstractDict, Nothing} = nothing,
         spanning_tree_next_edge = first #= breadth first =#) where {M}
     istreejoint = joint ∈ tree_joints(mechanism)
     remove_edge!(mechanism.graph, joint)
     register_modification!(mechanism)
-    istreejoint && rebuild_spanning_tree!(mechanism, flipped_joint_map; next_edge = spanning_tree_next_edge)
+    if istreejoint
+        rebuild_spanning_tree!(mechanism, flipped_joint_map,
+            next_edge=spanning_tree_next_edge) # also recanonicalizes frame definitions
+        canonicalize_graph!(mechanism)
+    end
+    nothing
 end
 
 function replace_joint!(mechanism::Mechanism, oldjoint::Joint, newjoint::Joint)
@@ -244,8 +250,9 @@ function remove_fixed_tree_joints!(mechanism::Mechanism)
     # Recompute spanning tree (preserves order for non-fixed joints)
     mechanism.tree = SpanningTree(graph, root_body(mechanism), newtreejoints)
 
-    # Recanonicalize frames
+    # Recanonicalize graph and frames
     canonicalize_frame_definitions!(mechanism)
+    canonicalize_graph!(mechanism)
 
     register_modification!(mechanism)
 
@@ -298,10 +305,12 @@ end
 function canonicalize_graph!(mechanism::Mechanism)
     root = root_body(mechanism)
     treejoints = copy(tree_joints(mechanism))
-    vertices = append!([root], successor(joint, mechanism) for joint in treejoints)
     edges = vcat(treejoints, non_tree_joints(mechanism))
+    vertices = append!([root], successor(joint, mechanism) for joint in treejoints)
     reindex!(mechanism.graph, vertices, edges)
-    mechanism.tree = SpanningTree(mechanism.graph, root, treejoints)
+    mechanism.tree = SpanningTree(mechanism.graph, root, treejoints) # otherwise tree.edge_tree_indices can go out of sync
+    register_modification!(mechanism)
+    mechanism
 end
 
 add_environment_primitive!(mechanism::Mechanism, halfspace::HalfSpace3D) = push!(mechanism.environment, halfspace)

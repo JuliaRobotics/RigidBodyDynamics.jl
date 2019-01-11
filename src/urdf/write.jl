@@ -120,23 +120,19 @@ end
 
 function to_urdf(mechanism::Mechanism; robot_name::Union{Nothing, AbstractString}=nothing, include_root::Bool=true)
     @assert !has_loops(mechanism)
-
-    canonicalized = deepcopy(mechanism)
-    canonicalize_graph!(canonicalized)
-
     xdoc = XMLDocument()
     xroot = create_root(xdoc, "robot")
     if robot_name !== nothing
         set_attribute(xroot, "name", robot_name)
     end
-    bodies_to_include = include_root ? bodies(canonicalized) : non_root_bodies(canonicalized)
-    for body in bodies(canonicalized)
-        !include_root && isroot(body, canonicalized) && continue
+    bodies_to_include = include_root ? bodies(mechanism) : non_root_bodies(mechanism)
+    for body in bodies(mechanism)
+        !include_root && isroot(body, mechanism) && continue
         add_child(xroot, to_urdf(body))
     end
-    for joint in tree_joints(canonicalized)
-        !include_root && isroot(predecessor(joint, canonicalized), canonicalized) && continue
-        add_child(xroot, to_urdf(joint, canonicalized))
+    for joint in tree_joints(mechanism)
+        !include_root && isroot(predecessor(joint, mechanism), mechanism) && continue
+        add_child(xroot, to_urdf(joint, mechanism))
     end
     xdoc
 end
