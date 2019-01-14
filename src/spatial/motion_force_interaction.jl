@@ -167,7 +167,7 @@ Transform the `SpatialInertia` to a different frame.
     Jnew = hat_squared(cnew)
     cnew += m * p
     Jnew -= hat_squared(cnew)
-    minv = ifelse(m > 0, inv(m), zero(m))
+    minv = m > 0 ? inv(m) : zero(m)
     Jnew *= minv
     Jnew += R * J * R'
     SpatialInertia(t.to, Jnew, cnew, convert(eltype(Jnew), m))
