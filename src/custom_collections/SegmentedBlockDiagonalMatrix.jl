@@ -53,3 +53,75 @@ function _is_contiguous_and_diagonal(parent::AbstractMatrix, block_indices)
     end
     return true
 end
+
+function LinearAlgebra.mul!(C::Matrix, A::Matrix, B::SegmentedBlockDiagonalMatrix)
+    # TODO: coordination with BLAS threads
+    @boundscheck size(C) == (size(A, 1), size(B, 2)) || throw(DimensionMismatch("Output size mismatch."))
+    A′ = Base.unalias(C, A)
+    Threads.@threads for block in blocks(B) # allocates 32 bytes (see https://github.com/JuliaLang/julia/issues/29748)
+        @inbounds begin
+            Acols, Ccols = parentindices(block)
+            Aview = uview(A′, :, Acols)
+            Cview = uview(C, :, Ccols)
+            if block == I
+                copyto!(Cview, Aview)
+            else
+                mul!(Cview, Aview, block)
+            end
+        end
+    end
+
+    # it = iterate(blocks)
+    # num_rows = size(A, 1)
+    # @inbounds while it !== nothing
+    #     (block, state) = it
+    #     Acols, Ccols = parentindices(block)
+    #     if block == I
+    #         Aview = uview(A′, :, Acols)
+    #         Cview = uview(C, :, Ccols)
+    #         copyto!(Cview, Aview)
+    #     # copy_columns = false
+    #     # # Special-case having identity matrices as consecutive blocks in B (as is often the case in this package)
+    #     # # One big copy is a lot faster than many small copies.
+    #     # while block == I
+    #     #     copy_columns = true
+    #     #     it = iterate(blocks, state)
+    #     #     it === nothing && break
+    #     #     block, state = it
+    #     #     blockrows, blockcols = parentindices(block)
+    #     #     Acols = first(Acols) : last(blockrows)
+    #     #     Ccols = first(Ccols) : last(blockcols)
+    #     # end
+    #     # if copy_columns
+    #     #     Aview = uview(A′, :, Acols)
+    #     #     Cview = uview(C, :, Ccols)
+    #     #     copyto!(Cview, Aview)
+    #     #     continue
+    #     else
+    #         Aview = uview(A′, :, Acols)
+    #         Cview = uview(C, :, Ccols)
+    #         mul!(Cview, Aview, block)
+    #     end
+    #     it = iterate(blocks, state)
+    # end
+    return C
+end
+
+function LinearAlgebra.mul!(C::Matrix, A::SegmentedBlockDiagonalMatrix, B::Matrix)
+    # TODO: coordination with BLAS threads
+    @boundscheck size(C) == (size(A, 1), size(B, 2)) || throw(DimensionMismatch("Output size mismatch."))
+    B′ = Base.unalias(C, B)
+    Threads.@threads for block in blocks(A) # allocates 32 bytes (see https://github.com/JuliaLang/julia/issues/29748)
+        @inbounds begin
+            Crows, Brows = parentindices(block)
+            Bview = uview(B, Brows, :)
+            Cview = uview(C, Crows, :)
+            if block == I
+                copyto!(Cview, Bview)
+            else
+                mul!(Cview, block, Bview)
+            end
+        end
+    end
+    return C
+end
