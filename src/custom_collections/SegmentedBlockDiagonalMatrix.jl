@@ -70,40 +70,6 @@ function LinearAlgebra.mul!(C::Matrix, A::Matrix, B::SegmentedBlockDiagonalMatri
             end
         end
     end
-
-    # it = iterate(blocks)
-    # num_rows = size(A, 1)
-    # @inbounds while it !== nothing
-    #     (block, state) = it
-    #     Acols, Ccols = parentindices(block)
-    #     if block == I
-    #         Aview = uview(A′, :, Acols)
-    #         Cview = uview(C, :, Ccols)
-    #         copyto!(Cview, Aview)
-    #     # copy_columns = false
-    #     # # Special-case having identity matrices as consecutive blocks in B (as is often the case in this package)
-    #     # # One big copy is a lot faster than many small copies.
-    #     # while block == I
-    #     #     copy_columns = true
-    #     #     it = iterate(blocks, state)
-    #     #     it === nothing && break
-    #     #     block, state = it
-    #     #     blockrows, blockcols = parentindices(block)
-    #     #     Acols = first(Acols) : last(blockrows)
-    #     #     Ccols = first(Ccols) : last(blockcols)
-    #     # end
-    #     # if copy_columns
-    #     #     Aview = uview(A′, :, Acols)
-    #     #     Cview = uview(C, :, Ccols)
-    #     #     copyto!(Cview, Aview)
-    #     #     continue
-    #     else
-    #         Aview = uview(A′, :, Acols)
-    #         Cview = uview(C, :, Ccols)
-    #         mul!(Cview, Aview, block)
-    #     end
-    #     it = iterate(blocks, state)
-    # end
     return C
 end
 
