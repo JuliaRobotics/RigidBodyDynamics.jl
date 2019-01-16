@@ -1117,7 +1117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "method",
-    "text": "rand_chain_mechanism(?, jointtypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
+    "text": "Create a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
 },
 
 {
@@ -1125,7 +1125,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "method",
-    "text": "Create a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
+    "text": "rand_floating_tree_mechanism(?, nonfloatingjointtypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
 },
 
 {
@@ -1405,7 +1405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -1413,7 +1413,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -2022,62 +2022,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Index",
     "category": "section",
     "text": "Pages   = [\"customcollections.md\"]\nOrder   = [:type, :function]"
-},
-
-{
-    "location": "customcollections.html#RigidBodyDynamics.CustomCollections.CacheIndexDict",
-    "page": "Custom collection types",
-    "title": "RigidBodyDynamics.CustomCollections.CacheIndexDict",
-    "category": "type",
-    "text": "mutable struct CacheIndexDict{K, KeyRange<:AbstractUnitRange{K}, V} <: RigidBodyDynamics.CustomCollections.AbstractIndexDict{K,V}\n\nLike IndexDict, but contains an additional Bool dirty bit to be used in algorithms involving cached data.\n\n\n\n\n\n"
-},
-
-{
-    "location": "customcollections.html#RigidBodyDynamics.CustomCollections.ConstDict",
-    "page": "Custom collection types",
-    "title": "RigidBodyDynamics.CustomCollections.ConstDict",
-    "category": "type",
-    "text": "An immutable AbstractDict for which the value is the same, no matter what the key is.\n\n\n\n\n\n"
-},
-
-{
-    "location": "customcollections.html#RigidBodyDynamics.CustomCollections.ConstVector",
-    "page": "Custom collection types",
-    "title": "RigidBodyDynamics.CustomCollections.ConstVector",
-    "category": "type",
-    "text": "struct ConstVector{T} <: AbstractArray{T,1}\n\nAn immutable AbstractVector for which all elements are the same, represented compactly and as a bitstype if the element type is a bitstype.\n\n\n\n\n\n"
-},
-
-{
-    "location": "customcollections.html#RigidBodyDynamics.CustomCollections.IndexDict",
-    "page": "Custom collection types",
-    "title": "RigidBodyDynamics.CustomCollections.IndexDict",
-    "category": "type",
-    "text": "struct IndexDict{K, KeyRange<:AbstractUnitRange{K}, V} <: RigidBodyDynamics.CustomCollections.AbstractIndexDict{K,V}\n\nAn associative type whose keys are an AbstractUnitRange, and whose values are stored in a Vector. IndexDict is an ordered associative collection, with the order determined by key range. The nature of the keys enables very fast lookups and stores.\n\nExamples\n\njulia> IndexDict(2 : 4, [4, 5, 6])\nRigidBodyDynamics.CustomCollections.IndexDict{Int64,UnitRange{Int64},Int64} with 3 entries:\n  2 => 4\n  3 => 5\n  4 => 6\n\njulia> IndexDict{Int32, UnitRange{Int32}}(i => 3 * i for i in Int32[4, 2, 3])\nRigidBodyDynamics.CustomCollections.IndexDict{Int32,UnitRange{Int32},Int64} with 3 entries:\n  2 => 6\n  3 => 9\n  4 => 12\n\n\n\n\n\n"
-},
-
-{
-    "location": "customcollections.html#RigidBodyDynamics.CustomCollections.NullDict",
-    "page": "Custom collection types",
-    "title": "RigidBodyDynamics.CustomCollections.NullDict",
-    "category": "type",
-    "text": "struct NullDict{K, V} <: AbstractDict{K,V}\n\nAn immutable associative type that signifies an empty dictionary and does not allocate any memory.\n\n\n\n\n\n"
-},
-
-{
-    "location": "customcollections.html#RigidBodyDynamics.CustomCollections.SegmentedBlockDiagonalMatrix",
-    "page": "Custom collection types",
-    "title": "RigidBodyDynamics.CustomCollections.SegmentedBlockDiagonalMatrix",
-    "category": "type",
-    "text": "struct SegmentedBlockDiagonalMatrix{T, M<:AbstractArray{T,2}} <: AbstractArray{T,2}\n\nSegmentedBlockDiagonalMatrix is an AbstractMatrix backed by a parent AbstractMatrix, which additionally stores a sequence of views into the diagonal blocks of the parent matrix. This type is useful for storing and updating block-diagonal matrices whose block contents may change but whose overall structure is fixed, such as configuration derivative <-> velocity jacobians.\n\n\n\n\n\n"
-},
-
-{
-    "location": "customcollections.html#RigidBodyDynamics.CustomCollections.SegmentedVector",
-    "page": "Custom collection types",
-    "title": "RigidBodyDynamics.CustomCollections.SegmentedVector",
-    "category": "type",
-    "text": "struct SegmentedVector{K, T, KeyRange<:AbstractRange{K}, P<:AbstractArray{T,1}} <: AbstractArray{T,1}\n\nSegmentedVector is an AbstractVector backed by another AbstractVector (its parent), which additionally stores an IndexDict containing views into the parent. Together, these views cover the parent.\n\nExamples\n\njulia> x = [1., 2., 3., 4.]\n4-element Array{Float64,1}:\n 1.0\n 2.0\n 3.0\n 4.0\n\njulia> viewlength(i) = 2\nviewlength (generic function with 1 method)\n\njulia> xseg = SegmentedVector{Int}(x, 1 : 2, viewlength)\n4-element RigidBodyDynamics.CustomCollections.SegmentedVector{Int64,Float64,Base.OneTo{Int64},Array{Float64,1}}:\n 1.0\n 2.0\n 3.0\n 4.0\n\njulia> segments(xseg)[1]\n2-element SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}:\n 1.0\n 2.0\n\njulia> yseg = similar(xseg, Int32); yseg .= 1 : 4 # same view ranges, different element type\n4-element RigidBodyDynamics.CustomCollections.SegmentedVector{Int64,Int32,Base.OneTo{Int64},Array{Int32,1}}:\n 1\n 2\n 3\n 4\n\njulia> segments(yseg)[2]\n2-element SubArray{Int32,1,Array{Int32,1},Tuple{UnitRange{Int64}},true}:\n 3\n 4\n\n\n\n\n\n"
 },
 
 {
