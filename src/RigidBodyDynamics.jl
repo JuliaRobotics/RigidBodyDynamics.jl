@@ -160,7 +160,7 @@ export
     BodyID,
     segments
 
-include("custom_collections.jl")
+include(joinpath("custom_collections", "custom_collections.jl"))
 include(joinpath("graphs", "Graphs.jl"))
 include(joinpath("spatial", "Spatial.jl"))
 include("contact.jl")
