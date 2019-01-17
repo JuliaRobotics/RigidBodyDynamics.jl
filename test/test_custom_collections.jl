@@ -82,6 +82,10 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
         for (i, block) in enumerate(block_indices)
             @test S[block...] == RigidBodyDynamics.CustomCollections.blocks(S)[i]
         end
+        A .= 0
+        for block in RigidBodyDynamics.CustomCollections.blocks(S)
+            Random.rand!(block)
+        end
 
         @testset "Malformed blocks" begin
             @testset "overlap" begin
@@ -123,6 +127,19 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
             block_indices = [(-1:1, 2:3),
                              (2:3,  4:6)]
             RigidBodyDynamics.CustomCollections.check_contiguous_block_ranges(M, block_indices)
+        end
+
+        @testset "mul! specialization" begin
+            M = rand(20, size(S, 1))
+            C = M * S
+            @test C ≈ M * parent(S) atol=1e-15
+
+            M = rand(size(S, 2), 20)
+            C = S * M
+            @test C ≈ parent(S) * M atol=1e-15
+
+            @test_throws DimensionMismatch rand(20, size(S, 1) + 1) * M
+            @test_throws DimensionMismatch rand(size(A, 2) + 1, 20) * M
         end
     end
 end

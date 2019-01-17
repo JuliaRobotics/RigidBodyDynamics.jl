@@ -19,6 +19,8 @@ export
 
 using TypeSortedCollections
 using DocStringExtensions
+using LinearAlgebra
+using UnsafeArrays
 
 using Base: @propagate_inbounds
 

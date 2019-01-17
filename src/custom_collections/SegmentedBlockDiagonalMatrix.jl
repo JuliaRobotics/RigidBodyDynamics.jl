@@ -53,3 +53,41 @@ function _is_contiguous_and_diagonal(parent::AbstractMatrix, block_indices)
     end
     return true
 end
+
+function LinearAlgebra.mul!(C::Matrix, A::Matrix, B::SegmentedBlockDiagonalMatrix)
+    # TODO: coordination with BLAS threads
+    @boundscheck size(C) == (size(A, 1), size(B, 2)) || throw(DimensionMismatch("Output size mismatch."))
+    A′ = Base.unalias(C, A)
+    Threads.@threads for block in blocks(B) # allocates 32 bytes (see https://github.com/JuliaLang/julia/issues/29748)
+        @inbounds begin
+            Acols, Ccols = parentindices(block)
+            Aview = uview(A′, :, Acols)
+            Cview = uview(C, :, Ccols)
+            if block == I
+                copyto!(Cview, Aview)
+            else
+                mul!(Cview, Aview, block)
+            end
+        end
+    end
+    return C
+end
+
+function LinearAlgebra.mul!(C::Matrix, A::SegmentedBlockDiagonalMatrix, B::Matrix)
+    # TODO: coordination with BLAS threads
+    @boundscheck size(C) == (size(A, 1), size(B, 2)) || throw(DimensionMismatch("Output size mismatch."))
+    B′ = Base.unalias(C, B)
+    Threads.@threads for block in blocks(A) # allocates 32 bytes (see https://github.com/JuliaLang/julia/issues/29748)
+        @inbounds begin
+            Crows, Brows = parentindices(block)
+            Bview = uview(B, Brows, :)
+            Cview = uview(C, Crows, :)
+            if block == I
+                copyto!(Cview, Bview)
+            else
+                mul!(Cview, block, Bview)
+            end
+        end
+    end
+    return C
+end
