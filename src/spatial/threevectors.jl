@@ -1,62 +1,68 @@
 # Point3D, FreeVector3D. The difference is that a FreeVector3D is only rotated when its frame is changed,
 # whereas a Point3D is also translated
-for VectorType in (:FreeVector3D, :Point3D)
-    RawVectorType = Symbol("Raw$VectorType")
-    FrameVectorType = Symbol("Frame$VectorType")
+for Vector3D in (:FreeVector3D, :Point3D)
+    RawVector3D = Symbol("Raw$Vector3D")
+    FrameVector3D = Symbol("Frame$Vector3D")
     @eval begin
         # TODO: consider storing as a homogeneous vector
-        struct $VectorType{T, F<:FrameOrNothing}
+        struct $Vector3D{T, F<:FrameOrNothing}
             frame::F
             v::SVector{3, T} # TODO: rename to vec?
 
-            @inline function $VectorType{T, F}(frame::F, v::SVector{3, T}) where {T, F<:FrameOrNothing}
+            @inline function $Vector3D{T, F}(frame::F, v::SVector{3, T}) where {T, F<:FrameOrNothing}
                 new{T, F}(frame, v)
             end
         end
 
-        const $RawVectorType{T} = $VectorType{T, Nothing}
-        const $FrameVectorType{T} = $VectorType{T, CartesianFrame3D}
+        const $RawVector3D{T} = $Vector3D{T, Nothing}
+        const $FrameVector3D{T} = $Vector3D{T, CartesianFrame3D}
 
-        hasframes(::Type{<:$FrameVectorType}) = true
+        hasframes(::Type{<:$FrameVector3D}) = true
 
-        # Constructors
-        @inline function $VectorType{T, F}(frame::F, v::AbstractVector) where {T, F<:FrameOrNothing}
-            $VectorType{T, F}(frame, SVector{3}(v))
+        # Constructors: from AbstractVector
+        @inline function $Vector3D{T, F}(frame::F, v::AbstractVector) where {T, F<:FrameOrNothing}
+            $Vector3D{T, F}(frame, SVector{3}(v))
         end
 
-        @inline function $VectorType{T}(frame::F, v::AbstractVector) where {T, F<:FrameOrNothing}
-            $VectorType{T, F}(frame, v)
+        @inline function $Vector3D{T}(frame::F, v::AbstractVector) where {T, F<:FrameOrNothing}
+            $Vector3D{T, F}(frame, v)
         end
 
-        @inline function $VectorType(frame::F, v::AbstractVector{T}) where {T, F<:FrameOrNothing}
-            $VectorType{T, F}(frame, v)
+        @inline function $Vector3D(frame::F, v::AbstractVector{T}) where {T, F<:FrameOrNothing}
+            $Vector3D{T, F}(frame, v)
         end
 
-        @inline function (::Type{V})(frame::FrameOrNothing, x, y, z) where {V<:$VectorType}
+        # Constructors: from three coordinates
+        @inline function (::Type{V})(frame::FrameOrNothing, x, y, z) where {V<:$Vector3D}
             V(frame, SVector{3}(x, y, z))
         end
 
-        @inline (::Type{V})(v::AbstractVector) where {V<:$VectorType} = V(nothing, v)
-        @inline (::Type{V})(x, y, z) where {V<:$VectorType} = V(nothing, x, y, z)
+        # Constructors: from Vector3D
+        @inline (::Type{V})(v::V) where {V<:$Vector3D} = v
+        @inline $Vector3D{T, F}(v::$Vector3D) where {T, F<:FrameOrNothing} = $Vector3D{T, F}(v.frame, v.v)
+        @inline $Vector3D{T}(v::$Vector3D) where {T} = $Vector3D{T}(v.frame, v.v)
 
-        @inline (::Type{V})(v::V) where {V<:$VectorType} = v
-        @inline $VectorType{T, F}(v::$VectorType) where {T, F<:FrameOrNothing} = $VectorType{T, F}(v.frame, v.v)
-        @inline $VectorType{T}(v::$VectorType) where {T} = $VectorType{T}(v.frame, v.v)
+        # Constructors: returning RawVector3D
+        @inline (::Type{V})(v::AbstractVector) where {V<:$Vector3D} = V(nothing, v)
+        @inline (::Type{V})(x, y, z) where {V<:$Vector3D} = V(nothing, x, y, z)
+
+        # Constructors: RawVector3D to FrameVector3D
+        @inline $Vector3D(frame::CartesianFrame3D, v::$RawVector3D) = $Vector3D(frame, v.v)
 
         # TODO: deprecate:
-        $VectorType(::Type{T}, frame::CartesianFrame3D) where {T} = $VectorType(frame, zero(SVector{3, T}))
+        $Vector3D(::Type{T}, frame::CartesianFrame3D) where {T} = $Vector3D(frame, zero(SVector{3, T}))
 
         # Conversion
-        @inline Base.convert(::Type{V}, v::$VectorType) where {V<:$VectorType} = V(v)
+        @inline Base.convert(::Type{V}, v::$Vector3D) where {V<:$Vector3D} = V(v)
 
         # Getters
-        @inline Base.vec(v::$VectorType) = v.v
-        @propagate_inbounds Base.getindex(v::$VectorType, i::Integer) = getindex(v.v, i)
-        Base.eltype(::Type{$VectorType{T}}) where {T} = T
+        @inline Base.vec(v::$Vector3D) = v.v
+        @propagate_inbounds Base.getindex(v::$Vector3D, i::Integer) = getindex(v.v, i)
+        Base.eltype(::Type{$Vector3D{T}}) where {T} = T
 
         # Pretty-printing
-        function Base.show(io::IO, v::$VectorType)
-            print(io, "$($(string(VectorType)))")
+        function Base.show(io::IO, v::$Vector3D)
+            print(io, "$($(string(Vector3D)))")
             if hasframes(v)
                 print(io, " in \"$(string(v.frame))\"")
             end
@@ -64,37 +70,37 @@ for VectorType in (:FreeVector3D, :Point3D)
         end
 
         # Operations
-        Base.:/(v::$VectorType, s::Number) = $VectorType(v.frame, v.v / s)
-        Base.:*(v::$VectorType, s::Number) = $VectorType(v.frame, v.v * s)
-        Base.:*(s::Number, v::$VectorType) = $VectorType(v.frame, s * v.v)
-        Base.:-(v::$VectorType) = $VectorType(v.frame, -v.v)
-        Base.:+(v::$VectorType) = v
+        Base.:/(v::$Vector3D, s::Number) = $Vector3D(v.frame, v.v / s)
+        Base.:*(v::$Vector3D, s::Number) = $Vector3D(v.frame, v.v * s)
+        Base.:*(s::Number, v::$Vector3D) = $Vector3D(v.frame, s * v.v)
+        Base.:-(v::$Vector3D) = $Vector3D(v.frame, -v.v)
+        Base.:+(v::$Vector3D) = v
 
-        function Random.rand(::Type{V}, frame::F) where {T, V<:$VectorType{T}, F<:FrameOrNothing}
-            $VectorType(frame, rand(SVector{3, T}))
+        function Random.rand(::Type{V}, frame::F) where {T, V<:$Vector3D{T}, F<:FrameOrNothing}
+            $Vector3D(frame, rand(SVector{3, T}))
         end
 
-        function Random.rand(::Type{$VectorType}, frame::F) where F<:FrameOrNothing
-            rand($VectorType{Float64}, frame)
+        function Random.rand(::Type{$Vector3D}, frame::F) where F<:FrameOrNothing
+            rand($Vector3D{Float64}, frame)
         end
 
-        Random.rand(::Type{V}) where {V<:$VectorType} = rand(V, nothing)
+        Random.rand(::Type{V}) where {V<:$Vector3D} = rand(V, nothing)
 
         # TODO: deprecate:
-        Random.rand(::Type{$VectorType}, ::Type{T}, frame::CartesianFrame3D) where {T} = $VectorType(frame, rand(SVector{3, T}))
+        Random.rand(::Type{$Vector3D}, ::Type{T}, frame::CartesianFrame3D) where {T} = $Vector3D(frame, rand(SVector{3, T}))
 
         # TODO: reltol, change default atol
-        Base.isapprox(x::$VectorType, y::$VectorType; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
+        Base.isapprox(x::$Vector3D, y::$Vector3D; atol::Real = 1e-12) = x.frame == y.frame && isapprox(x.v, y.v; atol = atol)
 
         """
         $(SIGNATURES)
 
         Return `x` transformed to `CartesianFrame3D` `t.from`.
         """
-        transform(x::$VectorType, t::Transform3D) = t * x
+        transform(x::$Vector3D, t::Transform3D) = t * x
 
-        LinearAlgebra.norm(v::$VectorType) = norm(v.v)
-        LinearAlgebra.normalize(v::$VectorType, p = 2) = $VectorType(v.frame, normalize(v.v, p))
+        LinearAlgebra.norm(v::$Vector3D) = norm(v.v)
+        LinearAlgebra.normalize(v::$Vector3D, p = 2) = $Vector3D(v.frame, normalize(v.v, p))
     end
 end
 

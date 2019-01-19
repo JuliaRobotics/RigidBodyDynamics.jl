@@ -17,19 +17,16 @@ const FrameTransform3D{T} = Transform3D{T, CartesianFrame3D}
 
 hasframes(::Type{<:FrameTransform3D}) = true
 
-# Constructors
+# Constructors: from SMatrix{4, 4}
 @inline function Transform3D{T}(from::F, to::F, mat::SMatrix{4, 4}) where {T, F<:FrameOrNothing}
     Transform3D{T, F}(from, to, mat)
 end
 
-@inline function Transform3D{T}(from::FrameOrNothing, to::FrameOrNothing, mat::SMatrix{4, 4}) where {T}
-    Transform3D{T}(all_or_nothing(from, to)..., mat)
-end
-
-@inline function Transform3D(from::FrameOrNothing, to::FrameOrNothing, mat::SMatrix{4, 4, T}) where {T}
+@inline function Transform3D(from::F, to::F, mat::SMatrix{4, 4, T}) where {T, F<:FrameOrNothing}
     Transform3D{T}(from, to, mat)
 end
 
+# Constructors: from Rotation{3} and AbstractVector
 @inline function Transform3D{T, F}(from::F, to::F, rotation::Rotation{3}, translation::AbstractVector) where {T, F<:FrameOrNothing}
     R = convert(RotMatrix{3, T}, rotation)
     p = convert(SVector{3, T}, translation)
@@ -44,30 +41,35 @@ end
     Transform3D{T, F}(from, to, rotation, translation)
 end
 
-@inline function Transform3D{T}(from::FrameOrNothing, to::FrameOrNothing, rotation::Rotation{3}, translation::AbstractVector) where {T}
-    Transform3D{T}(all_or_nothing(from, to)..., rotation, translation)
-end
-
-@inline function Transform3D(from::FrameOrNothing, to::FrameOrNothing, rotation::Rotation{3}, translation::AbstractVector)
+@inline function Transform3D(from::F, to::F, rotation::Rotation{3}, translation::AbstractVector) where {F<:FrameOrNothing}
     T = promote_type(eltype(typeof(rotation)), eltype(typeof(translation)))
-    Transform3D{T}(from, to, rotation, translation)
+    Transform3D{T, F}(from, to, rotation, translation)
 end
 
-@inline function (::Type{TF})(from::FrameOrNothing, to::FrameOrNothing, rotation::Rotation{3, T}) where {T, TF<:Transform3D}
+# Constructors: from Rotation{3}
+@inline function (::Type{TF})(from::F, to::F, rotation::Rotation{3, T}) where {T, F<:FrameOrNothing, TF<:Transform3D}
     TF(from, to, rotation, zero(SVector{3, T}))
 end
 
-@inline function (::Type{TF})(from::FrameOrNothing, to::FrameOrNothing, translation::AbstractVector{T}) where {T, TF<:Transform3D}
+# Constructors: from AbstractVector
+@inline function (::Type{TF})(from::F, to::F, translation::AbstractVector{T}) where {T, F<:FrameOrNothing, TF<:Transform3D}
     TF(from, to, one(RotMatrix{3, T}), translation)
 end
 
-@inline (::Type{TF})(rotation::Rotation{3}, translation::AbstractVector) where {TF<:Transform3D} = TF(nothing, nothing, rotation, translation)
-@inline (::Type{TF})(rotation::Rotation{3}) where {TF<:Transform3D} = TF(nothing, nothing, rotation)
-@inline (::Type{TF})(translation::AbstractVector) where {TF<:Transform3D} = TF(nothing, nothing, translation)
-
+# Constructors: from Transform3D
 @inline (::Type{TF})(tf::TF) where {TF<:Transform3D} = tf
 @inline Transform3D{T, F}(tf::Transform3D) where {T, F<:FrameOrNothing} = Transform3D{T, F}(tf.from, tf.to, tf.mat)
 @inline Transform3D{T}(tf::Transform3D) where {T} = Transform3D{T}(tf.from, tf.to, tf.mat)
+
+# Constructors: returning RawTransform3D
+@inline (::Type{TF})(mat::SMatrix{4, 4}) where {TF<:RawTransform3D} = TF(nothing, nothing, rotation, translation)
+@inline (::Type{TF})(rotation::Rotation{3}, translation::AbstractVector) where {TF<:RawTransform3D} = TF(nothing, nothing, rotation, translation)
+@inline (::Type{TF})(rotation::Rotation{3}) where {TF<:RawTransform3D} = TF(nothing, nothing, rotation)
+@inline (::Type{TF})(translation::AbstractVector) where {TF<:RawTransform3D} = TF(nothing, nothing, translation)
+@inline (::Type{TF})(tf::Transform3D) where {TF<:RawTransform3D} = TF(nothing, nothing, tf.mat)
+
+# Constructors: RawTransform3D to FrameTransform3D
+@inline Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, tf::RawTransform3D) = Transform3D(from, to, tf.mat)
 
 # Conversion
 @inline Base.convert(::Type{TF}, tf::Transform3D) where {TF<:Transform3D} = TF(tf)
@@ -80,7 +82,7 @@ end
 function Base.show(io::IO, tf::Transform3D)
     print(io, "Transform3D")
     if hasframes(tf)
-        print(io, "from \"$(string(tf.from))\" to \"$(string(tf.to))\"")
+        print(io, " from \"$(string(tf.from))\" to \"$(string(tf.to))\"")
     end
     println(io, ":")
     angle_axis = AngleAxis(rotation(tf))
