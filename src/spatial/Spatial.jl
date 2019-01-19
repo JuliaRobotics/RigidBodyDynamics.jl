@@ -41,7 +41,7 @@ export
 
 # macros
 export
-    @framecheck
+    @framecheck,
     @sameframe
 
 using LinearAlgebra

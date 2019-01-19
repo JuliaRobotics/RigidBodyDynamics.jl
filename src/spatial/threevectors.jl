@@ -5,11 +5,11 @@ for VectorType in (:FreeVector3D, :Point3D)
     FrameVectorType = Symbol("Frame$VectorType")
     @eval begin
         # TODO: consider storing as a homogeneous vector
-        struct $VectorType{T, F<:Union{CartesianFrame3D, Nothing}}
+        struct $VectorType{T, F<:FrameOrNothing}
             frame::F
             v::SVector{3, T} # TODO: rename to vec?
 
-            @inline function $VectorType{T, F}(frame::F, v::SVector{3, T}) where {T, F<:Union{CartesianFrame3D, Nothing}}
+            @inline function $VectorType{T, F}(frame::F, v::SVector{3, T}) where {T, F<:FrameOrNothing}
                 new{T, F}(frame, v)
             end
         end
@@ -20,19 +20,19 @@ for VectorType in (:FreeVector3D, :Point3D)
         hasframes(::Type{<:$FrameVectorType}) = true
 
         # Constructors
-        @inline function $VectorType{T, F}(frame::F, v::AbstractVector) where {T, F<:Union{CartesianFrame3D, Nothing}}
+        @inline function $VectorType{T, F}(frame::F, v::AbstractVector) where {T, F<:FrameOrNothing}
             $VectorType{T, F}(frame, SVector{3}(v))
         end
 
-        @inline function $VectorType{T}(frame::F, v::AbstractVector) where {T, F<:Union{CartesianFrame3D, Nothing}}
+        @inline function $VectorType{T}(frame::F, v::AbstractVector) where {T, F<:FrameOrNothing}
             $VectorType{T, F}(frame, v)
         end
 
-        @inline function $VectorType(frame::F, v::AbstractVector{T}) where {T, F<:Union{CartesianFrame3D, Nothing}}
+        @inline function $VectorType(frame::F, v::AbstractVector{T}) where {T, F<:FrameOrNothing}
             $VectorType{T, F}(frame, v)
         end
 
-        @inline function (::Type{V})(frame::Union{CartesianFrame3D, Nothing}, x, y, z) where {V<:$VectorType}
+        @inline function (::Type{V})(frame::FrameOrNothing, x, y, z) where {V<:$VectorType}
             V(frame, SVector{3}(x, y, z))
         end
 
@@ -40,7 +40,7 @@ for VectorType in (:FreeVector3D, :Point3D)
         @inline (::Type{V})(x, y, z) where {V<:$VectorType} = V(nothing, x, y, z)
 
         @inline (::Type{V})(v::V) where {V<:$VectorType} = v
-        @inline $VectorType{T, F}(v::$VectorType) where {T, F<:Union{CartesianFrame3D, Nothing}} = $VectorType{T, F}(v.frame, v.v)
+        @inline $VectorType{T, F}(v::$VectorType) where {T, F<:FrameOrNothing} = $VectorType{T, F}(v.frame, v.v)
         @inline $VectorType{T}(v::$VectorType) where {T} = $VectorType{T}(v.frame, v.v)
 
         # TODO: deprecate:
@@ -70,11 +70,11 @@ for VectorType in (:FreeVector3D, :Point3D)
         Base.:-(v::$VectorType) = $VectorType(v.frame, -v.v)
         Base.:+(v::$VectorType) = v
 
-        function Random.rand(::Type{V}, frame::F) where {T, V<:$VectorType{T}, F<:Union{CartesianFrame3D, Nothing}}
+        function Random.rand(::Type{V}, frame::F) where {T, V<:$VectorType{T}, F<:FrameOrNothing}
             $VectorType(frame, rand(SVector{3, T}))
         end
 
-        function Random.rand(::Type{$VectorType}, frame::F) where F<:Union{CartesianFrame3D, Nothing}
+        function Random.rand(::Type{$VectorType}, frame::F) where F<:FrameOrNothing
             rand($VectorType{Float64}, frame)
         end
 

@@ -4,11 +4,13 @@ $(TYPEDEF)
 A homogeneous transformation matrix representing the transformation from one
 three-dimensional Cartesian coordinate system to another.
 """
-struct Transform3D{T, F<:Union{CartesianFrame3D, Nothing}}
+struct Transform3D{T, F<:FrameOrNothing}
     from::F
     to::F
     mat::SMatrix{4, 4, T, 16}
 end
+
+Base.eltype(::Type{Transform3D{T}}) where {T} = T
 
 const RawTransform3D{T} = Transform3D{T, Nothing}
 const FrameTransform3D{T} = Transform3D{T, CartesianFrame3D}
@@ -16,7 +18,19 @@ const FrameTransform3D{T} = Transform3D{T, CartesianFrame3D}
 hasframes(::Type{<:FrameTransform3D}) = true
 
 # Constructors
-@inline function Transform3D{T, F}(from::F, to::F, rotation::RotMatrix{3}, translation::SVector{3}) where {T, F<:Union{CartesianFrame3D, Nothing}}
+@inline function Transform3D{T}(from::F, to::F, mat::SMatrix{4, 4}) where {T, F<:FrameOrNothing}
+    Transform3D{T, F}(from, to, mat)
+end
+
+@inline function Transform3D{T}(from::FrameOrNothing, to::FrameOrNothing, mat::SMatrix{4, 4}) where {T}
+    Transform3D{T}(all_or_nothing(from, to)..., mat)
+end
+
+@inline function Transform3D(from::FrameOrNothing, to::FrameOrNothing, mat::SMatrix{4, 4, T}) where {T}
+    Transform3D{T}(from, to, mat)
+end
+
+@inline function Transform3D{T, F}(from::F, to::F, rotation::Rotation{3}, translation::AbstractVector) where {T, F<:FrameOrNothing}
     R = convert(RotMatrix{3, T}, rotation)
     p = convert(SVector{3, T}, translation)
     @inbounds mat = @SMatrix [R[1] R[4] R[7] p[1];
@@ -26,25 +40,25 @@ hasframes(::Type{<:FrameTransform3D}) = true
     Transform3D{T, F}(from, to, mat)
 end
 
-@inline function Transform3D{T}(from::F, to::F, rotation::RotMatrix{3}, translation::SVector{3}) where {T, F<:Union{CartesianFrame3D, Nothing}}
+@inline function Transform3D{T}(from::F, to::F, rotation::Rotation{3}, translation::AbstractVector) where {T, F<:FrameOrNothing}
     Transform3D{T, F}(from, to, rotation, translation)
 end
 
-@inline function Transform3D(from::F, to::F, rotation::RotMatrix{3}, translation::SVector{3}) where F<:Union{CartesianFrame3D, Nothing}
+@inline function Transform3D{T}(from::FrameOrNothing, to::FrameOrNothing, rotation::Rotation{3}, translation::AbstractVector) where {T}
+    Transform3D{T}(all_or_nothing(from, to)..., rotation, translation)
+end
+
+@inline function Transform3D(from::FrameOrNothing, to::FrameOrNothing, rotation::Rotation{3}, translation::AbstractVector)
     T = promote_type(eltype(typeof(rotation)), eltype(typeof(translation)))
-    Transform3D{T}(from, rotation, translation)
+    Transform3D{T}(from, to, rotation, translation)
 end
 
-@inline function (::Type{TF})(from::F, to::F, rotation::Rotation{3}, translation::AbstractVector) where {TF<:Transform3D, F<:Union{CartesianFrame3D, Nothing}}
-    TF(from, to, RotMatrix(rotation), SVector{3}(translation))
-end
-
-@inline function (::Type{TF})(from::F, to::F, rotation::Rotation{3, T}) where {T, TF<:Transform3D, F<:Union{CartesianFrame3D, Nothing}}
+@inline function (::Type{TF})(from::FrameOrNothing, to::FrameOrNothing, rotation::Rotation{3, T}) where {T, TF<:Transform3D}
     TF(from, to, rotation, zero(SVector{3, T}))
 end
 
-@inline function (::Type{TF})(from::F, to::F, translation::AbstractVector{T}) where {T, TF<:Transform3D, F<:Union{CartesianFrame3D, Nothing}}
-    TF(from, to, one(RotMatrix3{T}), translation)
+@inline function (::Type{TF})(from::FrameOrNothing, to::FrameOrNothing, translation::AbstractVector{T}) where {T, TF<:Transform3D}
+    TF(from, to, one(RotMatrix{3, T}), translation)
 end
 
 @inline (::Type{TF})(rotation::Rotation{3}, translation::AbstractVector) where {TF<:Transform3D} = TF(nothing, nothing, rotation, translation)
@@ -52,7 +66,7 @@ end
 @inline (::Type{TF})(translation::AbstractVector) where {TF<:Transform3D} = TF(nothing, nothing, translation)
 
 @inline (::Type{TF})(tf::TF) where {TF<:Transform3D} = tf
-@inline Transform3D{T, F}(tf::Transform3D) where {T, F<:Union{CartesianFrame3D, Nothing}} = Transform3D{T, F}(tf.from, tf.to, tf.mat)
+@inline Transform3D{T, F}(tf::Transform3D) where {T, F<:FrameOrNothing} = Transform3D{T, F}(tf.from, tf.to, tf.mat)
 @inline Transform3D{T}(tf::Transform3D) where {T} = Transform3D{T}(tf.from, tf.to, tf.mat)
 
 # Conversion
@@ -88,23 +102,23 @@ end
     Transform3D(tf.to, tf.from, invrot, -(invrot * translation(tf)))
 end
 
-function Base.one(::Type{TF}, from::F, to::F) where {T, TF<:Transform3D{T}, F<:Union{CartesianFrame3D, Nothing}}
+function Base.one(::Type{TF}, from::F, to::F) where {T, TF<:Transform3D{T}, F<:FrameOrNothing}
     TF(from, to, one(SMatrix{4, 4, T}))
 end
 
-function Base.one(::Type{Transform3D}, from::F, to::F) where {T, TF<:Transform3D{T}, F<:Union{CartesianFrame3D, Nothing}}
+function Base.one(::Type{Transform3D}, from::F, to::F) where {T, TF<:Transform3D{T}, F<:FrameOrNothing}
     one(Transform3D{Float64}, from, to)
 end
 
 Base.one(::Type{TF}) where {TF<:Transform3D} = one(TF, nothing, nothing)
 
-function Random.rand(::Type{TF}, from::F, to::F) where {T, TF<:Transform3D{T}, F<:Union{CartesianFrame3D, Nothing}}
+function Random.rand(::Type{TF}, from::F, to::F) where {T, TF<:Transform3D{T}, F<:FrameOrNothing}
     rotation = rand(RotMatrix3{T})
     translation = rand(SVector{3, T})
     TF(from, to, rotation, translation)
 end
 
-function Random.rand(::Type{Transform3D}, from::F, to::F) where F<:Union{CartesianFrame3D, Nothing}
+function Random.rand(::Type{Transform3D}, from::F, to::F) where F<:FrameOrNothing
     rand(Transform3D{Float64}, from, to)
 end
 
