@@ -42,6 +42,7 @@ export
 # macros
 export
     @framecheck
+    @sameframe
 
 using LinearAlgebra
 using Random
@@ -49,13 +50,15 @@ using StaticArrays
 using Rotations
 using DocStringExtensions
 
+using Base: @propagate_inbounds
+
 include("frame.jl")
 include("util.jl")
 include("transform3d.jl")
 include("threevectors.jl")
-include("spatialmotion.jl")
-include("spatialforce.jl")
-include("motion_force_interaction.jl")
-include("common.jl")
+# include("spatialmotion.jl")
+# include("spatialforce.jl")
+# include("motion_force_interaction.jl")
+# include("common.jl")
 
 end # module

@@ -48,6 +48,12 @@ Base.print(io::IO, frame::CartesianFrame3D) = print(io, get(frame_names, frame.i
 name_and_id(frame::CartesianFrame3D) = "\"$frame\" (id = $(frame.id))"
 Base.show(io::IO, frame::CartesianFrame3D) = print(io, "CartesianFrame3D: $(name_and_id(frame))")
 
+Base.@pure hasframes(::Type) = false
+hasframes(x::T) where {T} = hasframes(T)
+
+frames_match(::Union{CartesianFrame3D, Nothing}, ::Union{CartesianFrame3D, Nothing}) = true
+frames_match(f1::CartesianFrame3D, f2::CartesianFrame3D) = f1 === f2
+
 Base.in(x::CartesianFrame3D, y::CartesianFrame3D) = x == y
 
 """
@@ -68,21 +74,24 @@ macro framecheck(f1, f2s)
     end
 end
 
-framecheck_string(expr, frame::CartesianFrame3D) = "$expr: $(name_and_id(frame))"
+"""
+$(SIGNATURES)
+
+Check that `f1` matches `f2`, where `f1` and `f2` are either `CartesianFrame3D` or `Nothing`.
+Throws an `ArgumentError` if `f1` does not match `f2`.
+Otherwise, returns whichever of `f1` and `f2` is not nothing, or `nothing` if both are `nothing`.
+"""
+macro sameframe(f1, f2)
+    quote
+        if !frames_match($(esc(f1)), $(esc(f2)))
+            framecheck_fail($(QuoteNode(f1)), $(QuoteNode(f2)), $(esc(f1)), $(esc(f2)))
+        end
+        $(esc(f1)) === nothing ? $(esc(f2)) : $(esc(f1))
+    end
+end
 
 @noinline function framecheck_fail(expr1, expr2, f1::CartesianFrame3D, f2::CartesianFrame3D)
     throw(ArgumentError("$(framecheck_string(expr1, f1)) ≠ $(framecheck_string(expr2, f2))"))
 end
 
-@noinline function framecheck_fail(expr1, expr2, f1::CartesianFrame3D, f2s)
-    buf = IOBuffer()
-    print(buf, '(')
-    first = true
-    for f2 in f2s
-        first || print(buf, ", ")
-        first = false
-        print(buf, name_and_id(f2))
-    end
-    print(buf, ')')
-    throw(ArgumentError("$(framecheck_string(expr1, f1)) ∉ $(expr2): $(String(take!(buf)))"))
-end
+framecheck_string(expr, frame::CartesianFrame3D) = "$expr: $(name_and_id(frame))"
