@@ -1,10 +1,9 @@
 using Documenter, RigidBodyDynamics, RigidBodyDynamics.OdeIntegrators
 
 makedocs(
-    # options
     modules = [RigidBodyDynamics, RigidBodyDynamics.OdeIntegrators],
-    format = :html,
-    checkdocs = :exported,
+    root = @__DIR__,
+    checkdocs = :exports,
     sitename ="RigidBodyDynamics.jl",
     authors = "Twan Koolen and contributors.",
     pages = [
@@ -21,14 +20,10 @@ makedocs(
         "Simulation" => "simulation.md",
         "URDF parsing and writing" => "urdf.md",
         "Benchmarks" => "benchmarks.md"
-      ]
+      ],
+    format = Documenter.HTML(prettyurls = parse(Bool, get(ENV, "CI", "false")))
 )
 
 deploydocs(
-    deps = nothing,
-    repo = "github.com/JuliaRobotics/RigidBodyDynamics.jl.git",
-    target = "build",
-    make = nothing,
-    julia = "1.0",
-    osname = "linux"
+    repo = "github.com/JuliaRobotics/RigidBodyDynamics.jl.git"
 )

@@ -5,6 +5,7 @@ os:
 julia:
   - 0.7
   - 1.0
+  - 1.1
   - nightly
 matrix:
   allow_failures:
@@ -18,7 +19,9 @@ notifications:
 before_script:
   - export PYTHON="" # for SymPy
 after_success:
-  - julia --project -e 'using Pkg; pkg"add Coverage@0.6.0"; using Coverage; Codecov.submit(Codecov.process_folder())'
+  - if [[ $TRAVIS_JULIA_VERSION = 1.1 ]] && [[ $TRAVIS_OS_NAME = linux ]]; then
+      julia --project -e 'using Pkg; pkg"add Coverage"; using Coverage; Codecov.submit(Codecov.process_folder())';
+    fi
 jobs:
   include:
     - stage: Documentation
