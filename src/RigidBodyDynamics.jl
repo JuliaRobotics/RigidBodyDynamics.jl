@@ -51,6 +51,7 @@ export
     path,
     joints,
     tree_joints,
+    non_tree_joints,
     successor,
     predecessor,
     in_joints,

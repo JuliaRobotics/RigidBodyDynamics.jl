@@ -36,6 +36,24 @@ end
         show(devnull, x)
     end
 
+    @testset "supports" begin
+        Random.seed!(25)
+        mechanism = randmech()
+        mc_mechanism, = maximal_coordinates(mechanism)
+        for m in [mechanism, mc_mechanism]
+            state = MechanismState(m)
+            for body in bodies(m)
+                body_ancestors = RigidBodyDynamics.Graphs.ancestors(body, m.tree)
+                for joint in tree_joints(m)
+                    @test RigidBodyDynamics.supports(joint, body, state) == (successor(joint, m) ∈ body_ancestors)
+                end
+                for joint in non_tree_joints(m)
+                    @test !RigidBodyDynamics.supports(joint, body, state)
+                end
+            end
+        end
+    end
+
     @testset "basic stuff" begin
         Random.seed!(18)
         mechanism = randmech()
