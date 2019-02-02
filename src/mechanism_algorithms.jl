@@ -311,18 +311,17 @@ momentum matrix blocks associated with each of the joints to the frame in which
 $noalloc_doc
 """
 function momentum_matrix!(mat::MomentumMatrix, state::MechanismState, transformfun)
-    @boundscheck num_velocities(state) == size(mat, 2) || throw(DimensionMismatch())
+    nv = num_velocities(state)
+    @boundscheck size(mat, 2) == nv || throw(DimensionMismatch())
     update_motion_subspaces!(state)
     update_crb_inertias!(state)
-    for jointid in state.treejointids # TODO: just use @inbounds here; currently messes with frame check in set_col!
-        @inbounds bodyid = successorid(jointid, state)
-        @inbounds inertia = crb_inertia(state, bodyid)
-        @inbounds vrange = velocity_range(state, jointid)
-        for col in eachindex(vrange)
-            @inbounds vindex = vrange[col]
-            @inbounds Scol = transformfun(inertia * state.motion_subspaces.data[vindex])
-            set_col!(mat, vindex, Scol)
-        end
+    @inbounds for i in 1 : nv
+        jointi = velocity_index_to_joint_id(state, i)
+        bodyi = successorid(jointi, state)
+        Ici = crb_inertia(state, bodyi)
+        Si = state.motion_subspaces.data[i]
+        Fi = transformfun(Ici * Si)
+        set_col!(mat, i, Fi)
     end
     mat
 end
