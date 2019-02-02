@@ -84,13 +84,13 @@ function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path
     update_motion_subspaces!(state)
     fill!(jac.angular, 0)
     fill!(jac.linear, 0)
-    for i in eachindex(path.edges) # TODO: just use @inbounds here; currently messes with frame check in set_col!
-        @inbounds joint = path.edges[i]
+    @inbounds for i in eachindex(path.edges)
+        joint = path.edges[i]
         vrange = velocity_range(state, joint)
-        @inbounds direction = directions(path)[i]
+        direction = directions(path)[i]
         for col in eachindex(vrange)
-            @inbounds vindex = vrange[col]
-            @inbounds Scol = transformfun(state.motion_subspaces.data[vindex])
+            vindex = vrange[col]
+            Scol = transformfun(state.motion_subspaces.data[vindex])
             direction == PathDirections.up && (Scol = -Scol)
             set_col!(jac, vindex, Scol)
         end
@@ -377,7 +377,7 @@ end
 function bias_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}}, state::MechanismState{X, M}) where {T, X, M}
     update_bias_accelerations_wrt_world!(state)
     gravitybias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(state.mechanism))
-    for jointid in state.treejointids
+    @inbounds for jointid in state.treejointids
         bodyid = successorid(jointid, state)
         out[bodyid] = gravitybias + bias_acceleration(state, bodyid, false)
     end
@@ -394,6 +394,7 @@ function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}
     vs = values(segments(state.v))
     v̇s = values(segments(v̇))
     foreach_with_extra_args(state, out, joints, qs, vs, v̇s) do state, accels, joint, qjoint, vjoint, v̇joint
+        Base.@_inline_meta
         bodyid = successorid(JointID(joint), state)
         accels[bodyid] = joint_spatial_acceleration(joint, qjoint, vjoint, v̇joint)
     end
@@ -402,7 +403,7 @@ function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}
     # TODO: manual frame changes. Find a way to not avoid the frame checks here.
     mechanism = state.mechanism
     root = root_body(mechanism)
-    out[root] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
+    @inbounds out[root] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
     @inbounds for jointid in state.treejointids
         parentbodyid, bodyid = predsucc(jointid, state)
         toroot = transform_to_root(state, bodyid, false)
@@ -431,7 +432,7 @@ function newton_euler!(
         externalwrenches::AbstractDict{BodyID, Wrench{W}}) where {T, X, M, W}
     update_twists_wrt_world!(state)
     update_spatial_inertias!(state)
-    for jointid in state.treejointids
+    @inbounds for jointid in state.treejointids
         bodyid = successorid(jointid, state)
         wrench = newton_euler(state, bodyid, accelerations[bodyid], false)
         out[bodyid] = haskey(externalwrenches, bodyid) ? wrench - externalwrenches[bodyid] : wrench
@@ -447,7 +448,7 @@ function joint_wrenches_and_torques!(
     # Note: pass in net wrenches as wrenches argument. wrenches argument is modified to be joint wrenches
     @boundscheck length(torquesout) == num_velocities(state) || error("length of torque vector is wrong")
     wrenches = net_wrenches_in_joint_wrenches_out
-    for jointid in reverse(state.treejointids)
+    @inbounds for jointid in reverse(state.treejointids)
         parentbodyid, bodyid = predsucc(jointid, state)
         jointwrench = wrenches[bodyid]
         wrenches[parentbodyid] += jointwrench # action = -reaction
@@ -634,7 +635,7 @@ function constraint_bias!(bias::SegmentedVector, state::MechanismState{X};
     update_bias_accelerations_wrt_world!(state)
     update_constraint_wrench_subspaces!(state)
     constraint_wrench_subspaces = state.constraint_wrench_subspaces.data
-    for nontreejointid in state.nontreejointids
+    @inbounds for nontreejointid in state.nontreejointids
         predid, succid = predsucc(nontreejointid, state)
 
         predtwist = twist_wrt_world(state, predid, false)
@@ -659,14 +660,12 @@ function constraint_bias!(bias::SegmentedVector, state::MechanismState{X};
                 Spatial.transform_spatial_motion(stabaccel.angular, stabaccel.linear,
                 rotation(successor_to_root), translation(successor_to_root))...) # back to world frame. TODO: ugly way to do this
             stabaccel = SpatialAcceleration(biasaccel.body, biasaccel.body, stabaccel.frame, stabaccel.angular, stabaccel.linear) # make frames line up
-            @inbounds biasaccel = biasaccel + -stabaccel
+            biasaccel = biasaccel + -stabaccel
         end
 
         for cindex in constraint_range(state, nontreejointid)
             Tcol = constraint_wrench_subspaces[cindex]
-            # TODO: make nicer:
-            @framecheck Tcol.frame biasaccel.frame
-            bias[cindex] = (transpose(Tcol.angular) * biasaccel.angular + transpose(Tcol.linear) * biasaccel.linear)[1]
+            bias[cindex] = (transpose(Tcol) * biasaccel)[1]
         end
     end
     bias
@@ -848,7 +847,7 @@ function dynamics!(result::DynamicsResult, state::MechanismState{X},
         stabilization_gains=default_constraint_stabilization_gains(X)) where X
     configuration_derivative!(result.q̇, state)
     contact_dynamics!(result, state)
-    for jointid in state.treejointids
+    @inbounds for jointid in state.treejointids
         bodyid = successorid(jointid, state)
         contactwrench = result.contactwrenches[bodyid]
         result.totalwrenches[bodyid] = haskey(externalwrenches, bodyid) ? externalwrenches[bodyid] + contactwrench : contactwrench
