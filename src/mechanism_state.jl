@@ -47,7 +47,7 @@ struct MechanismState{X, M, C, JointCollection}
     qranges::JointDict{UnitRange{Int}}
     vranges::JointDict{UnitRange{Int}}
     constraintranges::IndexDict{JointID, UnitRange{JointID}, UnitRange{Int}}
-    ancestor_joint_masks::JointDict{JointDict{Bool}} # TODO: use a Matrix-backed type
+    support_set_masks::BodyDict{JointDict{Bool}} # TODO: use a Matrix-backed type
     constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: use a Matrix-backed type
     q_index_to_joint_id::Vector{JointID}
     v_index_to_joint_id::Vector{JointID}
@@ -92,12 +92,10 @@ struct MechanismState{X, M, C, JointCollection}
         nontreejointids = lasttreejointid + 1 : lastjointid
         predecessor_and_successor_ids = JointDict{Pair{BodyID, BodyID}}(
             JointID(j) => (BodyID(predecessor(j, m)) => BodyID(successor(j, m))) for j in joints(m))
-        ancestor_joint_mask = function (joint)
-            JointDict{Bool}(
-                JointID(j) => j ∈ path(m, successor(joint, m), root_body(m)) for j in tree_joints(m)
-            )
+        support_set = function (b::RigidBody)
+            JointDict{Bool}(JointID(j) => (j ∈ tree_joints(m) ?  j ∈ path(m, b, root_body(m)) : false) for j in joints(m))
         end
-        ancestor_joint_masks = JointDict{JointDict{Bool}}(JointID(j) => ancestor_joint_mask(j) for j in tree_joints(m))
+        support_set_masks = BodyDict{JointDict{Bool}}(b => support_set(b) for b in bodies(m))
         constraint_jacobian_structure = JointDict{TreePath{RigidBody{M}, Joint{M}}}(
             JointID(j) => path(m, predecessor(j, m), successor(j, m)) for j in joints(m))
         qsegmented = SegmentedVector(q, tree_joints(m), num_positions)
@@ -164,7 +162,7 @@ struct MechanismState{X, M, C, JointCollection}
         new{X, M, C, JointCollection}(
             modcount(m), m, nonrootbodies, treejoints, nontreejoints,
             jointids, treejointids, nontreejointids,
-            predecessor_and_successor_ids, qranges, vranges, constraintranges, ancestor_joint_masks, constraint_jacobian_structure,
+            predecessor_and_successor_ids, qranges, vranges, constraintranges, support_set_masks, constraint_jacobian_structure,
             q_index_to_joint_id, v_index_to_joint_id,
             qsegmented, vsegmented, s,
             joint_transforms, joint_twists, joint_bias_accelerations, tree_joint_transforms, non_tree_joint_transforms,
@@ -551,38 +549,47 @@ $(SIGNATURES)
 
 Return the range of indices into the joint configuration vector ``q`` corresponding to joint `joint`.
 """
-Base.@propagate_inbounds configuration_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.qranges[joint]
+@propagate_inbounds configuration_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.qranges[joint]
 
 """
 $(SIGNATURES)
 
 Return the range of indices into the joint velocity vector ``v`` corresponding to joint `joint`.
 """
-Base.@propagate_inbounds velocity_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.vranges[joint]
+@propagate_inbounds velocity_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.vranges[joint]
 
 """
 $(SIGNATURES)
 
 Return the `JointID` of the joint associated with the given index into the configuration vector ``q``.
 """
-Base.@propagate_inbounds configuration_index_to_joint_id(state::MechanismState, qindex::Integer) = state.q_index_to_joint_id[qindex]
+@propagate_inbounds configuration_index_to_joint_id(state::MechanismState, qindex::Integer) = state.q_index_to_joint_id[qindex]
 
 """
 $(SIGNATURES)
 
 Return the `JointID` of the joint associated with the given index into the velocity vector ``v``.
 """
-Base.@propagate_inbounds velocity_index_to_joint_id(state::MechanismState, qindex::Integer) = state.v_index_to_joint_id[qindex]
+@propagate_inbounds velocity_index_to_joint_id(state::MechanismState, qindex::Integer) = state.v_index_to_joint_id[qindex]
 
 """
 $(SIGNATURES)
 
 Return the range of row indices into the constraint Jacobian corresponding to joint `joint`.
 """
-Base.@propagate_inbounds constraint_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.constraintranges[joint]
+@propagate_inbounds constraint_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.constraintranges[joint]
+
+
+"""
+$(SIGNATURES)
+
+Return whether `joint` supports `body`, i.e., `joint` is a tree joint on the path between `body` and the root.
+"""
+@propagate_inbounds function supports(joint::Union{<:Joint, JointID}, body::Union{<:RigidBody, BodyID}, state::MechanismState)
+    state.support_set_masks[body][joint]
+end
 
 ## Accessor functions for cached variables
-
 """
 $(SIGNATURES)
 

@@ -308,6 +308,23 @@ for (MatrixType, VectorType) in (:WrenchMatrix => :(Union{Twist, SpatialAccelera
     end
 end
 
+for ForceSpaceMatrix in (:MomentumMatrix, :WrenchMatrix)
+    for (A, B) in ((ForceSpaceMatrix, :GeometricJacobian), (:GeometricJacobian, ForceSpaceMatrix))
+        @eval begin
+            function Base.:*(at::LinearAlgebra.Transpose{<:Any, <:$A}, b::$B)
+                a = parent(at)
+                @framecheck a.frame b.frame
+                transpose(angular(a)) * angular(b) + transpose(linear(a)) * linear(b)
+            end
+            function Base.:*(a::$A, bt::LinearAlgebra.Transpose{<:Any, <:$B})
+                b = parent(bt)
+                @framecheck a.frame b.frame
+                angular(a) * transpose(angular(b)) + linear(a) * transpose(linear(b))
+            end
+        end
+    end
+end
+
 """
 $(SIGNATURES)
 

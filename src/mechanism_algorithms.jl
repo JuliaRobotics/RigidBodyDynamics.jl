@@ -246,32 +246,25 @@ The `out` argument must be an ``n_v \\times n_v`` lower triangular
 velocity vector ``v``.
 """
 function mass_matrix!(M::Symmetric, state::MechanismState)
-    @boundscheck size(M, 1) == num_velocities(state) || error("mass matrix has wrong size")
-    @boundscheck M.uplo == 'L' || error("expected a lower triangular symmetric matrix type as the mass matrix")
+    nv = num_velocities(state)
+    @boundscheck size(M, 1) == nv || throw(DimensionMismatch("mass matrix has wrong size"))
+    @boundscheck M.uplo == 'L' || throw(ArgumentError(("expected a lower triangular symmetric matrix")))
     update_motion_subspaces!(state)
     update_crb_inertias!(state)
-    fill!(M.data, 0)
     motion_subspaces = state.motion_subspaces.data
-    @inbounds for i in state.treejointids
-        bodyid = successorid(i, state)
-        Ici = crb_inertia(state, bodyid, false)
-        ancestor_joint_mask = values(state.ancestor_joint_masks[i]) # TODO
-        vrangei = velocity_range(state, i)
-        for coli in eachindex(vrangei)
-            vindexi = vrangei[coli]
-            Sicol = motion_subspaces[vindexi]
-            Ficol = Ici * Sicol
-            for j in Base.OneTo(i) # TODO: iterate directly over relevant joint ids
-                if ancestor_joint_mask[j]
-                    vrangej = velocity_range(state, j)
-                    for colj in eachindex(vrangej)
-                        vindexj = vrangej[colj]
-                        Sjcol = motion_subspaces[vindexj]
-                        # TODO: make nicer:
-                        @framecheck Ficol.frame Sjcol.frame
-                        M.data[vindexi, vindexj] = (transpose(angular(Ficol)) * angular(Sjcol) + transpose(linear(Ficol)) * linear(Sjcol))[1]
-                    end
-                end
+    @inbounds for i in Base.OneTo(nv)
+        jointi = velocity_index_to_joint_id(state, i)
+        bodyi = successorid(jointi, state)
+        Ici = crb_inertia(state, bodyi, false)
+        Si = motion_subspaces[i]
+        Fi = Ici * Si
+        for j in Base.OneTo(i)
+            jointj = velocity_index_to_joint_id(state, j)
+            M.data[i, j] = if supports(jointj, bodyi, state)
+                Sj = motion_subspaces[j]
+                (transpose(Fi) * Sj)[1]
+            else
+                zero(eltype(M))
             end
         end
     end
@@ -596,9 +589,7 @@ function constraint_jacobian!(jac::AbstractMatrix, rowranges, state::MechanismSt
                 for col in eachindex(vrange)
                     vindex = vrange[col]
                     Scol = state.motion_subspaces.data[vindex]
-                    # TODO: make nicer:
-                    @framecheck Tcol.frame Scol.frame
-                    jacelement = flipsign((transpose(angular(Tcol)) * angular(Scol) + transpose(linear(Tcol)) * linear(Scol))[1], sign)
+                    jacelement = flipsign((transpose(Tcol) * Scol)[1], sign)
                     jac[cindex, vindex] = jacelement
                 end
             end
