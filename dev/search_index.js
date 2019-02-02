@@ -1125,7 +1125,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "method",
-    "text": "Create a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
+    "text": "rand_floating_tree_mechanism(?, nonfloatingjointtypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
 },
 
 {
@@ -1141,7 +1141,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "method",
-    "text": "rand_tree_mechanism(?, jointtypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n\n\n"
+    "text": "Create a random tree Mechanism.\n\n\n\n\n\n"
 },
 
 {
@@ -1405,7 +1405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -1413,7 +1413,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -2245,7 +2245,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Benchmarks",
     "title": "Benchmarks",
     "category": "section",
-    "text": "To attain maximal performance, it is recommended to pass -O3, --check-bounds=no as command line flags to julia. As of Julia 1.1, maximizing performance for the dynamics! algorithm requires either setting the number of BLAS threads to 1 (using LinearAlgebra; BLAS.set_num_threads(1)) if using OpenBLAS (the default), or compiling Julia with MKL. See this issue for more information.Run perf/runbenchmarks.jl to see benchmark results for the Atlas robot (v5). Results below are for the following scenarios:Compute the joint-space mass matrix.\nCompute both the mass matrix and a geometric Jacobian from the left hand to the right foot.\nDo inverse dynamics.\nDo forward dynamics.Note that results on Travis builds are not at all representative because of code coverage. Results on a reasonably fast machine at commit 32a2ccb:Output of versioninfo():Julia Version 1.1.0\nCommit 80516ca202 (2019-01-21 21:24 UTC)\nPlatform Info:\n  OS: Linux (x86_64-pc-linux-gnu)\n  CPU: Intel(R) Core(TM) i7-6950X CPU @ 3.00GHz\n  WORD_SIZE: 64\n  LIBM: libopenlibm\n  LLVM: libLLVM-6.0.1 (ORCJIT, broadwell)Mass matrix:  memory estimate:  0 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     5.532 μs (0.00% GC)\n  median time:      5.961 μs (0.00% GC)\n  mean time:        5.915 μs (0.00% GC)\n  maximum time:     9.714 μs (0.00% GC)Mass matrix and Jacobian from left hand to right foot:  memory estimate:  0 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     6.011 μs (0.00% GC)\n  median time:      6.116 μs (0.00% GC)\n  mean time:        6.233 μs (0.00% GC)\n  maximum time:     12.019 μs (0.00% GC)Note the low additional cost of computing a Jacobian when the mass matrix is already computed. This is because RigidBodyDynamics.jl caches intermediate computation results.Inverse dynamics:  memory estimate:  0 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     5.602 μs (0.00% GC)\n  median time:      5.684 μs (0.00% GC)\n  mean time:        5.753 μs (0.00% GC)\n  maximum time:     11.772 μs (0.00% GC)Forward dynamics:  memory estimate:  0 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     12.209 μs (0.00% GC)\n  median time:      12.414 μs (0.00% GC)\n  mean time:        13.548 μs (0.00% GC)\n  maximum time:     29.783 μs (0.00% GC)"
+    "text": "To attain maximal performance, it is recommended to pass -O3, --check-bounds=no as command line flags to julia. As of Julia 1.1, maximizing performance for the dynamics! algorithm requires either setting the number of BLAS threads to 1 (using LinearAlgebra; BLAS.set_num_threads(1)) if using OpenBLAS (the default), or compiling Julia with MKL. See this issue for more information.Run perf/runbenchmarks.jl to see benchmark results for the Atlas robot (v5). Results below are for the following scenarios:Compute the joint-space mass matrix.\nCompute both the mass matrix and a geometric Jacobian from the left hand to the right foot.\nDo inverse dynamics.\nDo forward dynamics.Note that results on Travis builds are not at all representative because of code coverage. Results on a reasonably fast machine at commit 32a2ccb:Output of versioninfo():Julia Version 1.1.0\nCommit 80516ca202 (2019-01-21 21:24 UTC)\nPlatform Info:\n  OS: Linux (x86_64-pc-linux-gnu)\n  CPU: Intel(R) Core(TM) i7-6950X CPU @ 3.00GHz\n  WORD_SIZE: 64\n  LIBM: libopenlibm\n  LLVM: libLLVM-6.0.1 (ORCJIT, broadwell)Mass matrix:  memory estimate:  0 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     5.379 μs (0.00% GC)\n  median time:      5.795 μs (0.00% GC)\n  mean time:        5.770 μs (0.00% GC)\n  maximum time:     9.258 μs (0.00% GC)Mass matrix and Jacobian from left hand to right foot:  memory estimate:  0 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     5.754 μs (0.00% GC)\n  median time:      5.856 μs (0.00% GC)\n  mean time:        5.940 μs (0.00% GC)\n  maximum time:     10.100 μs (0.00% GC)Note the low additional cost of computing a Jacobian when the mass matrix is already computed. This is because RigidBodyDynamics.jl caches intermediate computation results.Inverse dynamics:  memory estimate:  0 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     5.623 μs (0.00% GC)\n  median time:      5.727 μs (0.00% GC)\n  mean time:        5.886 μs (0.00% GC)\n  maximum time:     9.637 μs (0.00% GC)Forward dynamics:  memory estimate:  0 bytes\n  allocs estimate:  0\n  --------------\n  minimum time:     17.721 μs (0.00% GC)\n  median time:      18.862 μs (0.00% GC)\n  mean time:        18.755 μs (0.00% GC)\n  maximum time:     24.910 μs (0.00% GC)"
 },
 
 ]}
