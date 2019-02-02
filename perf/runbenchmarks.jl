@@ -104,7 +104,7 @@ function create_benchmark_suite()
         center_of_mass($state)
     end, setup = rand!($state), evals = 10)
 
-    mcmechanism, _ = maximal_coordinates(mechanism)
+    mcmechanism = maximal_coordinates(mechanism)
     mcstate = MechanismState{ScalarType}(mcmechanism)
     mcresult = DynamicsResult{ScalarType}(mcmechanism)
 
