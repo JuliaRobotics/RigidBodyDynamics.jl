@@ -1125,7 +1125,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "method",
-    "text": "Create a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
+    "text": "rand_floating_tree_mechanism(?, nonfloatingjointtypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
 },
 
 {
@@ -1141,7 +1141,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "method",
-    "text": "rand_tree_mechanism(?, jointtypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n\n\n"
+    "text": "Create a random tree Mechanism.\n\n\n\n\n\n"
 },
 
 {
@@ -1241,6 +1241,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "mechanism/#RigidBodyDynamics.non_tree_joints-Tuple{Mechanism}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.non_tree_joints",
+    "category": "method",
+    "text": "non_tree_joints(mechanism)\n\n\nReturn the Joints that are not part of the Mechanism\'s spanning tree as an iterable collection.\n\n\n\n\n\n"
+},
+
+{
     "location": "mechanism/#RigidBodyDynamics.num_additional_states-Tuple{Mechanism}",
     "page": "Mechanism",
     "title": "RigidBodyDynamics.num_additional_states",
@@ -1337,14 +1345,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanism/#RigidBodyDynamics.non_tree_joints-Tuple{Mechanism}",
-    "page": "Mechanism",
-    "title": "RigidBodyDynamics.non_tree_joints",
-    "category": "method",
-    "text": "non_tree_joints(mechanism)\n\n\nReturn the Joints that are not part of the Mechanism\'s spanning tree as an iterable collection.\n\n\n\n\n\n"
-},
-
-{
     "location": "mechanism/#Basic-functionality-1",
     "page": "Mechanism",
     "title": "Basic functionality",
@@ -1405,7 +1405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -1413,11 +1413,11 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
-    "location": "mechanismstate/#RigidBodyDynamics.configuration-Tuple{MechanismState,Union{JointID, #s153} where #s153<:Joint}",
+    "location": "mechanismstate/#RigidBodyDynamics.configuration-Tuple{MechanismState,Union{JointID, #s154} where #s154<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration",
     "category": "method",
@@ -1433,7 +1433,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate/#RigidBodyDynamics.configuration_range-Tuple{MechanismState,Union{JointID, #s153} where #s153<:Joint}",
+    "location": "mechanismstate/#RigidBodyDynamics.configuration_range-Tuple{MechanismState,Union{JointID, #s154} where #s154<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.configuration_range",
     "category": "method",
@@ -1553,7 +1553,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate/#RigidBodyDynamics.relative_twist-Tuple{MechanismState,Union{BodyID, #s148} where #s148<:RigidBody,Union{BodyID, #s147} where #s147<:RigidBody}",
+    "location": "mechanismstate/#RigidBodyDynamics.relative_twist-Tuple{MechanismState,Union{BodyID, #s153} where #s153<:RigidBody,Union{BodyID, #s148} where #s148<:RigidBody}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.relative_twist",
     "category": "method",
@@ -1633,7 +1633,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate/#RigidBodyDynamics.velocity-Tuple{MechanismState,Union{JointID, #s153} where #s153<:Joint}",
+    "location": "mechanismstate/#RigidBodyDynamics.velocity-Tuple{MechanismState,Union{JointID, #s154} where #s154<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity",
     "category": "method",
@@ -1649,7 +1649,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate/#RigidBodyDynamics.velocity_range-Tuple{MechanismState,Union{JointID, #s153} where #s153<:Joint}",
+    "location": "mechanismstate/#RigidBodyDynamics.velocity_range-Tuple{MechanismState,Union{JointID, #s154} where #s154<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.velocity_range",
     "category": "method",
@@ -1721,7 +1721,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "mechanismstate/#RigidBodyDynamics.constraint_range-Tuple{MechanismState,Union{JointID, #s153} where #s153<:Joint}",
+    "location": "mechanismstate/#RigidBodyDynamics.constraint_range-Tuple{MechanismState,Union{JointID, #s154} where #s154<:Joint}",
     "page": "MechanismState",
     "title": "RigidBodyDynamics.constraint_range",
     "category": "method",
@@ -1734,6 +1734,14 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.reset_contact_state!",
     "category": "method",
     "text": "reset_contact_state!(state)\n\n\nReset all contact state variables.\n\n\n\n\n\n"
+},
+
+{
+    "location": "mechanismstate/#RigidBodyDynamics.supports-Tuple{Union{JointID, #s153} where #s153<:Joint,Union{BodyID, #s148} where #s148<:RigidBody,MechanismState}",
+    "page": "MechanismState",
+    "title": "RigidBodyDynamics.supports",
+    "category": "method",
+    "text": "supports(joint, body, state)\n\n\nReturn whether joint supports body, i.e., joint is a tree joint on the path between body and the root.\n\n\n\n\n\n"
 },
 
 {
@@ -1817,7 +1825,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms/#RigidBodyDynamics.dynamics!-Union{Tuple{X}, Tuple{DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{T,1} where T}, Tuple{DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{T,1} where T,AbstractDict{BodyID,#s15} where #s15<:Wrench}} where X",
+    "location": "algorithms/#RigidBodyDynamics.dynamics!-Union{Tuple{X}, Tuple{DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{T,1} where T}, Tuple{DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{T,1} where T,AbstractDict{BodyID,#s16} where #s16<:Wrench}} where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "method",
@@ -1825,7 +1833,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms/#RigidBodyDynamics.dynamics!-Union{Tuple{X}, Tuple{Union{DenseArray{X,1}, ReinterpretArray{X,1,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, SubArray{X,1,A,I,L} where L where I<:Tuple{Vararg{Union{Int64, AbstractRange{Int64}, AbstractCartesianIndex},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, DenseArray}},DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{X,1}}, Tuple{Union{DenseArray{X,1}, ReinterpretArray{X,1,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, SubArray{X,1,A,I,L} where L where I<:Tuple{Vararg{Union{Int64, AbstractRange{Int64}, AbstractCartesianIndex},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, DenseArray}},DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{X,1},AbstractArray{T,1} where T}, Tuple{Union{DenseArray{X,1}, ReinterpretArray{X,1,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, SubArray{X,1,A,I,L} where L where I<:Tuple{Vararg{Union{Int64, AbstractRange{Int64}, AbstractCartesianIndex},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, DenseArray}},DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{X,1},AbstractArray{T,1} where T,AbstractDict{BodyID,#s16} where #s16<:Wrench}} where X",
+    "location": "algorithms/#RigidBodyDynamics.dynamics!-Union{Tuple{X}, Tuple{Union{DenseArray{X,1}, ReinterpretArray{X,1,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, SubArray{X,1,A,I,L} where L where I<:Tuple{Vararg{Union{Int64, AbstractRange{Int64}, AbstractCartesianIndex},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, DenseArray}},DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{X,1}}, Tuple{Union{DenseArray{X,1}, ReinterpretArray{X,1,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, SubArray{X,1,A,I,L} where L where I<:Tuple{Vararg{Union{Int64, AbstractRange{Int64}, AbstractCartesianIndex},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, DenseArray}},DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{X,1},AbstractArray{T,1} where T}, Tuple{Union{DenseArray{X,1}, ReinterpretArray{X,1,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, ReshapedArray{X,1,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray}, SubArray{X,1,A,I,L} where L where I<:Tuple{Vararg{Union{Int64, AbstractRange{Int64}, AbstractCartesianIndex},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, ReshapedArray{T,N,A,MI} where MI<:Tuple{Vararg{SignedMultiplicativeInverse{Int64},N} where N} where A<:Union{ReinterpretArray{T,N,S,A} where S where A<:Union{SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, SubArray{T,N,A,I,true} where I<:Tuple{AbstractUnitRange,Vararg{Any,N} where N} where A<:DenseArray where N where T, DenseArray} where N where T, DenseArray}},DynamicsResult,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractArray{X,1},AbstractArray{T,1} where T,AbstractDict{BodyID,#s17} where #s17<:Wrench}} where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics!",
     "category": "method",
@@ -1833,7 +1841,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms/#RigidBodyDynamics.dynamics_bias!-Union{Tuple{X}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s16} where #s16<:SpatialAcceleration,AbstractDict{BodyID,#s15} where #s15<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s14} where #s14<:SpatialAcceleration,AbstractDict{BodyID,#s13} where #s13<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractDict{BodyID,#s12} where #s12<:Wrench}} where X",
+    "location": "algorithms/#RigidBodyDynamics.dynamics_bias!-Union{Tuple{X}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s17} where #s17<:SpatialAcceleration,AbstractDict{BodyID,#s16} where #s16<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s15} where #s15<:SpatialAcceleration,AbstractDict{BodyID,#s14} where #s14<:Wrench,MechanismState{X,M,C,JointCollection} where JointCollection where C where M,AbstractDict{BodyID,#s13} where #s13<:Wrench}} where X",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.dynamics_bias!",
     "category": "method",
@@ -1881,7 +1889,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "algorithms/#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s153} where #s153<:Wrench}} where T",
+    "location": "algorithms/#RigidBodyDynamics.inverse_dynamics!-Union{Tuple{T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T}, Tuple{SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,Wrench{T}},AbstractDict{BodyID,SpatialAcceleration{T}},MechanismState,SegmentedVector{JointID,T,KeyRange,P} where P<:AbstractArray{T,1} where KeyRange<:AbstractRange{JointID} where T,AbstractDict{BodyID,#s154} where #s154<:Wrench}} where T",
     "page": "Kinematics/dynamics algorithms",
     "title": "RigidBodyDynamics.inverse_dynamics!",
     "category": "method",
