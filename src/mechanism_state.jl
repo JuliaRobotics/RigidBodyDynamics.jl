@@ -48,6 +48,7 @@ struct MechanismState{X, M, C, JointCollection}
     vranges::JointDict{UnitRange{Int}}
     constraintranges::IndexDict{JointID, UnitRange{JointID}, UnitRange{Int}}
     support_set_masks::BodyDict{JointDict{Bool}} # TODO: use a Matrix-backed type
+    mass_matrix_structure::Matrix{Bool}
     constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: use a Matrix-backed type
     q_index_to_joint_id::Vector{JointID}
     v_index_to_joint_id::Vector{JointID}
@@ -82,6 +83,7 @@ struct MechanismState{X, M, C, JointCollection}
         @assert length(s) == num_additional_states(m)
 
         # mechanism layout
+        nv = length(v)
         nonrootbodies = collect(non_root_bodies(m))
         treejoints = JointCollection(tree_joints(m))
         nontreejoints = JointCollection(non_tree_joints(m))
@@ -96,6 +98,7 @@ struct MechanismState{X, M, C, JointCollection}
             JointDict{Bool}(JointID(j) => (j ∈ tree_joints(m) ?  j ∈ path(m, b, root_body(m)) : false) for j in joints(m))
         end
         support_set_masks = BodyDict{JointDict{Bool}}(b => support_set(b) for b in bodies(m))
+        mass_matrix_structure = fill(false, nv, nv)
         constraint_jacobian_structure = JointDict{TreePath{RigidBody{M}, Joint{M}}}(
             JointID(j) => path(m, predecessor(j, m), successor(j, m)) for j in joints(m))
         qsegmented = SegmentedVector(q, tree_joints(m), num_positions)
@@ -159,16 +162,28 @@ struct MechanismState{X, M, C, JointCollection}
         bias_accelerations_wrt_world[root] = zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe)
         inertias[root] = zero(SpatialInertia{C}, rootframe)
 
-        new{X, M, C, JointCollection}(
+        state = new{X, M, C, JointCollection}(
             modcount(m), m, nonrootbodies, treejoints, nontreejoints,
             jointids, treejointids, nontreejointids,
-            predecessor_and_successor_ids, qranges, vranges, constraintranges, support_set_masks, constraint_jacobian_structure,
+            predecessor_and_successor_ids, qranges, vranges, constraintranges, support_set_masks, mass_matrix_structure, constraint_jacobian_structure,
             q_index_to_joint_id, v_index_to_joint_id,
             qsegmented, vsegmented, s,
             joint_transforms, joint_twists, joint_bias_accelerations, tree_joint_transforms, non_tree_joint_transforms,
             motion_subspaces, constraint_wrench_subspaces,
             transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
             contact_states)
+
+        @inbounds for i in Base.OneTo(nv)
+            jointi = velocity_index_to_joint_id(state, i)
+            bodyi = successorid(jointi, state)
+            for j in Base.OneTo(i)
+                jointj = velocity_index_to_joint_id(state, j)
+                mass_matrix_structure[i, j] = true
+                mass_matrix_structure[j, i] = true
+            end
+        end
+
+        state
     end
 
     function MechanismState{X, M, C}(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M, C}

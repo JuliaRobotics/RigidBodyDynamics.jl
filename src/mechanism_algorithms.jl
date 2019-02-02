@@ -260,7 +260,7 @@ function mass_matrix!(M::Symmetric, state::MechanismState)
         Fi = Ici * Si
         for j in Base.OneTo(i)
             jointj = velocity_index_to_joint_id(state, j)
-            M.data[i, j] = if supports(jointj, bodyi, state)
+            M.data[i, j] = if state.mass_matrix_structure[i, j]
                 Sj = motion_subspaces[j]
                 (transpose(Fi) * Sj)[1]
             else
