@@ -1,27 +1,27 @@
 # Benchmarks
 
-To get maximal performance, it is recommended to pass `-O3`, `--check-bounds=no`, and `--math-mode=fast` as command line flags to `julia`.
+To attain maximal performance, it is recommended to pass `-O3`, `--check-bounds=no` as command line flags to `julia`. As of Julia 1.1, maximizing performance for the `dynamics!` algorithm requires either setting the number of BLAS threads to 1 (`using LinearAlgebra; BLAS.set_num_threads(1)`) if using OpenBLAS (the default), or compiling Julia with MKL. See [this issue](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/issues/500) for more information.
 
-Run `perf/runbenchmarks.jl` to see benchmark results for the Atlas robot (v5) in the following scenarios:
+Run `perf/runbenchmarks.jl` to see benchmark results for the Atlas robot (v5). Results below are for the following scenarios:
 
 1. Compute the joint-space mass matrix.
-1. Compute both the mass matrix and a geometric Jacobian from the left hand to the right foot.
-1. Do inverse dynamics.
-1. Do forward dynamics.
+2. Compute both the mass matrix and a geometric Jacobian from the left hand to the right foot.
+3. Do inverse dynamics.
+4. Do forward dynamics.
 
-Note that results on Travis builds are **not at all** representative because of code coverage. Results on a reasonably fast machine at commit [fa1b725](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/tree/fa1b725d20fb14cd8fe9c5e8ed6312164f56a902):
+Note that results on Travis builds are **not at all** representative because of code coverage. Results on a reasonably fast machine at commit [32a2ccb](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/tree/32a2ccbdf0e432bfdde77e24feabc2b641a3565a):
 
 Output of `versioninfo()`:
 
 ```
-Julia Version 0.7.0-beta.133
-Commit 60174a9 (2018-07-03 20:03 UTC)
+Julia Version 1.1.0
+Commit 80516ca202 (2019-01-21 21:24 UTC)
 Platform Info:
-  OS: Linux (x86_64-linux-gnu)
+  OS: Linux (x86_64-pc-linux-gnu)
   CPU: Intel(R) Core(TM) i7-6950X CPU @ 3.00GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-6.0.0 (ORCJIT, broadwell)
+  LLVM: libLLVM-6.0.1 (ORCJIT, broadwell)
 ```
 
 Mass matrix:
@@ -30,10 +30,10 @@ Mass matrix:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     6.618 μs (0.00% GC)
-  median time:      6.883 μs (0.00% GC)
-  mean time:        7.158 μs (0.00% GC)
-  maximum time:     40.992 μs (0.00% GC)
+  minimum time:     5.532 μs (0.00% GC)
+  median time:      5.961 μs (0.00% GC)
+  mean time:        5.915 μs (0.00% GC)
+  maximum time:     9.714 μs (0.00% GC)
 ```
 
 Mass matrix and Jacobian from left hand to right foot:
@@ -42,10 +42,10 @@ Mass matrix and Jacobian from left hand to right foot:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     7.442 μs (0.00% GC)
-  median time:      7.839 μs (0.00% GC)
-  mean time:        7.840 μs (0.00% GC)
-  maximum time:     43.941 μs (0.00% GC)
+  minimum time:     6.011 μs (0.00% GC)
+  median time:      6.116 μs (0.00% GC)
+  mean time:        6.233 μs (0.00% GC)
+  maximum time:     12.019 μs (0.00% GC)
 ```
 
 Note the low additional cost of computing a Jacobian when the mass matrix is already computed. This is because RigidBodyDynamics.jl caches intermediate computation results.
@@ -56,10 +56,10 @@ Inverse dynamics:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     7.954 μs (0.00% GC)
-  median time:      8.246 μs (0.00% GC)
-  mean time:        8.456 μs (0.00% GC)
-  maximum time:     34.537 μs (0.00% GC)
+  minimum time:     5.602 μs (0.00% GC)
+  median time:      5.684 μs (0.00% GC)
+  mean time:        5.753 μs (0.00% GC)
+  maximum time:     11.772 μs (0.00% GC)
 ```
 
 Forward dynamics:
@@ -68,8 +68,8 @@ Forward dynamics:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     29.740 μs (0.00% GC)
-  median time:      36.015 μs (0.00% GC)
-  mean time:        36.014 μs (0.00% GC)
-  maximum time:     186.809 μs (0.00% GC)
+  minimum time:     12.209 μs (0.00% GC)
+  median time:      12.414 μs (0.00% GC)
+  mean time:        13.548 μs (0.00% GC)
+  maximum time:     29.783 μs (0.00% GC)
 ```
