@@ -47,7 +47,7 @@ struct MechanismState{X, M, C, JointCollection}
     qranges::JointDict{UnitRange{Int}}
     vranges::JointDict{UnitRange{Int}}
     constraintranges::IndexDict{JointID, UnitRange{JointID}, UnitRange{Int}}
-    support_sets::BodyDict{JointDict{Bool}} # TODO: use a Matrix-backed type
+    support_velocity_indices::BodyDict{Vector{Int}} # TODO: consider using a Matrix-backed type as a mask
     constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: use a Matrix-backed type
     q_index_to_joint_id::Vector{JointID}
     v_index_to_joint_id::Vector{JointID}
@@ -92,16 +92,18 @@ struct MechanismState{X, M, C, JointCollection}
         nontreejointids = lasttreejointid + 1 : lastjointid
         predecessor_and_successor_ids = JointDict{Pair{BodyID, BodyID}}(
             JointID(j) => (BodyID(predecessor(j, m)) => BodyID(successor(j, m))) for j in joints(m))
-        support_set = function (b::RigidBody)
-            JointDict{Bool}(JointID(j) => (j ∈ tree_joints(m) ?  j ∈ path(m, b, root_body(m)) : false) for j in joints(m))
-        end
-        support_sets = BodyDict{JointDict{Bool}}(b => support_set(b) for b in bodies(m))
         constraint_jacobian_structure = JointDict{TreePath{RigidBody{M}, Joint{M}}}(
             JointID(j) => path(m, predecessor(j, m), successor(j, m)) for j in joints(m))
         qsegmented = SegmentedVector(q, tree_joints(m), num_positions)
         vsegmented = SegmentedVector(v, tree_joints(m), num_velocities)
         qranges = ranges(qsegmented)
         vranges = ranges(vsegmented)
+        support_velocity_indices = BodyDict{Vector{JointID}}(BodyID(b) => Int[] for b in bodies(m))
+        for b in bodies(m)
+            for j in path(m, root_body(m), b)
+                append!(support_velocity_indices[b], vranges[j])
+            end
+        end
         constraintranges = let start = 1
             rangevec = UnitRange{Int}[start : (start += num_constraints(j)) - 1 for j in non_tree_joints(m)]
             IndexDict(nontreejointids, rangevec)
@@ -162,7 +164,7 @@ struct MechanismState{X, M, C, JointCollection}
         new{X, M, C, JointCollection}(
             modcount(m), m, nonrootbodies, treejoints, nontreejoints,
             jointids, treejointids, nontreejointids,
-            predecessor_and_successor_ids, qranges, vranges, constraintranges, support_sets, constraint_jacobian_structure,
+            predecessor_and_successor_ids, qranges, vranges, constraintranges, support_velocity_indices, constraint_jacobian_structure,
             q_index_to_joint_id, v_index_to_joint_id,
             qsegmented, vsegmented, s,
             joint_transforms, joint_twists, joint_bias_accelerations, tree_joint_transforms, non_tree_joint_transforms,
@@ -578,16 +580,6 @@ $(SIGNATURES)
 Return the range of row indices into the constraint Jacobian corresponding to joint `joint`.
 """
 @propagate_inbounds constraint_range(state::MechanismState, joint::Union{<:Joint, JointID}) = state.constraintranges[joint]
-
-
-"""
-$(SIGNATURES)
-
-Return whether `joint` supports `body`, i.e., `joint` is a tree joint on the path between `body` and the root.
-"""
-@propagate_inbounds function supports(joint::Union{<:Joint, JointID}, body::Union{<:RigidBody, BodyID}, state::MechanismState)
-    state.support_sets[body][joint]
-end
 
 ## Accessor functions for cached variables
 """

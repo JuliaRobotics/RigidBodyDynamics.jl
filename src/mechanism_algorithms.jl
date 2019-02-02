@@ -259,12 +259,10 @@ function mass_matrix!(M::Symmetric, state::MechanismState)
         Ici = crb_inertia(state, bodyi, false)
         Si = motion_subspaces[i]
         Fi = Ici * Si
-        for j in Base.OneTo(i)
+        @simd for j in state.support_velocity_indices[bodyi]
             jointj = velocity_index_to_joint_id(state, j)
-            if supports(jointj, bodyi, state)
-                Sj = motion_subspaces[j]
-                M.data[i, j] = (transpose(Fi) * Sj)[1]
-            end
+            Sj = motion_subspaces[j]
+            M.data[i, j] = (transpose(Fi) * Sj)[1]
         end
     end
     M
