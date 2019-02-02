@@ -30,10 +30,10 @@ Mass matrix:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     5.532 μs (0.00% GC)
-  median time:      5.961 μs (0.00% GC)
-  mean time:        5.915 μs (0.00% GC)
-  maximum time:     9.714 μs (0.00% GC)
+  minimum time:     5.379 μs (0.00% GC)
+  median time:      5.795 μs (0.00% GC)
+  mean time:        5.770 μs (0.00% GC)
+  maximum time:     9.258 μs (0.00% GC)
 ```
 
 Mass matrix and Jacobian from left hand to right foot:
@@ -42,10 +42,10 @@ Mass matrix and Jacobian from left hand to right foot:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     6.011 μs (0.00% GC)
-  median time:      6.116 μs (0.00% GC)
-  mean time:        6.233 μs (0.00% GC)
-  maximum time:     12.019 μs (0.00% GC)
+  minimum time:     5.754 μs (0.00% GC)
+  median time:      5.856 μs (0.00% GC)
+  mean time:        5.940 μs (0.00% GC)
+  maximum time:     10.100 μs (0.00% GC)
 ```
 
 Note the low additional cost of computing a Jacobian when the mass matrix is already computed. This is because RigidBodyDynamics.jl caches intermediate computation results.
@@ -56,10 +56,10 @@ Inverse dynamics:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     5.602 μs (0.00% GC)
-  median time:      5.684 μs (0.00% GC)
-  mean time:        5.753 μs (0.00% GC)
-  maximum time:     11.772 μs (0.00% GC)
+  minimum time:     5.623 μs (0.00% GC)
+  median time:      5.727 μs (0.00% GC)
+  mean time:        5.886 μs (0.00% GC)
+  maximum time:     9.637 μs (0.00% GC)
 ```
 
 Forward dynamics:
@@ -68,8 +68,8 @@ Forward dynamics:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     12.209 μs (0.00% GC)
-  median time:      12.414 μs (0.00% GC)
-  mean time:        13.548 μs (0.00% GC)
-  maximum time:     29.783 μs (0.00% GC)
+  minimum time:     17.721 μs (0.00% GC)
+  median time:      18.862 μs (0.00% GC)
+  mean time:        18.755 μs (0.00% GC)
+  maximum time:     24.910 μs (0.00% GC)
 ```
