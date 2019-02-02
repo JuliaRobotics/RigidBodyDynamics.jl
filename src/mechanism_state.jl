@@ -47,7 +47,7 @@ struct MechanismState{X, M, C, JointCollection}
     qranges::JointDict{UnitRange{Int}}
     vranges::JointDict{UnitRange{Int}}
     constraintranges::IndexDict{JointID, UnitRange{JointID}, UnitRange{Int}}
-    support_sets::BodyDict{JointDict{Bool}} # TODO: use a Matrix-backed type
+    support_set_masks::BodyDict{JointDict{Bool}} # TODO: use a Matrix-backed type
     constraint_jacobian_structure::JointDict{TreePath{RigidBody{M}, Joint{M}}} # TODO: use a Matrix-backed type
     q_index_to_joint_id::Vector{JointID}
     v_index_to_joint_id::Vector{JointID}
@@ -95,7 +95,7 @@ struct MechanismState{X, M, C, JointCollection}
         support_set = function (b::RigidBody)
             JointDict{Bool}(JointID(j) => (j ∈ tree_joints(m) ?  j ∈ path(m, b, root_body(m)) : false) for j in joints(m))
         end
-        support_sets = BodyDict{JointDict{Bool}}(b => support_set(b) for b in bodies(m))
+        support_set_masks = BodyDict{JointDict{Bool}}(b => support_set(b) for b in bodies(m))
         constraint_jacobian_structure = JointDict{TreePath{RigidBody{M}, Joint{M}}}(
             JointID(j) => path(m, predecessor(j, m), successor(j, m)) for j in joints(m))
         qsegmented = SegmentedVector(q, tree_joints(m), num_positions)
@@ -162,7 +162,7 @@ struct MechanismState{X, M, C, JointCollection}
         new{X, M, C, JointCollection}(
             modcount(m), m, nonrootbodies, treejoints, nontreejoints,
             jointids, treejointids, nontreejointids,
-            predecessor_and_successor_ids, qranges, vranges, constraintranges, support_sets, constraint_jacobian_structure,
+            predecessor_and_successor_ids, qranges, vranges, constraintranges, support_set_masks, constraint_jacobian_structure,
             q_index_to_joint_id, v_index_to_joint_id,
             qsegmented, vsegmented, s,
             joint_transforms, joint_twists, joint_bias_accelerations, tree_joint_transforms, non_tree_joint_transforms,
@@ -586,7 +586,7 @@ $(SIGNATURES)
 Return whether `joint` supports `body`, i.e., `joint` is a tree joint on the path between `body` and the root.
 """
 @propagate_inbounds function supports(joint::Union{<:Joint, JointID}, body::Union{<:RigidBody, BodyID}, state::MechanismState)
-    state.support_sets[body][joint]
+    state.support_set_masks[body][joint]
 end
 
 ## Accessor functions for cached variables

@@ -251,7 +251,6 @@ function mass_matrix!(M::Symmetric, state::MechanismState)
     @boundscheck M.uplo == 'L' || throw(ArgumentError(("expected a lower triangular symmetric matrix")))
     update_motion_subspaces!(state)
     update_crb_inertias!(state)
-    fill!(M.data, 0)
     motion_subspaces = state.motion_subspaces.data
     @inbounds for i in Base.OneTo(nv)
         jointi = velocity_index_to_joint_id(state, i)
@@ -261,9 +260,11 @@ function mass_matrix!(M::Symmetric, state::MechanismState)
         Fi = Ici * Si
         for j in Base.OneTo(i)
             jointj = velocity_index_to_joint_id(state, j)
-            if supports(jointj, bodyi, state)
+            M.data[i, j] = if supports(jointj, bodyi, state)
                 Sj = motion_subspaces[j]
-                M.data[i, j] = (transpose(Fi) * Sj)[1]
+                (transpose(Fi) * Sj)[1]
+            else
+                zero(eltype(M))
             end
         end
     end
