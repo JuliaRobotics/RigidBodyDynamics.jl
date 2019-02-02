@@ -376,11 +376,18 @@ function momentum_matrix(state::MechanismState)
 end
 
 function bias_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}}, state::MechanismState{X, M}) where {T, X, M}
-    update_bias_accelerations_wrt_world!(state)
-    gravitybias = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(state.mechanism))
-    for jointid in state.treejointids
-        bodyid = successorid(jointid, state)
-        out[bodyid] = gravitybias + bias_acceleration(state, bodyid, false)
+    update_transforms!(state)
+    update_twists_wrt_world!(state)
+    root_body_id = BodyID(1)
+    out[root_body_id] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(state.mechanism))
+    @inbounds for jointid in state.treejointids
+        parentbodyid, bodyid = predsucc(jointid, state)
+        toroot = transform_to_root(state, bodyid, false)
+        parenttwist = twist_wrt_world(state, parentbodyid, false)
+        bodytwist = twist_wrt_world(state, bodyid, false)
+        parentaccel = out[parentbodyid]
+        jointaccel = zero(SpatialAcceleration{T}, bodytwist.body, parenttwist.body, parentaccel.frame)
+        out[bodyid] = parentaccel + (-bodytwist) × parenttwist + jointaccel
     end
     nothing
 end
@@ -389,7 +396,7 @@ function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}
     update_transforms!(state)
     update_twists_wrt_world!(state)
 
-    # Compute joint accelerations
+    # Joint accelerations
     joints = state.treejoints
     qs = values(segments(state.q))
     vs = values(segments(state.v))
@@ -400,19 +407,18 @@ function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}
     end
 
     # Recursive propagation
-    # TODO: manual frame changes. Find a way to not avoid the frame checks here.
-    mechanism = state.mechanism
-    root = root_body(mechanism)
-    out[root] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(mechanism))
+    root_body_id = BodyID(1)
+    out[root_body_id] = convert(SpatialAcceleration{T}, -gravitational_spatial_acceleration(state.mechanism))
     @inbounds for jointid in state.treejointids
         parentbodyid, bodyid = predsucc(jointid, state)
         toroot = transform_to_root(state, bodyid, false)
         parenttwist = twist_wrt_world(state, parentbodyid, false)
         bodytwist = twist_wrt_world(state, bodyid, false)
+        parentaccel = out[parentbodyid]
         jointaccel = out[bodyid]
         jointaccel = SpatialAcceleration(jointaccel.body, parenttwist.body, toroot.to,
             Spatial.transform_spatial_motion(jointaccel.angular, jointaccel.linear, rotation(toroot), translation(toroot))...)
-        out[bodyid] = out[parentbodyid] + (-bodytwist) × parenttwist + jointaccel
+        out[bodyid] = parentaccel + (-bodytwist) × parenttwist + jointaccel
     end
     nothing
 end
