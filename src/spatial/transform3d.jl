@@ -20,16 +20,16 @@ $(TYPEDEF)
 Represents the transformation from one three-dimensional Cartesian coordinate system to
 another, stored as a ``4 \\times 4``  homogeneous transformation matrix.
 """
-struct HomogeneousTransform3D{T} <: AbstractTransform3D{T}
+struct HTransform3D{T} <: AbstractTransform3D{T}
     mat::SMatrix{4, 4, T, 16}
 end
 
-@inline HomogeneousTransform3D{T}(tf::HomogeneousTransform3D) where {T} = HomogeneousTransform3D{T}(similar_type(tf.mat, T)(tf.mat))
-@inline HomogeneousTransform3D(tf::HomogeneousTransform3D) = HomogeneousTransform3D(copy(tf.mat))
+@inline HTransform3D{T}(tf::HTransform3D) where {T} = HTransform3D{T}(similar_type(tf.mat, T)(tf.mat))
+@inline HTransform3D(tf::HTransform3D) = HTransform3D(copy(tf.mat))
 
-@inline Base.convert(::Type{T}, tf::HomogeneousTransform3D) where {T<:HomogeneousTransform3D} = T(tf)
+@inline Base.convert(::Type{T}, tf::HTransform3D) where {T<:HTransform3D} = T(tf)
 
-@inline function HomogeneousTransform3D{T}(rotation::Rotation{3}, translation::AbstractVector) where {T}
+@inline function HTransform3D{T}(rotation::Rotation{3}, translation::AbstractVector) where {T}
     R = convert(RotMatrix{3, T}, rotation)
     p = convert(SVector{3, T}, translation)
     @inbounds mat = @SMatrix [
@@ -37,38 +37,38 @@ end
         R[2] R[5] R[8] p[2];
         R[3] R[6] R[9] p[3];
         zero(T) zero(T) zero(T) one(T)]
-    HomogeneousTransform3D{T}(mat)
+    HTransform3D{T}(mat)
 end
-@inline function HomogeneousTransform3D(rotation::Rotation{3}, translation::AbstractVector)
+@inline function HTransform3D(rotation::Rotation{3}, translation::AbstractVector)
     T = promote_type(eltype(rotation), eltype(translation))
-    HomogeneousTransform3D{T}(rotation, translation)
+    HTransform3D{T}(rotation, translation)
 end
 
-@inline HomogeneousTransform3D{T}(rotation::Rotation{3}) where {T} = HomogeneousTransform3D{T}(rotation, zero(SVector{3, T}))
-@inline HomogeneousTransform3D(rotation::Rotation{3, T}) where {T} = HomogeneousTransform3D{T}(rotation)
-@inline HomogeneousTransform3D{T}(translation::AbstractVector) where {T} = HomogeneousTransform3D{T}(one(RotMatrix{3, T}), translation)
-@inline HomogeneousTransform3D(translation::AbstractVector{T}) where {T} = HomogeneousTransform3D{T}(translation)
+@inline HTransform3D{T}(rotation::Rotation{3}) where {T} = HTransform3D{T}(rotation, zero(SVector{3, T}))
+@inline HTransform3D(rotation::Rotation{3, T}) where {T} = HTransform3D{T}(rotation)
+@inline HTransform3D{T}(translation::AbstractVector) where {T} = HTransform3D{T}(one(RotMatrix{3, T}), translation)
+@inline HTransform3D(translation::AbstractVector{T}) where {T} = HTransform3D{T}(translation)
 
-@inline function rotation(tf::HomogeneousTransform3D{T}) where T
+@inline function rotation(tf::HTransform3D{T}) where T
     @inbounds return RotMatrix{3, T}((tf.mat[1], tf.mat[2], tf.mat[3], tf.mat[5], tf.mat[6], tf.mat[7], tf.mat[9], tf.mat[10], tf.mat[11]))
 end
-@inline function translation(tf::HomogeneousTransform3D{T}) where T
+@inline function translation(tf::HTransform3D{T}) where T
     @inbounds return SVector{3, T}((tf.mat[13], tf.mat[14], tf.mat[15]))
 end
 
-@inline Base.one(::Type{HomogeneousTransform3D{T}}) where {T} = HomogeneousTransform3D(one(SMatrix{4, 4, T}))
-@inline Base.one(::Type{HomogeneousTransform3D}) = one(HomogeneousTransform3D{Float64})
+@inline Base.one(::Type{HTransform3D{T}}) where {T} = HTransform3D(one(SMatrix{4, 4, T}))
+@inline Base.one(::Type{HTransform3D}) = one(HTransform3D{Float64})
 
-@inline Base.:*(tf1::HomogeneousTransform3D, tf2::HomogeneousTransform3D) = HomogeneousTransform3D(tf1.mat * tf2.mat)
-@inline function LinearAlgebra.inv(tf::HomogeneousTransform3D)
+@inline Base.:*(tf1::HTransform3D, tf2::HTransform3D) = HTransform3D(tf1.mat * tf2.mat)
+@inline function LinearAlgebra.inv(tf::HTransform3D)
     rotinv = inv(rotation(tf))
-    HomogeneousTransform3D(rotinv, -(rotinv * translation(tf)))
+    HTransform3D(rotinv, -(rotinv * translation(tf)))
 end
 
-Random.rand(::Type{HomogeneousTransform3D{T}}) where {T} = HomogeneousTransform3D(rand(RotMatrix3{T}), rand(SVector{3, T}))
-Random.rand(::Type{HomogeneousTransform3D}) = rand(HomogeneousTransform3D{Float64})
+Random.rand(::Type{HTransform3D{T}}) where {T} = HTransform3D(rand(RotMatrix3{T}), rand(SVector{3, T}))
+Random.rand(::Type{HTransform3D}) = rand(HTransform3D{Float64})
 
-function Base.isapprox(x::HomogeneousTransform3D, y::HomogeneousTransform3D; atol::Real = 1e-12) # TODO: rtol, make default atol match Base
+function Base.isapprox(x::HTransform3D, y::HTransform3D; atol::Real = 1e-12) # TODO: rtol, make default atol match Base
     isapprox(rotation(x), rotation(y), atol = atol) && isapprox(translation(x), translation(y), atol = atol)
 end
 
@@ -102,8 +102,8 @@ end
 end
 
 rawtype(::Type{FrameTransform3D{T, R}}) where {T, R} = R
-rawtype(::Type{<:FrameTransform3D{T}}) where {T} = HomogeneousTransform3D{T}
-rawtype(::Type{<:FrameTransform3D}) = HomogeneousTransform3D
+rawtype(::Type{<:FrameTransform3D{T}}) where {T} = HTransform3D{T}
+rawtype(::Type{<:FrameTransform3D}) = HTransform3D
 
 @inline (::Type{T})(tf::FrameTransform3D) where {T<:FrameTransform3D} = T(tf.from, tf.to, rawtype(T)(tf.raw))
 
@@ -115,10 +115,9 @@ rawtype(::Type{<:FrameTransform3D}) = HomogeneousTransform3D
 @inline Base.one(::Type{T}, from::CartesianFrame3D, to::CartesianFrame3D) where {T<:FrameTransform3D} = T(from, to, one(rawtype(T)))
 @inline Base.one(::Type{T}, frame::CartesianFrame3D) where {T<:FrameTransform3D} = one(T, frame, frame)
 
-function Base.show(io::IO, ::MIME"text/plain", tf::FrameTransform3D{T}) where T
-    print_short_type(io, typeof(tf))
-    println(io, " from \"$(string(tf.from))\" to \"$(string(tf.to))\":")
-    print(io, tf.raw)
+function Base.show(io::IO, tf::FrameTransform3D)
+    invoke(Base.show, Tuple{typeof(io), AbstractTransform3D}, io, tf)
+    print(io, " (from \"$(string(tf.from))\" to \"$(string(tf.to))\")")
 end
 
 @inline Base.:*(tf1::FrameTransform3D, tf2::FrameTransform3D) = (@framecheck(tf1.from, tf2.to); FrameTransform3D(tf2.from, tf1.to, tf1.raw * tf2.raw))
@@ -131,4 +130,4 @@ function Base.isapprox(x::FrameTransform3D, y::FrameTransform3D; atol::Real = 1e
     x.from == y.from && x.to == y.to && isapprox(x.raw, y.raw, atol = atol)
 end
 
-const Transform3D{T} = FrameTransform3D{T, HomogeneousTransform3D{T}}
+const Transform3D{T} = FrameTransform3D{T, HTransform3D{T}}
