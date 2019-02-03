@@ -93,7 +93,7 @@ zero!(deriv::SoftContactStateDeriv) = (zero!(friction_state_deriv(deriv)); zero!
 
 ## ContactPoint
 mutable struct ContactPoint{T, M <: SoftContactModel}
-    location::Point3D{SVector{3, T}}
+    location::Point3D{T}
     model::M
 end
 location(point::ContactPoint) = point.location
@@ -154,12 +154,12 @@ struct ViscoelasticCoulombModel{T}
     b::T
 end
 
-mutable struct ViscoelasticCoulombState{V}
-    tangential_displacement::FreeVector3D{V} # Use a 3-vector; technically only need one state for each tangential direction, but this is easier to work with.
+mutable struct ViscoelasticCoulombState{T}
+    tangential_displacement::FreeVector3D{T} # Use a 3-vector; technically only need one state for each tangential direction, but this is easier to work with.
 end
 
-mutable struct ViscoelasticCoulombStateDeriv{V}
-    deriv::FreeVector3D{V}
+mutable struct ViscoelasticCoulombStateDeriv{T}
+    deriv::FreeVector3D{T}
 end
 
 num_states(::ViscoelasticCoulombModel) = 3
@@ -215,10 +215,10 @@ const DefaultSoftContactStateDeriv{T} = SoftContactStateDeriv{Nothing, Viscoelas
 # TODO: should probably move this somewhere else
 
 mutable struct HalfSpace3D{T}
-    point::Point3D{SVector{3, T}}
-    outward_normal::FreeVector3D{SVector{3, T}}
+    point::Point3D{T}
+    outward_normal::FreeVector3D{T}
 
-    function HalfSpace3D(point::Point3D{SVector{3, T}}, outward_normal::FreeVector3D{SVector{3, T}}) where {T}
+    function HalfSpace3D(point::Point3D{T}, outward_normal::FreeVector3D{T}) where {T}
         @framecheck point.frame outward_normal.frame
         new{T}(point, normalize(outward_normal))
     end
@@ -228,7 +228,7 @@ frame(halfspace::HalfSpace3D) = halfspace.point.frame
 
 function HalfSpace3D(point::Point3D, outward_normal::FreeVector3D)
     T = promote_type(eltype(point), eltype(outward_normal))
-    HalfSpace3D(convert(Point3D{SVector{3, T}}, point), convert(FreeVector3D{SVector{3, T}}, outward_normal))
+    HalfSpace3D(convert(Point3D{T}, point), convert(FreeVector3D{T}, outward_normal))
 end
 
 Base.eltype(::Type{HalfSpace3D{T}}) where {T} = T

@@ -95,15 +95,15 @@ struct FrameTransform3D{T, R<:AbstractTransform3D{T}} <: AbstractTransform3D{T}
     end
 end
 
-# TODO: deprecate.
-@inline function Base.getproperty(tf::FrameTransform3D, x::Symbol)
-    x === :mat && return tf.raw.mat
-    return getfield(tf, x)
-end
-
 rawtype(::Type{FrameTransform3D{T, R}}) where {T, R} = R
 rawtype(::Type{<:FrameTransform3D{T}}) where {T} = HTransform3D{T}
 rawtype(::Type{<:FrameTransform3D}) = HTransform3D
+
+# TODO: deprecate.
+@inline function Base.getproperty(tf::FrameTransform3D, field::Symbol)
+    field === :mat && return tf.raw.mat
+    return getfield(tf, field)
+end
 
 @inline (::Type{T})(tf::FrameTransform3D) where {T<:FrameTransform3D} = T(tf.from, tf.to, rawtype(T)(tf.raw))
 

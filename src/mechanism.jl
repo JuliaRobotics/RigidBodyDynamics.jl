@@ -11,7 +11,7 @@ mutable struct Mechanism{T}
     graph::DirectedGraph{RigidBody{T}, Joint{T}}
     tree::SpanningTree{RigidBody{T}, Joint{T}}
     environment::ContactEnvironment{T}
-    gravitational_acceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
+    gravitational_acceleration::FreeVector3D{T} # TODO: consider removing
     modcount::Int
 
     @doc """
