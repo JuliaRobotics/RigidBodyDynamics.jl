@@ -176,3 +176,7 @@ function linearized_rodrigues_vec(r::RotMatrix) # TODO: consider moving to Rotat
     z = (r[2, 1] - r[1, 2]) / 2
     RodriguesVec(x, y, z)
 end
+
+function print_short_type(io::IO, ::Type{T}) where T
+    print(IOContext(io, :module => @__MODULE__), T)
+end
