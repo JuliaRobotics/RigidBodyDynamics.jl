@@ -83,7 +83,7 @@ end
         to_centroidal = Transform3D(f1, centroidal, -center_of_mass(inertia).v)
         inertia_centroidal = transform(inertia, to_centroidal)
         @test inertia_centroidal.frame == centroidal
-        @test center_of_mass(inertia_centroidal) ≈ Point3D(Float64, centroidal) atol=1e-12
+        @test center_of_mass(inertia_centroidal) ≈ zero(Point3D, centroidal) atol=1e-12
         inertia_back = SpatialInertia(inertia.frame, moment_about_com=inertia_centroidal.moment, com=center_of_mass(inertia).v, mass=inertia.mass)
         @test inertia ≈ inertia_back atol=1e-12
     end

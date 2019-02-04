@@ -20,9 +20,9 @@
     @test isapprox(t1 * inv(t1), one(Transform3D, f1))
     @test isapprox(inv(t1) * t1, one(Transform3D, f2))
 
-    @test isapprox(t1 * Point3D(Float64, f2), Point3D(f1, translation(t1)))
+    @test isapprox(t1 * zero(Point3D, f2), Point3D(f1, translation(t1)))
 
-    p = rand(Point3D, Float64, f2)
+    p = rand(Point3D{Float64}, f2)
     v = FreeVector3D(f2, p.v)
     @test isapprox(inv(t1) * (t1 * p), p)
     @test isapprox(inv(t1) * (t1 * v), v)

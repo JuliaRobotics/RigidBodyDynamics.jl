@@ -209,17 +209,17 @@
         @test kinetic_energy(state) ≉ 0 atol=1e-2
         energy1 = gravitational_potential_energy(state) + kinetic_energy(state)
         @test energy0 ≈ energy1 atol=1e-8
-        @test transform(state, Point3D(Float64, frame_before(joint4)), rootframe) ≈
-              transform(state, Point3D(Float64, frame_after(joint4)), rootframe) atol=1e-10 # no significant separation after a short simulation
+        @test transform(state, zero(Point3D, frame_before(joint4)), rootframe) ≈
+              transform(state, zero(Point3D, frame_after(joint4)), rootframe) atol=1e-10 # no significant separation after a short simulation
 
         # with default stabilization: start with some separation
         set_initial_state!(state)
         set_configuration!(state, joint1, 1.7)
-        @test transform(state, Point3D(Float64, frame_before(joint4)), rootframe) ≉
-              transform(state, Point3D(Float64, frame_after(joint4)), rootframe) atol=1e-2 # significant separation initially
+        @test transform(state, zero(Point3D, frame_before(joint4)), rootframe) ≉
+              transform(state, zero(Point3D, frame_after(joint4)), rootframe) atol=1e-2 # significant separation initially
         simulate(state, 15., Δt = 1e-3)
-        @test transform(state, Point3D(Float64, frame_before(joint4)), rootframe) ≈
-              transform(state, Point3D(Float64, frame_after(joint4)), rootframe) atol=1e-5 # reduced separation after 15 seconds
+        @test transform(state, zero(Point3D, frame_before(joint4)), rootframe) ≈
+              transform(state, zero(Point3D, frame_after(joint4)), rootframe) atol=1e-5 # reduced separation after 15 seconds
         energy15 = gravitational_potential_energy(state) + kinetic_energy(state)
         simulate(state, 10, Δt = 1e-3)
         energy20 = gravitational_potential_energy(state) + kinetic_energy(state)
