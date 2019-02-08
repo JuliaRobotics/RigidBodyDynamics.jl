@@ -17,4 +17,3 @@ Release checklist:
 * [ ] Update benchmark results, if relevant
 * [ ] Write release notes
 * [ ] Use Attobot to set up release
-* [ ] Update `NEWS.md`
