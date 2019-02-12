@@ -19,7 +19,7 @@ notifications:
 before_script:
   - export PYTHON="" # for SymPy
 after_success:
-  - if [[ $TRAVIS_JULIA_VERSION = 1.1 ]] && [[ $TRAVIS_OS_NAME = linux ]]; then
+  - if [[ $TRAVIS_JULIA_VERSION = 1.1 ]]; then
       julia --project -e 'using Pkg; pkg"add Coverage"; using Coverage; Codecov.submit(Codecov.process_folder())';
     fi
 jobs:
