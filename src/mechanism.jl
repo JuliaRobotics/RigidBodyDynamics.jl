@@ -270,5 +270,41 @@ function gravitational_spatial_acceleration(mechanism::Mechanism)
     SpatialAcceleration(frame, frame, frame, zero(SVector{3, eltype(mechanism)}), mechanism.gravitational_acceleration.v)
 end
 
+"""
+$(SIGNATURES)
+
+Return the `RigidBody` with the given name. Errors if there is no body with the given name,
+or if there's more than one.
+"""
 findbody(mechanism::Mechanism, name::String) = findunique(b -> string(b) == name, bodies(mechanism))
+
+"""
+$(SIGNATURES)
+
+Return the `Joint` with the given name. Errors if there is no joint with the given name,
+or if there's more than one.
+"""
 findjoint(mechanism::Mechanism, name::String) = findunique(j -> string(j) == name, joints(mechanism))
+
+
+"""
+$(SIGNATURES)
+
+Return the `RigidBody` with the given `BodyID`.
+"""
+function findbody(mechanism::Mechanism, id::BodyID)
+    ret = bodies(mechanism)[id]
+    BodyID(ret) == id || error() # should never happen
+    ret
+end
+
+"""
+$(SIGNATURES)
+
+Return the `Joint` with the given `JointID`.
+"""
+function findjoint(mechanism::Mechanism, id::JointID)
+    ret = joints(mechanism)[id]
+    JointID(ret) == id || error() # should never happen
+    ret
+end

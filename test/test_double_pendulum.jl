@@ -30,8 +30,10 @@
 
     @test findbody(double_pendulum, string(body1)) == body1
     @test_throws ErrorException findbody(double_pendulum, "bla")
+    @test findbody(double_pendulum, BodyID(body2)) == body2
     @test findjoint(double_pendulum, string(joint2)) == joint2
     @test_throws ErrorException findjoint(double_pendulum, "bla")
+    @test findjoint(double_pendulum, JointID(joint2)) == joint2
 
     x = MechanismState(double_pendulum)
     rand!(x)
