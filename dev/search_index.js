@@ -1117,7 +1117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "method",
-    "text": "rand_chain_mechanism(?, jointtypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
+    "text": "Create a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
 },
 
 {
@@ -1125,7 +1125,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "method",
-    "text": "Create a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
+    "text": "rand_floating_tree_mechanism(?, nonfloatingjointtypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
 },
 
 {
@@ -1198,6 +1198,38 @@ var documenterSearchIndex = {"docs": [
     "title": "RigidBodyDynamics.body_fixed_frame_to_body",
     "category": "method",
     "text": "body_fixed_frame_to_body(mechanism, frame)\n\n\nReturn the RigidBody to which frame is attached.\n\nNote: this function is linear in the number of bodies and is not meant to be called in tight loops.\n\n\n\n\n\n"
+},
+
+{
+    "location": "mechanism/#RigidBodyDynamics.findbody-Tuple{Mechanism,BodyID}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.findbody",
+    "category": "method",
+    "text": "findbody(mechanism, id)\n\n\nReturn the RigidBody with the given BodyID.\n\n\n\n\n\n"
+},
+
+{
+    "location": "mechanism/#RigidBodyDynamics.findbody-Tuple{Mechanism,String}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.findbody",
+    "category": "method",
+    "text": "findbody(mechanism, name)\n\n\nReturn the RigidBody with the given name. Errors if there is no body with the given name, or if there\'s more than one.\n\n\n\n\n\n"
+},
+
+{
+    "location": "mechanism/#RigidBodyDynamics.findjoint-Tuple{Mechanism,JointID}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.findjoint",
+    "category": "method",
+    "text": "findjoint(mechanism, id)\n\n\nReturn the Joint with the given JointID.\n\n\n\n\n\n"
+},
+
+{
+    "location": "mechanism/#RigidBodyDynamics.findjoint-Tuple{Mechanism,String}",
+    "page": "Mechanism",
+    "title": "RigidBodyDynamics.findjoint",
+    "category": "method",
+    "text": "findjoint(mechanism, name)\n\n\nReturn the Joint with the given name. Errors if there is no joint with the given name, or if there\'s more than one.\n\n\n\n\n\n"
 },
 
 {
@@ -1405,7 +1437,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -1413,7 +1445,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
