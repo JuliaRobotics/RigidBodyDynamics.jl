@@ -1117,7 +1117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "method",
-    "text": "Create a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
+    "text": "rand_chain_mechanism(?, jointtypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
 },
 
 {
@@ -1141,7 +1141,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "method",
-    "text": "rand_tree_mechanism(?, jointtypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n\n\n"
+    "text": "Create a random tree Mechanism.\n\n\n\n\n\n"
 },
 
 {
