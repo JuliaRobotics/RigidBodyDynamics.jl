@@ -46,7 +46,7 @@ function attach!(mechanism::Mechanism{T}, predecessor::RigidBody{T}, successor::
 end
 
 function _copyjoint!(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::Joint{T},
-        bodymap::Dict{RigidBody{T}, RigidBody{T}}, jointmap::Dict{<:Joint{T}, <:Joint{T}}) where {T}
+        bodymap::AbstractDict{RigidBody{T}, RigidBody{T}}, jointmap::AbstractDict{Joint{T}, Joint{T}}) where {T}
     srcpredecessor = source(srcjoint, src.graph)
     srcsuccessor = target(srcjoint, src.graph)
 
@@ -60,25 +60,40 @@ function _copyjoint!(dest::Mechanism{T}, src::Mechanism{T}, srcjoint::Joint{T},
     attach!(dest, destpredecessor, destsuccessor, destjoint; joint_pose = joint_to_predecessor, successor_pose = successor_to_joint)
 end
 
+const bodymap_jointmap_doc = """
+* `bodymap::AbstractDict{RigidBody{T}, RigidBody{T}}`: will be populated with
+  the mapping from input mechanism's bodies to output mechanism's bodies
+* `jointmap::AbstractDict{<:Joint{T}, <:Joint{T}}`: will be populated with
+  the mapping from input mechanism's joints to output mechanism's joints
+
+where `T` is the element type of `mechanism`.
+"""
+
 """
 $(SIGNATURES)
 
-Attach a copy of `childmechanism` to `mechanism`. Return mappings from the bodies and joints
-of the `childmechanism` to the bodies and joints that were added to `mechanism`.
+Attach a copy of `childmechanism` to `mechanism`.
 
 Essentially replaces the root body of a copy of `childmechanism` with `parentbody` (which
 belongs to `mechanism`).
 
 Note: gravitational acceleration for `childmechanism` is ignored.
+
+Keyword arguments:
+
+* `child_root_pose`: pose of the default frame of the root body of `childmechanism` relative to that of `parentbody`.
+  Default: the identity transformation.
+$bodymap_jointmap_doc
 """
 function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechanism::Mechanism{T};
-        child_root_pose = one(Transform3D{T}, default_frame(root_body(childmechanism)), default_frame(parentbody))) where {T}
+        child_root_pose = one(Transform3D{T}, default_frame(root_body(childmechanism)), default_frame(parentbody)),
+        bodymap::AbstractDict{RigidBody{T}, RigidBody{T}}=Dict{RigidBody{T}, RigidBody{T}}(),
+        jointmap::AbstractDict{<:Joint{T}, <:Joint{T}}=Dict{Joint{T}, Joint{T}}()) where {T}
     # FIXME: test with cycles
 
     @assert mechanism != childmechanism # infinite loop otherwise
-
-    bodymap = Dict{RigidBody{T}, RigidBody{T}}()
-    jointmap = Dict{Joint{T}, Joint{T}}()
+    empty!(bodymap)
+    empty!(jointmap)
 
     # Define where child root body is located w.r.t parent body and add frames that were attached to childroot to parentbody.
     childroot = root_body(childmechanism)
@@ -93,7 +108,8 @@ function attach!(mechanism::Mechanism{T}, parentbody::RigidBody{T}, childmechani
         _copyjoint!(mechanism, childmechanism, joint, bodymap, jointmap)
     end
     canonicalize_frame_definitions!(mechanism, parentbody)
-    bodymap, jointmap
+
+    mechanism
 end
 
 """
@@ -101,17 +117,19 @@ $(SIGNATURES)
 
 Create a new `Mechanism` from the subtree of `mechanism` rooted at `submechanismroot`.
 
-Also return mappings from the bodies and joints of the input mechanism to the
-bodies and joints of the submechanism.
-
 Any non-tree joint in `mechanism` will appear in the returned `Mechanism` if and
 only if both its successor and its predecessor are part of the subtree.
-"""
-function submechanism(mechanism::Mechanism{T}, submechanismroot::RigidBody{T}) where {T}
-    # FIXME: test with cycles
 
-    bodymap = Dict{RigidBody{T}, RigidBody{T}}()
-    jointmap = Dict{Joint{T}, Joint{T}}()
+Keyword arguments:
+
+$bodymap_jointmap_doc
+"""
+function submechanism(mechanism::Mechanism{T}, submechanismroot::RigidBody{T};
+        bodymap::AbstractDict{RigidBody{T}, RigidBody{T}}=Dict{RigidBody{T}, RigidBody{T}}(),
+        jointmap::AbstractDict{<:Joint{T}, <:Joint{T}}=Dict{Joint{T}, Joint{T}}()) where {T}
+    # FIXME: test with cycles
+    empty!(bodymap)
+    empty!(jointmap)
 
     # Create Mechanism
     root = bodymap[submechanismroot] = deepcopy(submechanismroot)
@@ -131,7 +149,7 @@ function submechanism(mechanism::Mechanism{T}, submechanismroot::RigidBody{T}) w
         end
     end
 
-    ret, bodymap, jointmap
+    ret
 end
 
 """
@@ -202,11 +220,10 @@ $(SIGNATURES)
 
 Remove any fixed joints present as tree edges in `mechanism` by merging the
 rigid bodies that these fixed joints join together into bodies with equivalent
-inertial properties. Return the fixed joints that were removed.
+inertial properties.
 """
-function remove_fixed_tree_joints!(mechanism::Mechanism)
+function remove_fixed_tree_joints!(mechanism::Mechanism{T}) where T
     # FIXME: test with cycles
-    T = eltype(mechanism)
     graph = mechanism.graph
 
     # Update graph.
@@ -256,7 +273,7 @@ function remove_fixed_tree_joints!(mechanism::Mechanism)
 
     register_modification!(mechanism)
 
-    fixedjoints
+    mechanism
 end
 
 # TODO: remove floating_non_tree_joints
@@ -264,33 +281,35 @@ end
 """
 $(SIGNATURES)
 
-Return a dynamically equivalent `Mechanism`, but with a flat tree structure
-with all bodies attached to the root body with a quaternion floating joint, and
-with the 'tree edge' joints of the input `Mechanism` transformed into non-tree
-edge joints (a constraint enforced using Lagrange multipliers in `dynamics!`).
-In addition, return:
-* a mapping from bodies in the maximal-coordinate `Mechanism` to their floating joints.
-* a mapping from bodies in the input `Mechanism` to bodies in the returned `Mechanism`
-* a mapping from joints in the input `Mechanism` to joints in the returned `Mechanism`
-"""
-function maximal_coordinates(mechanism::Mechanism)
-    T = eltype(mechanism)
+Return a dynamically equivalent `Mechanism`, but with a flat tree structure:
+all bodies are attached to the root body via a floating joint, and
+the tree joints of the input `Mechanism` are transformed into non-tree
+joints (with joint constraints enforced using Lagrange multipliers in `dynamics!`).
 
-    # Body and joint mapping.
-    bodymap = Dict{RigidBody{T}, RigidBody{T}}()
-    jointmap = Dict{Joint{T}, Joint{T}}()
+Keyword arguments:
+
+* `floating_joint_type::Type{<:JointType{T}}`: which floating joint type to
+  use for the joints between each body and the root. Default: `QuaternionFloating{T}`
+$bodymap_jointmap_doc
+"""
+function maximal_coordinates(mechanism::Mechanism{T};
+        floating_joint_type::Type{<:JointType{T}}=QuaternionFloating{T},
+        bodymap::AbstractDict{RigidBody{T}, RigidBody{T}}=Dict{RigidBody{T}, RigidBody{T}}(),
+        jointmap::AbstractDict{<:Joint{T}, <:Joint{T}}=Dict{Joint{T}, Joint{T}}()) where T
+    @assert isfloating(floating_joint_type)
+    empty!(bodymap)
+    empty!(jointmap)
 
     # Copy root.
     root = bodymap[root_body(mechanism)] = deepcopy(root_body(mechanism))
     ret = Mechanism(root, gravity = mechanism.gravitational_acceleration.v)
 
     # Copy non-root bodies and attach them to the root with a floating joint.
-    newfloatingjoints = Dict{RigidBody{T}, Joint{T}}()
     for srcbody in non_root_bodies(mechanism)
         framebefore = default_frame(root)
         frameafter = default_frame(srcbody)
         body = bodymap[srcbody] = deepcopy(srcbody)
-        floatingjoint = newfloatingjoints[body] = Joint(string(body), framebefore, frameafter, QuaternionFloating{T}())
+        floatingjoint = Joint(string(body), framebefore, frameafter, floating_joint_type())
         attach!(ret, root, body, floatingjoint, joint_pose = one(Transform3D{T}, framebefore), successor_pose = one(Transform3D{T}, frameafter))
     end
 
@@ -299,7 +318,7 @@ function maximal_coordinates(mechanism::Mechanism)
         _copyjoint!(ret, mechanism, joint, bodymap, jointmap)
     end
 
-    ret, newfloatingjoints, bodymap, jointmap
+    ret
 end
 
 function canonicalize_graph!(mechanism::Mechanism)

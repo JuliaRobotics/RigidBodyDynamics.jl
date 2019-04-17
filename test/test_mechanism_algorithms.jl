@@ -39,7 +39,7 @@ end
     @testset "supports" begin
         Random.seed!(25)
         mechanism = randmech()
-        mc_mechanism, = maximal_coordinates(mechanism)
+        mc_mechanism = maximal_coordinates(mechanism)
         for m in [mechanism, mc_mechanism]
             state = MechanismState(m)
             for body in bodies(m)
