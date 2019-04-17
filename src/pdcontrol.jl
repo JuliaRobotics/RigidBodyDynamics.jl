@@ -92,9 +92,7 @@ function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::SE3PDMethod{:Double
     # Note also that in Theorem 12, the frame in which the orientation gain Kω must be expressed is ambiguous, since R' * log(R) = log(R).
     # This explains why the Kω used here is the same as the Kω in Theorem 12.
     # Gains should be expressed in actual body frame.
-    bodyframe = ė.body
-    @framecheck e.from bodyframe
-    @framecheck ė.base e.to
+    bodyframe = e.from
     @framecheck ė.frame bodyframe
 
     R = rotation(e)
@@ -103,13 +101,11 @@ function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::SE3PDMethod{:Double
 
     ang = pd(angular(gains), FreeVector3D(bodyframe, ψ.sx, ψ.sy, ψ.sz), FreeVector3D(bodyframe, angular(ė)))
     lin = pd(linear(gains), FreeVector3D(bodyframe, R' * p), FreeVector3D(bodyframe, linear(ė)))
-    SpatialAcceleration(ė.body, ė.base, ang, lin)
+    SpatialAcceleration(ang, lin)
 end
 
 function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::SE3PDMethod{:Linearized})
-    bodyframe = ė.body
-    @framecheck e.from bodyframe
-    @framecheck ė.base e.to
+    bodyframe = e.from
     @framecheck ė.frame bodyframe
 
     R = rotation(e)
@@ -118,7 +114,7 @@ function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::SE3PDMethod{:Linear
 
     ang = pd(angular(gains), FreeVector3D(bodyframe, ψ.sx, ψ.sy, ψ.sz), FreeVector3D(bodyframe, angular(ė)))
     lin = pd(linear(gains), FreeVector3D(bodyframe, R' * p), FreeVector3D(bodyframe, linear(ė)))
-    SpatialAcceleration(ė.body, ė.base, ang, lin)
+    SpatialAcceleration(ang, lin)
 end
 
 end # module

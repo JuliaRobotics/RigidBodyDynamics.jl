@@ -24,19 +24,19 @@ end
 @inline function joint_twist(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
-    zero(Twist{S}, frame_after, frame_before, frame_after)
+    zero(Twist{S}, frame_after)
 end
 
 @inline function joint_spatial_acceleration(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
     S = promote_type(T, X, XD)
-    zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
+    zero(SpatialAcceleration{S}, frame_after)
 end
 
 @inline function motion_subspace(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
-    GeometricJacobian(frame_after, frame_before, frame_after, zero(SMatrix{3, 0, S}), zero(SMatrix{3, 0, S}))
+    GeometricJacobian(frame_after, zero(SMatrix{3, 0, S}), zero(SMatrix{3, 0, S}))
 end
 
 @inline function constraint_wrench_subspace(jt::Fixed{T}, joint_transform::Transform3D{X}) where {T, X}
@@ -52,7 +52,7 @@ end
 @inline function bias_acceleration(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
-    zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
+    zero(SpatialAcceleration{S}, frame_after)
 end
 
 @inline configuration_derivative_to_velocity!(v::AbstractVector, ::Fixed, q::AbstractVector, q̇::AbstractVector) = nothing

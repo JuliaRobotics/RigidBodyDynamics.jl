@@ -244,13 +244,9 @@ This wrench is also equal to the rate of change of momentum of the body.
     T = twist
     Ṫ = spatial_accel
 
-    body = Ṫ.body
-    base = Ṫ.base # TODO: should assert that this is an inertial frame somehow
     frame = Ṫ.frame
 
     @framecheck(I.frame, frame)
-    @framecheck(T.body, body)
-    @framecheck(T.base, base)
     @framecheck(T.frame, frame)
 
     ang, lin = mul_inertia(I.moment, I.cross_part, I.mass, angular(Ṫ), linear(Ṫ))
@@ -333,7 +329,6 @@ twist ``T`` with respect to an inertial frame.
 """
 @inline function kinetic_energy(inertia::SpatialInertia, twist::Twist)
     @framecheck(inertia.frame, twist.frame)
-    # TODO: should assert that twist.base is an inertial frame somehow
     ω = angular(twist)
     v = linear(twist)
     J = inertia.moment

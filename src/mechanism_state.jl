@@ -155,8 +155,8 @@ struct MechanismState{X, M, C, JointCollection}
         root = root_body(m)
         rootframe = default_frame(root)
         transforms_to_root[root] = one(Transform3D{C}, rootframe)
-        twists_wrt_world[root] = zero(Twist{C}, rootframe, rootframe, rootframe)
-        bias_accelerations_wrt_world[root] = zero(SpatialAcceleration{C}, rootframe, rootframe, rootframe)
+        twists_wrt_world[root] = zero(Twist{C}, rootframe)
+        bias_accelerations_wrt_world[root] = zero(SpatialAcceleration{C}, rootframe)
         inertias[root] = zero(SpatialInertia{C}, rootframe)
 
         new{X, M, C, JointCollection}(
@@ -753,7 +753,7 @@ end
         S = _motion_subspace(state, joint, qjoint)
         @inbounds vrange = velocity_range(state, joint)
         @inbounds for col = Base.OneTo(size(S, 2))
-            Scol = GeometricJacobian(S.body, S.base, S.frame, SMatrix{3, 1}(S.angular[:, col]), SMatrix{3, 1}(S.linear[:, col]))
+            Scol = GeometricJacobian(S.frame, SMatrix{3, 1}(S.angular[:, col]), SMatrix{3, 1}(S.linear[:, col]))
             vindex = vrange[col]
             state.motion_subspaces.data[vindex] = Scol
         end
@@ -1034,7 +1034,7 @@ function relative_twist(state::MechanismState, body_frame::CartesianFrame3D, bas
     body = body_fixed_frame_to_body(state.mechanism, body_frame)
     base = body_fixed_frame_to_body(state.mechanism, base_frame)
     twist = relative_twist(state, body, base)
-    Twist(body_frame, base_frame, twist.frame, angular(twist), linear(twist))
+    Twist(twist.frame, angular(twist), linear(twist))
 end
 
 for VectorType in (:Point3D, :FreeVector3D, :Twist, :Momentum, :Wrench)
@@ -1046,14 +1046,15 @@ for VectorType in (:Point3D, :FreeVector3D, :Twist, :Momentum, :Wrench)
     end
 end
 
-function transform(state::MechanismState, accel::SpatialAcceleration, to::CartesianFrame3D)
-    old_to_root = transform_to_root(state, accel.frame)
-    root_to_old = inv(old_to_root)
-    twist_of_body_wrt_base = transform(relative_twist(state, accel.body, accel.base), root_to_old)
-    twist_of_old_wrt_new = transform(relative_twist(state, accel.frame, to), root_to_old)
-    old_to_new = inv(transform_to_root(state, to)) * old_to_root
-    transform(accel, old_to_new, twist_of_old_wrt_new, twist_of_body_wrt_base)
-end
+# FIXME. Remove? Pass in body and base frames?
+# function transform(state::MechanismState, accel::SpatialAcceleration, to::CartesianFrame3D)
+#     old_to_root = transform_to_root(state, accel.frame)
+#     root_to_old = inv(old_to_root)
+#     twist_of_body_wrt_base = transform(relative_twist(state, accel.body, accel.base), root_to_old)
+#     twist_of_old_wrt_new = transform(relative_twist(state, accel.frame, to), root_to_old)
+#     old_to_new = inv(transform_to_root(state, to)) * old_to_root
+#     transform(accel, old_to_new, twist_of_old_wrt_new, twist_of_body_wrt_base)
+# end
 
 """
 $(SIGNATURES)

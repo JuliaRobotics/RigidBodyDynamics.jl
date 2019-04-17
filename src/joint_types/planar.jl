@@ -72,7 +72,7 @@ end
         q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     angular = jt.rot_axis * v[3]
     linear = jt.x_axis * v[1] + jt.y_axis * v[2]
-    Twist(frame_after, frame_before, frame_after, angular, linear)
+    Twist(frame_after, angular, linear)
 end
 
 @propagate_inbounds function joint_spatial_acceleration(jt::Planar{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
@@ -80,7 +80,7 @@ end
     S = promote_type(T, X, XD)
     angular = jt.rot_axis * vd[3]
     linear = jt.x_axis * vd[1] + jt.y_axis * vd[2]
-    SpatialAcceleration{S}(frame_after, frame_before, frame_after, angular, linear)
+    SpatialAcceleration{S}(frame_after, angular, linear)
 end
 
 @inline function motion_subspace(jt::Planar{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
@@ -88,7 +88,7 @@ end
     S = promote_type(T, X)
     angular = hcat(zero(SMatrix{3, 2, S}), jt.rot_axis)
     linear = hcat(jt.x_axis, jt.y_axis, zero(SVector{3, S}))
-    GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
+    GeometricJacobian(frame_after, angular, linear)
 end
 
 @inline function constraint_wrench_subspace(jt::Planar{T}, joint_transform::Transform3D{X}) where {T, X}
@@ -100,7 +100,7 @@ end
 
 @inline function bias_acceleration(jt::Planar{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
-    zero(SpatialAcceleration{promote_type(T, X)}, frame_after, frame_before, frame_after)
+    zero(SpatialAcceleration{promote_type(T, X)}, frame_after)
 end
 
 @propagate_inbounds function joint_torque!(τ::AbstractVector, jt::Planar, q::AbstractVector, joint_wrench::Wrench)

@@ -64,20 +64,20 @@ end
 @propagate_inbounds function joint_twist(jt::Revolute, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector, v::AbstractVector)
     angular = jt.axis * v[1]
-    Twist(frame_after, frame_before, frame_after, angular, zero(angular))
+    Twist(frame_after, angular, zero(angular))
 end
 
 @inline function bias_acceleration(jt::Revolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
-    zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
+    zero(SpatialAcceleration{S}, frame_after)
 end
 
 @propagate_inbounds function joint_spatial_acceleration(jt::Revolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
     S = promote_type(T, X, XD)
     angular = convert(SVector{3, S}, jt.axis * vd[1])
-    SpatialAcceleration(frame_after, frame_before, frame_after, angular, zero(angular))
+    SpatialAcceleration(frame_after, angular, zero(angular))
 end
 
 @inline function motion_subspace(jt::Revolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
@@ -85,7 +85,7 @@ end
     S = promote_type(T, X)
     angular = SMatrix{3, 1, S}(jt.axis)
     linear = zero(SMatrix{3, 1, S})
-    GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
+    GeometricJacobian(frame_after, angular, linear)
 end
 
 @inline function constraint_wrench_subspace(jt::Revolute{T}, joint_transform::Transform3D{X}) where {T, X}

@@ -49,13 +49,13 @@ end
     @testset "show" begin
         Random.seed!(63)
         show(devnull, rand(SpatialInertia{Float64}, f1))
-        show(devnull, rand(Twist{Float64}, f2, f1, f3))
-        show(devnull, rand(SpatialAcceleration{Float64}, f2, f1, f3))
+        show(devnull, rand(Twist{Float64}, f3))
+        show(devnull, rand(SpatialAcceleration{Float64}, f3))
         show(devnull, rand(Wrench{Float64}, f2))
         show(devnull, rand(Momentum{Float64}, f2))
 
         n = 5
-        show(devnull, GeometricJacobian(f2, f1, f3, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
+        show(devnull, GeometricJacobian(f3, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
         show(devnull, MomentumMatrix(f2, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
         show(devnull, WrenchMatrix(f2, rand(SMatrix{3, n}), rand(SMatrix{3, n})))
     end
@@ -90,16 +90,13 @@ end
 
     @testset "twist" begin
         Random.seed!(65)
-        T1 = rand(Twist{Float64}, f2, f1, f3)
-        T2 = rand(Twist{Float64}, f3, f2, f3)
+        T1 = rand(Twist{Float64}, f3)
+        T2 = rand(Twist{Float64}, f3)
         T3 = T1 + T2
         H31 = rand(Transform3D, f3, f1)
-        @test T3.body == T2.body
-        @test T3.base == T1.base
         @test T3.frame == f3
         # @test isapprox(T2 + T1, T3) # used to be allowed, but makes code slower; just switch T1 and T2 around
-        @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f2, f4) # wrong frame
-        @test_throws ArgumentError T1 + rand(Twist{Float64}, f3, f4, f3) # wrong base
+        @test_throws ArgumentError T1 + rand(Twist{Float64}, f4) # wrong frame
         @test isapprox(SVector(transform(T1, H31)), Ad(H31) * SVector(T1))
         @test T3 + zero(T3) == T3
 
@@ -111,7 +108,7 @@ end
         T0 = log(H)
         Q0 = H * Qi
         Q̇0 = point_velocity(T0, Q0)
-        f = t -> Array((exp(Twist(T0.body, T0.base, T0.frame, t * angular(T0), t * linear(T0))) * Qi).v)
+        f = t -> Array((exp(Twist(T0.frame, t * angular(T0), t * linear(T0)), fi, f0) * Qi).v)
         Q̇0check = ForwardDiff.derivative(f, 1.)
         @test isapprox(Q̇0.v, Q̇0check)
     end
@@ -149,9 +146,9 @@ end
 
     @testset "momentum" begin
         Random.seed!(67)
-        T = rand(Twist{Float64}, f2, f1, f2)
+        T = rand(Twist{Float64}, f2)
         I = rand(SpatialInertia{Float64}, f2)
-        T2 = rand(Twist{Float64}, f2, f1, f1)
+        T2 = rand(Twist{Float64}, f1)
         H21 = rand(Transform3D, f2, f1)
         h = I * T
         @test isapprox(SMatrix(I) * SVector(T), SVector(h); atol = 1e-12)
@@ -165,28 +162,26 @@ end
     @testset "geometric jacobian, power" begin
         Random.seed!(68)
         n = 14
-        J = GeometricJacobian(f2, f1, f3, rand(SMatrix{3, n}), rand(SMatrix{3, n}))
+        J = GeometricJacobian(f3, rand(SMatrix{3, n}), rand(SMatrix{3, n}))
         v = rand(size(J, 2))
         W = rand(Wrench{Float64}, f3)
         T = Twist(J, v)
         H = rand(Transform3D, f3, f1)
         τ = torque(J, W)
-        @test J.body == T.body
-        @test J.base == T.base
         @test J.frame == T.frame
         @test isapprox(Twist(transform(J, H), v), transform(T, H))
         @test isapprox(dot(Array(τ), v), dot(T, W); atol = 1e-12) # power equality
         @test_throws ArgumentError dot(transform(T, H), W)
         @test_throws ArgumentError torque(transform(J, H), W)
 
-        Jmutable = GeometricJacobian(f2, f1, f3, rand(3, n), rand(3, n))
+        Jmutable = GeometricJacobian(f3, rand(3, n), rand(3, n))
         @test isapprox(Twist(transform(Jmutable, H), v), transform(Twist(Jmutable, v), H))
     end
 
     @testset "mul! with transpose(mat)" begin
         Random.seed!(69)
         mat = WrenchMatrix(f1, rand(SMatrix{3, 4}), rand(SMatrix{3, 4}))
-        vec = rand(SpatialAcceleration{Float64}, f2, f3, f1)
+        vec = rand(SpatialAcceleration{Float64}, f1)
         k = fill(NaN, size(mat, 2))
         mul!(k, transpose(mat), vec)
         @test isapprox(k, angular(mat)' * angular(vec) + linear(mat)' * linear(vec), atol = 1e-14)
@@ -207,8 +202,8 @@ end
     @testset "spatial acceleration" begin
         Random.seed!(71)
         I = rand(SpatialInertia{Float64}, f2)
-        Ṫ = rand(SpatialAcceleration{Float64}, f2, f1, f2)
-        T = rand(Twist{Float64}, f2, f1, f2)
+        Ṫ = rand(SpatialAcceleration{Float64}, f2)
+        T = rand(Twist{Float64}, f2)
         W = newton_euler(I, Ṫ, T)
         H = rand(Transform3D, f2, f1)
         @test isapprox(transform(newton_euler(transform(I, H), transform(Ṫ, H, T, T), transform(T, H)), inv(H)), W)
@@ -216,17 +211,15 @@ end
     end
 
     @testset "point_velocity, point_acceleration" begin
-        body = CartesianFrame3D("body")
-        base = CartesianFrame3D("base")
-        frame = CartesianFrame3D("some other frame") # yes, the math does check out if this is different from the other two; ṗ will just be rotated to this frame
-        T = rand(Twist{Float64}, body, base, frame)
-        Ṫ = rand(SpatialAcceleration{Float64}, body, base, frame)
+        frame = CartesianFrame3D("some frame")
+        T = rand(Twist{Float64}, frame)
+        Ṫ = rand(SpatialAcceleration{Float64}, frame)
         p = Point3D(frame, rand(SVector{3}))
         ṗ = point_velocity(T, p)
         p̈ = point_acceleration(T, Ṫ, p)
         @test p̈.frame == frame
         p_dual = Point3D(p.frame, ForwardDiff.Dual.(p.v, ṗ.v))
-        T_dual = Twist(T.body, T.base, T.frame, ForwardDiff.Dual.(angular(T), angular(Ṫ)), ForwardDiff.Dual.(linear(T), linear(Ṫ)))
+        T_dual = Twist(T.frame, ForwardDiff.Dual.(angular(T), angular(Ṫ)), ForwardDiff.Dual.(linear(T), linear(Ṫ)))
         ṗ_dual = point_velocity(T_dual, p_dual)
         p̈_check = FreeVector3D(ṗ_dual.frame, map(x -> ForwardDiff.partials(x, 1), ṗ_dual.v))
         @test p̈ ≈ p̈_check atol=1e-12
@@ -235,7 +228,7 @@ end
     @testset "kinetic energy" begin
         Random.seed!(72)
         I = rand(SpatialInertia{Float64}, f2)
-        T = rand(Twist{Float64}, f2, f1, f2)
+        T = rand(Twist{Float64}, f2)
         H = rand(Transform3D, f2, f1)
         Ek = kinetic_energy(I, T)
         @test isapprox((1//2 * SVector(T)' * SMatrix(I) * SVector(T))[1], Ek; atol = 1e-12)
@@ -250,8 +243,8 @@ end
             # have magnitude of parts of twist be bounded by θ to check for numerical issues
             ϕrot = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
             ϕtrans = normalize(rand(SVector{3})) * θ * 2 * (rand() - 0.5)
-            ξ = Twist{Float64}(f2, f1, f1, ϕrot, ϕtrans)
-            H = exp(ξ)
+            ξ = Twist{Float64}(f1, ϕrot, ϕtrans)
+            H = exp(ξ, f2, f1)
             @test isapprox(ξ, log(H))
 
             ξhat = [hat(ϕrot) ϕtrans]
@@ -262,25 +255,25 @@ end
         end
 
         # test without rotation but with nonzero translation:
-        ξ = Twist{Float64}(f2, f1, f1, zero(SVector{3}), rand(SVector{3}))
-        H = exp(ξ)
+        ξ = Twist{Float64}(f1, zero(SVector{3}), rand(SVector{3}))
+        H = exp(ξ, f2, f1)
         @test isapprox(ξ, log(H))
 
         # test rotation for θ > π
         for θ in [LinRange(π - 10 * eps(), π + 10 * eps(), 100);
                   LinRange(π, 6 * π, 100)]
             ω = normalize(rand(SVector{3}))
-            ξ1 = Twist(f2, f1, f1, ω * θ, zero(SVector{3}))
-            ξ2 = Twist(f2, f1, f1, ω * mod(θ, 2 * π), zero(SVector{3}))
-            @test isapprox(exp(ξ1), exp(ξ2))
+            ξ1 = Twist(f1, ω * θ, zero(SVector{3}))
+            ξ2 = Twist(f1, ω * mod(θ, 2 * π), zero(SVector{3}))
+            @test isapprox(exp(ξ1, f2, f1), exp(ξ2, f2, f1))
         end
 
         # derivative
         for θ in LinRange(1e-3, π - 1e-3, 100) # autodiff doesn't work close to the identity rotation
             hat = RigidBodyDynamics.Spatial.hat
-            ξ = Twist{Float64}(f2, f1, f1, θ * normalize(rand(SVector{3})), θ * normalize(rand(SVector{3})))
-            H = exp(ξ)
-            T = Twist{Float64}(f2, f1, f2, rand(SVector{3}), rand(SVector{3}))
+            ξ = Twist{Float64}(f1, θ * normalize(rand(SVector{3})), θ * normalize(rand(SVector{3})))
+            H = exp(ξ, f2, f1)
+            T = Twist{Float64}(f2, rand(SVector{3}), rand(SVector{3}))
             ξ2, ξ̇ = RigidBodyDynamics.log_with_time_derivative(H, T)
             @test isapprox(ξ, ξ2)
             # autodiff log. Need time derivative of transform in ForwardDiff form, so need to basically v_to_qdot for quaternion floating joint
@@ -293,7 +286,7 @@ end
             ξ_autodiff = log(H_autodiff)
             ξ̇rot_from_autodiff = @SVector [ForwardDiff.partials(angular(ξ_autodiff)[i])[1] for i in 1 : 3]
             ξ̇trans_from_autodiff = @SVector [ForwardDiff.partials(linear(ξ_autodiff)[i])[1] for i in 1 : 3]
-            ξ̇_from_autodiff = SpatialAcceleration(ξ.body, ξ.base, ξ.frame, ξ̇rot_from_autodiff, ξ̇trans_from_autodiff)
+            ξ̇_from_autodiff = SpatialAcceleration(ξ.frame, ξ̇rot_from_autodiff, ξ̇trans_from_autodiff)
             @test isapprox(ξ̇, ξ̇_from_autodiff)
         end
     end
@@ -314,9 +307,9 @@ end
         f = CartesianFrame3D()
         angular = [1, 2, 3]
         linear = [4, 5, 6]
-        twist = Twist(f, f, f, angular, linear)
+        twist = Twist(f, angular, linear)
         svec = SVector(angular..., linear...)
-        twist64 = Twist(f, f, f, Float64.(angular), Float64.(linear))
+        twist64 = Twist(f, Float64.(angular), Float64.(linear))
         svec64 = SVector{6, Float64}(svec)
         @test twist isa Twist{Int}
         @test Twist{Float64}(twist) === twist64
@@ -347,7 +340,7 @@ end
         @test SMatrix(inertia64) === mat64
         @test convert(SMatrix, inertia64) === mat64
 
-        J = GeometricJacobian(f, f, f, rand(1:10, 3, 4), rand(1:10, 3, 4))
+        J = GeometricJacobian(f, rand(1:10, 3, 4), rand(1:10, 3, 4))
         @test convert(Array, J) == Array(J) == Matrix(J) == [J.angular; J.linear]
         @test convert(Array{Float64}, J) == Array{Float64}(J) == Matrix{Float64}(J) == Float64[J.angular; J.linear]
         @test Matrix(J) == [J.angular; J.linear]

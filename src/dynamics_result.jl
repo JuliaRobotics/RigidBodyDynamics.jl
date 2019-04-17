@@ -54,8 +54,7 @@ mutable struct DynamicsResult{T, M}
         rootframe = root_frame(mechanism)
         contactwrenches = BodyDict{Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
         totalwrenches = BodyDict{Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-        accelerations = BodyDict{SpatialAcceleration{T}}(
-            b => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+        accelerations = BodyDict{SpatialAcceleration{T}}(b => zero(SpatialAcceleration{T}, rootframe) for b in bodies(mechanism))
         jointwrenches = BodyDict{Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
         contact_state_derivs = BodyDict{Vector{Vector{DefaultSoftContactStateDeriv{T}}}}(
             b => Vector{Vector{DefaultSoftContactStateDeriv{T}}}() for b in bodies(mechanism))

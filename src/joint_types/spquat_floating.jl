@@ -65,8 +65,6 @@ end
 
 @propagate_inbounds function set_velocity!(v::AbstractVector, joint::Joint{<:Any, <:SPQuatFloating}, twist::Twist)
     @boundscheck check_num_velocities(joint, v)
-    @framecheck twist.base frame_before(joint)
-    @framecheck twist.body frame_after(joint)
     @framecheck twist.frame frame_after(joint)
     @inbounds set_angular_velocity!(v, joint_type(joint), angular(twist))
     @inbounds set_linear_velocity!(v, joint_type(joint), linear(twist))
@@ -82,7 +80,7 @@ end
     S = promote_type(T, X)
     angular = hcat(one(SMatrix{3, 3, S}), zero(SMatrix{3, 3, S}))
     linear = hcat(zero(SMatrix{3, 3, S}), one(SMatrix{3, 3, S}))
-    GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
+    GeometricJacobian(frame_after, angular, linear)
 end
 
 @inline function constraint_wrench_subspace(jt::SPQuatFloating{T}, joint_transform::Transform3D{X}) where {T, X}
@@ -93,7 +91,7 @@ end
 @propagate_inbounds function bias_acceleration(jt::SPQuatFloating{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
-    zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
+    zero(SpatialAcceleration{S}, frame_after)
 end
 
 @propagate_inbounds function configuration_derivative_to_velocity!(v::AbstractVector, jt::SPQuatFloating{T}, q::AbstractVector, q̇::AbstractVector) where {T}
@@ -174,7 +172,7 @@ end
     S = promote_type(T, X)
     angular = convert(SVector{3, S}, angular_velocity(jt, v))
     linear = convert(SVector{3, S}, linear_velocity(jt, v))
-    Twist(frame_after, frame_before, frame_after, angular, linear)
+    Twist(frame_after, angular, linear)
 end
 
 @propagate_inbounds function joint_spatial_acceleration(jt::SPQuatFloating{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
@@ -182,7 +180,7 @@ end
     S = promote_type(T, X, XD)
     angular = convert(SVector{3, S}, angular_velocity(jt, vd))
     linear = convert(SVector{3, S}, linear_velocity(jt, vd))
-    SpatialAcceleration(frame_after, frame_before, frame_after, angular, linear)
+    SpatialAcceleration(frame_after, angular, linear)
 end
 
 @propagate_inbounds function joint_torque!(τ::AbstractVector, jt::SPQuatFloating, q::AbstractVector, joint_wrench::Wrench)

@@ -81,7 +81,7 @@
         rand!(state)
 
         xdes = rand(Transform3D, desiredframe, baseframe)
-        vdes = zero(Twist{Float64}, desiredframe, baseframe, actualframe)
+        vdes = zero(Twist{Float64}, actualframe)
         v̇des = similar(velocity(state))
         gains = SE3PDGains(baseframe, PDGains(100 * one(SMatrix{3, 3}), 20), PDGains(100., 20.)) # world-fixed gains
 
@@ -103,7 +103,7 @@
         x = transform_to_root(state, body)
         v = transform(twist_wrt_world(state, body), inv(x))
         @test isapprox(x, xdes * one(Transform3D, actualframe, desiredframe), atol = 1e-6)
-        @test isapprox(v, vdes + zero(Twist{Float64}, actualframe, desiredframe, actualframe), atol = 1e-6)
+        @test isapprox(v, vdes + zero(Twist{Float64}, actualframe), atol = 1e-6)
     end
 
     @testset "linearized SE(3) control" begin
@@ -115,11 +115,11 @@
             gains = SE3PDGains(bodyframe, PDGains(randpsd3(), randpsd3()), PDGains(randpsd3(), randpsd3()))
 
             xdes = rand(Transform3D{Float64}, bodyframe, baseframe)
-            Tdes = rand(Twist{Float64}, bodyframe, baseframe, bodyframe)
+            Tdes = rand(Twist{Float64}, bodyframe)
 
             ϵ = 1e-2
             x = xdes * Transform3D(bodyframe, bodyframe, AngleAxis(ϵ, randn(), randn(), randn()), ϵ * randn(SVector{3}))
-            T = rand(Twist{Float64}, bodyframe, baseframe, bodyframe)
+            T = rand(Twist{Float64}, bodyframe)
 
             accel_nonlin = pd(gains, x, xdes, T, Tdes)
             accel_lin = pd(gains, x, xdes, T, Tdes, SE3PDMethod{:Linearized}())

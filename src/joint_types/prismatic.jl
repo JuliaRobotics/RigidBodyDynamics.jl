@@ -53,7 +53,7 @@ end
 @inline function bias_acceleration(jt::Prismatic{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
-    zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
+    zero(SpatialAcceleration{S}, frame_after)
 end
 
 @inline function velocity_to_configuration_derivative_jacobian(::Prismatic{T}, ::AbstractVector) where T
@@ -71,14 +71,14 @@ end
 
 @propagate_inbounds function joint_twist(jt::Prismatic, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D, q::AbstractVector, v::AbstractVector)
     linear = jt.axis * v[1]
-    Twist(frame_after, frame_before, frame_after, zero(linear), linear)
+    Twist(frame_after, zero(linear), linear)
 end
 
 @propagate_inbounds function joint_spatial_acceleration(jt::Prismatic{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
     S = promote_type(T, X, XD)
     linear = convert(SVector{3, S}, jt.axis * vd[1])
-    SpatialAcceleration(frame_after, frame_before, frame_after, zero(linear), linear)
+    SpatialAcceleration(frame_after, zero(linear), linear)
 end
 
 @inline function motion_subspace(jt::Prismatic{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
@@ -86,7 +86,7 @@ end
     S = promote_type(T, X)
     angular = zero(SMatrix{3, 1, S})
     linear = SMatrix{3, 1, S}(jt.axis)
-    GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
+    GeometricJacobian(frame_after, angular, linear)
 end
 
 @inline function constraint_wrench_subspace(jt::Prismatic{T}, joint_transform::Transform3D{X}) where {T, X}

@@ -52,7 +52,7 @@ end
     S = promote_type(T, X)
     angular = one(SMatrix{3, 3, S})
     linear = zero(SMatrix{3, 3, S})
-    GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
+    GeometricJacobian(frame_after, angular, linear)
 end
 
 @inline function constraint_wrench_subspace(jt::QuaternionSpherical{T}, joint_transform::Transform3D{X}) where {T, X}
@@ -65,7 +65,7 @@ end
 @inline function bias_acceleration(jt::QuaternionSpherical{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
         q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
     S = promote_type(T, X)
-    zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
+    zero(SpatialAcceleration{S}, frame_after)
 end
 
 @propagate_inbounds function configuration_derivative_to_velocity!(v::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, q̇::AbstractVector)
@@ -115,7 +115,7 @@ end
     S = promote_type(T, X)
     angular = SVector{3, S}(v)
     linear = zero(SVector{3, S})
-    Twist(frame_after, frame_before, frame_after, angular, linear)
+    Twist(frame_after, angular, linear)
 end
 
 @propagate_inbounds function joint_spatial_acceleration(jt::QuaternionSpherical{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
@@ -123,7 +123,7 @@ end
     S = promote_type(T, X, XD)
     angular = SVector{3, S}(vd)
     linear = zero(SVector{3, S})
-    SpatialAcceleration(frame_after, frame_before, frame_after, angular, linear)
+    SpatialAcceleration(frame_after, angular, linear)
 end
 
 @propagate_inbounds function joint_torque!(τ::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, joint_wrench::Wrench)

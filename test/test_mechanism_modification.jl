@@ -228,7 +228,7 @@
 
             newfloatingjoint_twist = transform(x1, relative_twist(x1, newfloatingbody, world), body_to_joint.from)
             newfloatingjoint_twist = transform(newfloatingjoint_twist, body_to_joint)
-            newfloatingjoint_twist = Twist(body_to_joint.to, joint_to_world.from, newfloatingjoint_twist.frame, angular(newfloatingjoint_twist), linear(newfloatingjoint_twist))
+            newfloatingjoint_twist = Twist(newfloatingjoint_twist.frame, angular(newfloatingjoint_twist), linear(newfloatingjoint_twist))
             set_velocity!(velocity(x2, newfloatingjoint), newfloatingjoint, newfloatingjoint_twist)
 
             # do dynamics and compute spatial accelerations

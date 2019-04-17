@@ -79,8 +79,6 @@ $noalloc_doc
 """
 function geometric_jacobian!(jac::GeometricJacobian, state::MechanismState, path::TreePath, transformfun)
     @boundscheck num_velocities(state) == size(jac, 2) || throw(DimensionMismatch())
-    @framecheck jac.body default_frame(target(path))
-    @framecheck jac.base default_frame(source(path))
     update_motion_subspaces!(state)
     fill!(jac.angular, 0)
     fill!(jac.linear, 0)
@@ -146,7 +144,7 @@ function geometric_jacobian(state::MechanismState{X, M, C}, path::TreePath{Rigid
     linear = Matrix{C}(undef, 3, nv)
     bodyframe = default_frame(target(path))
     baseframe = default_frame(source(path))
-    jac = GeometricJacobian(bodyframe, baseframe, root_frame(state.mechanism), angular, linear)
+    jac = GeometricJacobian(root_frame(state.mechanism), angular, linear)
     geometric_jacobian!(jac, state, path, identity)
 end
 
@@ -409,7 +407,7 @@ function spatial_accelerations!(out::AbstractDict{BodyID, SpatialAcceleration{T}
         parenttwist = twist_wrt_world(state, parentbodyid, false)
         bodytwist = twist_wrt_world(state, bodyid, false)
         jointaccel = out[bodyid]
-        jointaccel = SpatialAcceleration(jointaccel.body, parenttwist.body, toroot.to,
+        jointaccel = SpatialAcceleration(toroot.to,
             Spatial.transform_spatial_motion(jointaccel.angular, jointaccel.linear, rotation(toroot), translation(toroot))...)
         out[bodyid] = out[parentbodyid] + (-bodytwist) × parenttwist + jointaccel
     end
@@ -419,7 +417,7 @@ end
 spatial_accelerations!(result::DynamicsResult, state::MechanismState) = spatial_accelerations!(result.accelerations, state, result.v̇)
 
 function relative_acceleration(accels::AbstractDict{BodyID, SpatialAcceleration{T}}, body::RigidBody{M}, base::RigidBody{M}) where {T, M}
-    -accels[BodyID(base)] + accels[BodyID(body)]
+    accels[BodyID(body)] - accels[BodyID(base)]
 end
 
 # TODO: ensure that accelerations are up-to-date
@@ -510,7 +508,7 @@ function dynamics_bias(
     torques = similar(velocity(state), T)
     rootframe = root_frame(mechanism)
     jointwrenches = BodyDict(BodyID(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-    accelerations = BodyDict(BodyID(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+    accelerations = BodyDict(BodyID(b) => zero(SpatialAcceleration{T}, rootframe) for b in bodies(mechanism))
     dynamics_bias!(torques, accelerations, jointwrenches, state, externalwrenches)
     torques
 end
@@ -566,7 +564,7 @@ function inverse_dynamics(
     torques = similar(velocity(state), T)
     rootframe = root_frame(mechanism)
     jointwrenches = BodyDict(BodyID(b) => zero(Wrench{T}, rootframe) for b in bodies(mechanism))
-    accelerations = BodyDict(BodyID(b) => zero(SpatialAcceleration{T}, rootframe, rootframe, rootframe) for b in bodies(mechanism))
+    accelerations = BodyDict(BodyID(b) => zero(SpatialAcceleration{T}, rootframe) for b in bodies(mechanism))
     inverse_dynamics!(torques, jointwrenches, accelerations, state, v̇, externalwrenches)
     torques
 end
@@ -643,23 +641,22 @@ function constraint_bias!(bias::SegmentedVector, state::MechanismState{X};
 
         succbias = bias_acceleration(state, succid, false)
         predbias = bias_acceleration(state, predid, false)
-        jointbias = -predbias + succbias
+        jointbias = succbias - predbias
 
         biasaccel = crossterm + jointbias # what's inside parentheses in 8.47 in Featherstone
 
         if stabilization_gains !== nothing
-            # TODO: make this nicer (less manual frame juggling and no manual transformations)
             jointtransform = joint_transform(state, nontreejointid, false)
             jointtwist = -predtwist + succtwist
-            jointtwist = Twist(jointtransform.from, jointtransform.to, jointtwist.frame, jointtwist.angular, jointtwist.linear) # make frames line up
+            jointtwist = Twist(jointtwist.frame, jointtwist.angular, jointtwist.linear) # make frames line up
             successor_to_root = transform_to_root(state, jointtransform.from) # TODO: expensive
             jointtwist = transform(jointtwist, inv(successor_to_root)) # twist needs to be in successor frame for pd method
             stabaccel = pd(stabilization_gains[nontreejointid], jointtransform, jointtwist, SE3PDMethod{:Linearized}()) # in successor frame
-            stabaccel = SpatialAcceleration(stabaccel.body, stabaccel.base, biasaccel.frame,
+            stabaccel = SpatialAcceleration(biasaccel.frame,
                 Spatial.transform_spatial_motion(stabaccel.angular, stabaccel.linear,
                 rotation(successor_to_root), translation(successor_to_root))...) # back to world frame. TODO: ugly way to do this
-            stabaccel = SpatialAcceleration(biasaccel.body, biasaccel.body, stabaccel.frame, stabaccel.angular, stabaccel.linear) # make frames line up
-            @inbounds biasaccel = biasaccel + -stabaccel
+            stabaccel = SpatialAcceleration(stabaccel.frame, stabaccel.angular, stabaccel.linear) # make frames line up
+            @inbounds biasaccel -= stabaccel
         end
 
         for cindex in constraint_range(state, nontreejointid)
