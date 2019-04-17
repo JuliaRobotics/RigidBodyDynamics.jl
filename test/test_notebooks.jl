@@ -2,7 +2,9 @@ let
     notebookdir = joinpath(@__DIR__, "..", "notebooks")
     excludedirs = [".ipynb_checkpoints"]
     excludefiles = String[]
-    # push!(excludefiles, "Symbolic double pendulum.ipynb")
+    if VERSION < v"1.1.0"
+        push!(excludefiles, "Symbolic double pendulum.ipynb")
+    end
     for (root, dir, files) in walkdir(notebookdir)
         basename(root) in excludedirs && continue
         for file in files
