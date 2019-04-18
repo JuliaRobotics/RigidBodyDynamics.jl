@@ -21,6 +21,7 @@ using TypeSortedCollections
 using DocStringExtensions
 using LinearAlgebra
 using UnsafeArrays
+using StaticArrays
 
 using Base: @propagate_inbounds
 
@@ -32,5 +33,6 @@ include("CacheElement.jl")
 include("IndexDict.jl")
 include("SegmentedVector.jl")
 include("SegmentedBlockDiagonalMatrix.jl")
+include("OversizedSVector.jl")
 
 end # module
