@@ -4,7 +4,7 @@ function makevalue end
 
 function Base.getindex(c::C, ::Type{T}) where {C<:AbstractTypeDict, T}
     ReturnType = valuetype(C, T)
-    key = (objectid(T), Threads.threadid())
+    key = objectid(T)
     @inbounds for i in eachindex(c.keys)
         if c.keys[i] === key
             return c.values[i]::ReturnType
@@ -45,7 +45,7 @@ MechanismState{Float64, Float64, Float64, …}(…)
 """
 struct StateCache{M, JointCollection} <: AbstractTypeDict
     mechanism::Mechanism{M}
-    keys::Vector{Tuple{UInt64, Int}}
+    keys::Vector{UInt}
     values::Vector{MechanismState}
 end
 
@@ -73,7 +73,7 @@ Similar to [`StateCache`](@ref).
 """
 struct DynamicsResultCache{M} <: AbstractTypeDict
     mechanism::Mechanism{M}
-    keys::Vector{Tuple{UInt64, Int}}
+    keys::Vector{UInt}
     values::Vector{DynamicsResult{<:Any, M}}
 end
 
@@ -92,12 +92,12 @@ objects. Similar to [`StateCache`](@ref).
 struct SegmentedVectorCache{K, KeyRange<:AbstractUnitRange{K}} <: AbstractTypeDict
     ranges::IndexDict{K, KeyRange, UnitRange{Int}}
     length::Int
-    keys::Vector{Tuple{UInt64, Int}}
+    keys::Vector{UInt}
     values::Vector{SegmentedVector}
 end
 
 function SegmentedVectorCache(ranges::IndexDict{K, KeyRange, UnitRange{Int}}) where {K, KeyRange<:AbstractUnitRange{K}}
-    SegmentedVectorCache(ranges, sum(length, values(ranges)), Vector{Tuple{UInt64, Int}}(), Vector{SegmentedVector}())
+    SegmentedVectorCache(ranges, sum(length, values(ranges)), Vector{UInt}(), Vector{SegmentedVector}())
 end
 
 @inline function valuetype(::Type{SegmentedVectorCache{K, KeyRange}}, ::Type{T}) where {K, T, KeyRange}
