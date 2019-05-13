@@ -10,6 +10,8 @@ julia:
 matrix:
   allow_failures:
   - julia: nightly
+env:
+  - JULIA_NUM_THREADS=2
 branches:
   only:
     - master
