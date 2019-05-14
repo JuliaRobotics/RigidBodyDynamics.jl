@@ -6,4 +6,5 @@ deps/deps.jl
 docs/build/
 docs/site/
 perf/benchmarkparams.jld
+/Manifest.toml
 

@@ -1,0 +1,39 @@
+name = "RigidBodyDynamics"
+uuid = "366cf18f-59d5-5db9-a4de-86a9f6786172"
+version = "2.0.0"
+
+[deps]
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+LightXML = "9c8b4983-aa76-5018-a973-4c85ecc9e179"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+LoopThrottle = "39f5be34-8529-5463-bac7-bf6867c840a3"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+TypeSortedCollections = "94a5cd58-49a0-5741-bd07-fa4f4be8babf"
+UnsafeArrays = "c4a57d5a-5b31-53a6-b365-19f8c011fbd6"
+
+[compat]
+DocStringExtensions = "≥ 0.4.1"
+ForwardDiff = "≥ 0.5.0"
+LightXML = "≥ 0.4.0"
+LoopThrottle = "≥ 0.0.1"
+NBInclude = "≥ 1.1.0"
+Reexport = "≥ 0.0.3"
+Rotations = "≥ 0.7.1"
+StaticArrays = "≥ 0.8.2"
+TypeSortedCollections = "≥ 0.5.0"
+julia = "≥ 0.7.0"
+
+[extras]
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+NBInclude = "0db19996-df87-5ea3-a455-e3a50d440464"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["ForwardDiff", "NBInclude", "LinearAlgebra", "Test", "Random", "Pkg"]
