@@ -1,3 +1,19 @@
+"""
+$(SIGNATURES)
+
+Default mapping from URDF joint type name to `JointType` subtype used by [`parse_urdf`](@ref).
+"""
+function default_urdf_joint_types()
+    Dict(
+        "revolute" => Revolute,
+        "continuous" => Revolute,
+        "prismatic" => Prismatic,
+        "floating" => QuaternionFloating,
+        "fixed" => Fixed,
+        "planar" => Planar
+    )
+end
+
 function parse_scalar(::Type{T}, e::XMLElement, name::String) where {T}
     parse(T, attribute(e, name))
 end
@@ -34,27 +50,24 @@ function parse_pose(::Type{T}, xml_pose::XMLElement) where {T}
     rot, trans
 end
 
-function parse_joint_type(::Type{T}, xml_joint::XMLElement,
-        floating_joint_type::Type{<:JointType{T}}, revolute_joint_type::Type{<:JointType{T}}) where {T}
-    joint_type = attribute(xml_joint, "type")
-    if joint_type == "revolute" || joint_type == "continuous" # TODO: handle joint limits for revolute
+function parse_joint_type(::Type{T}, xml_joint::XMLElement, joint_types::AbstractDict{String}) where {T}
+    urdf_joint_type = attribute(xml_joint, "type")
+    joint_type = joint_types[urdf_joint_type]
+    if urdf_joint_type == "revolute" || urdf_joint_type == "continuous" || urdf_joint_type == "prismatic"
         axis = SVector{3}(parse_vector(T, find_element(xml_joint, "axis"), "xyz", "1 0 0"))
-        return revolute_joint_type(axis)
-    elseif joint_type == "prismatic"
-        axis = SVector{3}(parse_vector(T, find_element(xml_joint, "axis"), "xyz", "1 0 0"))
-        return Prismatic(axis)
-    elseif joint_type == "floating"
-        return floating_joint_type()
-    elseif joint_type == "fixed"
-        return Fixed{T}()
-    elseif joint_type == "planar"
+        return joint_type(axis)
+    elseif urdf_joint_type == "floating" || urdf_joint_type == "fixed"
+        return joint_type{T}()
+    elseif urdf_joint_type == "planar"
         urdf_axis = SVector{3}(parse_vector(T, find_element(xml_joint, "axis"), "xyz", "1 0 0"))
         # The URDF spec says that a planar joint allows motion in a
         # plane perpendicular to the axis.
         R = Rotations.rotation_between(SVector(0, 0, 1), urdf_axis)
-        return Planar{T}(R * SVector(1, 0, 0), R * SVector(0, 1, 0))
+        x_axis = R * SVector(1, 0, 0)
+        y_axis = R * SVector(0, 1, 0)
+        return joint_type(x_axis, y_axis)
     else
-        error("joint type $(string(joint_type)) not recognized")
+        error("joint type $(urdf_joint_type) not recognized")
     end
 end
 
@@ -81,9 +94,9 @@ function parse_joint_bounds(jtype::JT, xml_joint::XMLElement) where {T, JT <: Jo
     position_bounds, velocity_bounds, effort_bounds
 end
 
-function parse_joint(::Type{T}, xml_joint::XMLElement, floating_joint_type, revolute_joint_type) where {T}
+function parse_joint(::Type{T}, xml_joint::XMLElement, joint_types::AbstractDict{String}) where {T}
     name = attribute(xml_joint, "name")
-    joint_type = parse_joint_type(T, xml_joint, floating_joint_type, revolute_joint_type)
+    joint_type = parse_joint_type(T, xml_joint, joint_types)
     position_bounds, velocity_bounds, effort_bounds = parse_joint_bounds(joint_type, xml_joint)
     return Joint(name, joint_type; position_bounds=position_bounds, velocity_bounds=velocity_bounds, effort_bounds=effort_bounds)
 end
@@ -114,12 +127,12 @@ function parse_root_link(mechanism::Mechanism{T}, xml_link::XMLElement, root_joi
 end
 
 function parse_joint_and_link(mechanism::Mechanism{T}, xml_parent::XMLElement, xml_child::XMLElement, xml_joint::XMLElement,
-        floating_joint_type, revolute_joint_type) where {T}
+        joint_types::AbstractDict{String}) where {T}
     parentname = attribute(xml_parent, "name")
     candidate_parents = collect(filter(b -> string(b) == parentname, non_root_bodies(mechanism))) # skip root (name not parsed from URDF)
     length(candidate_parents) == 1 || error("Duplicate name: $(parentname)")
     parent = first(candidate_parents)
-    joint = parse_joint(T, xml_joint, floating_joint_type, revolute_joint_type)
+    joint = parse_joint(T, xml_joint, joint_types)
     pose = parse_pose(T, find_element(xml_joint, "origin"))
     joint_to_parent = Transform3D(frame_before(joint), default_frame(parent), pose...)
     body = parse_body(T, xml_child, frame_after(joint))
@@ -133,22 +146,35 @@ Create a `Mechanism` by parsing a [URDF](https://wiki.ros.org/urdf/XML/model) fi
 
 Keyword arguments:
 
-* `scalar_type`: the scalar type used to store the `Mechanism`'s kinematic and inertial properties. Default: `Float64`.
+* `scalar_type`: the scalar type used to store the `Mechanism`'s kinematic and inertial
+   properties. Default: `Float64`.
 * `floating`: whether to use a floating joint as the root joint. Default: false.
-* `floating_joint_type`: what `JointType` to use for floating joints. Default: `QuaternionFloating{scalar_type}`.
-* `revolute_joint_type`: what `JointType` to use for revolute joints. Default: `Revolute{scalar_type}`.
-* `root_joint_type`: the joint type used to connect the parsed `Mechanism` to the world. Default: `floating_joint_type()` if `floating`, `Fixed{scalar_type}()` otherwise.
-* `remove_fixed_tree_joints`: whether to remove any fixed joints present in the kinematic tree using [`remove_fixed_tree_joints!`](@ref). Default: `true`.
-* `gravity`: gravitational acceleration as a 3-vector expressed in the `Mechanism`'s root frame. Default: `$(DEFAULT_GRAVITATIONAL_ACCELERATION)`.
+* `joint_types`: dictionary mapping URDF joint type names to `JointType` subtypes.
+   Default: [`default_urdf_joint_types()`](@ref).
+* `root_joint_type`: the `JointType` instance used to connect the parsed `Mechanism` to the world.
+   Default: an instance of the the joint type corresponding to the `floating` URDF joint type tag
+   if `floating`, otherwise in an instance of the joint type for the `fixed` URDF joint type tag.
+* `remove_fixed_tree_joints`: whether to remove any fixed joints present in the kinematic tree
+   using [`remove_fixed_tree_joints!`](@ref). Default: `true`.
+* `gravity`: gravitational acceleration as a 3-vector expressed in the `Mechanism`'s root frame
+   Default: `$(DEFAULT_GRAVITATIONAL_ACCELERATION)`.
 """
 function parse_urdf(filename::AbstractString;
         scalar_type::Type{T}=Float64,
-        floating=false,
-        floating_joint_type::Type{<:JointType{T}}=QuaternionFloating{scalar_type},
-        revolute_joint_type::Type{<:JointType{T}}=Revolute{scalar_type},
-        root_joint_type::JointType{T}=floating ? floating_joint_type() : Fixed{scalar_type}(),
+        floating::Bool=false,
+        joint_types::AbstractDict{String}=default_urdf_joint_types(),
+        root_joint_type::JointType{T}=joint_types[floating ? "floating" : "fixed"]{scalar_type}(),
         remove_fixed_tree_joints=true,
-        gravity::AbstractVector=DEFAULT_GRAVITATIONAL_ACCELERATION) where T
+        gravity::AbstractVector=DEFAULT_GRAVITATIONAL_ACCELERATION,
+        revolute_joint_type=nothing,
+        floating_joint_type=nothing) where T
+
+    if revolute_joint_type !== nothing || floating_joint_type !== nothing
+        """
+        The `revolute_joint_type` and `floating_joint_type` keyword arguments are no longer supported.
+        Please use the `joint_types` keyword argument instead.
+        """ |> error
+    end
 
     if floating && !isfloating(root_joint_type)
         error("Ambiguous input arguments: `floating` specified, but `root_joint_type` is not a floating joint type.")
@@ -184,7 +210,7 @@ function parse_urdf(filename::AbstractString;
     mechanism = Mechanism(rootbody, gravity=gravity)
     parse_root_link(mechanism, Graphs.root(tree).data, root_joint_type)
     for edge in edges(tree)
-        parse_joint_and_link(mechanism, source(edge, tree).data, target(edge, tree).data, edge.data, floating_joint_type, revolute_joint_type)
+        parse_joint_and_link(mechanism, source(edge, tree).data, target(edge, tree).data, edge.data, joint_types)
     end
 
     if remove_fixed_tree_joints
