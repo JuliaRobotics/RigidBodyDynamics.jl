@@ -75,9 +75,9 @@
     @test isapprox(τ, M * v̇ + C * v + G, atol = 1e-12)
 
     # compare against URDF
-    for revolute_joint_type in [Revolute{Float64}, SinCosRevolute{Float64}]
+    for revolute_joint_type in [Revolute, SinCosRevolute]
         double_pendulum_urdf = parse_urdf(joinpath(@__DIR__, "urdf", "Acrobot.urdf"),
-            remove_fixed_tree_joints=false, revolute_joint_type=revolute_joint_type)
+            remove_fixed_tree_joints=false, joint_types=push!(default_urdf_joint_types(), "revolute" => revolute_joint_type))
         x_urdf = MechanismState(double_pendulum_urdf)
         for (i, j) in enumerate(joints(double_pendulum))
             urdf_joints = collect(joints(double_pendulum_urdf))
