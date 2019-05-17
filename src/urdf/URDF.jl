@@ -13,6 +13,7 @@ using RigidBodyDynamics: DEFAULT_GRAVITATIONAL_ACCELERATION
 using LinearAlgebra: ×
 
 export
+    default_urdf_joint_types,
     parse_urdf,
     write_urdf
 
