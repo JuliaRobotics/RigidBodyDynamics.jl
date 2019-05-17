@@ -191,6 +191,9 @@ include("simulate.jl")
 include(joinpath("urdf", "URDF.jl"))
 @reexport using .URDF
 
+include(joinpath("sdf", "SDF.jl"))
+@reexport using .SDF
+
 # import these for MechanismGeometries compatibility. TODO: stop importing these after updating MechanismGeometries.
 import .URDF: parse_scalar, parse_vector, parse_pose
 

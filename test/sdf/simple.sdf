@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='my_model'>
+    <static>false</static>
+    <pose>0 0 0.5 0 0 0</pose>
+    <link name='link_1'/>
+    <link name='link_2'/>
+    <joint name="bar_12_joint" type="revolute">
+      <parent>link_1</parent>
+      <child>link_2</child>
+      <pose>0 0.5 0 0 0 0</pose>
+      <axis>
+        <xyz>0 0 1</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>

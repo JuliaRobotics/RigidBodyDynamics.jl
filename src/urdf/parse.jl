@@ -101,7 +101,7 @@ function parse_joint(::Type{T}, xml_joint::XMLElement, joint_types::AbstractDict
     return Joint(name, joint_type; position_bounds=position_bounds, velocity_bounds=velocity_bounds, effort_bounds=effort_bounds)
 end
 
-function parse_inertia(::Type{T}, xml_inertial::XMLElement, frame::CartesianFrame3D) where {T}
+function parse_inertial(::Type{T}, xml_inertial::XMLElement, frame::CartesianFrame3D) where {T}
     urdf_frame = CartesianFrame3D("inertia urdf helper")
     moment = parse_inertia(T, find_element(xml_inertial, "inertia"))
     com = zero(SVector{3, T})
@@ -113,7 +113,7 @@ end
 
 function parse_body(::Type{T}, xml_link::XMLElement, frame::CartesianFrame3D = CartesianFrame3D(attribute(xml_link, "name"))) where {T}
     xml_inertial = find_element(xml_link, "inertial")
-    inertia = xml_inertial == nothing ? zero(SpatialInertia{T}, frame) : parse_inertia(T, xml_inertial, frame)
+    inertia = xml_inertial == nothing ? zero(SpatialInertia{T}, frame) : parse_inertial(T, xml_inertial, frame)
     linkname = attribute(xml_link, "name") # TODO: make sure link name is unique
     RigidBody(linkname, inertia)
 end
