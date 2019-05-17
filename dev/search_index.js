@@ -1117,7 +1117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_chain_mechanism",
     "category": "method",
-    "text": "rand_chain_mechanism(?, jointtypes)\n\n\nCreate a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
+    "text": "Create a random chain Mechanism with the given joint types.\n\n\n\n\n\n"
 },
 
 {
@@ -1141,7 +1141,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "method",
-    "text": "Create a random tree Mechanism.\n\n\n\n\n\n"
+    "text": "rand_tree_mechanism(?, jointtypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n\n\n"
 },
 
 {
@@ -1437,7 +1437,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -1445,7 +1445,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -2241,11 +2241,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "urdf/#RigidBodyDynamics.URDF.default_urdf_joint_types",
+    "page": "URDF parsing and writing",
+    "title": "RigidBodyDynamics.URDF.default_urdf_joint_types",
+    "category": "function",
+    "text": "default_urdf_joint_types()\n\n\nDefault mapping from URDF joint type name to JointType subtype used by parse_urdf.\n\n\n\n\n\n"
+},
+
+{
     "location": "urdf/#RigidBodyDynamics.URDF.parse_urdf",
     "page": "URDF parsing and writing",
     "title": "RigidBodyDynamics.URDF.parse_urdf",
     "category": "function",
-    "text": "parse_urdf(filename; scalar_type, floating, floating_joint_type, revolute_joint_type, root_joint_type, remove_fixed_tree_joints, gravity)\n\n\nCreate a Mechanism by parsing a URDF file.\n\nKeyword arguments:\n\nscalar_type: the scalar type used to store the Mechanism\'s kinematic and inertial properties. Default: Float64.\nfloating: whether to use a floating joint as the root joint. Default: false.\nfloating_joint_type: what JointType to use for floating joints. Default: QuaternionFloating{scalar_type}.\nrevolute_joint_type: what JointType to use for revolute joints. Default: Revolute{scalar_type}.\nroot_joint_type: the joint type used to connect the parsed Mechanism to the world. Default: floating_joint_type() if floating, Fixed{scalar_type}() otherwise.\nremove_fixed_tree_joints: whether to remove any fixed joints present in the kinematic tree using remove_fixed_tree_joints!. Default: true.\ngravity: gravitational acceleration as a 3-vector expressed in the Mechanism\'s root frame. Default: [0.0, 0.0, -9.81].\n\n\n\n\n\n"
+    "text": "parse_urdf(filename; scalar_type, floating, joint_types, root_joint_type, remove_fixed_tree_joints, gravity, revolute_joint_type, floating_joint_type)\n\n\nCreate a Mechanism by parsing a URDF file.\n\nKeyword arguments:\n\nscalar_type: the scalar type used to store the Mechanism\'s kinematic and inertial  properties. Default: Float64.\nfloating: whether to use a floating joint as the root joint. Default: false.\njoint_types: dictionary mapping URDF joint type names to JointType subtypes.  Default: default_urdf_joint_types().\nroot_joint_type: the JointType instance used to connect the parsed Mechanism to the world.  Default: an instance of the the joint type corresponding to the floating URDF joint type tag  if floating, otherwise in an instance of the joint type for the fixed URDF joint type tag.\nremove_fixed_tree_joints: whether to remove any fixed joints present in the kinematic tree  using remove_fixed_tree_joints!. Default: true.\ngravity: gravitational acceleration as a 3-vector expressed in the Mechanism\'s root frame  Default: [0.0, 0.0, -9.81].\n\n\n\n\n\n"
 },
 
 {
@@ -2261,7 +2269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "URDF parsing and writing",
     "title": "URDF parsing and writing",
     "category": "section",
-    "text": "parse_urdf\nwrite_urdf"
+    "text": "default_urdf_joint_types\nparse_urdf\nwrite_urdf"
 },
 
 {
