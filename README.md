@@ -26,5 +26,7 @@ Packages built on top of RigidBodyDynamics.jl include:
 
 ## Talks / publications
 
+* May 20, 2019: paper at ICRA 2019: [Julia for robotics: simulation and real-time control in a
+high-level programming language](https://www.researchgate.net/publication/331983442_Julia_for_robotics_simulation_and_real-time_control_in_a_high-level_programming_language).
 * August 10, 2018: Robin Deits gave [a talk](https://www.youtube.com/watch?v=dmWQtI3DFFo) at JuliaCon 2018 demonstrating RigidBodyDynamics.jl and related packages.
 * August 23, 2017: a video of a JuliaCon 2017 talk given by Robin Deits and Twan Koolen on using Julia for robotics [has been uploaded](https://www.youtube.com/watch?v=gPYc77M90Qg). It includes a brief demo of RigidBodyDynamics.jl and RigidBodyTreeInspector.jl. Note that RigidBodyDynamics.jl performance has significantly improved since this talk. The margins of the slides have unfortunately been cut off somewhat in the video.
