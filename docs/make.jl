@@ -23,7 +23,7 @@ let
             cp(root, outputdir)
             preprocess = function (str)
                 str = replace(str, "OPEN_VISUALIZER = true" => "OPEN_VISUALIZER = false")
-                str = replace(str, "@__DIR__" => "\"$root\"")
+                str = replace(str, "@__DIR__" => "\"$(relpath(root, outputdir))\"")
                 return str
             end
             absfile = joinpath(root, file)
