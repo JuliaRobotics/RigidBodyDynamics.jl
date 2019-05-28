@@ -93,7 +93,7 @@ var documenterSearchIndex = {"docs": [
     "page": "1. Quickstart - double pendulum",
     "title": "1. Quickstart - double pendulum",
     "category": "section",
-    "text": "(Image: ) (Image: )"
+    "text": ""
 },
 
 {
@@ -101,7 +101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "1. Quickstart - double pendulum",
     "title": "Setup",
     "category": "section",
-    "text": "In addition to RigidBodyDynamics, we\'ll be using the StaticArrays package, used throughout RigidBodyDynamics, which provides stack-allocated, fixed-size arrays:using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/1. Quickstart - double pendulum\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics\nusing LinearAlgebra\nusing StaticArrays"
+    "text": "In addition to RigidBodyDynamics, we\'ll be using the StaticArrays package, used throughout RigidBodyDynamics, which provides stack-allocated, fixed-size arrays:using Pkg # hide\nPkg.activate(\"../../../../examples/1. Quickstart - double pendulum\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics\nusing LinearAlgebra\nusing StaticArrays"
 },
 
 {
@@ -157,7 +157,7 @@ var documenterSearchIndex = {"docs": [
     "page": "2. Closed-loop simulation and visualization",
     "title": "2. Closed-loop simulation and visualization",
     "category": "section",
-    "text": "(Image: ) (Image: )Please note that RigidBodySim.jl now provides a more capable simulation environment."
+    "text": "Please note that RigidBodySim.jl now provides a more capable simulation environment."
 },
 
 {
@@ -165,7 +165,7 @@ var documenterSearchIndex = {"docs": [
     "page": "2. Closed-loop simulation and visualization",
     "title": "Setup",
     "category": "section",
-    "text": "using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/2. Closed-loop simulation and visualization\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics"
+    "text": "using Pkg # hide\nPkg.activate(\"../../../../examples/2. Closed-loop simulation and visualization\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics"
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "3. Four-bar linkage",
     "title": "3. Four-bar linkage",
     "category": "section",
-    "text": "(Image: ) (Image: )This example is a (slightly modified) contribution by Aykut Satici."
+    "text": "This example is a (slightly modified) contribution by Aykut Satici."
 },
 
 {
@@ -221,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "3. Four-bar linkage",
     "title": "Setup",
     "category": "section",
-    "text": "using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/3. Four-bar linkage\") # hide\nPkg.instantiate() # hide\nusing LinearAlgebra\nusing RigidBodyDynamics\nusing StaticArrays"
+    "text": "using Pkg # hide\nPkg.activate(\"../../../../examples/3. Four-bar linkage\") # hide\nPkg.instantiate() # hide\nusing LinearAlgebra\nusing RigidBodyDynamics\nusing StaticArrays"
 },
 
 {
@@ -261,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "4. Jacobian IK and Control",
     "title": "4. Jacobian IK and Control",
     "category": "section",
-    "text": "(Image: ) (Image: )In this notebook, we\'ll demonstrate an extremely simple approach for computing basic inverse kinematics (IK) and controlling the position of some point on our robot using the Jacobian transpose.For a brief technical introduction, see https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf or https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf"
+    "text": "In this notebook, we\'ll demonstrate an extremely simple approach for computing basic inverse kinematics (IK) and controlling the position of some point on our robot using the Jacobian transpose.For a brief technical introduction, see https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf or https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf"
 },
 
 {
@@ -269,7 +269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "4. Jacobian IK and Control",
     "title": "Setup",
     "category": "section",
-    "text": "using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/4. Jacobian IK and Control\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics\nusing StaticArrays\nusing MeshCatMechanisms, BlinkFix the random seed, so we get repeatable resultsusing Random\nRandom.seed!(42);First we\'ll load our double pendulum robot from URDF:srcdir = dirname(pathof(RigidBodyDynamics))\nurdf = joinpath(srcdir, \"..\", \"test\", \"urdf\", \"Acrobot.urdf\")\nmechanism = parse_urdf(urdf)\nstate = MechanismState(mechanism)\nmechanismNow we choose a point on the robot to control. We\'ll pick the end of the second link, which is located 2m from the origin of the lower_link body:body = findbody(mechanism, \"lower_link\")\npoint = Point3D(default_frame(body), 0., 0, -2)Let\'s visualize the mechanism and its attached point. For visualization, we\'ll use MeshCatMechanisms.jl with Blink.jl.# Create the visualizer\nvis = MechanismVisualizer(mechanism, URDFVisuals(urdf))\n\n# Render our target point attached to the robot as a sphere with radius 0.07\nsetelement!(vis, point, 0.07)\n\n# Open the visualizer in a new Blink window\nOPEN_VISUALIZER = false\nOPEN_VISUALIZER && open(vis, Window());"
+    "text": "using Pkg # hide\nPkg.activate(\"../../../../examples/4. Jacobian IK and Control\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics\nusing StaticArrays\nusing MeshCatMechanisms, BlinkFix the random seed, so we get repeatable resultsusing Random\nRandom.seed!(42);First we\'ll load our double pendulum robot from URDF:srcdir = dirname(pathof(RigidBodyDynamics))\nurdf = joinpath(srcdir, \"..\", \"test\", \"urdf\", \"Acrobot.urdf\")\nmechanism = parse_urdf(urdf)\nstate = MechanismState(mechanism)\nmechanismNow we choose a point on the robot to control. We\'ll pick the end of the second link, which is located 2m from the origin of the lower_link body:body = findbody(mechanism, \"lower_link\")\npoint = Point3D(default_frame(body), 0., 0, -2)Let\'s visualize the mechanism and its attached point. For visualization, we\'ll use MeshCatMechanisms.jl with Blink.jl.# Create the visualizer\nvis = MechanismVisualizer(mechanism, URDFVisuals(urdf))\n\n# Render our target point attached to the robot as a sphere with radius 0.07\nsetelement!(vis, point, 0.07)\n\n# Open the visualizer in a new Blink window\nOPEN_VISUALIZER = false\nOPEN_VISUALIZER && open(vis, Window());"
 },
 
 {
@@ -301,7 +301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "5. Derivatives and gradients using ForwardDiff",
     "title": "5. Derivatives and gradients using ForwardDiff",
     "category": "section",
-    "text": "(Image: ) (Image: )"
+    "text": ""
 },
 
 {
@@ -309,7 +309,7 @@ var documenterSearchIndex = {"docs": [
     "page": "5. Derivatives and gradients using ForwardDiff",
     "title": "Setup",
     "category": "section",
-    "text": "using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/5. Derivatives and gradients using ForwardDiff\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics, StaticArrays, ForwardDiff\nusing Test, Random\nRandom.seed!(1); # to get repeatable results"
+    "text": "using Pkg # hide\nPkg.activate(\"../../../../examples/5. Derivatives and gradients using ForwardDiff\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics, StaticArrays, ForwardDiff\nusing Test, Random\nRandom.seed!(1); # to get repeatable results"
 },
 
 {
@@ -349,7 +349,7 @@ var documenterSearchIndex = {"docs": [
     "page": "6. Symbolics using SymPy",
     "title": "6. Symbolics using SymPy",
     "category": "section",
-    "text": "(Image: ) (Image: )"
+    "text": ""
 },
 
 {
@@ -357,7 +357,7 @@ var documenterSearchIndex = {"docs": [
     "page": "6. Symbolics using SymPy",
     "title": "Setup",
     "category": "section",
-    "text": "using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/6. Symbolics using SymPy\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics\nusing StaticArrays\nusing SymPy"
+    "text": "using Pkg # hide\nPkg.activate(\"../../../../examples/6. Symbolics using SymPy\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics\nusing StaticArrays\nusing SymPy"
 },
 
 {
@@ -405,7 +405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "7. Rigorous error bounds using IntervalArithmetic",
     "title": "7. Rigorous error bounds using IntervalArithmetic",
     "category": "section",
-    "text": "(Image: ) (Image: )"
+    "text": ""
 },
 
 {
@@ -413,7 +413,7 @@ var documenterSearchIndex = {"docs": [
     "page": "7. Rigorous error bounds using IntervalArithmetic",
     "title": "Floating-point error",
     "category": "section",
-    "text": "In computers, real numbers are commonly approximated using floating-point numbers, such as Julia\'s Float64. Unfortunately, not all real numbers can be exactly represented as a finite-size floating-point number, and the results of operations on floating-point numbers can only approximate the results of applying the operation to a true real number. This results in peculiarities like:2.6 - 0.7 - 1.9IntervalArithmetic.jl can be used to quantify floating point error, by computing rigorous worst-case bounds on floating point error, within which the true result is guaranteed to lie.using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/7. Rigorous error bounds using IntervalArithmetic\") # hide\nPkg.instantiate() # hide\nusing IntervalArithmeticIntervalArithmetic.jl provides the Interval type, which stores an upper and a lower bound:i = Interval(1.0, 2.0)dump(i)IntervalArithmetic.jl provides overloads for most common Julia functions that take these bounds into account. For example:i + isin(i)Note that the bounds computed by IntervalArithmetic.jl take floating point error into account. Also note that a given real number, once converted to (approximated by) a floating-point number may not be equal to the original real number. To rigorously construct an Interval that contains a given real number as an input, IntervalArithmetic.jl provides the @interval macro:i = @interval(2.9)\ni.lo === i.hidump(i)Compare this toi = Interval(2.9)\ni.lo === i.hidump(i)As an example, consider again the peculiar result from before, now using interval arithmetic:i = @interval(2.6) - @interval(0.7) - @interval(1.9)showing that the true result, 0, is indeed in the guaranteed interval, and indeed:using Test\n@test (2.6 - 0.7 - 1.9) ∈ i"
+    "text": "In computers, real numbers are commonly approximated using floating-point numbers, such as Julia\'s Float64. Unfortunately, not all real numbers can be exactly represented as a finite-size floating-point number, and the results of operations on floating-point numbers can only approximate the results of applying the operation to a true real number. This results in peculiarities like:2.6 - 0.7 - 1.9IntervalArithmetic.jl can be used to quantify floating point error, by computing rigorous worst-case bounds on floating point error, within which the true result is guaranteed to lie.using Pkg # hide\nPkg.activate(\"../../../../examples/7. Rigorous error bounds using IntervalArithmetic\") # hide\nPkg.instantiate() # hide\nusing IntervalArithmeticIntervalArithmetic.jl provides the Interval type, which stores an upper and a lower bound:i = Interval(1.0, 2.0)dump(i)IntervalArithmetic.jl provides overloads for most common Julia functions that take these bounds into account. For example:i + isin(i)Note that the bounds computed by IntervalArithmetic.jl take floating point error into account. Also note that a given real number, once converted to (approximated by) a floating-point number may not be equal to the original real number. To rigorously construct an Interval that contains a given real number as an input, IntervalArithmetic.jl provides the @interval macro:i = @interval(2.9)\ni.lo === i.hidump(i)Compare this toi = Interval(2.9)\ni.lo === i.hidump(i)As an example, consider again the peculiar result from before, now using interval arithmetic:i = @interval(2.6) - @interval(0.7) - @interval(1.9)showing that the true result, 0, is indeed in the guaranteed interval, and indeed:using Test\n@test (2.6 - 0.7 - 1.9) ∈ i"
 },
 
 {
