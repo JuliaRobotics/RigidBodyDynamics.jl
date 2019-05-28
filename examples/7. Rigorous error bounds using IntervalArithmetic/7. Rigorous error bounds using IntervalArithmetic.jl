@@ -1,8 +1,5 @@
 # # @__NAME__
 
-#md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__generated/@__NAME__.ipynb)
-#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__generated/@__NAME__.ipynb)
-
 # ## Floating-point error
 
 # In computers, real numbers are commonly approximated using floating-point numbers, such as Julia's `Float64`. Unfortunately, not all real numbers can be exactly represented as a finite-size floating-point number, and the results of operations on floating-point numbers can only approximate the results of applying the operation to a true real number. This results in peculiarities like:

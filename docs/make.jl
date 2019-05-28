@@ -13,34 +13,26 @@ let
     if VERSION < v"1.1.0"
         push!(excludefiles, "Symbolic double pendulum.jl")
     end
-    for (root, _, files) in walkdir(exampledir)
-        basename(root) in excludedirs && continue
-        for file in files
+    for subdir in readdir(exampledir)
+        subdir in excludedirs && continue
+        root = joinpath(exampledir, subdir)
+        isdir(root) || continue
+        for file in readdir(root)
             file in excludefiles && continue
             name, ext = splitext(file)
             lowercase(ext) == ".jl" || continue
-            outputdir = joinpath(gendir, basename(root))
+            outputdir = joinpath(gendir, subdir)
             cp(root, outputdir)
             preprocess = function (str)
                 str = replace(str, "OPEN_VISUALIZER = true" => "OPEN_VISUALIZER = false")
-                str = replace(str, "@__DIR__" => "\"$root\"")
+                str = replace(str, "@__DIR__" => "\"$(relpath(root, outputdir))\"")
                 return str
             end
             absfile = joinpath(root, file)
-            Literate.script(absfile, outputdir; preprocess=preprocess)
-            Literate.notebook(absfile, outputdir; preprocess=preprocess)
+            # Literate.script(absfile, outputdir; preprocess=preprocess)
+            # Literate.notebook(absfile, outputdir; preprocess=preprocess)
             tutorialpage = Literate.markdown(absfile, outputdir; preprocess=preprocess)
             push!(tutorialpages, relpath(tutorialpage, joinpath(@__DIR__, "src")))
-
-            # replace the link in the markdown file
-            travis_tag = get(ENV, "TRAVIS_TAG", "")
-            folder = isempty(travis_tag) ? "latest" : travis_tag
-            url = "https://nbviewer.jupyter.org/github/JuliaRobotics/RigidBodyDynamics.jl/blob/gh-pages/$(folder)/"
-            if get(ENV, "CI", "") == "true"
-                str = read(tutorialpage, String)
-                str = replace(str, "[$name.ipynb](generated/$name.ipynb)." => "[$name.ipynb]($(url)generated/$name.ipynb).")
-                write(tutorialpage, str)
-            end
         end
     end
 end

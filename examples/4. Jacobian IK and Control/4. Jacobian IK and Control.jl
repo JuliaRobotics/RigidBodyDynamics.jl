@@ -1,8 +1,5 @@
 # # @__NAME__
 
-#md # [![](https://mybinder.org/badge_logo.svg)](@__BINDER_ROOT_URL__generated/@__NAME__.ipynb)
-#md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__generated/@__NAME__.ipynb)
-
 # In this notebook, we'll demonstrate an extremely simple approach for computing basic inverse kinematics (IK) and controlling the position of some point on our robot using the Jacobian transpose.
 #
 # For a brief technical introduction, see <https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf> or <https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf>
