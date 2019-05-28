@@ -26,7 +26,6 @@ include("test_mechanism_algorithms.jl")
 include("test_simulate.jl")
 include("test_mechanism_modification.jl")
 include("test_pd_control.jl")
-include("test_notebooks.jl")
 
 @testset "benchmarks" begin
     @test begin include("../perf/runbenchmarks.jl"); true end

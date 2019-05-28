@@ -1,0 +1,5 @@
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MeshCatMechanisms = "6ad125db-dd91-5488-b820-c1df6aab299d"
+RigidBodyDynamics = "366cf18f-59d5-5db9-a4de-86a9f6786172"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
