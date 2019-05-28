@@ -6,7 +6,7 @@ for dir in filter(isdir, readdir(@__DIR__))
         lowercase(ext) == ".jl" || continue
         absfile = joinpath(dir, file)
         Literate.notebook(absfile, dir, execute=false)
-        Literate.markdown(absfile, dir)
-        Literate.script(absfile, dir)
+        # Literate.markdown(absfile, dir)
+        # Literate.script(absfile, dir)
     end
 end
