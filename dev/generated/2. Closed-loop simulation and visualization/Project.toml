@@ -1,0 +1,3 @@
+[deps]
+MeshCatMechanisms = "6ad125db-dd91-5488-b820-c1df6aab299d"
+RigidBodyDynamics = "366cf18f-59d5-5db9-a4de-86a9f6786172"

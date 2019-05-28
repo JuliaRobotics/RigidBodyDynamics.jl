@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>5. Derivatives and gradients using ForwardDiff · RigidBodyDynamics.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link href="../../../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>RigidBodyDynamics.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../../../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../../../">Home</a></li><li><span class="toctext">Tutorials</span><ul><li><a class="toctext" href="../../1. Quickstart - double pendulum/1. Quickstart - double pendulum/">1. Quickstart - double pendulum</a></li><li><a class="toctext" href="../../2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/">2. Closed-loop simulation and visualization</a></li><li><a class="toctext" href="../../3. Four-bar linkage/3. Four-bar linkage/">3. Four-bar linkage</a></li><li><a class="toctext" href="../../4. Jacobian IK and Control/4. Jacobian IK and Control/">4. Jacobian IK and Control</a></li><li class="current"><a class="toctext" href>5. Derivatives and gradients using ForwardDiff</a><ul class="internal"><li><a class="toctext" href="#Setup-1">Setup</a></li><li><a class="toctext" href="#Jacobians-with-respect-to-q-and-v-the-naive-way-1">Jacobians with respect to <span>$q$</span> and <span>$v$</span> - the naive way</a></li><li><a class="toctext" href="#Improving-performance-1">Improving performance</a></li><li><a class="toctext" href="#Time-derivatives-1">Time derivatives</a></li></ul></li><li><a class="toctext" href="../../6. Symbolics using SymPy/6. Symbolics using SymPy/">6. Symbolics using SymPy</a></li><li><a class="toctext" href="../../7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/">7. Rigorous error bounds using IntervalArithmetic</a></li></ul></li><li><span class="toctext">Library</span><ul><li><a class="toctext" href="../../../spatial/">Spatial vector algebra</a></li><li><a class="toctext" href="../../../joints/">Joints</a></li><li><a class="toctext" href="../../../rigidbody/">Rigid bodies</a></li><li><a class="toctext" href="../../../mechanism/">Mechanism</a></li><li><a class="toctext" href="../../../mechanismstate/">MechanismState</a></li><li><a class="toctext" href="../../../algorithms/">Kinematics/dynamics algorithms</a></li><li><a class="toctext" href="../../../customcollections/">Custom collection types</a></li><li><a class="toctext" href="../../../caches/">Cache types</a></li><li><a class="toctext" href="../../../simulation/">Simulation</a></li><li><a class="toctext" href="../../../urdf/">URDF parsing and writing</a></li></ul></li><li><a class="toctext" href="../../../benchmarks/">Benchmarks</a></li></ul></nav><article id="docs"><header><nav><ul><li>Tutorials</li><li><a href>5. Derivatives and gradients using ForwardDiff</a></li></ul><a class="edit-page" href="https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff.jl"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>5. Derivatives and gradients using ForwardDiff</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id=".-Derivatives-and-gradients-using-ForwardDiff-1" href="#.-Derivatives-and-gradients-using-ForwardDiff-1">5. Derivatives and gradients using ForwardDiff</a></h1><p><a href="https://mybinder.org/v2/gh/JuliaRobotics/RigidBodyDynamics.jl/gh-pages?filepath=dev/generated/5. Derivatives and gradients using ForwardDiff.ipynb"><img src="https://mybinder.org/badge_logo.svg" alt/></a> <a href="https://nbviewer.jupyter.org/github/JuliaRobotics/RigidBodyDynamics.jl/blob/gh-pages/dev/generated/5. Derivatives and gradients using ForwardDiff.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><h2><a class="nav-anchor" id="Setup-1" href="#Setup-1">Setup</a></h2><div><pre><code class="language-julia">using RigidBodyDynamics, StaticArrays, ForwardDiff
+using Test, Random
+Random.seed!(1); # to get repeatable results</code></pre><pre><code class="language-none">  Updating registry at `~/.julia/registries/General`
+  Updating git-repo `https://github.com/JuliaRegistries/General.git`
+[?25l[2K[?25h</code></pre></div><h2><a class="nav-anchor" id="Jacobians-with-respect-to-q-and-v-the-naive-way-1" href="#Jacobians-with-respect-to-q-and-v-the-naive-way-1">Jacobians with respect to <span>$q$</span> and <span>$v$</span> - the naive way</a></h2><p>First, we&#39;ll load our trusty double pendulum from a URDF:</p><div><pre><code class="language-julia">srcdir = dirname(pathof(RigidBodyDynamics))
+urdf = joinpath(srcdir, &quot;..&quot;, &quot;test&quot;, &quot;urdf&quot;, &quot;Acrobot.urdf&quot;)
+mechanism = parse_urdf(urdf)</code></pre><pre><code class="language-none">Spanning tree:
+Vertex: world (root)
+  Vertex: upper_link, Edge: shoulder
+    Vertex: lower_link, Edge: elbow
+No non-tree joints.</code></pre></div><p>Of course, we can create a <code>MechanismState</code> for the double pendulum, and compute its momentum in some random state:</p><div><pre><code class="language-julia">float64state = MechanismState(mechanism)
+rand!(float64state)
+momentum(float64state)</code></pre><pre><code class="language-none">Momentum expressed in &quot;world&quot;:
+angular: [0.0801508, 1.43084, 0.159513], linear: [-0.697851, 0.0, 0.338924]</code></pre></div><p>But now suppose we want the Jacobian of momentum with respect to the joint velocity vector <span>$v$</span>. We can do this using the <code>ForwardDiff.Dual</code> type and the <code>ForwardDiff.jacobian</code> function. The ForwardDiff package implements forward-mode <a href="https://en.wikipedia.org/wiki/Automatic_differentiation">automatic differentiation</a>.</p><p>To use <code>ForwardDiff.jacobian</code> we&#39;ll create a function that maps <code>v</code> (as a <code>Vector</code>) to momentum (as a <code>Vector</code>):</p><div><pre><code class="language-julia">q = configuration(float64state)
+function momentum_vec(v::AbstractVector{T}) where T
+    # create a `MechanismState` that can handle the element type of `v` (which will be some `ForwardDiff.Dual`):
+    state = MechanismState{T}(mechanism)
+
+    # set the state variables:
+    set_configuration!(state, q)
+    set_velocity!(state, v)
+
+    # return momentum converted to an `SVector` (as ForwardDiff expects an `AbstractVector`)
+    Vector(SVector(momentum(state)))
+end</code></pre><pre><code class="language-none">momentum_vec (generic function with 1 method)</code></pre></div><p>Let&#39;s first check that the function returns the same thing we got from <code>float64state</code>:</p><div><pre><code class="language-julia">v = velocity(float64state)
+@test momentum_vec(v) == SVector(momentum(float64state))</code></pre><pre><code class="language-none">Test Passed</code></pre></div><p>That works, so now let&#39;s compute the Jacobian with <code>ForwardDiff</code>:</p><div><pre><code class="language-julia">J = ForwardDiff.jacobian(momentum_vec, v)</code></pre><pre><code class="language-none">6×2 Array{Float64,2}:
+  0.252338   0.157137
+  4.51855    2.25777
+  0.505187   0.194443
+ -2.21197   -0.777771
+  0.0        0.0
+  1.06794    0.628547</code></pre></div><p>At this point we note that the matrix <code>J</code> is simply the momentum matrix (in world frame) of the <code>Mechanism</code>. In this case, RigidBodyDynamics.jl has a specialized algorithm for computing this matrix, so let&#39;s verify the results:</p><div><pre><code class="language-julia">A = momentum_matrix(float64state)
+@test J ≈ Array(A) atol = 1e-12</code></pre><pre><code class="language-none">Test Passed</code></pre></div><p>Gradients with respect to <span>$q$</span> can be computed in similar fashion.</p><h2><a class="nav-anchor" id="Improving-performance-1" href="#Improving-performance-1">Improving performance</a></h2><p>Ignoring the fact that we have a specialized method available, let&#39;s look at the performance of using <code>ForwardDiff.jacobian</code>.</p><div><pre><code class="language-julia">using BenchmarkTools
+@benchmark ForwardDiff.jacobian($momentum_vec, $v)</code></pre><pre><code class="language-none">BenchmarkTools.Trial:
+  memory estimate:  35.66 KiB
+  allocs estimate:  468
+  --------------
+  minimum time:     44.864 μs (0.00% GC)
+  median time:      60.788 μs (0.00% GC)
+  mean time:        88.694 μs (28.35% GC)
+  maximum time:     17.389 ms (97.76% GC)
+  --------------
+  samples:          10000
+  evals/sample:     1</code></pre></div><p>That&#39;s not great. Note all the allocations. We can do better by making the following modifications:</p><ol><li>use an in-place version of the <code>jacobian</code> function, <code>ForwardDiff.jacobian!</code></li><li>reimplement our <code>momentum_vec</code> function to be in-place as well</li><li>don&#39;t create a new <code>MechanismState</code> every time</li></ol><p>The third point is especially important; creating a <code>MechanismState</code> is expensive!</p><p>Regarding the second point, we could also just stop converting momentum from a <code>StaticArrays.SVector</code> to a <code>Vector</code> to avoid allocations. However, the solution of making the function in-place also applies when the size of the output vector is not known statically (e.g., for <code>dynamics_bias!</code>).</p><p>To facillitate reuse of <code>MechanismState</code>s while keeping the code nice and generic, we can use a <code>StateCache</code> object. <code>StateCache</code> is a container that stores <code>MechanismState</code>s of various types (associated with one <code>Mechanism</code>), and will ease the process of using <code>ForwardDiff</code>. Creating one is easy:</p><div><pre><code class="language-julia">const statecache = StateCache(mechanism)</code></pre><pre><code class="language-none">StateCache{…}(…)</code></pre></div><p><code>MechanismState</code>s of a given type can be accessed as follows (note that if a <code>MechanismState</code> of a certain type is already available, it will be reused):</p><div><pre><code class="language-julia">float32state = statecache[Float32]
+@test float32state === statecache[Float32]</code></pre><pre><code class="language-none">Test Passed</code></pre></div><p>Now we&#39;ll use the <code>StateCache</code> to reimplement <code>momentum_vec</code>, making it in-place as well:</p><div><pre><code class="language-julia">function momentum_vec!(out::AbstractVector, v::AbstractVector{T}) where T
+    # retrieve a `MechanismState` that can handle the element type of `v`:
+    state = statecache[T]
+
+    # set the state variables:
+    set_configuration!(state, q)
+    set_velocity!(state, v)
+
+    # compute momentum and store it in `out`
+    m = momentum(state)
+    copyto!(out, SVector(m))
+end</code></pre><pre><code class="language-none">momentum_vec! (generic function with 1 method)</code></pre></div><p>Check that the in-place version works as expected on <code>Float64</code> inputs:</p><div><pre><code class="language-julia">const out = zeros(6) # where we&#39;ll be storing our results
+momentum_vec!(out, v)
+@test out == SVector(momentum(float64state))</code></pre><pre><code class="language-none">Test Passed</code></pre></div><p>And use <code>ForwardDiff.jacobian!</code> to compute the Jacobian:</p><div><pre><code class="language-julia">const result = DiffResults.JacobianResult(out, v)
+const config = ForwardDiff.JacobianConfig(momentum_vec!, out, v)
+ForwardDiff.jacobian!(result, momentum_vec!, out, v, config)
+J = DiffResults.jacobian(result)
+@test J ≈ Array(A) atol = 1e-12</code></pre><pre><code class="language-none">Test Passed</code></pre></div><p>Let&#39;s check the performance again:</p><div><pre><code class="language-julia">@benchmark ForwardDiff.jacobian!($result, $momentum_vec!, $out, $v, $config)</code></pre><pre><code class="language-none">BenchmarkTools.Trial:
+  memory estimate:  0 bytes
+  allocs estimate:  0
+  --------------
+  minimum time:     1.641 μs (0.00% GC)
+  median time:      1.659 μs (0.00% GC)
+  mean time:        1.696 μs (0.00% GC)
+  maximum time:     13.493 μs (0.00% GC)
+  --------------
+  samples:          10000
+  evals/sample:     10</code></pre></div><p>That&#39;s much better. Do note that the specialized algorithm is still faster:</p><div><pre><code class="language-julia">q = copy(configuration(float64state))
+@benchmark begin
+    set_configuration!($float64state, $q)
+    momentum_matrix!($A, $float64state)
+end</code></pre><pre><code class="language-none">BenchmarkTools.Trial:
+  memory estimate:  0 bytes
+  allocs estimate:  0
+  --------------
+  minimum time:     439.784 ns (0.00% GC)
+  median time:      444.673 ns (0.00% GC)
+  mean time:        458.781 ns (0.00% GC)
+  maximum time:     29.062 μs (0.00% GC)
+  --------------
+  samples:          10000
+  evals/sample:     199</code></pre></div><h2><a class="nav-anchor" id="Time-derivatives-1" href="#Time-derivatives-1">Time derivatives</a></h2><p>We can also use ForwardDiff to compute time derivatives. Let&#39;s verify that energy is conserved for the double pendulum in the absence of nonconservative forces (like damping). That is, we expect that the time derivative of the pendulum&#39;s total energy is zero when its state evolves according to the passive dynamics.</p><p>Let&#39;s first compute the joint acceleration vector <span>$\dot{v}$</span> using the passive dynamics:</p><div><pre><code class="language-julia">dynamicsresult = DynamicsResult(mechanism)
+set_configuration!(float64state, q)
+set_velocity!(float64state, v)
+dynamics!(dynamicsresult, float64state)
+v̇ = dynamicsresult.v̇</code></pre><pre><code class="language-none">2-element SegmentedVector{JointID,Float64,Base.OneTo{JointID},Array{Float64,1}}:
+  0.0796807679458064
+ -4.798825359977611</code></pre></div><p>Now for the time derivative of total energy. ForwardDiff has a <code>derivative</code> function that can be used to take derivatives of functions that map a scalar to a scalar. But in this example, we&#39;ll instead use ForwardDiff&#39;s <code>Dual</code> type directly. <code>ForwardDiff.Dual</code> represents a (potentially multidimensional) dual number, i.e., a type that stores both the value of a function evaluated at a certain point, as well as the partial derivatives of the function, again evaluated at the same point. See the <a href="http://www.juliadiff.org/ForwardDiff.jl/stable/dev/how_it_works.html">ForwardDiff documentation</a> for more information.</p><p>We&#39;ll create a vector of <code>Dual</code>s representing the value and derivative of <span>$q(t)$</span>:</p><div><pre><code class="language-julia">q̇ = v
+q_dual = ForwardDiff.Dual.(q, q̇)</code></pre><pre><code class="language-none">2-element Array{ForwardDiff.Dual{Nothing,Float64,1},1}:
+ Dual{Nothing}(0.2972879845354616,0.3127069683360675)
+ Dual{Nothing}(0.3823959677906078,0.00790928339056074)</code></pre></div><p><strong>Note</strong>: for the double pendulum, <span>$\dot{q} = v$</span>, but this is not the case in general for <code>Mechanism</code>s created using RigidBodyDynamics.jl. For example, the <code>QuaternionSpherical</code> joint type uses a unit quaternion to represent the joint configuration, but angular velocity (in body frame) to represent velocity. In general <span>$\dot{q}$</span> can be computed from the velocity vector <span>$v$</span> stored in a <code>MechanismState</code> using</p><pre><code class="language-julia">configuration_derivative(::MechanismState)</code></pre><p>or its in-place variant, <code>configuration_derivative!</code>.</p><p>We&#39;ll do the same thing for <span>$v(t)$</span>:</p><div><pre><code class="language-julia">v_dual = ForwardDiff.Dual.(v, v̇)</code></pre><pre><code class="language-none">2-element Array{ForwardDiff.Dual{Nothing,Float64,1},1}:
+ Dual{Nothing}(0.3127069683360675,0.0796807679458064)
+ Dual{Nothing}(0.00790928339056074,-4.798825359977611)</code></pre></div><p>Now we&#39;re ready to compute the total energy (kinetic + potential) using these <code>ForwardDiff.Dual</code> inputs. We&#39;ll use our <code>StateCache</code> again:</p><div><pre><code class="language-julia">T = eltype(q_dual)
+state = statecache[T]
+set_configuration!(state, q_dual)
+set_velocity!(state, v_dual)
+energy_dual = kinetic_energy(state) + gravitational_potential_energy(state)</code></pre><pre><code class="language-none">Dual{Nothing}(-21.472905435008563,4.440892098500626e-16)</code></pre></div><p>Note that the result type of <code>energy_dual</code> is again a <code>ForwardDiff.Dual</code>. We can extract the energy and its time derivative (mechanical power) from <code>energy_dual</code> as follows:</p><div><pre><code class="language-julia">energy = ForwardDiff.value(energy_dual)
+partials = ForwardDiff.partials(energy_dual)
+power = partials[1];</code></pre></div><p>So the total energy in the system is:</p><div><pre><code class="language-julia">energy</code></pre><pre><code class="language-none">-21.472905435008563</code></pre></div><p><strong>Note</strong>: the total energy is negative because the origin of the world frame is used as a reference for computing gravitational potential energy, i.e., the center of mass of the double pendulum is somewhere below this origin.</p><p>And we can verify that, indeed, there is no power flow into or out of the system:</p><div><pre><code class="language-julia">@test power ≈ 0 atol = 1e-14</code></pre><pre><code class="language-none">Test Passed</code></pre></div><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p><footer><hr/><a class="previous" href="../../4. Jacobian IK and Control/4. Jacobian IK and Control/"><span class="direction">Previous</span><span class="title">4. Jacobian IK and Control</span></a><a class="next" href="../../6. Symbolics using SymPy/6. Symbolics using SymPy/"><span class="direction">Next</span><span class="title">6. Symbolics using SymPy</span></a></footer></article></body></html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>4. Jacobian IK and Control · RigidBodyDynamics.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link href="../../../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>RigidBodyDynamics.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../../../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../../../">Home</a></li><li><span class="toctext">Tutorials</span><ul><li><a class="toctext" href="../../1. Quickstart - double pendulum/1. Quickstart - double pendulum/">1. Quickstart - double pendulum</a></li><li><a class="toctext" href="../../2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/">2. Closed-loop simulation and visualization</a></li><li><a class="toctext" href="../../3. Four-bar linkage/3. Four-bar linkage/">3. Four-bar linkage</a></li><li class="current"><a class="toctext" href>4. Jacobian IK and Control</a><ul class="internal"><li><a class="toctext" href="#Setup-1">Setup</a></li><li><a class="toctext" href="#Inverse-Kinematics-1">Inverse Kinematics</a></li><li><a class="toctext" href="#Control-1">Control</a></li></ul></li><li><a class="toctext" href="../../5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/">5. Derivatives and gradients using ForwardDiff</a></li><li><a class="toctext" href="../../6. Symbolics using SymPy/6. Symbolics using SymPy/">6. Symbolics using SymPy</a></li><li><a class="toctext" href="../../7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/">7. Rigorous error bounds using IntervalArithmetic</a></li></ul></li><li><span class="toctext">Library</span><ul><li><a class="toctext" href="../../../spatial/">Spatial vector algebra</a></li><li><a class="toctext" href="../../../joints/">Joints</a></li><li><a class="toctext" href="../../../rigidbody/">Rigid bodies</a></li><li><a class="toctext" href="../../../mechanism/">Mechanism</a></li><li><a class="toctext" href="../../../mechanismstate/">MechanismState</a></li><li><a class="toctext" href="../../../algorithms/">Kinematics/dynamics algorithms</a></li><li><a class="toctext" href="../../../customcollections/">Custom collection types</a></li><li><a class="toctext" href="../../../caches/">Cache types</a></li><li><a class="toctext" href="../../../simulation/">Simulation</a></li><li><a class="toctext" href="../../../urdf/">URDF parsing and writing</a></li></ul></li><li><a class="toctext" href="../../../benchmarks/">Benchmarks</a></li></ul></nav><article id="docs"><header><nav><ul><li>Tutorials</li><li><a href>4. Jacobian IK and Control</a></li></ul><a class="edit-page" href="https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/4. Jacobian IK and Control/4. Jacobian IK and Control.jl"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>4. Jacobian IK and Control</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id=".-Jacobian-IK-and-Control-1" href="#.-Jacobian-IK-and-Control-1">4. Jacobian IK and Control</a></h1><p><a href="https://mybinder.org/v2/gh/JuliaRobotics/RigidBodyDynamics.jl/gh-pages?filepath=dev/generated/4. Jacobian IK and Control.ipynb"><img src="https://mybinder.org/badge_logo.svg" alt/></a> <a href="https://nbviewer.jupyter.org/github/JuliaRobotics/RigidBodyDynamics.jl/blob/gh-pages/dev/generated/4. Jacobian IK and Control.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>In this notebook, we&#39;ll demonstrate an extremely simple approach for computing basic inverse kinematics (IK) and controlling the position of some point on our robot using the Jacobian transpose.</p><p>For a brief technical introduction, see <a href="https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf">https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf</a> or <a href="https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf">https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf</a></p><h2><a class="nav-anchor" id="Setup-1" href="#Setup-1">Setup</a></h2><div><pre><code class="language-julia">using RigidBodyDynamics
+using StaticArrays
+using MeshCatMechanisms, Blink</code></pre><pre><code class="language-none">  Updating registry at `~/.julia/registries/General`
+  Updating git-repo `https://github.com/JuliaRegistries/General.git`
+[?25l[2K[?25h</code></pre></div><p>Fix the random seed, so we get repeatable results</p><div><pre><code class="language-julia">using Random
+Random.seed!(42);</code></pre></div><p>First we&#39;ll load our double pendulum robot from URDF:</p><div><pre><code class="language-julia">srcdir = dirname(pathof(RigidBodyDynamics))
+urdf = joinpath(srcdir, &quot;..&quot;, &quot;test&quot;, &quot;urdf&quot;, &quot;Acrobot.urdf&quot;)
+mechanism = parse_urdf(urdf)
+state = MechanismState(mechanism)
+mechanism</code></pre><pre><code class="language-none">Spanning tree:
+Vertex: world (root)
+  Vertex: upper_link, Edge: shoulder
+    Vertex: lower_link, Edge: elbow
+No non-tree joints.</code></pre></div><p>Now we choose a point on the robot to control. We&#39;ll pick the end of the second link, which is located 2m from the origin of the <code>lower_link</code> body:</p><div><pre><code class="language-julia">body = findbody(mechanism, &quot;lower_link&quot;)
+point = Point3D(default_frame(body), 0., 0, -2)</code></pre><pre><code class="language-none">Point3D in &quot;after_elbow&quot;: [0.0, 0.0, -2.0]</code></pre></div><p>Let&#39;s visualize the mechanism and its attached point. For visualization, we&#39;ll use <a href="https://github.com/JuliaRobotics/MeshCatMechanisms.jl">MeshCatMechanisms.jl</a> with <a href="https://github.com/JunoLab/Blink.jl">Blink.jl</a>.</p><div><pre><code class="language-julia"># Create the visualizer
+vis = MechanismVisualizer(mechanism, URDFVisuals(urdf))
+
+# Render our target point attached to the robot as a sphere with radius 0.07
+setelement!(vis, point, 0.07)
+
+# Open the visualizer in a new Blink window
+OPEN_VISUALIZER = false
+OPEN_VISUALIZER &amp;&amp; open(vis, Window());</code></pre></div><h2><a class="nav-anchor" id="Inverse-Kinematics-1" href="#Inverse-Kinematics-1">Inverse Kinematics</a></h2><p>First, let&#39;s use the point jacobian to solve a simple inverse kinematics problem. Given a target location <code>desired</code> expressed in world frame, we want to find the joint angles <code>q</code> such that the <code>point</code> attached to the robot is at the desired location.</p><p>To do that, we&#39;ll iteratively update <code>q</code> by applying:</p><p>\begin{align} \Delta q = \alpha \, J_p^\top \, \Delta p \end{align}</p><p>where <span>$\alpha$</span> is our step size (equivalent to a learning rate in gradient descent) and <span>$\Delta p$</span> is the error in the position of our target point.</p><div><pre><code class="language-julia">function jacobian_transpose_ik!(state::MechanismState,
+                               body::RigidBody,
+                               point::Point3D,
+                               desired::Point3D;
+                               α=0.1,
+                               iterations=100)
+    mechanism = state.mechanism
+    world = root_frame(mechanism)
+
+    # Compute the joint path from world to our target body
+    p = path(mechanism, root_body(mechanism), body)
+    # Allocate the point jacobian (we&#39;ll update this in-place later)
+    Jp = point_jacobian(state, p, transform(state, point, world))
+
+    q = copy(configuration(state))
+
+    for i in 1:iterations
+        # Update the position of the point
+        point_in_world = transform(state, point, world)
+        # Update the point&#39;s jacobian
+        point_jacobian!(Jp, state, p, point_in_world)
+        # Compute an update in joint coordinates using the jacobian transpose
+        Δq = α * Array(Jp)&#39; * (transform(state, desired, world) - point_in_world).v
+        # Apply the update
+        q .= configuration(state) .+ Δq
+        set_configuration!(state, q)
+    end
+    state
+end</code></pre><pre><code class="language-none">jacobian_transpose_ik! (generic function with 1 method)</code></pre></div><p>To use our IK method, we just have to set our current state and choose a desired location for the tip of the robot&#39;s arm:</p><div><pre><code class="language-julia">rand!(state)
+set_configuration!(vis, configuration(state))</code></pre></div><p>Choose a desired location. We&#39;ll move the tip of the arm to [0.5, 0, 2]</p><div><pre><code class="language-julia">desired_tip_location = Point3D(root_frame(mechanism), 0.5, 0, 2)</code></pre><pre><code class="language-none">Point3D in &quot;world&quot;: [0.5, 0.0, 2.0]</code></pre></div><p>Run the IK, updating <code>state</code> in place</p><div><pre><code class="language-julia">jacobian_transpose_ik!(state, body, point, desired_tip_location)
+set_configuration!(vis, configuration(state))</code></pre></div><p>We asked for our point to be close to [0.5, 0, 2], but since the arm cannot move in the y direction at all we end up near [0.5, 0.25, 2] instead</p><div><pre><code class="language-julia">transform(state, point, root_frame(mechanism))</code></pre><pre><code class="language-none">Point3D in &quot;world&quot;: [0.500012, 0.25, 2.00236]</code></pre></div><p>We can try varying the target and watching the IK solution change:</p><div><pre><code class="language-julia">qs = typeof(configuration(state))[]</code></pre><pre><code class="language-none">0-element Array{SegmentedVector{JointID,Float64,Base.OneTo{JointID},Array{Float64,1}},1}</code></pre></div><p>Vary the desired x position from -1 to 1</p><div><pre><code class="language-julia">for x in range(-1, stop=1, length=100)
+    desired = Point3D(root_frame(mechanism), x, 0, 2)
+    jacobian_transpose_ik!(state, body, point, desired)
+    push!(qs, copy(configuration(state)))
+end
+ts = collect(range(0, stop=1, length=length(qs)))
+setanimation!(vis, ts, qs)</code></pre></div><h2><a class="nav-anchor" id="Control-1" href="#Control-1">Control</a></h2><p>Now let&#39;s use the same principle to generate torques and actually control the robot. To make things more interesting, let&#39;s get the end of the robot&#39;s arm to trace out a circle.</p><div><pre><code class="language-julia">circle_origin = SVector(0., 0.25, 2)
+radius = 0.5
+ω = 1.0  # radians per second at which the point should move in its circle
+
+using MeshCat
+using GeometryTypes: Point
+
+# Draw the circle in the viewer
+θ = repeat(range(0, stop=2π, length=100), inner=(2,))[2:end]
+cx, cy, cz = circle_origin
+geometry = PointCloud(Point.(cx .+ radius .* sin.(θ), cy, cz .+ 0.5 .* cos.(θ)))
+setobject!(vis[:circle], LineSegments(geometry, LineBasicMaterial()))</code></pre><pre><code class="language-none">MeshCat Visualizer with path /meshcat/circle</code></pre></div><p>This function will take in the parameters of the circle and the target point and return a function we can use as the controller. By wrapping the construction of the controller in this way, we avoid any issues with accessing non-const global variables.</p><div><pre><code class="language-julia">function make_circle_controller(state::MechanismState,
+                                body::RigidBody,
+                                point::Point3D,
+                                circle_origin::AbstractVector,
+                                radius,
+                                ω)
+    mechanism = state.mechanism
+    world = root_frame(mechanism)
+    joint_path = path(mechanism, root_body(mechanism), body)
+    Jp = point_jacobian(state, joint_path, transform(state, point, root_frame(mechanism)))
+    v̇ = similar(velocity(state))
+
+    function controller!(τ, t, state)
+        desired = Point3D(world, circle_origin .+ radius .* SVector(sin(t / ω), 0, cos(t / ω)))
+        point_in_world = transform_to_root(state, body) * point
+        point_jacobian!(Jp, state, joint_path, point_in_world)
+        Kp = 200
+        Kd = 20
+        Δp = desired - point_in_world
+        v̇ .= Kp * Array(Jp)&#39; * Δp.v .- 20 .* velocity(state)
+        τ .= inverse_dynamics(state, v̇)
+    end
+end
+controller! = make_circle_controller(state, body, point, circle_origin, radius, ω)
+ts, qs, vs = simulate(state, 10, controller!);</code></pre></div><p>Animate the resulting trajectory:</p><div><pre><code class="language-julia">setanimation!(vis, ts, qs)</code></pre></div><p>Now we can plot the behavior of the controller. The initial state is quite far from the target, so there&#39;s some significant overshoot early in the trajectory, but the controller eventually settles into tracking the desired circular path. This controller isn&#39;t very well-tuned, and we could certainly do better with a more advanced approach, but this is still a nice demonstration of a very simple control policy.</p><div><pre><code class="language-julia">using Plots; gr()
+
+xs = Float64[]
+zs = Float64[]
+
+# Downsample by 100 just so the plot doesn&#39;t become a huge file:
+for q in qs[1:100:end]
+    set_configuration!(state, q)
+    p = transform(state, point, root_frame(mechanism))
+    push!(xs, p.v[1])
+    push!(zs, p.v[3])
+end
+
+plot(xs, zs, xlim=(-1, 1), ylim=(1, 3), aspect_ratio=:equal, legend=nothing)</code></pre><?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="600" height="400" viewBox="0 0 2400 1600">
+<defs>
+  <clipPath id="clip0500">
+    <rect x="0" y="0" width="2400" height="1600"/>
+  </clipPath>
+</defs>
+<polygon clip-path="url(#clip0500)" points="
+0,1600 2400,1600 2400,0 0,0 
+  " fill="#ffffff" fill-rule="evenodd" fill-opacity="1"/>
+<defs>
+  <clipPath id="clip0501">
+    <rect x="480" y="0" width="1681" height="1600"/>
+  </clipPath>
+</defs>
+<polygon clip-path="url(#clip0500)" points="
+482.992,1521.01 1956.76,1521.01 1956.76,47.2441 482.992,47.2441 
+  " fill="#ffffff" fill-rule="evenodd" fill-opacity="1"/>
+<defs>
+  <clipPath id="clip0502">
+    <rect x="482" y="47" width="1475" height="1475"/>
+  </clipPath>
+</defs>
+<polyline clip-path="url(#clip0502)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+  482.992,1521.01 482.992,47.2441 
+  "/>
+<polyline clip-path="url(#clip0502)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+  851.433,1521.01 851.433,47.2441 
+  "/>
+<polyline clip-path="url(#clip0502)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+  1219.87,1521.01 1219.87,47.2441 
+  "/>
+<polyline clip-path="url(#clip0502)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+  1588.31,1521.01 1588.31,47.2441 
+  "/>
+<polyline clip-path="url(#clip0502)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+  1956.76,1521.01 1956.76,47.2441 
+  "/>
+<polyline clip-path="url(#clip0502)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+  482.992,1521.01 1956.76,1521.01 
+  "/>
+<polyline clip-path="url(#clip0502)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+  482.992,1152.57 1956.76,1152.57 
+  "/>
+<polyline clip-path="url(#clip0502)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+  482.992,784.126 1956.76,784.126 
+  "/>
+<polyline clip-path="url(#clip0502)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+  482.992,415.685 1956.76,415.685 
+  "/>
+<polyline clip-path="url(#clip0502)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+  482.992,47.2441 1956.76,47.2441 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,1521.01 1956.76,1521.01 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,1521.01 482.992,47.2441 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,1521.01 482.992,1498.9 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  851.433,1521.01 851.433,1498.9 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  1219.87,1521.01 1219.87,1498.9 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  1588.31,1521.01 1588.31,1498.9 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  1956.76,1521.01 1956.76,1498.9 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,1521.01 505.099,1521.01 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,1152.57 505.099,1152.57 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,784.126 505.099,784.126 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,415.685 505.099,415.685 
+  "/>
+<polyline clip-path="url(#clip0500)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,47.2441 505.099,47.2441 
+  "/>
+<g clip-path="url(#clip0500)">
+<text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:middle;" transform="rotate(0, 482.992, 1575.01)" x="482.992" y="1575.01">-1.0</text>
+</g>
+<g clip-path="url(#clip0500)">
+<text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:middle;" transform="rotate(0, 851.433, 1575.01)" x="851.433" y="1575.01">-0.5</text>
+</g>
+<g clip-path="url(#clip0500)">
+<text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:middle;" transform="rotate(0, 1219.87, 1575.01)" x="1219.87" y="1575.01">0.0</text>
+</g>
+<g clip-path="url(#clip0500)">
+<text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:middle;" transform="rotate(0, 1588.31, 1575.01)" x="1588.31" y="1575.01">0.5</text>
+</g>
+<g clip-path="url(#clip0500)">
+<text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:middle;" transform="rotate(0, 1956.76, 1575.01)" x="1956.76" y="1575.01">1.0</text>
+</g>
+<g clip-path="url(#clip0500)">
+<text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:end;" transform="rotate(0, 458.992, 1538.51)" x="458.992" y="1538.51">1.0</text>
+</g>
+<g clip-path="url(#clip0500)">
+<text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:end;" transform="rotate(0, 458.992, 1170.07)" x="458.992" y="1170.07">1.5</text>
+</g>
+<g clip-path="url(#clip0500)">
+<text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:end;" transform="rotate(0, 458.992, 801.626)" x="458.992" y="801.626">2.0</text>
+</g>
+<g clip-path="url(#clip0500)">
+<text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:end;" transform="rotate(0, 458.992, 433.185)" x="458.992" y="433.185">2.5</text>
+</g>
+<g clip-path="url(#clip0500)">
+<text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:end;" transform="rotate(0, 458.992, 64.7441)" x="458.992" y="64.7441">3.0</text>
+</g>
+<polyline clip-path="url(#clip0502)" style="stroke:#009af9; stroke-width:4; stroke-opacity:1; fill:none" points="
+  1956.75,784.156 1914.07,774.149 1767.99,745.939 1563.76,729.019 1351.95,738.935 1174.06,768.426 1052.74,797.689 993.43,809.501 991.54,797.431 1037.52,765.779 
+  1118.07,724.892 1216.3,685.322 1313.58,653.476 1393.1,630.457 1443.46,613.957 1460.52,601.201 1447.06,590.793 1411.07,582.692 1363.25,577.097 1314.46,573.469 
+  1273.6,570.416 1246.49,566.314 1235.54,560.075 1240.03,551.561 1256.91,541.476 1281.6,530.925 1308.97,520.927 1334.27,512.116 1353.93,504.708 1365.94,498.631 
+  1370.03,493.699 1367.35,489.708 1360.08,486.457 1350.8,483.731 1341.99,481.293 1335.59,478.921 1332.78,476.454 1333.92,473.829 1338.62,471.084 1345.95,468.325 
+  1354.72,465.683 1363.68,463.269 1371.78,461.155 1378.32,459.369 1382.98,457.903 1385.84,456.726 1387.25,455.795 1387.79,455.061 1388.05,454.476 1388.58,453.998 
+  1389.77,453.595 1391.84,453.25 1394.8,452.961 1398.52,452.733 1402.75,452.583 1407.21,452.524 1411.61,452.569 1415.75,452.724 1419.48,452.991 1422.76,453.364 
+  1425.63,453.838 1428.19,454.404 1430.58,455.051 1432.92,455.773 1435.33,456.561 1437.9,457.411 1440.65,458.321 1443.59,459.29 1446.67,460.318 1449.83,461.405 
+  1453.01,462.554 1456.15,463.764 1459.2,465.034 1462.14,466.365 1464.97,467.753 1467.68,469.198 1470.31,470.698 1472.89,472.249 1475.44,473.852 1477.99,475.504 
+  1480.55,477.204 1483.14,478.951 1485.74,480.746 1488.35,482.586 1490.96,484.472 1493.55,486.403 1496.11,488.379 1498.63,490.398 1501.09,492.461 1503.52,494.566 
+  1505.89,496.712 1508.22,498.899 1510.52,501.127 1512.79,503.393 1515.03,505.699 1517.25,508.043 1519.45,510.425 1521.63,512.844 1523.79,515.3 1525.93,517.792 
+  1528.03,520.32 1530.1,522.883 1532.14,525.48 1534.14,528.111 1536.11,530.776 1538.03,533.474 1539.93,536.204 1541.79,538.966 1543.61,541.759 1545.41,544.583 
+  1547.17,547.438 1548.9,550.322 1550.59,553.236 1552.26,556.179 1553.89,559.151 1555.49,562.15 1557.05,565.177 1558.58,568.231 1560.08,571.311 1561.53,574.417 
+  1562.95,577.548 1564.34,580.704 1565.69,583.885 1567,587.089 1568.27,590.317 1569.51,593.568 1570.72,596.842 1571.89,600.137 1573.02,603.454 1574.11,606.791 
+  1575.17,610.149 1576.19,613.527 1577.18,616.925 1578.13,620.341 1579.04,623.775 1579.91,627.228 1580.75,630.698 1581.54,634.184 1582.3,637.688 1583.02,641.206 
+  1583.71,644.741 1584.36,648.29 1584.96,651.854 1585.53,655.431 1586.07,659.022 1586.56,662.626 1587.02,666.242 1587.44,669.869 1587.82,673.509 1588.16,677.159 
+  1588.46,680.819 1588.73,684.49 1588.95,688.17 1589.14,691.858 1589.29,695.556 1589.4,699.261 1589.47,702.973 1589.51,706.693 1589.51,710.419 1589.46,714.151 
+  1589.38,717.889 1589.26,721.632 1589.11,725.379 1588.91,729.131 1588.68,732.887 1588.41,736.645 1588.1,740.407 1587.75,744.171 1587.36,747.937 1586.94,751.704 
+  1586.47,755.472 1585.97,759.241 1585.44,763.011 1584.86,766.78 1584.25,770.548 1583.6,774.315 1582.91,778.081 1582.18,781.845 1581.42,785.607 1580.62,789.365 
+  1579.78,793.121 1578.9,796.874 1577.99,800.622 1577.04,804.366 1576.05,808.106 1575.03,811.84 1573.97,815.569 1572.88,819.292 1571.74,823.01 1570.58,826.72 
+  1569.37,830.424 1568.13,834.121 1566.86,837.81 1565.55,841.491 1564.2,845.164 1562.82,848.828 1561.4,852.484 1559.95,856.13 1558.46,859.767 1556.94,863.393 
+  1555.39,867.01 1553.8,870.616 1552.17,874.212 1550.51,877.796 1548.82,881.369 1547.1,884.93 1545.34,888.479 1543.55,892.016 1541.73,895.54 1539.87,899.052 
+  1537.98,902.55 1536.06,906.035 1534.11,909.507 1532.12,912.964 1530.11,916.407 1528.06,919.836 1525.98,923.251 1523.87,926.65 1521.73,930.034 1519.56,933.403 
+  1517.36,936.756 1515.14,940.094 1512.88,943.415 1510.59,946.72 1508.27,950.008 1505.93,953.28 1503.56,956.535 1501.16,959.772 1498.73,962.992 1496.27,966.195 
+  1493.79,969.38 1491.28,972.546 1488.74,975.695 1486.18,978.825 1483.59,981.937 1480.98,985.03 1478.34,988.104 1475.68,991.159 1472.99,994.194 1470.28,997.21 
+  1467.55,1000.21 1464.79,1003.18 1462.01,1006.14 1459.2,1009.08 1456.38,1011.99 1453.53,1014.89 1450.66,1017.76 1447.77,1020.62 1444.86,1023.45 1441.92,1026.26 
+  1438.97,1029.06 1436,1031.82 1433.01,1034.57 1430,1037.3 1426.97,1040 1423.92,1042.69 1420.86,1045.35 1417.78,1047.99 1414.68,1050.6 1411.57,1053.2 
+  1408.44,1055.77 1405.29,1058.31 1402.13,1060.84 1398.96,1063.34 1395.77,1065.82 1392.56,1068.27 1389.35,1070.71 1386.12,1073.11 1382.87,1075.5 1379.62,1077.86 
+  1376.35,1080.2 1373.08,1082.51 1369.79,1084.8 1366.49,1087.06 1363.19,1089.3 1359.87,1091.51 1356.54,1093.7 1353.21,1095.86 1349.87,1098 1346.52,1100.12 
+  1343.16,1102.2 1339.8,1104.27 1336.43,1106.3 1333.05,1108.31 1329.67,1110.29 1326.29,1112.25 1322.9,1114.18 1319.5,1116.09 1316.1,1117.96 1312.7,1119.81 
+  1309.3,1121.64 1305.9,1123.43 1302.49,1125.2 1299.08,1126.94 1295.67,1128.65 1292.27,1130.34 1288.86,1131.99 1285.45,1133.62 1282.04,1135.22 1278.64,1136.79 
+  1275.23,1138.33 1271.83,1139.84 1268.43,1141.32 1265.03,1142.77 1261.64,1144.19 1258.25,1145.58 1254.87,1146.94 1251.49,1148.26 1248.11,1149.56 1244.74,1150.83 
+  1241.37,1152.06 1238.01,1153.26 1234.66,1154.43 1231.32,1155.57 1227.98,1156.67 1224.65,1157.74 1221.32,1158.78 1218.01,1159.78 1214.7,1160.75 1211.4,1161.69 
+  1208.11,1162.59 1204.83,1163.46 1201.56,1164.29 1198.29,1165.08 1195.04,1165.84 1191.8,1166.57 1188.57,1167.25 1185.35,1167.91 1182.14,1168.52 1178.94,1169.09 
+  1175.75,1169.63 1172.57,1170.13 1169.41,1170.6 1166.25,1171.02 1163.11,1171.4 1159.98,1171.75 1156.86,1172.05 1153.76,1172.32 1150.67,1172.54 1147.59,1172.73 
+  1144.52,1172.87 1141.46,1172.97 1138.42,1173.03 1135.39,1173.05 1132.37,1173.02 1129.37,1172.96 1126.38,1172.85 1123.4,1172.69 1120.44,1172.5 1117.49,1172.26 
+  1114.55,1171.97 1111.63,1171.64 1108.71,1171.27 1105.81,1170.85 1102.93,1170.39 1100.06,1169.88 1097.2,1169.33 1094.35,1168.73 1091.52,1168.08 1088.7,1167.39 
+  1085.89,1166.65 1083.1,1165.87 1080.32,1165.03 1077.55,1164.15 1074.79,1163.23 1072.05,1162.25 1069.32,1161.23 1066.6,1160.16 1063.9,1159.05 1061.2,1157.88 
+  1058.52,1156.67 1055.86,1155.41 1053.2,1154.11 1050.56,1152.75 1047.93,1151.35 1045.31,1149.9 1042.71,1148.4 1040.12,1146.85 1037.54,1145.26 1034.97,1143.62 
+  1032.41,1141.93 1029.87,1140.19 1027.34,1138.41 1024.82,1136.58 1022.32,1134.7 1019.83,1132.78 1017.35,1130.81 1014.88,1128.79 1012.43,1126.73 1009.99,1124.62 
+  1007.56,1122.47 1005.14,1120.27 1002.74,1118.03 1000.36,1115.74 997.982,1113.41 995.623,1111.03 993.277,1108.62 990.946,1106.16 988.629,1103.65 986.327,1101.11 
+  984.04,1098.52 981.769,1095.9 979.513,1093.23 977.273,1090.53 975.049,1087.78 972.841,1085 970.651,1082.17 968.477,1079.32 966.321,1076.42 964.182,1073.49 
+  962.062,1070.52 959.961,1067.52 957.878,1064.48 955.815,1061.41 953.771,1058.3 951.747,1055.17 949.744,1052 947.762,1048.8 945.801,1045.57 943.862,1042.31 
+  941.945,1039.02 940.051,1035.71 938.18,1032.36 936.332,1028.99 934.508,1025.6 932.709,1022.17 930.934,1018.73 929.185,1015.26 927.461,1011.76 925.763,1008.24 
+  924.092,1004.7 922.447,1001.14 920.83,997.562 919.241,993.96 917.68,990.34 916.147,986.7 914.644,983.043 913.169,979.368 911.724,975.676 910.31,971.969 
+  908.926,968.246 907.572,964.508 906.25,960.756 904.959,956.99 903.7,953.211 902.474,949.42 901.279,945.617 900.117,941.803 898.989,937.978 897.893,934.143 
+  896.832,930.298 895.804,926.444 894.81,922.582 893.85,918.712 892.925,914.834 892.035,910.949 891.179,907.058 890.359,903.16 889.575,899.258 888.825,895.35 
+  888.112,891.437 887.434,887.521 886.792,883.6 886.187,879.677 885.618,875.75 885.085,871.821 884.588,867.891 884.129,863.958 883.706,860.025 883.319,856.091 
+  882.97,852.156 882.658,848.221 882.382,844.287 882.144,840.354 881.943,836.422 881.778,832.491 881.651,828.563 881.562,824.636 881.509,820.712 881.494,816.792 
+  881.516,812.874 881.575,808.96 881.671,805.051 881.805,801.145 881.976,797.245 882.184,793.349 882.429,789.459 882.711,785.574 883.03,781.695 883.386,777.823 
+  883.779,773.957 884.209,770.098 884.676,766.247 885.18,762.403 885.72,758.567 886.297,754.739 886.91,750.919 887.56,747.108 888.246,743.307 888.968,739.514 
+  889.727,735.732 890.521,731.959 891.352,728.197 892.218,724.445 893.12,720.704 894.057,716.974 895.03,713.255 896.039,709.548 897.082,705.854 898.161,702.171 
+  899.275,698.501 900.423,694.843 901.606,691.199 902.824,687.568 904.076,683.951 905.362,680.348 906.682,676.758 908.036,673.184 909.424,669.624 910.845,666.078 
+  912.3,662.548 913.788,659.034 915.309,655.535 916.863,652.053 918.449,648.586 920.068,645.136 921.72,641.703 923.403,638.287 925.119,634.888 926.866,631.507 
+  928.645,628.143 930.455,624.798 932.296,621.471 934.168,618.162 936.071,614.872 938.004,611.601 939.968,608.349 941.962,605.117 943.986,601.904 946.039,598.711 
+  948.122,595.539 950.234,592.387 952.375,589.255 954.544,586.144 956.742,583.054 958.969,579.986 961.223,576.939 963.506,573.914 965.816,570.91 968.153,567.929 
+  970.517,564.97 972.908,562.034 975.326,559.121 977.77,556.23 980.24,553.363 982.736,550.519 985.257,547.698 987.804,544.901 990.376,542.129 992.972,539.38 
+  995.593,536.656 998.238,533.956 1000.91,531.281 1003.6,528.631 1006.32,526.006 1009.06,523.406 1011.82,520.832 1014.6,518.283 1017.41,515.761 1020.24,513.264 
+  1023.09,510.793 1025.96,508.349 1028.86,505.931 1031.77,503.539 1034.71,501.175 1037.66,498.837 1040.64,496.527 1043.63,494.244 1046.65,491.988 1049.68,489.76 
+  1052.73,487.56 1055.8,485.387 1058.89,483.243 1062,481.127 1065.13,479.039 1068.27,476.979 1071.43,474.949 1074.6,472.946 1077.79,470.973 1081,469.029 
+  1084.23,467.114 1087.47,465.228 1090.72,463.372 1093.99,461.545 1097.27,459.748 1100.57,457.98 1103.88,456.243 1107.21,454.535 1110.55,452.858 1113.9,451.211 
+  1117.26,449.594 1120.64,448.007 1124.02,446.452 1127.42,444.927 1130.84,443.432 1134.26,441.969 1137.69,440.537 1141.13,439.136 1144.58,437.766 1148.05,436.427 
+  1151.52,435.12 1155,433.844 1158.49,432.6 1161.98,431.387 1165.49,430.207 1169,429.058 1172.52,427.941 1176.05,426.856 1179.58,425.804 1183.12,424.783 
+  1186.66,423.795 1190.21,422.84 1193.77,421.917 1197.33,421.026 1200.9,420.168 1204.46,419.343 1208.04,418.55 1211.61,417.791 1215.19,417.064 1218.78,416.371 
+  1222.36,415.71 1225.95,415.083 1229.53,414.489 1233.12,413.928 1236.72,413.401 1240.31,412.907 1243.9,412.446 1247.49,412.019 1251.08,411.626 1254.67,411.267 
+  1258.26,410.941 1261.85,410.649 1265.43,410.391 1269.02,410.166 1272.6,409.976 1276.17,409.82 1279.75,409.698 1283.32,409.61 1286.89,409.556 1290.45,409.536 
+  1294.01,409.551 1297.56,409.6 1301.11,409.684 1304.65,409.802 1308.18,409.954 1311.71,410.141 1315.23,410.362 1318.75,410.618 1322.25,410.909 1325.75,411.234 
+  1329.24,411.594 1332.72,411.989 1336.2,412.418 1339.66,412.882 1343.11,413.382 1346.55,413.915 1349.99,414.484 1353.41,415.088 1356.82,415.727 1360.22,416.4 
+  1363.6,417.109 1366.98,417.852 1370.34,418.63 1373.69,419.444 1377.02,420.292 1380.34,421.176 1383.65,422.094 1386.94,423.047 1390.22,424.036 1393.48,425.059 
+  1396.73,426.117 1399.96,427.211 1403.17,428.339 1406.37,429.502 1409.55,430.7 1412.71,431.934 1415.86,433.201 1418.99,434.504 1422.09,435.842 1425.18,437.214 
+  1428.25,438.621 1431.31,440.063 1434.34,441.539 1437.35,443.05 1440.34,444.596 1443.31,446.176 1446.26,447.79 1449.18,449.439 1452.09,451.122 1454.97,452.839 
+  1457.83,454.59 1460.67,456.375 1463.48,458.195 1466.27,460.048 1469.03,461.934 1471.78,463.854 1474.49,465.808 1477.18,467.795 1479.85,469.816 1482.49,471.869 
+  1485.11,473.955 1487.7,476.075 1490.26,478.226 1492.8,480.411 1495.3,482.627 1497.79,484.876 1500.24,487.157 1502.67,489.47 1505.06,491.814 1507.43,494.19 
+  1509.77,496.597 1512.08,499.036 1514.36,501.505 1516.62,504.004 1518.84,506.534 1521.03,509.094 1523.19,511.684 1525.32,514.304 1527.42,516.953 1529.49,519.631 
+  1531.52,522.338 1533.53,525.074 1535.5,527.838 1537.44,530.63 1539.35,533.45 1541.22,536.297 1543.06,539.172 1544.87,542.073 1546.65,545.001 1548.39,547.955 
+  1550.1,550.935 1551.77,553.94 1553.41,556.97 1555.02,560.026 1556.59,563.105 1558.13,566.209 1559.63,569.337 1561.09,572.488 1562.52,575.662 1563.92,578.858 
+  1565.28,582.077 1566.6,585.318 1567.89,588.579 1569.14,591.862 1570.36,595.166 1571.54,598.49 1572.68,601.833 1573.79,605.196 1574.86,608.578 1575.89,611.978 
+  1576.88,615.397 1577.84,618.833 1578.76,622.286 1579.65,625.756 1580.49,629.242 1581.3,632.744 1582.07,636.262 1582.81,639.794 1583.5,643.341 1584.16,646.902 
+  1584.78,650.477 1585.36,654.065 1585.91,657.665 1586.41,661.278 1586.88,664.903 1587.31,668.539 1587.7,672.185 1588.06,675.842 1588.37,679.51 1588.65,683.186 
+  1588.89,686.872 1589.09,690.566 1589.25,694.268 1589.37,697.978 1589.46,701.695 1589.5,705.419 1589.51,709.149 1589.48,712.885 1589.41,716.626 1589.31,720.372 
+  1589.16,724.123 1588.98,727.878 1588.76,731.636 1588.5,735.397 1588.2,739.162 1587.86,742.928 1587.49,746.696 1587.08,750.466 1586.63,754.237 1586.14,758.008 
+  1585.61,761.78 1585.05,765.551 1584.45,769.322 1583.81,773.092 1583.13,776.86 1582.42,780.626 1581.66,784.39 1580.87,788.151 1580.05,791.909 1579.18,795.664 
+  1578.28,799.415 1577.35,803.161 1576.37,806.903 1575.36,810.64 1574.31,814.372 1573.23,818.098 1572.11,821.818 1570.95,825.531 1569.76,829.238 1568.53,832.937 
+  1567.27,836.629 1565.97,840.314 1564.63,843.99 1563.26,847.657 1561.86,851.316 1560.41,854.966 1558.94,858.606 1557.43,862.236 1555.88,865.856 1554.31,869.466 
+  1552.69,873.065 1551.05,876.653 1549.36,880.23 1547.65,883.795 1545.9,887.348 1544.12,890.889 1542.31,894.417 1540.46,897.933 1538.59,901.436 1536.67,904.925 
+  1534.73,908.401 1532.76,911.863 1530.75,915.311 1528.71,918.745 1526.65,922.164 1524.55,925.568 1522.42,928.957 1520.26,932.331 1518.07,935.689 1515.85,939.032 
+  1513.6,942.358 1511.32,945.669 1509.02,948.962 1506.68,952.239 1504.32,955.499 1501.92,958.742 1499.5,961.968 1497.06,965.176 1494.58,968.367 1492.08,971.539 
+  1489.55,974.694 1487,977.83 1484.42,980.948 1481.82,984.046 1479.19,987.127 1476.53,990.187 1473.85,993.229 1471.15,996.252 1468.42,999.254 1465.67,1002.24 
+  1462.9,1005.2 1460.1,1008.14 1457.28,1011.07 1454.44,1013.97 1451.57,1016.85 1448.69,1019.71 1445.79,1022.55 1442.86,1025.37 1439.91,1028.17 1436.95,1030.94 
+  1433.96,1033.7 1430.96,1036.43 1427.94,1039.15 1424.9,1041.83 1421.84,1044.5 1418.76,1047.15 1415.67,1049.77 1412.56,1052.37 1409.44,1054.95 1406.3,1057.51 
+  1403.14,1060.04 1399.97,1062.55 1396.78,1065.03 1393.59,1067.5 1390.37,1069.93 1387.15,1072.35 1383.91,1074.74 1380.66,1077.11 1377.4,1079.45 1374.12,1081.77 
+  1370.84,1084.07 1367.54,1086.34 1364.24,1088.59 1360.93,1090.81 1357.6,1093.01 1354.27,1095.18 1350.93,1097.32 1347.58,1099.45 1344.23,1101.54 1340.87,1103.61 
+  1337.5,1105.66 1334.13,1107.67 1330.75,1109.67 1327.36,1111.63 1323.98,1113.57 1320.58,1115.48 1317.19,1117.37 1313.79,1119.23 1310.39,1121.06 1306.98,1122.86 
+  1303.58,1124.64 1300.17,1126.39 1296.76,1128.11 1293.35,1129.8 1289.94,1131.47 1286.53,1133.1 1283.13,1134.71 1279.72,1136.29 1276.32,1137.84 1272.91,1139.36 
+  1269.51,1140.85 1266.12,1142.31 1262.72,1143.74 1259.33,1145.14 1255.94,1146.51 1252.56,1147.84 1249.18,1149.15 1245.81,1150.43 1242.45,1151.67 1239.08,1152.88 
+  1235.73,1154.06 1232.38,1155.21 1229.04,1156.32 1225.71,1157.41 1222.38,1158.45 1219.06,1159.47 1215.75,1160.45 1212.45,1161.4 1209.16,1162.31 1205.87,1163.19 
+  1202.6,1164.03 1199.33,1164.83 1196.08,1165.61 1192.83,1166.34 1189.6,1167.04 1186.37,1167.7 1183.16,1168.33 1179.95,1168.92 1176.76,1169.47 1173.58,1169.98 
+  1170.41,1170.45 1167.26,1170.89 1164.11,1171.28 1160.98,1171.64 1157.86,1171.96 1154.75,1172.24 1151.65,1172.47 1148.57,1172.67 1145.49,1172.83 1142.43,1172.94 
+  1139.39,1173.02 1136.35,1173.05 1133.33,1173.04 1130.33,1172.98 1127.33,1172.89 1124.35,1172.75 1121.38,1172.57 1118.43,1172.34 1115.48,1172.07 1112.56,1171.75 
+  1109.64,1171.4 1106.74,1170.99 1103.85,1170.54 1100.97,1170.05 1098.11,1169.51 1095.26,1168.92 1092.42,1168.29 1089.6,1167.62 1086.78,1166.89 1083.99,1166.12 
+  1081.2,1165.3 1078.43,1164.44 1075.67,1163.53 1072.92,1162.57 1070.19,1161.56 1067.47,1160.51 1064.76,1159.41 1062.06,1158.26 1059.38,1157.06 1056.71,1155.82 
+  1054.05,1154.53 
+  "/>
+</svg>
+</div><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p><footer><hr/><a class="previous" href="../../3. Four-bar linkage/3. Four-bar linkage/"><span class="direction">Previous</span><span class="title">3. Four-bar linkage</span></a><a class="next" href="../../5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/"><span class="direction">Next</span><span class="title">5. Derivatives and gradients using ForwardDiff</span></a></footer></article></body></html>

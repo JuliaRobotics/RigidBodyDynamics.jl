@@ -69,7 +69,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Contents",
     "category": "section",
-    "text": "Pages = [\n  \"quickstart.md\",\n  \"spatial.md\",\n  \"joints.md\",\n  \"rigidbody.md\",\n  \"mechanism.md\",\n  \"mechanismstate.md\",\n  \"algorithms.md\",\n  \"caches.md\",\n  \"simulation.md\",\n  \"urdf.md\",\n  \"benchmarks.md\"]\nDepth = 2"
+    "text": "Pages = [\n  \"spatial.md\",\n  \"joints.md\",\n  \"rigidbody.md\",\n  \"mechanism.md\",\n  \"mechanismstate.md\",\n  \"algorithms.md\",\n  \"caches.md\",\n  \"simulation.md\",\n  \"urdf.md\",\n  \"benchmarks.md\"]\nDepth = 2"
 },
 
 {
@@ -81,19 +81,355 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "quickstart/#",
-    "page": "Quick start guide",
-    "title": "Quick start guide",
+    "location": "generated/1. Quickstart - double pendulum/1. Quickstart - double pendulum/#",
+    "page": "1. Quickstart - double pendulum",
+    "title": "1. Quickstart - double pendulum",
     "category": "page",
-    "text": ""
+    "text": "EditURL = \"https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/1. Quickstart - double pendulum/1. Quickstart - double pendulum.jl\""
 },
 
 {
-    "location": "quickstart/#Quick-start-guide-1",
-    "page": "Quick start guide",
-    "title": "Quick start guide",
+    "location": "generated/1. Quickstart - double pendulum/1. Quickstart - double pendulum/#.-Quickstart-double-pendulum-1",
+    "page": "1. Quickstart - double pendulum",
+    "title": "1. Quickstart - double pendulum",
     "category": "section",
-    "text": "To get started, see this Jupyter notebook.If you\'re interested in using different scalar types, see the symbolic double pendulum notebook."
+    "text": "(Image: ) (Image: )"
+},
+
+{
+    "location": "generated/1. Quickstart - double pendulum/1. Quickstart - double pendulum/#Setup-1",
+    "page": "1. Quickstart - double pendulum",
+    "title": "Setup",
+    "category": "section",
+    "text": "In addition to RigidBodyDynamics, we\'ll be using the StaticArrays package, used throughout RigidBodyDynamics, which provides stack-allocated, fixed-size arrays:using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/1. Quickstart - double pendulum\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics\nusing LinearAlgebra\nusing StaticArrays"
+},
+
+{
+    "location": "generated/1. Quickstart - double pendulum/1. Quickstart - double pendulum/#Creating-a-double-pendulum-Mechanism-1",
+    "page": "1. Quickstart - double pendulum",
+    "title": "Creating a double pendulum Mechanism",
+    "category": "section",
+    "text": "We\'re going to create a simple Mechanism that represents a double pendulum. The Mechanism type can be thought of as an interconnection of rigid bodies and joints.We\'ll start by creating a \'root\' rigid body, representing the fixed world, and using it to create a new Mechanism:g = -9.81 # gravitational acceleration in z-direction\nworld = RigidBody{Float64}(\"world\")\ndoublependulum = Mechanism(world; gravity = SVector(0, 0, g))Note that the RigidBody type is parameterized on the \'scalar type\', here Float64.We\'ll now add a second body, called \'upper link\', to the Mechanism. We\'ll attach it to the world with a revolute joint, with the y-axis as the axis of rotation. We\'ll start by creating a SpatialInertia, which stores the inertial properties of the new body:axis = SVector(0., 1., 0.) # joint axis\nI_1 = 0.333 # moment of inertia about joint axis\nc_1 = -0.5 # center of mass location with respect to joint axis\nm_1 = 1. # mass\nframe1 = CartesianFrame3D(\"upper_link\") # the reference frame in which the spatial inertia will be expressed\ninertia1 = SpatialInertia(frame1, moment=I_1 * axis * axis\', com=SVector(0, 0, c_1), mass=m_1)Note that the created SpatialInertia is annotated with the frame in which it is expressed (in the form of a CartesianFrame3D). This is a common theme among RigidBodyDynamics objects. Storing frame information with the data obviates the need for the complicated variable naming conventions that are used in some other libraries to disambiguate the frame in which quantities are expressed. It also enables automated reference frame checks.We\'ll now create the second body:upperlink = RigidBody(inertia1)and a new revolute joint called \'shoulder\':shoulder = Joint(\"shoulder\", Revolute(axis))Creating a Joint automatically constructs two new CartesianFrame3D objects: a frame directly before the joint, and one directly after. To attach the new body to the world by this joint, we\'ll have to specify where the frame before the joint is located on the parent body (here, the world):before_shoulder_to_world = one(Transform3D, frame_before(shoulder), default_frame(world))Now we can attach the upper link to the world:attach!(doublependulum, world, upperlink, shoulder, joint_pose = before_shoulder_to_world)which changes the tree representation of the Mechanism.We can attach the lower link in similar fashion:l_1 = -1. # length of the upper link\nI_2 = 0.333 # moment of inertia about joint axis\nc_2 = -0.5 # center of mass location with respect to joint axis\nm_2 = 1. # mass\ninertia2 = SpatialInertia(CartesianFrame3D(\"lower_link\"), moment=I_2 * axis * axis\', com=SVector(0, 0, c_2), mass=m_2)\nlowerlink = RigidBody(inertia2)\nelbow = Joint(\"elbow\", Revolute(axis))\nbefore_elbow_to_after_shoulder = Transform3D(frame_before(elbow), frame_after(shoulder), SVector(0, 0, l_1))\nattach!(doublependulum, upperlink, lowerlink, elbow, joint_pose = before_elbow_to_after_shoulder)Now our double pendulum Mechanism is complete.Note: instead of defining the Mechanism in this way, it is also possible to load in a URDF file (an XML file format used in ROS), using the parse_urdf function, e.g.:srcdir = dirname(pathof(RigidBodyDynamics))\nurdf = joinpath(srcdir, \"..\", \"test\", \"urdf\", \"Acrobot.urdf\")\nparse_urdf(urdf)"
+},
+
+{
+    "location": "generated/1. Quickstart - double pendulum/1. Quickstart - double pendulum/#The-state-of-a-Mechanism-1",
+    "page": "1. Quickstart - double pendulum",
+    "title": "The state of a Mechanism",
+    "category": "section",
+    "text": "A Mechanism stores the joint/rigid body layout, but no state information. State information is separated out into a MechanismState object:state = MechanismState(doublependulum)Let\'s first set the configurations and velocities of the joints:set_configuration!(state, shoulder, 0.3)\nset_configuration!(state, elbow, 0.4)\nset_velocity!(state, shoulder, 1.)\nset_velocity!(state, elbow, 2.);Important: a MechanismState contains cache variables that depend on the configurations and velocities of the joints. These need to be invalidated when the configurations and velocities are changed. To do this, callsetdirty!(state)The joint configurations and velocities are stored as Vectors (denoted q and v respectively in this package) inside the MechanismState object:q = configuration(state)\nv = velocity(state)"
+},
+
+{
+    "location": "generated/1. Quickstart - double pendulum/1. Quickstart - double pendulum/#Kinematics-1",
+    "page": "1. Quickstart - double pendulum",
+    "title": "Kinematics",
+    "category": "section",
+    "text": "We are now ready to do kinematics. Here\'s how you transform a point at the origin of the frame after the elbow joint to world frame:transform(state, Point3D(frame_after(elbow), zero(SVector{3})), default_frame(world))Other objects like Wrenches, Twists, and SpatialInertias can be transformed in similar fashion.You can also ask for the homogeneous transform to world:transform_to_root(state, frame_after(elbow))Or a relative transform:relative_transform(state, frame_after(elbow), frame_after(shoulder))and here\'s the center of mass of the double pendulum:center_of_mass(state)"
+},
+
+{
+    "location": "generated/1. Quickstart - double pendulum/1. Quickstart - double pendulum/#Dynamics-1",
+    "page": "1. Quickstart - double pendulum",
+    "title": "Dynamics",
+    "category": "section",
+    "text": "A MechanismState can also be used to compute quantities related to the dynamics of the Mechanism. Here we compute the mass matrix:mass_matrix(state)Note that there is also a zero-allocation version, mass_matrix! (the ! at the end of a method is a Julia convention signifying that the function is \'in-place\', i.e. modifies its input data).We can do inverse dynamics as follows (note again that there is a non-allocating version of this method as well):v̇ = similar(velocity(state)) # the joint acceleration vector, i.e., the time derivative of the joint velocity vector v\nv̇[shoulder][1] = 1\nv̇[elbow][1] = 2\ninverse_dynamics(state, v̇)"
+},
+
+{
+    "location": "generated/1. Quickstart - double pendulum/1. Quickstart - double pendulum/#Simulation-1",
+    "page": "1. Quickstart - double pendulum",
+    "title": "Simulation",
+    "category": "section",
+    "text": "Let\'s simulate the double pendulum for 5 seconds, starting from the state we defined earlier. For this, we can use the basic simulate function:ts, qs, vs = simulate(state, 5., Δt = 1e-3);simulate returns a vector of times (ts) and associated joint configurations (qs) and velocities (vs). You can of course plot the trajectories using your favorite plotting package (see e.g. Plots.jl). The MeshCatMechanisms or RigidBodyTreeInspector packages can also be used for 3D animation of the double pendulum in action. See also RigidBodySim.jl for a more full-fledge simulation environment.A lower level interface for simulation/ODE integration with more options is also available. Consult the documentation for more information. In addition, RigidBodySim.jl offers a more full-featured simulation environment.This page was generated using Literate.jl."
+},
+
+{
+    "location": "generated/2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/#",
+    "page": "2. Closed-loop simulation and visualization",
+    "title": "2. Closed-loop simulation and visualization",
+    "category": "page",
+    "text": "EditURL = \"https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization.jl\""
+},
+
+{
+    "location": "generated/2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/#.-Closed-loop-simulation-and-visualization-1",
+    "page": "2. Closed-loop simulation and visualization",
+    "title": "2. Closed-loop simulation and visualization",
+    "category": "section",
+    "text": "(Image: ) (Image: )Please note that RigidBodySim.jl now provides a more capable simulation environment."
+},
+
+{
+    "location": "generated/2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/#Setup-1",
+    "page": "2. Closed-loop simulation and visualization",
+    "title": "Setup",
+    "category": "section",
+    "text": "using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/2. Closed-loop simulation and visualization\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics"
+},
+
+{
+    "location": "generated/2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/#Model-definition-1",
+    "page": "2. Closed-loop simulation and visualization",
+    "title": "Model definition",
+    "category": "section",
+    "text": "We\'ll just use the double pendulum model, loaded from a URDF:srcdir = dirname(pathof(RigidBodyDynamics))\nurdf = joinpath(srcdir, \"..\", \"test\", \"urdf\", \"Acrobot.urdf\")\nmechanism = parse_urdf(urdf)"
+},
+
+{
+    "location": "generated/2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/#Controller-1",
+    "page": "2. Closed-loop simulation and visualization",
+    "title": "Controller",
+    "category": "section",
+    "text": "Let\'s write a simple controller that just applies 10 sin(t) at the elbow joint and adds some damping at the shoulder joint:shoulder, elbow = joints(mechanism)\nfunction simple_control!(torques::AbstractVector, t, state::MechanismState)\n    torques[velocity_range(state, shoulder)] .= -1 .* velocity(state, shoulder)\n    torques[velocity_range(state, elbow)] .= 10 * sin(t)\nend;"
+},
+
+{
+    "location": "generated/2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/#Simulation-1",
+    "page": "2. Closed-loop simulation and visualization",
+    "title": "Simulation",
+    "category": "section",
+    "text": "Basic simulation can be done using the simulate function. We\'ll first create a MechanismState object, and set the initial joint configurations and velocities:state = MechanismState(mechanism)\nzero_velocity!(state)\nset_configuration!(state, shoulder, 0.7)\nset_configuration!(state, elbow, -0.8);Now we can simply call simulate, which will return a tuple consisting of:simulation times (a Vector of numbers)\njoint configuration vectors (a Vector of Vectors)\njoint velocity vectors (a Vector of Vectors)final_time = 10.\nts, qs, vs = simulate(state, final_time, simple_control!; Δt = 1e-3);For access to lower-level functionality, such as different ways of storing or visualizing the data generated during the simulation, it is advised to simply pattern match the basic simulate function."
+},
+
+{
+    "location": "generated/2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/#Visualization-1",
+    "page": "2. Closed-loop simulation and visualization",
+    "title": "Visualization",
+    "category": "section",
+    "text": "For visualization, we\'ll use MeshCatMechanisms, an external package based on RigidBodyDynamics.jl.using MeshCatMechanismsCreate a MechanismVisualizer and open it in a new browser tab (see MeshCat.jl for other options):mvis = MechanismVisualizer(mechanism, URDFVisuals(urdf))\nOPEN_VISUALIZER = false\nOPEN_VISUALIZER && open(mvis);And animate:MeshCatMechanisms.animate(mvis, ts, qs; realtimerate = 1.);This page was generated using Literate.jl."
+},
+
+{
+    "location": "generated/3. Four-bar linkage/3. Four-bar linkage/#",
+    "page": "3. Four-bar linkage",
+    "title": "3. Four-bar linkage",
+    "category": "page",
+    "text": "EditURL = \"https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/3. Four-bar linkage/3. Four-bar linkage.jl\""
+},
+
+{
+    "location": "generated/3. Four-bar linkage/3. Four-bar linkage/#.-Four-bar-linkage-1",
+    "page": "3. Four-bar linkage",
+    "title": "3. Four-bar linkage",
+    "category": "section",
+    "text": "(Image: ) (Image: )This example is a (slightly modified) contribution by Aykut Satici."
+},
+
+{
+    "location": "generated/3. Four-bar linkage/3. Four-bar linkage/#Setup-1",
+    "page": "3. Four-bar linkage",
+    "title": "Setup",
+    "category": "section",
+    "text": "using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/3. Four-bar linkage\") # hide\nPkg.instantiate() # hide\nusing LinearAlgebra\nusing RigidBodyDynamics\nusing StaticArrays"
+},
+
+{
+    "location": "generated/3. Four-bar linkage/3. Four-bar linkage/#Model-definition-1",
+    "page": "3. Four-bar linkage",
+    "title": "Model definition",
+    "category": "section",
+    "text": "We\'re going to create a four-bar linkage that looks like this: (Image: fourbar)We\'ll \'cut\' the mechanism at joint 4: joints 1, 2, and 3 will be part of the spanning tree of the mechanism, but joint 4 will be a \'loop joint\' (see e.g. Featherstone\'s \'Rigid Body Dynamics Algorithms\'), for which the dynamics will be enforced using Lagrange multipliers.First, we\'ll define some relevant constants:# gravitational acceleration\ng = -9.81\n\n# link lengths\nl_0 = 1.10\nl_1 = 0.5\nl_2 = 1.20\nl_3 = 0.75\n\n# link masses\nm_1 = 0.5\nm_2 = 1.0\nm_3 = 0.75\n\n# link center of mass offsets from the preceding joint axes\nc_1 = 0.25\nc_2 = 0.60\nc_3 = 0.375\n\n# moments of inertia about the center of mass of each link\nI_1 = 0.333\nI_2 = 0.537\nI_3 = 0.4\n\n# Rotation axis: negative y-axis\naxis = SVector(0., -1., 0.);Construct the world rigid body and create a new mechanism:world = RigidBody{Float64}(\"world\")\nfourbar = Mechanism(world; gravity = SVector(0., 0., g))Next, we\'ll construct the spanning tree of the mechanism, consisting of bodies 1, 2, and 3 connected by joints 1, 2, and 3. Note the use of the moment_about_com keyword (as opposed to moment):Link 1 and joint 1:joint1 = Joint(\"joint1\", Revolute(axis))\ninertia1 = SpatialInertia(frame_after(joint1),\n    com=SVector(c_1, 0, 0),\n    moment_about_com=I_1*axis*transpose(axis),\n    mass=m_1)\nlink1 = RigidBody(inertia1)\nbefore_joint1_to_world = one(Transform3D,\n    frame_before(joint1), default_frame(world))\nattach!(fourbar, world, link1, joint1,\n    joint_pose = before_joint1_to_world)Link 2 and joint 2:joint2 = Joint(\"joint2\", Revolute(axis))\ninertia2 = SpatialInertia(frame_after(joint2),\n    com=SVector(c_2, 0, 0),\n    moment_about_com=I_2*axis*transpose(axis),\n    mass=m_2)\nlink2 = RigidBody(inertia2)\nbefore_joint2_to_after_joint1 = Transform3D(\n    frame_before(joint2), frame_after(joint1), SVector(l_1, 0., 0.))\nattach!(fourbar, link1, link2, joint2,\n    joint_pose = before_joint2_to_after_joint1)Link 3 and joint 3:joint3 = Joint(\"joint3\", Revolute(axis))\ninertia3 = SpatialInertia(frame_after(joint3),\n    com=SVector(l_0, 0., 0.),\n    moment_about_com=I_3*axis*transpose(axis),\n    mass=m_3)\nlink3 = RigidBody(inertia3)\nbefore_joint3_to_world = Transform3D(frame_before(joint3),\n    default_frame(world), SVector(l_0, 0., 0.))\nattach!(fourbar, world, link3, joint3, joint_pose = before_joint3_to_world)Finally, we\'ll add joint 4 in almost the same way we did the other joints, with the following exceptions:both link2 and link3 are already part of the Mechanism, so the attach! function will figure out that joint4 will be a loop joint.\ninstead of using the default (identity) for the argument that specifies the transform from the successor of joint 4 (i.e., link 3) to the frame directly afterjoint 4, we\'ll specify a transform that incorporates the l_3 offset.# joint between link2 and link3\njoint4 = Joint(\"joint4\", Revolute(axis))\nbefore_joint4_to_joint2 = Transform3D(\n    frame_before(joint4), frame_after(joint2), SVector(l_2, 0., 0.))\njoint3_to_after_joint4 = Transform3D(\n    frame_after(joint3), frame_after(joint4), SVector(-l_3, 0., 0.))\nattach!(fourbar, link2, link3, joint4,\n    joint_pose = before_joint4_to_joint2, successor_pose = joint3_to_after_joint4)Note the additional non-tree joint in the printed Mechanism summary."
+},
+
+{
+    "location": "generated/3. Four-bar linkage/3. Four-bar linkage/#Simulation-1",
+    "page": "3. Four-bar linkage",
+    "title": "Simulation",
+    "category": "section",
+    "text": "As usual, we\'ll now construct a MechanismState and DynamicsResult for the four-bar Mechanism. We\'ll set some initial conditions for a simulation, which were solved for a priori using a nonlinear program (not shown here).state = MechanismState(fourbar)\nresult = DynamicsResult(fourbar);\n\nset_configuration!(state, joint1, 1.6707963267948966) # θ\nset_configuration!(state, joint2, -1.4591054166649482) # γ\nset_configuration!(state, joint3, 1.5397303602625536) # ϕ\n\nset_velocity!(state, joint1, 0.5)\nset_velocity!(state, joint2, -0.47295)\nset_velocity!(state, joint3, 0.341)\n\n# Invalidate the cache variables\nsetdirty!(state)Next, we\'ll do a 3-second simulation:ts, qs, vs = simulate(state, 3., Δt = 1e-2);"
+},
+
+{
+    "location": "generated/3. Four-bar linkage/3. Four-bar linkage/#Visualization-1",
+    "page": "3. Four-bar linkage",
+    "title": "Visualization",
+    "category": "section",
+    "text": "For visualization, we\'ll use MeshCatMechanisms, an external package based on RigidBodyDynamics.jl.using MeshCatMechanismsCreate a MechanismVisualizer for the four-bar linkage and open it in a new browser tab (see MeshCat.jl for other options):mvis = MechanismVisualizer(fourbar, Skeleton(inertias=false))\nOPEN_VISUALIZER = false\nOPEN_VISUALIZER && open(mvis);And animate:MeshCatMechanisms.animate(mvis, ts, qs; realtimerate = 1.);This page was generated using Literate.jl."
+},
+
+{
+    "location": "generated/4. Jacobian IK and Control/4. Jacobian IK and Control/#",
+    "page": "4. Jacobian IK and Control",
+    "title": "4. Jacobian IK and Control",
+    "category": "page",
+    "text": "EditURL = \"https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/4. Jacobian IK and Control/4. Jacobian IK and Control.jl\""
+},
+
+{
+    "location": "generated/4. Jacobian IK and Control/4. Jacobian IK and Control/#.-Jacobian-IK-and-Control-1",
+    "page": "4. Jacobian IK and Control",
+    "title": "4. Jacobian IK and Control",
+    "category": "section",
+    "text": "(Image: ) (Image: )In this notebook, we\'ll demonstrate an extremely simple approach for computing basic inverse kinematics (IK) and controlling the position of some point on our robot using the Jacobian transpose.For a brief technical introduction, see https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf or https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf"
+},
+
+{
+    "location": "generated/4. Jacobian IK and Control/4. Jacobian IK and Control/#Setup-1",
+    "page": "4. Jacobian IK and Control",
+    "title": "Setup",
+    "category": "section",
+    "text": "using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/4. Jacobian IK and Control\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics\nusing StaticArrays\nusing MeshCatMechanisms, BlinkFix the random seed, so we get repeatable resultsusing Random\nRandom.seed!(42);First we\'ll load our double pendulum robot from URDF:srcdir = dirname(pathof(RigidBodyDynamics))\nurdf = joinpath(srcdir, \"..\", \"test\", \"urdf\", \"Acrobot.urdf\")\nmechanism = parse_urdf(urdf)\nstate = MechanismState(mechanism)\nmechanismNow we choose a point on the robot to control. We\'ll pick the end of the second link, which is located 2m from the origin of the lower_link body:body = findbody(mechanism, \"lower_link\")\npoint = Point3D(default_frame(body), 0., 0, -2)Let\'s visualize the mechanism and its attached point. For visualization, we\'ll use MeshCatMechanisms.jl with Blink.jl.# Create the visualizer\nvis = MechanismVisualizer(mechanism, URDFVisuals(urdf))\n\n# Render our target point attached to the robot as a sphere with radius 0.07\nsetelement!(vis, point, 0.07)\n\n# Open the visualizer in a new Blink window\nOPEN_VISUALIZER = false\nOPEN_VISUALIZER && open(vis, Window());"
+},
+
+{
+    "location": "generated/4. Jacobian IK and Control/4. Jacobian IK and Control/#Inverse-Kinematics-1",
+    "page": "4. Jacobian IK and Control",
+    "title": "Inverse Kinematics",
+    "category": "section",
+    "text": "First, let\'s use the point jacobian to solve a simple inverse kinematics problem. Given a target location desired expressed in world frame, we want to find the joint angles q such that the point attached to the robot is at the desired location.To do that, we\'ll iteratively update q by applying:\\begin{align} \\Delta q = \\alpha \\, J_p^\\top \\, \\Delta p \\end{align}where alpha is our step size (equivalent to a learning rate in gradient descent) and Delta p is the error in the position of our target point.function jacobian_transpose_ik!(state::MechanismState,\n                               body::RigidBody,\n                               point::Point3D,\n                               desired::Point3D;\n                               α=0.1,\n                               iterations=100)\n    mechanism = state.mechanism\n    world = root_frame(mechanism)\n\n    # Compute the joint path from world to our target body\n    p = path(mechanism, root_body(mechanism), body)\n    # Allocate the point jacobian (we\'ll update this in-place later)\n    Jp = point_jacobian(state, p, transform(state, point, world))\n\n    q = copy(configuration(state))\n\n    for i in 1:iterations\n        # Update the position of the point\n        point_in_world = transform(state, point, world)\n        # Update the point\'s jacobian\n        point_jacobian!(Jp, state, p, point_in_world)\n        # Compute an update in joint coordinates using the jacobian transpose\n        Δq = α * Array(Jp)\' * (transform(state, desired, world) - point_in_world).v\n        # Apply the update\n        q .= configuration(state) .+ Δq\n        set_configuration!(state, q)\n    end\n    state\nendTo use our IK method, we just have to set our current state and choose a desired location for the tip of the robot\'s arm:rand!(state)\nset_configuration!(vis, configuration(state))Choose a desired location. We\'ll move the tip of the arm to [0.5, 0, 2]desired_tip_location = Point3D(root_frame(mechanism), 0.5, 0, 2)Run the IK, updating state in placejacobian_transpose_ik!(state, body, point, desired_tip_location)\nset_configuration!(vis, configuration(state))We asked for our point to be close to [0.5, 0, 2], but since the arm cannot move in the y direction at all we end up near [0.5, 0.25, 2] insteadtransform(state, point, root_frame(mechanism))We can try varying the target and watching the IK solution change:qs = typeof(configuration(state))[]Vary the desired x position from -1 to 1for x in range(-1, stop=1, length=100)\n    desired = Point3D(root_frame(mechanism), x, 0, 2)\n    jacobian_transpose_ik!(state, body, point, desired)\n    push!(qs, copy(configuration(state)))\nend\nts = collect(range(0, stop=1, length=length(qs)))\nsetanimation!(vis, ts, qs)"
+},
+
+{
+    "location": "generated/4. Jacobian IK and Control/4. Jacobian IK and Control/#Control-1",
+    "page": "4. Jacobian IK and Control",
+    "title": "Control",
+    "category": "section",
+    "text": "Now let\'s use the same principle to generate torques and actually control the robot. To make things more interesting, let\'s get the end of the robot\'s arm to trace out a circle.circle_origin = SVector(0., 0.25, 2)\nradius = 0.5\nω = 1.0  # radians per second at which the point should move in its circle\n\nusing MeshCat\nusing GeometryTypes: Point\n\n# Draw the circle in the viewer\nθ = repeat(range(0, stop=2π, length=100), inner=(2,))[2:end]\ncx, cy, cz = circle_origin\ngeometry = PointCloud(Point.(cx .+ radius .* sin.(θ), cy, cz .+ 0.5 .* cos.(θ)))\nsetobject!(vis[:circle], LineSegments(geometry, LineBasicMaterial()))This function will take in the parameters of the circle and the target point and return a function we can use as the controller. By wrapping the construction of the controller in this way, we avoid any issues with accessing non-const global variables.function make_circle_controller(state::MechanismState,\n                                body::RigidBody,\n                                point::Point3D,\n                                circle_origin::AbstractVector,\n                                radius,\n                                ω)\n    mechanism = state.mechanism\n    world = root_frame(mechanism)\n    joint_path = path(mechanism, root_body(mechanism), body)\n    Jp = point_jacobian(state, joint_path, transform(state, point, root_frame(mechanism)))\n    v̇ = similar(velocity(state))\n\n    function controller!(τ, t, state)\n        desired = Point3D(world, circle_origin .+ radius .* SVector(sin(t / ω), 0, cos(t / ω)))\n        point_in_world = transform_to_root(state, body) * point\n        point_jacobian!(Jp, state, joint_path, point_in_world)\n        Kp = 200\n        Kd = 20\n        Δp = desired - point_in_world\n        v̇ .= Kp * Array(Jp)\' * Δp.v .- 20 .* velocity(state)\n        τ .= inverse_dynamics(state, v̇)\n    end\nend\ncontroller! = make_circle_controller(state, body, point, circle_origin, radius, ω)\nts, qs, vs = simulate(state, 10, controller!);Animate the resulting trajectory:setanimation!(vis, ts, qs)Now we can plot the behavior of the controller. The initial state is quite far from the target, so there\'s some significant overshoot early in the trajectory, but the controller eventually settles into tracking the desired circular path. This controller isn\'t very well-tuned, and we could certainly do better with a more advanced approach, but this is still a nice demonstration of a very simple control policy.using Plots; gr()\n\nxs = Float64[]\nzs = Float64[]\n\n# Downsample by 100 just so the plot doesn\'t become a huge file:\nfor q in qs[1:100:end]\n    set_configuration!(state, q)\n    p = transform(state, point, root_frame(mechanism))\n    push!(xs, p.v[1])\n    push!(zs, p.v[3])\nend\n\nplot(xs, zs, xlim=(-1, 1), ylim=(1, 3), aspect_ratio=:equal, legend=nothing)This page was generated using Literate.jl."
+},
+
+{
+    "location": "generated/5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/#",
+    "page": "5. Derivatives and gradients using ForwardDiff",
+    "title": "5. Derivatives and gradients using ForwardDiff",
+    "category": "page",
+    "text": "EditURL = \"https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff.jl\""
+},
+
+{
+    "location": "generated/5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/#.-Derivatives-and-gradients-using-ForwardDiff-1",
+    "page": "5. Derivatives and gradients using ForwardDiff",
+    "title": "5. Derivatives and gradients using ForwardDiff",
+    "category": "section",
+    "text": "(Image: ) (Image: )"
+},
+
+{
+    "location": "generated/5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/#Setup-1",
+    "page": "5. Derivatives and gradients using ForwardDiff",
+    "title": "Setup",
+    "category": "section",
+    "text": "using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/5. Derivatives and gradients using ForwardDiff\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics, StaticArrays, ForwardDiff\nusing Test, Random\nRandom.seed!(1); # to get repeatable results"
+},
+
+{
+    "location": "generated/5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/#Jacobians-with-respect-to-q-and-v-the-naive-way-1",
+    "page": "5. Derivatives and gradients using ForwardDiff",
+    "title": "Jacobians with respect to q and v - the naive way",
+    "category": "section",
+    "text": "First, we\'ll load our trusty double pendulum from a URDF:srcdir = dirname(pathof(RigidBodyDynamics))\nurdf = joinpath(srcdir, \"..\", \"test\", \"urdf\", \"Acrobot.urdf\")\nmechanism = parse_urdf(urdf)Of course, we can create a MechanismState for the double pendulum, and compute its momentum in some random state:float64state = MechanismState(mechanism)\nrand!(float64state)\nmomentum(float64state)But now suppose we want the Jacobian of momentum with respect to the joint velocity vector v. We can do this using the ForwardDiff.Dual type and the ForwardDiff.jacobian function. The ForwardDiff package implements forward-mode automatic differentiation.To use ForwardDiff.jacobian we\'ll create a function that maps v (as a Vector) to momentum (as a Vector):q = configuration(float64state)\nfunction momentum_vec(v::AbstractVector{T}) where T\n    # create a `MechanismState` that can handle the element type of `v` (which will be some `ForwardDiff.Dual`):\n    state = MechanismState{T}(mechanism)\n\n    # set the state variables:\n    set_configuration!(state, q)\n    set_velocity!(state, v)\n\n    # return momentum converted to an `SVector` (as ForwardDiff expects an `AbstractVector`)\n    Vector(SVector(momentum(state)))\nendLet\'s first check that the function returns the same thing we got from float64state:v = velocity(float64state)\n@test momentum_vec(v) == SVector(momentum(float64state))That works, so now let\'s compute the Jacobian with ForwardDiff:J = ForwardDiff.jacobian(momentum_vec, v)At this point we note that the matrix J is simply the momentum matrix (in world frame) of the Mechanism. In this case, RigidBodyDynamics.jl has a specialized algorithm for computing this matrix, so let\'s verify the results:A = momentum_matrix(float64state)\n@test J ≈ Array(A) atol = 1e-12Gradients with respect to q can be computed in similar fashion."
+},
+
+{
+    "location": "generated/5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/#Improving-performance-1",
+    "page": "5. Derivatives and gradients using ForwardDiff",
+    "title": "Improving performance",
+    "category": "section",
+    "text": "Ignoring the fact that we have a specialized method available, let\'s look at the performance of using ForwardDiff.jacobian.using BenchmarkTools\n@benchmark ForwardDiff.jacobian($momentum_vec, $v)That\'s not great. Note all the allocations. We can do better by making the following modifications:use an in-place version of the jacobian function, ForwardDiff.jacobian!\nreimplement our momentum_vec function to be in-place as well\ndon\'t create a new MechanismState every timeThe third point is especially important; creating a MechanismState is expensive!Regarding the second point, we could also just stop converting momentum from a StaticArrays.SVector to a Vector to avoid allocations. However, the solution of making the function in-place also applies when the size of the output vector is not known statically (e.g., for dynamics_bias!).To facillitate reuse of MechanismStates while keeping the code nice and generic, we can use a StateCache object. StateCache is a container that stores MechanismStates of various types (associated with one Mechanism), and will ease the process of using ForwardDiff. Creating one is easy:const statecache = StateCache(mechanism)MechanismStates of a given type can be accessed as follows (note that if a MechanismState of a certain type is already available, it will be reused):float32state = statecache[Float32]\n@test float32state === statecache[Float32]Now we\'ll use the StateCache to reimplement momentum_vec, making it in-place as well:function momentum_vec!(out::AbstractVector, v::AbstractVector{T}) where T\n    # retrieve a `MechanismState` that can handle the element type of `v`:\n    state = statecache[T]\n\n    # set the state variables:\n    set_configuration!(state, q)\n    set_velocity!(state, v)\n\n    # compute momentum and store it in `out`\n    m = momentum(state)\n    copyto!(out, SVector(m))\nendCheck that the in-place version works as expected on Float64 inputs:const out = zeros(6) # where we\'ll be storing our results\nmomentum_vec!(out, v)\n@test out == SVector(momentum(float64state))And use ForwardDiff.jacobian! to compute the Jacobian:const result = DiffResults.JacobianResult(out, v)\nconst config = ForwardDiff.JacobianConfig(momentum_vec!, out, v)\nForwardDiff.jacobian!(result, momentum_vec!, out, v, config)\nJ = DiffResults.jacobian(result)\n@test J ≈ Array(A) atol = 1e-12Let\'s check the performance again:@benchmark ForwardDiff.jacobian!($result, $momentum_vec!, $out, $v, $config)That\'s much better. Do note that the specialized algorithm is still faster:q = copy(configuration(float64state))\n@benchmark begin\n    set_configuration!($float64state, $q)\n    momentum_matrix!($A, $float64state)\nend"
+},
+
+{
+    "location": "generated/5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/#Time-derivatives-1",
+    "page": "5. Derivatives and gradients using ForwardDiff",
+    "title": "Time derivatives",
+    "category": "section",
+    "text": "We can also use ForwardDiff to compute time derivatives. Let\'s verify that energy is conserved for the double pendulum in the absence of nonconservative forces (like damping). That is, we expect that the time derivative of the pendulum\'s total energy is zero when its state evolves according to the passive dynamics.Let\'s first compute the joint acceleration vector dotv using the passive dynamics:dynamicsresult = DynamicsResult(mechanism)\nset_configuration!(float64state, q)\nset_velocity!(float64state, v)\ndynamics!(dynamicsresult, float64state)\nv̇ = dynamicsresult.v̇Now for the time derivative of total energy. ForwardDiff has a derivative function that can be used to take derivatives of functions that map a scalar to a scalar. But in this example, we\'ll instead use ForwardDiff\'s Dual type directly. ForwardDiff.Dual represents a (potentially multidimensional) dual number, i.e., a type that stores both the value of a function evaluated at a certain point, as well as the partial derivatives of the function, again evaluated at the same point. See the ForwardDiff documentation for more information.We\'ll create a vector of Duals representing the value and derivative of q(t):q̇ = v\nq_dual = ForwardDiff.Dual.(q, q̇)Note: for the double pendulum, dotq = v, but this is not the case in general for Mechanisms created using RigidBodyDynamics.jl. For example, the QuaternionSpherical joint type uses a unit quaternion to represent the joint configuration, but angular velocity (in body frame) to represent velocity. In general dotq can be computed from the velocity vector v stored in a MechanismState usingconfiguration_derivative(::MechanismState)or its in-place variant, configuration_derivative!.We\'ll do the same thing for v(t):v_dual = ForwardDiff.Dual.(v, v̇)Now we\'re ready to compute the total energy (kinetic + potential) using these ForwardDiff.Dual inputs. We\'ll use our StateCache again:T = eltype(q_dual)\nstate = statecache[T]\nset_configuration!(state, q_dual)\nset_velocity!(state, v_dual)\nenergy_dual = kinetic_energy(state) + gravitational_potential_energy(state)Note that the result type of energy_dual is again a ForwardDiff.Dual. We can extract the energy and its time derivative (mechanical power) from energy_dual as follows:energy = ForwardDiff.value(energy_dual)\npartials = ForwardDiff.partials(energy_dual)\npower = partials[1];So the total energy in the system is:energyNote: the total energy is negative because the origin of the world frame is used as a reference for computing gravitational potential energy, i.e., the center of mass of the double pendulum is somewhere below this origin.And we can verify that, indeed, there is no power flow into or out of the system:@test power ≈ 0 atol = 1e-14This page was generated using Literate.jl."
+},
+
+{
+    "location": "generated/6. Symbolics using SymPy/6. Symbolics using SymPy/#",
+    "page": "6. Symbolics using SymPy",
+    "title": "6. Symbolics using SymPy",
+    "category": "page",
+    "text": "EditURL = \"https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/6. Symbolics using SymPy/6. Symbolics using SymPy.jl\""
+},
+
+{
+    "location": "generated/6. Symbolics using SymPy/6. Symbolics using SymPy/#.-Symbolics-using-SymPy-1",
+    "page": "6. Symbolics using SymPy",
+    "title": "6. Symbolics using SymPy",
+    "category": "section",
+    "text": "(Image: ) (Image: )"
+},
+
+{
+    "location": "generated/6. Symbolics using SymPy/6. Symbolics using SymPy/#Setup-1",
+    "page": "6. Symbolics using SymPy",
+    "title": "Setup",
+    "category": "section",
+    "text": "using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/6. Symbolics using SymPy\") # hide\nPkg.instantiate() # hide\nusing RigidBodyDynamics\nusing StaticArrays\nusing SymPy"
+},
+
+{
+    "location": "generated/6. Symbolics using SymPy/6. Symbolics using SymPy/#Create-symbolic-parameters-1",
+    "page": "6. Symbolics using SymPy",
+    "title": "Create symbolic parameters",
+    "category": "section",
+    "text": "Masses: m_1 m_2\nMass moments of inertia (about center of mass): I_1 I_2\nLink lengths: l_1 l_2\nCenter of mass locations (w.r.t. preceding joint axis): c_1 c_2\nGravitational acceleration: ginertias = @syms m_1 m_2 I_1 I_2 positive = true\nlengths = @syms l_1 l_2 c_1 c_2 real = true\ngravitational_acceleration = @syms g real = true\nparams = [inertias..., lengths..., gravitational_acceleration...]\ntranspose(params)"
+},
+
+{
+    "location": "generated/6. Symbolics using SymPy/6. Symbolics using SymPy/#Create-double-pendulum-Mechanism-1",
+    "page": "6. Symbolics using SymPy",
+    "title": "Create double pendulum Mechanism",
+    "category": "section",
+    "text": "A Mechanism contains the joint layout and inertia parameters, but no state information.T = Sym # the \'scalar type\' of the Mechanism we\'ll construct\naxis = SVector(zero(T), one(T), zero(T)) # axis of rotation for each of the joints\ndouble_pendulum = Mechanism(RigidBody{T}(\"world\"); gravity = SVector(zero(T), zero(T), g))\nworld = root_body(double_pendulum) # the fixed \'world\' rigid bodyAttach the first (upper) link to the world via a revolute joint named \'shoulder\'inertia1 = SpatialInertia(CartesianFrame3D(\"upper_link\"), moment=I_1 * axis * transpose(axis), com=SVector(zero(T), zero(T), c_1), mass=m_1)\nbody1 = RigidBody(inertia1)\njoint1 = Joint(\"shoulder\", Revolute(axis))\njoint1_to_world = one(Transform3D{T}, frame_before(joint1), default_frame(world));\nattach!(double_pendulum, world, body1, joint1, joint_pose = joint1_to_world);Attach the second (lower) link to the world via a revolute joint named \'elbow\'inertia2 = SpatialInertia(CartesianFrame3D(\"lower_link\"), moment=I_2 * axis * transpose(axis), com=SVector(zero(T), zero(T), c_2), mass=m_2)\nbody2 = RigidBody(inertia2)\njoint2 = Joint(\"elbow\", Revolute(axis))\njoint2_to_body1 = Transform3D(frame_before(joint2), default_frame(body1), SVector(zero(T), zero(T), l_1))\nattach!(double_pendulum, body1, body2, joint2, joint_pose = joint2_to_body1)"
+},
+
+{
+    "location": "generated/6. Symbolics using SymPy/6. Symbolics using SymPy/#Create-MechanismState-associated-with-the-double-pendulum-Mechanism-1",
+    "page": "6. Symbolics using SymPy",
+    "title": "Create MechanismState associated with the double pendulum Mechanism",
+    "category": "section",
+    "text": "A MechanismState stores all state-dependent information associated with a Mechanism.x = MechanismState(double_pendulum);Set the joint configuration vector of the MechanismState to a new vector of symbolic variablesq = configuration(x)\nfor i in eachindex(q)\n    q[i] = symbols(\"q_$i\", real = true)\nendSet the joint velocity vector of the MechanismState to a new vector of symbolic variablesv = velocity(x)\nfor i in eachindex(v)\n    v[i] = symbols(\"v_$i\", real = true)\nend"
+},
+
+{
+    "location": "generated/6. Symbolics using SymPy/6. Symbolics using SymPy/#Compute-dynamical-quantities-in-symbolic-form-1",
+    "page": "6. Symbolics using SymPy",
+    "title": "Compute dynamical quantities in symbolic form",
+    "category": "section",
+    "text": "Mass matrixsimplify.(mass_matrix(x))Kinetic energysimplify(kinetic_energy(x))Potential energysimplify(gravitational_potential_energy(x))This page was generated using Literate.jl."
+},
+
+{
+    "location": "generated/7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/#",
+    "page": "7. Rigorous error bounds using IntervalArithmetic",
+    "title": "7. Rigorous error bounds using IntervalArithmetic",
+    "category": "page",
+    "text": "EditURL = \"https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic.jl\""
+},
+
+{
+    "location": "generated/7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/#.-Rigorous-error-bounds-using-IntervalArithmetic-1",
+    "page": "7. Rigorous error bounds using IntervalArithmetic",
+    "title": "7. Rigorous error bounds using IntervalArithmetic",
+    "category": "section",
+    "text": "(Image: ) (Image: )"
+},
+
+{
+    "location": "generated/7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/#Floating-point-error-1",
+    "page": "7. Rigorous error bounds using IntervalArithmetic",
+    "title": "Floating-point error",
+    "category": "section",
+    "text": "In computers, real numbers are commonly approximated using floating-point numbers, such as Julia\'s Float64. Unfortunately, not all real numbers can be exactly represented as a finite-size floating-point number, and the results of operations on floating-point numbers can only approximate the results of applying the operation to a true real number. This results in peculiarities like:2.6 - 0.7 - 1.9IntervalArithmetic.jl can be used to quantify floating point error, by computing rigorous worst-case bounds on floating point error, within which the true result is guaranteed to lie.using Pkg # hide\nPkg.activate(\"/home/travis/build/JuliaRobotics/RigidBodyDynamics.jl/docs/../examples/7. Rigorous error bounds using IntervalArithmetic\") # hide\nPkg.instantiate() # hide\nusing IntervalArithmeticIntervalArithmetic.jl provides the Interval type, which stores an upper and a lower bound:i = Interval(1.0, 2.0)dump(i)IntervalArithmetic.jl provides overloads for most common Julia functions that take these bounds into account. For example:i + isin(i)Note that the bounds computed by IntervalArithmetic.jl take floating point error into account. Also note that a given real number, once converted to (approximated by) a floating-point number may not be equal to the original real number. To rigorously construct an Interval that contains a given real number as an input, IntervalArithmetic.jl provides the @interval macro:i = @interval(2.9)\ni.lo === i.hidump(i)Compare this toi = Interval(2.9)\ni.lo === i.hidump(i)As an example, consider again the peculiar result from before, now using interval arithmetic:i = @interval(2.6) - @interval(0.7) - @interval(1.9)showing that the true result, 0, is indeed in the guaranteed interval, and indeed:using Test\n@test (2.6 - 0.7 - 1.9) ∈ i"
+},
+
+{
+    "location": "generated/7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/#Accuracy-of-RigidBodyDynamics.jl\'s-mass_matrix-1",
+    "page": "7. Rigorous error bounds using IntervalArithmetic",
+    "title": "Accuracy of RigidBodyDynamics.jl\'s mass_matrix",
+    "category": "section",
+    "text": "Let\'s use IntervalArithmetic.jl to establish rigorous bounds on the accuracy of the accuracy of the mass_matrix algorithm for the Acrobot (double pendulum) in a certain configuration. Let\'s get started.using RigidBodyDynamicsWe\'ll create a Mechanism by parsing the Acrobot URDF, passing in Interval{Float64} as the type used to store the parameters (inertias, link lengths, etc.) of the mechanism. Note that the parameters parsed from the URDF are treated as floating point numbers (i.e., like Interval(2.9) instead of @interval(2.9) above).const T = Interval{Float64}\nsrcdir = dirname(pathof(RigidBodyDynamics))\nurdf = joinpath(srcdir, \"..\", \"test\", \"urdf\", \"Acrobot.urdf\")\nconst mechanism = parse_urdf(urdf; scalar_type=T)\nstate = MechanismState(mechanism)Let\'s set the initial joint angle of the shoulder joint to the smallest Interval{Float64} containing the real number 1, and similarly for the elbow joint:shoulder, elbow = joints(mechanism)\nset_configuration!(state, shoulder, @interval(1))\nset_configuration!(state, elbow, @interval(2));And now we can compute the mass matrix as normal:M = mass_matrix(state)Woah, those bounds look pretty big. RigidBodyDynamics.jl must not be very accurate! Actually, things aren\'t so bad; the issue is just that IntervalArithmetic.jl isn\'t kidding when it comes to guaranteed bounds, and that includes printing the numbers in shortened form. Here are the lengths of the intervals:err = map(x -> x.hi - x.lo, M)@test maximum(abs, err) ≈ 0 atol = 1e-14"
+},
+
+{
+    "location": "generated/7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/#Rigorous-(worst-case)-uncertainty-propagation-1",
+    "page": "7. Rigorous error bounds using IntervalArithmetic",
+    "title": "Rigorous (worst-case) uncertainty propagation",
+    "category": "section",
+    "text": "IntervalArithmetic.jl can also be applied to propagate uncertainty in a rigorous way when the inputs themselves are uncertain. Consider for example the case that we only know the joint angles up to pm 005 radians:set_configuration!(state, shoulder, @interval(0.95, 1.05))\nset_configuration!(state, elbow, @interval(1.95, 2.05));and let\'s compute bounds on the center of mass position:center_of_mass(state)Note that the bounds on the y-coordinate are very tight, since our mechanism only lives in the x-z plane.This page was generated using Literate.jl."
 },
 
 {

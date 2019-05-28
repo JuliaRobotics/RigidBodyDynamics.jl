@@ -1,0 +1,4 @@
+[deps]
+RigidBodyDynamics = "366cf18f-59d5-5db9-a4de-86a9f6786172"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
