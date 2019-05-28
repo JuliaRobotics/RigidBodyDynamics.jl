@@ -11,11 +11,8 @@ You can also generate Jupyter notebooks and run them locally by performing the f
 2. [install IJulia](https://github.com/JuliaLang/IJulia.jl) (`add` it to the default project)
 3. in the Julia REPL, run
    ```
-   using IJulia, RigidBodyDynamics
-   cd(joinpath(dirname(pathof(RigidBodyDynamics)), "..", "examples"))
    using Pkg
-   Pkg.activate(".")
-   Pkg.instantiate()
-   include("generate.jl")
-   notebook(dir=".")
+   Pkg.build("RigidBodyDynamics")
+   using IJulia, RigidBodyDynamics
+   notebook(dir=joinpath(dirname(pathof(RigidBodyDynamics)), "..", "examples"))
    ```
