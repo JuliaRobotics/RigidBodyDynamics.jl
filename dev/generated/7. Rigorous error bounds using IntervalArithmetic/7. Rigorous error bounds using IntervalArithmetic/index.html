@@ -3,9 +3,9 @@
   Updating git-repo `https://github.com/JuliaRegistries/General.git`
 [?25l[2K[?25h Installed ErrorfreeArithmetic ─ v0.3.2
  Installed SetRounding ───────── v0.2.0
- Installed CRlibm ────────────── v0.7.1
- Installed IntervalArithmetic ── v0.15.2
  Installed FastRounding ──────── v0.2.0
+ Installed IntervalArithmetic ── v0.15.2
+ Installed CRlibm ────────────── v0.7.1
   Building CRlibm → `~/.julia/packages/CRlibm/2S9DB/deps/build.log`</code></pre></div><p>IntervalArithmetic.jl provides the <code>Interval</code> type, which stores an upper and a lower bound:</p><div><pre><code class="language-julia">i = Interval(1.0, 2.0)</code></pre><pre><code class="language-none">[1, 2]</code></pre></div><div><pre><code class="language-julia">dump(i)</code></pre><pre><code class="language-none">IntervalArithmetic.Interval{Float64}
   lo: Float64 1.0
   hi: Float64 2.0</code></pre></div><p>IntervalArithmetic.jl provides overloads for most common Julia functions that take these bounds into account. For example:</p><div><pre><code class="language-julia">i + i</code></pre><pre><code class="language-none">[2, 4]</code></pre></div><div><pre><code class="language-julia">sin(i)</code></pre><pre><code class="language-none">[0.84147, 1]</code></pre></div><p>Note that the bounds computed by IntervalArithmetic.jl take floating point error into account. Also note that a given real number, once converted to (approximated by) a floating-point number may not be equal to the original real number. To rigorously construct an <code>Interval</code> that contains a given real number as an input, IntervalArithmetic.jl provides the <code>@interval</code> macro:</p><div><pre><code class="language-julia">i = @interval(2.9)
