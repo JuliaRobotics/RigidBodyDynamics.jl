@@ -5,8 +5,8 @@ Random.seed!(1); # to get repeatable results</code></pre><pre><code class="langu
   Updating git-repo `https://github.com/JuliaRegistries/General.git`
 [?25l[2K[?25h Installed NaNMath ────────────── v0.3.2
  Installed DiffRules ──────────── v0.0.10
- Installed DiffResults ────────── v0.0.4
  Installed CommonSubexpressions ─ v0.2.0
+ Installed DiffResults ────────── v0.0.4
  Installed BenchmarkTools ─────── v0.4.2
  Installed ForwardDiff ────────── v0.10.2</code></pre></div><h2><a class="nav-anchor" id="Jacobians-with-respect-to-q-and-v-the-naive-way-1" href="#Jacobians-with-respect-to-q-and-v-the-naive-way-1">Jacobians with respect to <span>$q$</span> and <span>$v$</span> - the naive way</a></h2><p>First, we&#39;ll load our trusty double pendulum from a URDF:</p><div><pre><code class="language-julia">srcdir = dirname(pathof(RigidBodyDynamics))
 urdf = joinpath(srcdir, &quot;..&quot;, &quot;test&quot;, &quot;urdf&quot;, &quot;Acrobot.urdf&quot;)
@@ -41,10 +41,10 @@ end</code></pre><pre><code class="language-none">momentum_vec (generic function 
   memory estimate:  35.66 KiB
   allocs estimate:  468
   --------------
-  minimum time:     44.269 μs (0.00% GC)
-  median time:      53.952 μs (0.00% GC)
-  mean time:        73.400 μs (20.50% GC)
-  maximum time:     9.977 ms (97.87% GC)
+  minimum time:     44.816 μs (0.00% GC)
+  median time:      54.816 μs (0.00% GC)
+  mean time:        73.352 μs (20.73% GC)
+  maximum time:     10.838 ms (97.00% GC)
   --------------
   samples:          10000
   evals/sample:     1</code></pre></div><p>That&#39;s not great. Note all the allocations. We can do better by making the following modifications:</p><ol><li>use an in-place version of the <code>jacobian</code> function, <code>ForwardDiff.jacobian!</code></li><li>reimplement our <code>momentum_vec</code> function to be in-place as well</li><li>don&#39;t create a new <code>MechanismState</code> every time</li></ol><p>The third point is especially important; creating a <code>MechanismState</code> is expensive!</p><p>Regarding the second point, we could also just stop converting momentum from a <code>StaticArrays.SVector</code> to a <code>Vector</code> to avoid allocations. However, the solution of making the function in-place also applies when the size of the output vector is not known statically (e.g., for <code>dynamics_bias!</code>).</p><p>To facillitate reuse of <code>MechanismState</code>s while keeping the code nice and generic, we can use a <code>StateCache</code> object. <code>StateCache</code> is a container that stores <code>MechanismState</code>s of various types (associated with one <code>Mechanism</code>), and will ease the process of using <code>ForwardDiff</code>. Creating one is easy:</p><div><pre><code class="language-julia">const statecache = StateCache(mechanism)</code></pre><pre><code class="language-none">StateCache{…}(…)</code></pre></div><p><code>MechanismState</code>s of a given type can be accessed as follows (note that if a <code>MechanismState</code> of a certain type is already available, it will be reused):</p><div><pre><code class="language-julia">float32state = statecache[Float32]
@@ -69,10 +69,10 @@ J = DiffResults.jacobian(result)
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     1.665 μs (0.00% GC)
-  median time:      1.680 μs (0.00% GC)
-  mean time:        1.727 μs (0.00% GC)
-  maximum time:     141.281 μs (0.00% GC)
+  minimum time:     1.709 μs (0.00% GC)
+  median time:      1.737 μs (0.00% GC)
+  mean time:        1.835 μs (0.00% GC)
+  maximum time:     7.519 μs (0.00% GC)
   --------------
   samples:          10000
   evals/sample:     10</code></pre></div><p>That&#39;s much better. Do note that the specialized algorithm is still faster:</p><div><pre><code class="language-julia">q = copy(configuration(float64state))
@@ -83,10 +83,10 @@ end</code></pre><pre><code class="language-none">BenchmarkTools.Trial:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     452.731 ns (0.00% GC)
-  median time:      459.264 ns (0.00% GC)
-  mean time:        469.034 ns (0.00% GC)
-  maximum time:     6.791 μs (0.00% GC)
+  minimum time:     459.117 ns (0.00% GC)
+  median time:      466.954 ns (0.00% GC)
+  mean time:        477.421 ns (0.00% GC)
+  maximum time:     8.502 μs (0.00% GC)
   --------------
   samples:          10000
   evals/sample:     197</code></pre></div><h2><a class="nav-anchor" id="Time-derivatives-1" href="#Time-derivatives-1">Time derivatives</a></h2><p>We can also use ForwardDiff to compute time derivatives. Let&#39;s verify that energy is conserved for the double pendulum in the absence of nonconservative forces (like damping). That is, we expect that the time derivative of the pendulum&#39;s total energy is zero when its state evolves according to the passive dynamics.</p><p>Let&#39;s first compute the joint acceleration vector <span>$\dot{v}$</span> using the passive dynamics:</p><div><pre><code class="language-julia">dynamicsresult = DynamicsResult(mechanism)

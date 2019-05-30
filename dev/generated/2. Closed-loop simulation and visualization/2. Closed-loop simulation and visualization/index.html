@@ -1,51 +1,51 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>2. Closed-loop simulation and visualization · RigidBodyDynamics.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link href="../../../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>RigidBodyDynamics.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../../../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../../../">Home</a></li><li><span class="toctext">Tutorials</span><ul><li><a class="toctext" href="../../1. Quickstart - double pendulum/1. Quickstart - double pendulum/">1. Quickstart - double pendulum</a></li><li class="current"><a class="toctext" href>2. Closed-loop simulation and visualization</a><ul class="internal"><li><a class="toctext" href="#Setup-1">Setup</a></li><li><a class="toctext" href="#Model-definition-1">Model definition</a></li><li><a class="toctext" href="#Controller-1">Controller</a></li><li><a class="toctext" href="#Simulation-1">Simulation</a></li><li><a class="toctext" href="#Visualization-1">Visualization</a></li></ul></li><li><a class="toctext" href="../../3. Four-bar linkage/3. Four-bar linkage/">3. Four-bar linkage</a></li><li><a class="toctext" href="../../4. Jacobian IK and Control/4. Jacobian IK and Control/">4. Jacobian IK and Control</a></li><li><a class="toctext" href="../../5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/">5. Derivatives and gradients using ForwardDiff</a></li><li><a class="toctext" href="../../6. Symbolics using SymPy/6. Symbolics using SymPy/">6. Symbolics using SymPy</a></li><li><a class="toctext" href="../../7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/">7. Rigorous error bounds using IntervalArithmetic</a></li></ul></li><li><span class="toctext">Library</span><ul><li><a class="toctext" href="../../../spatial/">Spatial vector algebra</a></li><li><a class="toctext" href="../../../joints/">Joints</a></li><li><a class="toctext" href="../../../rigidbody/">Rigid bodies</a></li><li><a class="toctext" href="../../../mechanism/">Mechanism</a></li><li><a class="toctext" href="../../../mechanismstate/">MechanismState</a></li><li><a class="toctext" href="../../../algorithms/">Kinematics/dynamics algorithms</a></li><li><a class="toctext" href="../../../customcollections/">Custom collection types</a></li><li><a class="toctext" href="../../../caches/">Cache types</a></li><li><a class="toctext" href="../../../simulation/">Simulation</a></li><li><a class="toctext" href="../../../urdf/">URDF parsing and writing</a></li></ul></li><li><a class="toctext" href="../../../benchmarks/">Benchmarks</a></li></ul></nav><article id="docs"><header><nav><ul><li>Tutorials</li><li><a href>2. Closed-loop simulation and visualization</a></li></ul><a class="edit-page" href="https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization.jl"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>2. Closed-loop simulation and visualization</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id=".-Closed-loop-simulation-and-visualization-1" href="#.-Closed-loop-simulation-and-visualization-1">2. Closed-loop simulation and visualization</a></h1><p>Please note that <a href="https://github.com/JuliaRobotics/RigidBodySim.jl">RigidBodySim.jl</a> now provides a more capable simulation environment.</p><h2><a class="nav-anchor" id="Setup-1" href="#Setup-1">Setup</a></h2><div><pre><code class="language-julia">using RigidBodyDynamics</code></pre><pre><code class="language-none">  Updating registry at `~/.julia/registries/General`
   Updating git-repo `https://github.com/JuliaRegistries/General.git`
-[?25l[2K[?25h Installed IniFile ─────────────────── v0.5.0
- Installed URIParser ───────────────── v0.4.0
- Installed BinDeps ─────────────────── v0.8.10
+[?25l[2K[?25h Installed URIParser ───────────────── v0.4.0
  Installed WoodburyMatrices ────────── v0.4.1
+ Installed CoordinateTransformations ─ v0.5.0
+ Installed BinDeps ─────────────────── v0.8.10
+ Installed IniFile ─────────────────── v0.5.0
  Installed Ratios ──────────────────── v0.3.1
- Installed MacroTools ──────────────── v0.5.0
- Installed Observables ─────────────── v0.2.3
+ Installed HTTP ────────────────────── v0.8.0
+ Installed OrderedCollections ──────── v1.1.0
  Installed Hiccup ──────────────────── v0.2.2
- Installed WebSockets ──────────────── v1.5.2
+ Installed JSExpr ──────────────────── v0.5.0
  Installed Lazy ────────────────────── v0.13.2
- Installed AxisAlgorithms ──────────── v1.0.0
+ Installed Observables ─────────────── v0.2.3
+ Installed MacroTools ──────────────── v0.5.0
  Installed ColorTypes ──────────────── v0.8.0
- Installed Colors ──────────────────── v0.9.5
+ Installed AxisAlgorithms ──────────── v1.0.0
  Installed CSSUtil ─────────────────── v0.1.0
- Installed GeometryTypes ───────────── v0.7.4
  Installed IterTools ───────────────── v1.1.1
- Installed Interpolations ──────────── v0.12.1
  Installed Requires ────────────────── v0.5.2
+ Installed GeometryTypes ───────────── v0.7.4
+ Installed Interpolations ──────────── v0.12.1
  Installed MeshCatMechanisms ───────── v0.4.0
  Installed Compat ──────────────────── v2.1.0
- Installed JSExpr ──────────────────── v0.5.0
- Installed OffsetArrays ────────────── v0.11.0
- Installed HTTP ────────────────────── v0.8.0
- Installed MbedTLS ─────────────────── v0.6.8
- Installed DataStructures ──────────── v0.15.0
- Installed FileIO ──────────────────── v1.0.6
- Installed Widgets ─────────────────── v0.6.1
- Installed Pidfile ─────────────────── v1.1.0
- Installed MeshIO ──────────────────── v0.3.1
- Installed Measures ────────────────── v0.3.0
- Installed OrderedCollections ──────── v1.1.0
  Installed MeshCat ─────────────────── v0.6.0
+ Installed WebSockets ──────────────── v1.5.2
+ Installed OffsetArrays ────────────── v0.11.0
+ Installed MbedTLS ─────────────────── v0.6.8
+ Installed Widgets ─────────────────── v0.6.1
+ Installed FileIO ──────────────────── v1.0.6
+ Installed DataStructures ──────────── v0.15.0
+ Installed Pidfile ─────────────────── v1.1.0
+ Installed Measures ────────────────── v0.3.0
  Installed Knockout ────────────────── v0.2.2
- Installed AssetRegistry ───────────── v0.1.0
- Installed CoordinateTransformations ─ v0.5.0
- Installed InteractBase ────────────── v0.10.1
- Installed CSTParser ───────────────── v0.5.2
- Installed MechanismGeometries ─────── v0.3.0
- Installed FunctionalCollections ───── v0.5.0
- Installed MsgPack ─────────────────── v0.2.0
+ Installed MeshIO ──────────────────── v0.3.1
  Installed WebIO ───────────────────── v0.7.0
- Installed FixedPointNumbers ───────── v0.6.1
+ Installed AssetRegistry ───────────── v0.1.0
  Installed Parameters ──────────────── v0.10.3
- Installed Tokenize ────────────────── v0.5.3
+ Installed InteractBase ────────────── v0.10.1
+ Installed FixedPointNumbers ───────── v0.6.1
  Installed Mux ─────────────────────── v0.7.0
+ Installed MechanismGeometries ─────── v0.3.0
+ Installed CSTParser ───────────────── v0.5.2
+ Installed MsgPack ─────────────────── v0.2.0
+ Installed FunctionalCollections ───── v0.5.0
+ Installed Tokenize ────────────────── v0.5.3
+ Installed Colors ──────────────────── v0.9.5
   Building MbedTLS ─────→ `~/.julia/packages/MbedTLS/X4xar/deps/build.log`
   Building WebIO ───────→ `~/.julia/packages/WebIO/Rk8wc/deps/build.log`
   Building MeshCat ─────→ `~/.julia/packages/MeshCat/WlA0B/deps/build.log`
