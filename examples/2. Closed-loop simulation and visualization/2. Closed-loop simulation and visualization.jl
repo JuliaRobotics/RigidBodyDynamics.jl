@@ -1,12 +1,13 @@
 # # @__NAME__
 
+# PREAMBLE
+
+# PKG_SETUP
+
 # Please note that [RigidBodySim.jl](https://github.com/JuliaRobotics/RigidBodySim.jl) now provides a more capable simulation environment.
 
 # ## Setup
 
-using Pkg # hide
-Pkg.activate(@__DIR__) # hide
-Pkg.instantiate() # hide
 using RigidBodyDynamics
 
 # ## Model definition
@@ -57,9 +58,15 @@ using MeshCatMechanisms
 
 # Create a `MechanismVisualizer` and open it in a new browser tab
 # (see [`MeshCat.jl`](https://github.com/rdeits/MeshCat.jl) for other options):
-mvis = MechanismVisualizer(mechanism, URDFVisuals(urdf))
-OPEN_VISUALIZER = true
-OPEN_VISUALIZER && open(mvis);
+
+mvis = MechanismVisualizer(mechanism, URDFVisuals(urdf));
+
+#-
+
+#nb ##NBSKIP
+#nb open(mvis)
+#md ## open(mvis)
+
 
 # And animate:
 MeshCatMechanisms.animate(mvis, ts, qs; realtimerate = 1.);
