@@ -4,6 +4,7 @@ using RigidBodyDynamics, RigidBodyDynamics.OdeIntegrators
 
 gendir = joinpath(@__DIR__, "src", "generated")
 tutorialpages = String[]
+
 let
     rm(gendir, recursive=true, force=true)
     mkdir(gendir)
@@ -24,14 +25,29 @@ let
             outputdir = joinpath(gendir, subdir)
             cp(root, outputdir)
             preprocess = function (str)
-                str = replace(str, "OPEN_VISUALIZER = true" => "OPEN_VISUALIZER = false")
                 str = replace(str, "@__DIR__" => "\"$(relpath(root, outputdir))\"")
+                str = replace(str, "# PREAMBLE" =>
+                """
+                # This example is also available as a Jupyter notebook that can be run locally
+                # The notebook can be found in the `examples` directory of the package.
+                # If the notebooks are missing, you may need to run `using Pkg; Pkg.build()`.
+                """)
                 return str
             end
+            postprocess = function(str)
+                str = replace(str, "PKG_SETUP" =>
+                """
+                ```@setup $name
+                using Pkg
+                Pkg.activate("$(relpath(root, outputdir))")
+                Pkg.instantiate()
+                ```
+                """)
+                return str
+            end
+
             absfile = joinpath(root, file)
-            # Literate.script(absfile, outputdir; preprocess=preprocess)
-            # Literate.notebook(absfile, outputdir; preprocess=preprocess)
-            tutorialpage = Literate.markdown(absfile, outputdir; preprocess=preprocess)
+            tutorialpage = Literate.markdown(absfile, outputdir; preprocess=preprocess, postprocess=postprocess)
             push!(tutorialpages, relpath(tutorialpage, joinpath(@__DIR__, "src")))
         end
     end

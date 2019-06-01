@@ -1,5 +1,9 @@
 # # @__NAME__
 
+# PREAMBLE
+
+# PKG_SETUP
+
 # In this notebook, we'll demonstrate an extremely simple approach for computing basic inverse kinematics (IK) and controlling the position of some point on our robot using the Jacobian transpose.
 #
 # For a brief technical introduction, see <https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf> or <https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf>
@@ -40,9 +44,14 @@ vis = MechanismVisualizer(mechanism, URDFVisuals(urdf))
 ## Render our target point attached to the robot as a sphere with radius 0.07
 setelement!(vis, point, 0.07)
 
-## Open the visualizer in a new Blink window
-OPEN_VISUALIZER = true
-OPEN_VISUALIZER && open(vis, Window());
+# Open the visualizer in a new Blink window:
+#nb ##NBSKIP
+#nb open(vis, Window())
+#md ## open(vis, Window());
+
+# Create a `MechanismVisualizer`:
+
+mvis = MechanismVisualizer(mechanism, URDFVisuals(urdf));
 
 # ## Inverse Kinematics
 
@@ -151,7 +160,8 @@ function make_circle_controller(state::MechanismState,
     mechanism = state.mechanism
     world = root_frame(mechanism)
     joint_path = path(mechanism, root_body(mechanism), body)
-    Jp = point_jacobian(state, joint_path, transform(state, point, root_frame(mechanism)))
+    point_world = transform(state, point, root_frame(mechanism))
+    Jp = point_jacobian(state, joint_path, point_world)
     v̇ = similar(velocity(state))
 
     function controller!(τ, t, state)

@@ -1,5 +1,16 @@
 using Literate
 
+function preprocess(str)
+    str = replace(str, "# PREAMBLE" => "")
+    str = replace(str, "# PKG_SETUP" =>
+    """
+    using Pkg
+    Pkg.activate(@__DIR__)
+    Pkg.instantiate()
+    """)
+    return str
+end
+
 exampledir = @__DIR__
 for subdir in readdir(exampledir)
     root = joinpath(exampledir, subdir)
@@ -10,8 +21,6 @@ for subdir in readdir(exampledir)
         lowercase(ext) == ".jl" || continue
         absfile = joinpath(root, file)
         @show absfile
-        Literate.notebook(absfile, root, execute=false)
-        # Literate.markdown(absfile, root)
-        # Literate.script(absfile, root)
+        Literate.notebook(absfile, root, execute=false, preprocess=preprocess)
     end
 end
