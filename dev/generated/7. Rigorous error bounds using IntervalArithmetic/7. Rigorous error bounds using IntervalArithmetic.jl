@@ -1,5 +1,9 @@
 # # @__NAME__
 
+# PREAMBLE
+
+# PKG_SETUP
+
 # ## Floating-point error
 
 # In computers, real numbers are commonly approximated using floating-point numbers, such as Julia's `Float64`. Unfortunately, not all real numbers can be exactly represented as a finite-size floating-point number, and the results of operations on floating-point numbers can only approximate the results of applying the operation to a true real number. This results in peculiarities like:

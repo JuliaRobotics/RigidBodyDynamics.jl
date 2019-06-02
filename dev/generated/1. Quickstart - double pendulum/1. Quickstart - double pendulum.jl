@@ -1,12 +1,13 @@
 # # @__NAME__
 
+# PREAMBLE
+
+# PKG_SETUP
+
 # ## Setup
 
 # In addition to `RigidBodyDynamics`, we'll be using the `StaticArrays` package, used throughout `RigidBodyDynamics`, which provides stack-allocated, fixed-size arrays:
 
-using Pkg # hide
-Pkg.activate(@__DIR__) # hide
-Pkg.instantiate() # hide
 using RigidBodyDynamics
 using LinearAlgebra
 using StaticArrays
@@ -31,7 +32,10 @@ I_1 = 0.333 # moment of inertia about joint axis
 c_1 = -0.5 # center of mass location with respect to joint axis
 m_1 = 1. # mass
 frame1 = CartesianFrame3D("upper_link") # the reference frame in which the spatial inertia will be expressed
-inertia1 = SpatialInertia(frame1, moment=I_1 * axis * axis', com=SVector(0, 0, c_1), mass=m_1)
+inertia1 = SpatialInertia(frame1,
+    moment=I_1 * axis * axis',
+    com=SVector(0, 0, c_1),
+    mass=m_1)
 
 
 # Note that the created `SpatialInertia` is annotated with the frame in which it is expressed (in the form of a `CartesianFrame3D`). This is a common theme among `RigidBodyDynamics` objects. Storing frame information with the data obviates the need for the complicated variable naming conventions that are used in some other libraries to disambiguate the frame in which quantities are expressed. It also enables automated reference frame checks.
@@ -48,12 +52,14 @@ shoulder = Joint("shoulder", Revolute(axis))
 
 # Creating a `Joint` automatically constructs two new `CartesianFrame3D` objects: a frame directly before the joint, and one directly after. To attach the new body to the world by this joint, we'll have to specify where the frame before the joint is located on the parent body (here, the world):
 
-before_shoulder_to_world = one(Transform3D, frame_before(shoulder), default_frame(world))
+before_shoulder_to_world = one(Transform3D,
+    frame_before(shoulder), default_frame(world))
 
 
 # Now we can attach the upper link to the world:
 
-attach!(doublependulum, world, upperlink, shoulder, joint_pose = before_shoulder_to_world)
+attach!(doublependulum, world, upperlink, shoulder,
+    joint_pose = before_shoulder_to_world)
 
 
 # which changes the tree representation of the `Mechanism`.
@@ -64,11 +70,16 @@ l_1 = -1. # length of the upper link
 I_2 = 0.333 # moment of inertia about joint axis
 c_2 = -0.5 # center of mass location with respect to joint axis
 m_2 = 1. # mass
-inertia2 = SpatialInertia(CartesianFrame3D("lower_link"), moment=I_2 * axis * axis', com=SVector(0, 0, c_2), mass=m_2)
+inertia2 = SpatialInertia(CartesianFrame3D("lower_link"),
+    moment=I_2 * axis * axis',
+    com=SVector(0, 0, c_2),
+    mass=m_2)
 lowerlink = RigidBody(inertia2)
 elbow = Joint("elbow", Revolute(axis))
-before_elbow_to_after_shoulder = Transform3D(frame_before(elbow), frame_after(shoulder), SVector(0, 0, l_1))
-attach!(doublependulum, upperlink, lowerlink, elbow, joint_pose = before_elbow_to_after_shoulder)
+before_elbow_to_after_shoulder = Transform3D(
+    frame_before(elbow), frame_after(shoulder), SVector(0, 0, l_1))
+attach!(doublependulum, upperlink, lowerlink, elbow,
+    joint_pose = before_elbow_to_after_shoulder)
 
 
 # Now our double pendulum `Mechanism` is complete.
@@ -110,7 +121,8 @@ v = velocity(state)
 
 # We are now ready to do kinematics. Here's how you transform a point at the origin of the frame after the elbow joint to world frame:
 
-transform(state, Point3D(frame_after(elbow), zero(SVector{3})), default_frame(world))
+transform(state, Point3D(frame_after(elbow), zero(SVector{3})),
+    default_frame(world))
 
 
 # Other objects like `Wrench`es, `Twist`s, and `SpatialInertia`s can be transformed in similar fashion.

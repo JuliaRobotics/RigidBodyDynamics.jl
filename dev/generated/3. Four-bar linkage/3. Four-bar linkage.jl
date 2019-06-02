@@ -1,5 +1,9 @@
 # # @__NAME__
 
+# PREAMBLE
+
+# PKG_SETUP
+
 # This example is a (slightly modified) contribution by [Aykut Satici](https://github.com/symplectomorphism).
 
 # ## Setup
@@ -90,8 +94,8 @@ inertia3 = SpatialInertia(frame_after(joint3),
     moment_about_com=I_3*axis*transpose(axis),
     mass=m_3)
 link3 = RigidBody(inertia3)
-before_joint3_to_world = Transform3D(frame_before(joint3),
-    default_frame(world), SVector(l_0, 0., 0.))
+before_joint3_to_world = Transform3D(
+    frame_before(joint3), default_frame(world), SVector(l_0, 0., 0.))
 attach!(fourbar, world, link3, joint3, joint_pose = before_joint3_to_world)
 
 # Finally, we'll add joint 4 in almost the same way we did the other joints,
@@ -146,9 +150,14 @@ using MeshCatMechanisms
 
 # Create a `MechanismVisualizer` for the four-bar linkage and open it in a new browser tab
 # (see [`MeshCat.jl`](https://github.com/rdeits/MeshCat.jl) for other options):
-mvis = MechanismVisualizer(fourbar, Skeleton(inertias=false))
-OPEN_VISUALIZER = true
-OPEN_VISUALIZER && open(mvis);
+
+mvis = MechanismVisualizer(fourbar, Skeleton(inertias=false));
+
+#-
+
+#nb ##NBSKIP
+#nb open(mvis)
+#md ## open(mvis)
 
 # And animate:
 MeshCatMechanisms.animate(mvis, ts, qs; realtimerate = 1.);
