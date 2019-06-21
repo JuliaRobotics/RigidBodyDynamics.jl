@@ -9,7 +9,8 @@ export
     IndexDict,
     CacheIndexDict,
     SegmentedVector,
-    SegmentedBlockDiagonalMatrix
+    SegmentedBlockDiagonalMatrix,
+    TypeDict
 
 export
     foreach_with_extra_args,
@@ -32,5 +33,6 @@ include("CacheElement.jl")
 include("IndexDict.jl")
 include("SegmentedVector.jl")
 include("SegmentedBlockDiagonalMatrix.jl")
+include("TypeDict.jl")
 
 end # module
