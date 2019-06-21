@@ -28,13 +28,17 @@ end
 
 The integration time step can be specified using the `Δt` keyword argument (defaults to `1e-4`).
 
+A maximum realtime rate (ratio of wall time to simulation time) can be specified using the
+`max_realtime_rate` keyword argument for e.g. realtime visualization purposes.
+
 $stabilization_gains_doc
 
 Uses `MuntheKaasIntegrator`. See [`RigidBodyDynamics.OdeIntegrators.MuntheKaasIntegrator`](@ref) for a lower
 level interface with more options.
 """
 function simulate(state0::MechanismState{X}, final_time, control! = zero_torque!;
-        Δt = 1e-4, stabilization_gains=default_constraint_stabilization_gains(X)) where X
+        Δt = 1e-4, stabilization_gains=default_constraint_stabilization_gains(X),
+        max_realtime_rate=Inf) where X
     T = cache_eltype(state0)
     result = DynamicsResult{T}(state0.mechanism)
     control_torques = similar(velocity(state0))
