@@ -47,18 +47,6 @@ end
             cache = DynamicsResultCache(mechanism)
             cachetest(cache, result -> eltype(result.v̇))
         end
-
-        @testset "Mechanism with contact points (Issue #483)" begin
-            Random.seed!(3)
-            mechanism = randmech()
-            contactmodel = SoftContactModel(hunt_crossley_hertz(k = 500e3),
-                ViscoelasticCoulombModel(0.8, 20e3, 100.))
-            body = rand(bodies(mechanism))
-            add_contact_point!(body,
-                ContactPoint(Point3D(default_frame(body), 0.0, 0.0, 0.0), contactmodel))
-            cache = DynamicsResultCache(mechanism)
-            cachetest(cache, result -> eltype(result.v̇))
-        end
     end
 
     @testset "SegmentedVectorCache" begin
