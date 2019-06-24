@@ -39,11 +39,11 @@ function simulate(state0::MechanismState{X}, final_time, control! = zero_torque!
     result = DynamicsResult{T}(state0.mechanism)
     control_torques = similar(velocity(state0))
     closed_loop_dynamics! = let result=result, control_torques=control_torques, stabilization_gains=stabilization_gains # https://github.com/JuliaLang/julia/issues/15276
-        function (v̇::AbstractArray, ṡ::AbstractArray, t, state)
+        function (v̇::AbstractArray, ṡ, t, state)
+            @assert length(ṡ) == 0
             control!(control_torques, t, state)
             dynamics!(result, state, control_torques; stabilization_gains=stabilization_gains)
             copyto!(v̇, result.v̇)
-            copyto!(ṡ, result.ṡ)
             nothing
         end
     end

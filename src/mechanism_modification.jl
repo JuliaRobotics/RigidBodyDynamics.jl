@@ -337,7 +337,10 @@ function canonicalize_graph!(mechanism::Mechanism)
     mechanism
 end
 
-add_environment_primitive!(mechanism::Mechanism, halfspace::HalfSpace3D) = push!(mechanism.environment, halfspace)
+function add_environment_primitive!(mechanism::Mechanism, halfspace::HalfSpace3D)
+    error("Mechanisms no longer store environment primitives. Please refer to the new contact documentation.")
+end
+
 """
 $(SIGNATURES)
 

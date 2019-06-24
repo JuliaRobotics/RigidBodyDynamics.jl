@@ -22,12 +22,12 @@ end
 $(TYPEDEF)
 
 A `MechanismState` stores state information for an entire `Mechanism`. It
-contains the joint configuration and velocity vectors ``q`` and ``v``, and
-a vector of additional states ``s``. In addition, it stores cache
-variables that depend on ``q`` and ``v`` and are aimed at preventing double work.
+contains the joint configuration and velocity vectors ``q`` and ``v``.
+In addition, it stores cache variables that depend on ``q`` and ``v`` and
+are aimed at preventing double work.
 
 Type parameters:
-* `X`: the scalar type of the ``q``, ``v``, and ``s`` vectors.
+* `X`: the scalar type of the ``q`` and ``v`` vectors.
 * `M`: the scalar type of the `Mechanism`
 * `C`: the scalar type of the cache variables (`== promote_type(X, M)`)
 * `JointCollection`: the type of the `treejoints` and `nontreejoints` members (a `TypeSortedCollection` subtype)
@@ -55,7 +55,6 @@ struct MechanismState{X, M, C, JointCollection}
     # minimal representation of state
     q::SegmentedVector{JointID, X, Base.OneTo{JointID}, Vector{X}} # configurations
     v::SegmentedVector{JointID, X, Base.OneTo{JointID}, Vector{X}} # velocities
-    s::Vector{X} # additional state
 
     # joint-related cache
     joint_transforms::JointCacheDict{Transform3D{C}}
@@ -74,12 +73,10 @@ struct MechanismState{X, M, C, JointCollection}
     bias_accelerations_wrt_world::BodyCacheDict{SpatialAcceleration{C}}
     inertias::BodyCacheDict{SpatialInertia{C}}
     crb_inertias::BodyCacheDict{SpatialInertia{C}}
-    contact_states::BodyCacheDict{Vector{Vector{DefaultSoftContactState{X}}}} # TODO: consider moving to separate type
 
-    function MechanismState{X, M, C, JointCollection}(m::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M, C, JointCollection}
+    function MechanismState{X, M, C, JointCollection}(m::Mechanism{M}, q::Vector{X}, v::Vector{X}) where {X, M, C, JointCollection}
         @assert length(q) == num_positions(m)
         @assert length(v) == num_velocities(m)
-        @assert length(s) == num_additional_states(m)
 
         # mechanism layout
         nonrootbodies = collect(non_root_bodies(m))
@@ -136,21 +133,6 @@ struct MechanismState{X, M, C, JointCollection}
         inertias = BodyCacheDict{SpatialInertia{C}}(bodyids)
         crb_inertias = BodyCacheDict{SpatialInertia{C}}(bodyids)
 
-        # contact. TODO: move out of MechanismState:
-        contact_states = BodyCacheDict{Vector{Vector{DefaultSoftContactState{X}}}}(
-            BodyID(b) => Vector{Vector{DefaultSoftContactState{X}}}() for b in bodies(m))
-        startind = 1
-        for body in bodies(m), point in contact_points(body)
-            model = contact_model(point)
-            n = num_states(model)
-            push!(contact_states[body], collect(begin
-                s_part = view(s, startind : startind + n - 1)
-                contact_state = SoftContactState(model, s_part, root_frame(m))
-                startind += n
-                contact_state
-            end for j = 1 : length(m.environment)))
-        end
-
         # initialize state-independent cache data for root bodies:
         root = root_body(m)
         rootframe = default_frame(root)
@@ -164,35 +146,33 @@ struct MechanismState{X, M, C, JointCollection}
             jointids, treejointids, nontreejointids,
             predecessor_and_successor_ids, qranges, vranges, constraintranges, support_set_masks, constraint_jacobian_structure,
             q_index_to_joint_id, v_index_to_joint_id,
-            qsegmented, vsegmented, s,
+            qsegmented, vsegmented,
             joint_transforms, joint_twists, joint_bias_accelerations, tree_joint_transforms, non_tree_joint_transforms,
             motion_subspaces, constraint_wrench_subspaces,
-            transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias,
-            contact_states)
+            transforms_to_root, twists_wrt_world, bias_accelerations_wrt_world, inertias, crb_inertias)
     end
 
-    function MechanismState{X, M, C}(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M, C}
+    function MechanismState{X, M, C}(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}) where {X, M, C}
         JointCollection = typeof(TypeSortedCollection(joints(mechanism)))
-        MechanismState{X, M, C, JointCollection}(mechanism, q, v, s)
+        MechanismState{X, M, C, JointCollection}(mechanism, q, v)
     end
 
-    function MechanismState{X, M}(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s::Vector{X}) where {X, M}
+    function MechanismState{X, M}(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}) where {X, M}
         C = promote_type(X, M)
-        MechanismState{X, M, C}(mechanism, q, v, s)
+        MechanismState{X, M, C}(mechanism, q, v)
     end
 
     function MechanismState{X}(mechanism::Mechanism{M}) where {X, M}
         q = Vector{X}(undef, num_positions(mechanism))
         v = Vector{X}(undef, num_velocities(mechanism))
-        s = Vector{X}(undef, num_additional_states(mechanism))
-        state = MechanismState{X, M}(mechanism, q, v, s)
+        state = MechanismState{X, M}(mechanism, q, v)
         zero!(state)
         state
     end
 end
 
-function MechanismState(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}, s=zeros(X, num_additional_states(mechanism))) where {X, M}
-    MechanismState{X, M}(mechanism, q, v, s)
+function MechanismState(mechanism::Mechanism{M}, q::Vector{X}, v::Vector{X}) where {X, M}
+    MechanismState{X, M}(mechanism, q, v)
 end
 
 MechanismState(mechanism::Mechanism{M}) where {M} = MechanismState{M}(mechanism)
@@ -219,13 +199,7 @@ Return the length of the joint velocity vector ``v``.
 """
 num_velocities(state::MechanismState) = length(state.v)
 
-"""
-$(SIGNATURES)
-
-Return the length of the vector of additional states ``s`` (currently used
-for stateful contact models).
-"""
-num_additional_states(state::MechanismState) = length(state.s)
+num_additional_states(state::MechanismState) = error("MechanismState no longer has additional state. Please refer to new contact documentation.")
 
 state_vector_eltype(state::MechanismState{X, M, C}) where {X, M, C} = X
 mechanism_eltype(state::MechanismState{X, M, C}) where {X, M, C} = M
@@ -264,19 +238,8 @@ function setdirty!(state::MechanismState)
     nothing
 end
 
-"""
-$(SIGNATURES)
-
-Reset all contact state variables.
-"""
 function reset_contact_state!(state::MechanismState)
-    for states_for_body in values(state.contact_states)
-        for states_for_point in states_for_body
-            for contact_state in states_for_point
-                reset!(contact_state)
-            end
-        end
-    end
+    error("MechanismState no longer has contact state. Please refer to new contact documentation.")
 end
 
 """
@@ -293,7 +256,6 @@ function zero_configuration!(state::MechanismState)
     foreach(state.treejoints, values(segments(state.q))) do joint, qjoint
         zero_configuration!(qjoint, joint)
     end
-    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -304,7 +266,6 @@ Zero the velocity vector ``v``. Invalidates cache variables.
 """
 function zero_velocity!(state::MechanismState)
     state.v .= 0
-    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -329,7 +290,6 @@ function rand_configuration!(state::MechanismState)
     foreach(state.treejoints, values(segments(state.q))) do joint, qjoint
         rand_configuration!(qjoint, joint)
     end
-    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -341,7 +301,6 @@ Invalidates cache variables.
 """
 function rand_velocity!(state::MechanismState)
     rand!(state.v)
-    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -375,12 +334,7 @@ vector to ensure that dependent cache variables are invalidated.
 """
 velocity(state::MechanismState) = state.v
 
-"""
-$(SIGNATURES)
-
-Return the vector of additional states ``s``.
-"""
-additional_state(state::MechanismState) = state.s
+additional_state(state::MechanismState) = error("MechanismState no longer has additional state. Please refer to new contact documentation.")
 
 for fun in (:num_velocities, :num_positions)
     @eval function $fun(p::TreePath{RigidBody{T}, <:Joint{T}} where {T})
@@ -396,7 +350,6 @@ Invalidates cache variables.
 """
 function set_configuration!(state::MechanismState, joint::Joint, config)
     set_configuration!(configuration(state, joint), joint, config)
-    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -408,7 +361,6 @@ Invalidates cache variables.
 """
 function set_velocity!(state::MechanismState, joint::Joint, vel)
     set_velocity!(velocity(state, joint), joint, vel)
-    reset_contact_state!(state)
     setdirty!(state)
 end
 
@@ -432,14 +384,8 @@ function set_velocity!(state::MechanismState, v::AbstractVector)
     setdirty!(state)
 end
 
-"""
-$(SIGNATURES)
-
-Set the vector of additional states ``s``.
-"""
 function set_additional_state!(state::MechanismState, s::AbstractVector)
-    copyto!(state.s, s)
-    # note: setdirty! is currently not needed because no cache variables depend on s
+    error("MechanismState no longer has additional state. Please refer to new contact documentation.")
 end
 
 """
@@ -452,7 +398,6 @@ function Base.copyto!(dest::MechanismState, src::MechanismState)
     @modcountcheck dest src
     copyto!(dest.q, src.q)
     copyto!(dest.v, src.v)
-    copyto!(dest.s, src.s)
     setdirty!(dest)
     dest
 end
@@ -460,16 +405,14 @@ end
 """
 $(SIGNATURES)
 
-Copy state information in vector `src` (ordered `[q; v; s]`) to state `dest`.
+Copy state information in vector `src` (ordered `[q; v]`) to state `dest`.
 """
 function Base.copyto!(dest::MechanismState, src::AbstractVector)
     nq = num_positions(dest)
     nv = num_velocities(dest)
-    ns = num_additional_states(dest)
-    @boundscheck length(src) == nq + nv + ns || throw(DimensionMismatch())
+    @boundscheck length(src) == nq + nv || throw(DimensionMismatch())
     @inbounds copyto!(parent(dest.q), 1, src, 1, nq)
     @inbounds copyto!(parent(dest.v), 1, src, nq + 1, nv)
-    @inbounds copyto!(dest.s, 1, src, nq + nv + 1, ns)
     setdirty!(dest)
     dest
 end
@@ -477,26 +420,24 @@ end
 """
 $(SIGNATURES)
 
-Copy state information in state `dest` to vector `src` (ordered `[q; v; s]`).
+Copy state information in state `dest` to vector `src` (ordered `[q; v]`).
 """
 function Base.copyto!(dest::AbstractVector, src::MechanismState)
     nq = num_positions(src)
     nv = num_velocities(src)
-    ns = num_additional_states(src)
-    length(dest) == nq + nv + ns || throw(DimensionMismatch())
+    length(dest) == nq + nv || throw(DimensionMismatch())
     @inbounds copyto!(dest, 1, src.q, 1, nq)
     @inbounds copyto!(dest, nq + 1, src.v, 1, nv)
-    @inbounds copyto!(dest, nq + nv + 1, src.s, 1, ns)
     dest
 end
 
 """
 $(SIGNATURES)
 
-Create a `Vector` that represents the same state as `state` (ordered `[q; v; s]`).
+Create a `Vector` that represents the same state as `state` (ordered `[q; v]`).
 """
 function Base.Vector{T}(state::MechanismState) where T
-    dest = Vector{T}(undef, num_positions(state) + num_velocities(state) + num_additional_states(state))
+    dest = Vector{T}(undef, num_positions(state) + num_velocities(state))
     copyto!(dest, state)
 end
 
@@ -867,7 +808,9 @@ end
     nothing
 end
 
-contact_states(state::MechanismState, body::Union{<:RigidBody, BodyID}) = state.contact_states[body]
+function contact_states(state::MechanismState, body::Union{<:RigidBody, BodyID})
+    error("MechanismState no longer has contact states. Please refer to new contact documentation.")
+end
 
 @propagate_inbounds function newton_euler(state::MechanismState, body::Union{<:RigidBody, BodyID}, accel::SpatialAcceleration, safe=true)
     inertia = spatial_inertia(state, body, safe)

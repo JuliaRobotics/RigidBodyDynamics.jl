@@ -133,7 +133,7 @@ end
         mechanism = randmech()
         x1 = MechanismState(mechanism)
         rand!(x1)
-        @test Vector(x1) == [configuration(x1); velocity(x1); additional_state(x1)]
+        @test Vector(x1) == [configuration(x1); velocity(x1)]
 
         x2 = MechanismState(mechanism)
         rand!(x2)

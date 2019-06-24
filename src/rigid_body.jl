@@ -13,18 +13,17 @@ mutable struct RigidBody{T}
     name::String
     inertia::Union{SpatialInertia{T}, Nothing}
     frame_definitions::Vector{Transform3D{T}}
-    contact_points::Vector{DefaultContactPoint{T}} # TODO: allow different contact models
     id::BodyID
 
     # inertia undefined; can be used for the root of a kinematic tree
     function RigidBody{T}(name::String) where {T}
         frame = CartesianFrame3D(name)
-        new{T}(name, nothing, [one(Transform3D{T}, frame)], DefaultContactPoint{T}[], BodyID(-1))
+        new{T}(name, nothing, [one(Transform3D{T}, frame)], BodyID(-1))
     end
 
     # other bodies
     function RigidBody(name::String, inertia::SpatialInertia{T}) where {T}
-        new{T}(name, inertia, [one(Transform3D{T}, inertia.frame)], DefaultContactPoint{T}[], BodyID(-1))
+        new{T}(name, inertia, [one(Transform3D{T}, inertia.frame)], BodyID(-1))
     end
 end
 
@@ -159,28 +158,13 @@ function change_default_frame!(body::RigidBody, new_default_frame::CartesianFram
         if has_defined_inertia(body)
             body.inertia = transform(spatial_inertia(body), old_to_new)
         end
-        for point in contact_points(body)
-            point.location = old_to_new * point.location
-        end
     end
 end
 
-"""
-$(SIGNATURES)
-
-Add a new contact point to the rigid body
-"""
 function add_contact_point!(body::RigidBody{T}, point::DefaultContactPoint{T}) where {T}
-    loc = location(point)
-    tf = fixed_transform(body, loc.frame, default_frame(body))
-    point.location = tf * loc
-    push!(body.contact_points, point)
-    nothing
+    error("RigidBody objects no longer store contact points. Please refer to the new contact documentation.")
 end
 
-"""
-$(SIGNATURES)
-
-Return the contact points attached to the body as an ordered collection.
-"""
-contact_points(body::RigidBody) = body.contact_points
+function contact_points(body::RigidBody)
+    error("RigidBody objects no longer store contact points. Please refer to the new contact documentation.")
+end

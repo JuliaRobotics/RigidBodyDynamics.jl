@@ -139,6 +139,9 @@ function process(storage::ExpandingStorage, t, state)
     nothing
 end
 
+additional_state(x) = SVector{0, Union{}}()
+set_additional_state!(x, s) = nothing
+
 mutable struct MuntheKaasStageCache{N, T, Q<:AbstractVector, V<:AbstractVector, S<:AbstractVector}
     q0::Q # global coordinates
     vs::SVector{N, V} # velocity vector for each stage

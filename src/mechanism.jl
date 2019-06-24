@@ -10,7 +10,6 @@ state-dependent information.
 mutable struct Mechanism{T}
     graph::DirectedGraph{RigidBody{T}, Joint{T}}
     tree::SpanningTree{RigidBody{T}, Joint{T}}
-    environment::ContactEnvironment{T}
     gravitational_acceleration::FreeVector3D{SVector{3, T}} # TODO: consider removing
     modcount::Int
 
@@ -28,8 +27,7 @@ mutable struct Mechanism{T}
         add_vertex!(graph, root_body)
         tree = SpanningTree(graph, root_body)
         gravitational_acceleration = FreeVector3D(default_frame(root_body), convert(SVector{3, T}, gravity))
-        environment = ContactEnvironment{T}()
-        new{T}(graph, tree, environment, gravitational_acceleration, 0)
+        new{T}(graph, tree, gravitational_acceleration, 0)
     end
 end
 
@@ -135,17 +133,8 @@ Return the number of constraints imposed by the mechanism's non-tree joints (i.e
 """
 num_constraints(mechanism::Mechanism)::Int = mapreduce(num_constraints, +, non_tree_joints(mechanism); init=0)
 
-"""
-$(SIGNATURES)
-
-Return the dimension of the vector of additional states ``s`` (used for stateful contact models).
-"""
 function num_additional_states(mechanism::Mechanism)
-    num_states_per_environment_element = 0
-    for body in bodies(mechanism), point in contact_points(body)
-        num_states_per_environment_element += num_states(contact_model(point))
-    end
-    num_states_per_environment_element * length(mechanism.environment)
+    error("Mechanisms no longer store additional state information. Please refer to the new contact documentation")
 end
 
 """
