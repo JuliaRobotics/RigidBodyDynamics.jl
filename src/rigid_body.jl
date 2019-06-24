@@ -161,7 +161,7 @@ function change_default_frame!(body::RigidBody, new_default_frame::CartesianFram
     end
 end
 
-function add_contact_point!(body::RigidBody{T}, point::DefaultContactPoint{T}) where {T}
+function add_contact_point!(body::RigidBody{T}, point::Any) where {T}
     error("RigidBody objects no longer store contact points. Please refer to the new contact documentation.")
 end
 
