@@ -164,12 +164,11 @@ export
 include(joinpath("custom_collections", "custom_collections.jl"))
 include(joinpath("graphs", "Graphs.jl"))
 include(joinpath("spatial", "Spatial.jl"))
-include("contact.jl")
+include(joinpath("contact", "Contact.jl"))
 include("pdcontrol.jl")
 
 @reexport using .Spatial
 using .CustomCollections
-using .Contact
 using .Graphs
 using .PDControl
 
