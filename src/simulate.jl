@@ -1,4 +1,10 @@
-using RigidBodyDynamics.OdeIntegrators
+OdeIntegrators.configuration(state::MechanismState) = RigidBodyDynamics.configuration(state)
+OdeIntegrators.velocity(state::MechanismState) = RigidBodyDynamics.velocity(state)
+OdeIntegrators.set_configuration!(state::MechanismState, q) = RigidBodyDynamics.set_configuration!(state, q)
+OdeIntegrators.set_velocity!(state::MechanismState, v) = RigidBodyDynamics.set_velocity!(state, v)
+OdeIntegrators.global_coordinates!(state::MechanismState, q0, ϕ) = RigidBodyDynamics.global_coordinates!(state, q0, ϕ)
+OdeIntegrators.local_coordinates!(ϕ, ϕd, state::MechanismState, q0) = RigidBodyDynamics.local_coordinates!(ϕ, ϕd, state, q0)
+
 
 """
 $(SIGNATURES)

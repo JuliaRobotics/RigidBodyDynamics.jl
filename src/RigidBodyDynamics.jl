@@ -164,12 +164,14 @@ export
 include(joinpath("custom_collections", "custom_collections.jl"))
 include(joinpath("graphs", "Graphs.jl"))
 include(joinpath("spatial", "Spatial.jl"))
+include("ode_integrators.jl")
 include("pdcontrol.jl")
 
 @reexport using .Spatial
 using .CustomCollections
 using .Graphs
 using .PDControl
+using .OdeIntegrators
 
 import .Spatial: rotation, translation, transform, center_of_mass, newton_euler, kinetic_energy
 
@@ -183,7 +185,6 @@ include("mechanism_state.jl")
 include("dynamics_result.jl")
 include("caches.jl")
 include("mechanism_algorithms.jl")
-include("ode_integrators.jl")
 include("simulate.jl")
 
 include(joinpath("urdf", "URDF.jl"))
