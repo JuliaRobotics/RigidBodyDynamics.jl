@@ -139,16 +139,16 @@ function process(storage::ExpandingStorage, t, state)
     nothing
 end
 
-configuration(state) = SVector{0, Union{}}()
-velocity(state) = SVector{0, Union{}}()
-additional_state(state) = SVector{0, Union{}}()
+function configuration end
+function velocity end
+function additional_state end
 
-set_configuration!(state, q) = nothing
-set_velocity!(state, v) = nothing
-set_additional_state!(state, s) = nothing
+function set_configuration! end
+function set_velocity! end
+function set_additional_state! end
 
-global_coordinates!(state, q0, ϕ) = nothing
-local_coordinates!(ϕ, ϕd, state, q0) = nothing
+function global_coordinates! end
+function local_coordinates! end
 
 mutable struct MuntheKaasStageCache{N, T, Q<:AbstractVector, V<:AbstractVector, S<:AbstractVector}
     q0::Q # global coordinates
