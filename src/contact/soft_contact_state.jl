@@ -89,16 +89,17 @@ function contact_dynamics!(contact_result::SoftContactResult, contact_state::Sof
             separation, normal, closest_in_a, closest_in_b = detect_contact(cache, a_to_root, b_to_root)
             model = pair.model
             if separation < 0
+                collision_location = a_to_root * Point3D(a_to_root.from, closest_in_a)
+                @assert isapprox(collision_location, b_to_root * Point3D(b_to_root.from, closest_in_b); atol=1e-5)
                 # TODO: optimize case that a or b is world
                 twist_a = twist_wrt_world(mechanism_state, pair.a.bodyid, false)
                 twist_b = twist_wrt_world(mechanism_state, pair.b.bodyid, false)
-                relative_twist = -twist_a + twist_b
-                relative_velocity = point_velocity(relative_twist, Point3D(frame, closest_in_b - closest_in_a))
+                relative_velocity = point_velocity(twist_a, collision_location) - point_velocity(twist_b, collision_location)
                 state = devectorize(model, xsegment)
                 penetration = -separation
                 force, state_deriv = soft_contact_dynamics(model, state, penetration, relative_velocity.v, normal)
                 ẋsegment .= vectorize(state_deriv)
-                wrench_a = Wrench(Point3D(frame, closest_in_a), FreeVector3D(frame, force))
+                wrench_a = Wrench(collision_location, FreeVector3D(frame, force))
                 wrenches[pair.a.bodyid] += wrench_a
                 wrenches[pair.b.bodyid] -= wrench_a
             else
