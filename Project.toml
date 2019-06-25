@@ -3,7 +3,10 @@ uuid = "366cf18f-59d5-5db9-a4de-86a9f6786172"
 version = "2.1.0"
 
 [deps]
+CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+EnhancedGJK = "3d39a06a-b57e-5769-b499-4d62b23c243f"
+GeometryTypes = "4d00f742-c7ba-57c2-abde-4428a4b178cb"
 LightXML = "9c8b4983-aa76-5018-a973-4c85ecc9e179"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LoopThrottle = "39f5be34-8529-5463-bac7-bf6867c840a3"
