@@ -7,10 +7,10 @@ end
 
  # Use a 3-vector; technically only need one state for each tangential direction, but this is easier to work with.
 num_states(::ViscoelasticCoulombModel) = 3
-zero_state(::ViscoelasticCoulombModel{T}, frame::CartesianFrame3D) where {T} = FreeVector3D(frame, zero(SVector{3, T}))
-zero_state_deriv(::ViscoelasticCoulombModel{T}, frame::CartesianFrame3D) where {T} = FreeVector3D(frame, zero(SVector{3, T}))
+zero_state(::ViscoelasticCoulombModel{T}) where {T} = zero(SVector{3, T})
+devectorize(::ViscoelasticCoulombModel, x::AbstractVector) = SVector{3}(x)
 
-function tangential_force(model::ViscoelasticCoulombModel, state::FreeVector3D, fnormal::Number, tangential_velocity::FreeVector3D)
+function tangential_contact_dynamics(model::ViscoelasticCoulombModel, state::SVector{3}, fnormal::Number, tangential_velocity::SVector{3})
     T = typeof(fnormal)
     μ = model.μ
     k = model.k
@@ -31,7 +31,7 @@ function tangential_force(model::ViscoelasticCoulombModel, state::FreeVector3D, 
     end
 
     # compute contact state derivative
-    ẋ = FreeVector3D(x.frame, (-k .* x - ftangential).v ./ b)
+    ẋ = (-k * x - ftangential) ./ b
 
     ftangential, ẋ
 end
