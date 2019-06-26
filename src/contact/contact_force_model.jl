@@ -37,7 +37,7 @@ function soft_contact_dynamics(
         normal::SVector{3}) # outward normal from B
     @boundscheck penetration >= 0 || throw_negative_penetration_error()
     z = penetration
-    ż = -dot(relative_velocity, normal) # penetration relative_velocity
+    ż = -dot(relative_velocity, normal) # penetration velocity
     fnormal, normal_state_deriv = normal_contact_dynamics(
         model.normal, normal_state, z, ż)
     tangential_velocity = relative_velocity + ż * normal
