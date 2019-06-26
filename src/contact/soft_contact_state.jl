@@ -35,7 +35,9 @@ function reset!(state::SoftContactState)
     @inbounds foreach(state.pairs, state.xsegments) do pair, xsegment
         @inbounds xsegment .= vectorize(zero_state(pair.model))
     end
-    # FIXME: reset caches
+    @inbounds foreach(state.caches) do cache
+        reset!(cache)
+    end
     return state
 end
 
