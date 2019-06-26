@@ -91,14 +91,21 @@ function contact_dynamics!(contact_result::SoftContactResult, contact_state::Sof
             if separation < 0
                 collision_location = a_to_root * Point3D(a_to_root.from, closest_in_a)
                 @assert isapprox(collision_location, b_to_root * Point3D(b_to_root.from, closest_in_b); atol=1e-5)
-                # TODO: optimize case that a or b is world
-                twist_a = twist_wrt_world(mechanism_state, pair.a.bodyid, false)
-                twist_b = twist_wrt_world(mechanism_state, pair.b.bodyid, false)
-                relative_velocity = point_velocity(twist_a, collision_location) - point_velocity(twist_b, collision_location)
-                state = devectorize(model, xsegment)
+                relative_velocity = if pair.a.bodyid === BodyID(1)
+                    twist_b = twist_wrt_world(mechanism_state, pair.b.bodyid, false)
+                    -point_velocity(twist_b, collision_location)
+                elseif pair.b.bodyid === BodyID(1)
+                    twist_a = twist_wrt_world(mechanism_state, pair.a.bodyid, false)
+                    point_velocity(twist_a, collision_location)
+                else
+                    twist_a = twist_wrt_world(mechanism_state, pair.a.bodyid, false)
+                    twist_b = twist_wrt_world(mechanism_state, pair.b.bodyid, false)
+                    relative_velocity = point_velocity(twist_a, collision_location) - point_velocity(twist_b, collision_location)
+                end
+                pair_state = devectorize(model, xsegment)
                 penetration = -separation
-                force, state_deriv = soft_contact_dynamics(model, state, penetration, relative_velocity.v, normal)
-                ẋsegment .= vectorize(state_deriv)
+                force, pair_state_deriv = soft_contact_dynamics(model, pair_state, penetration, relative_velocity.v, normal)
+                ẋsegment .= vectorize(pair_state_deriv)
                 wrench_a = Wrench(collision_location, FreeVector3D(frame, force))
                 wrenches[pair.a.bodyid] += wrench_a
                 wrenches[pair.b.bodyid] -= wrench_a
