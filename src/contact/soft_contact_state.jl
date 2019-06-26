@@ -19,7 +19,10 @@ function SoftContactState{T}(model::ContactModel) where {T}
     end
     normals = zeros(SVector{3, T}, length(pairs))
     sorted_pairs = TypeSortedCollection(pairs)
-    caches = TypeSortedCollection(map(collision_cache, pairs), TypeSortedCollections.indices(sorted_pairs))
+    caches = TypeSortedCollection(
+        map(pair -> collision_cache(pair.a.geometry, pair.b.geometry), pairs),
+        TypeSortedCollections.indices(sorted_pairs)
+    )
     ret = SoftContactState(x, xsegments, sorted_pairs, caches)
     reset!(ret)
     return ret
@@ -86,13 +89,15 @@ function contact_dynamics!(contact_result::SoftContactResult, contact_state::Sof
     caches = contact_state.caches
     handle_contact = let mechanism_state = mechanism_state, frame = frame
         function(pair, cache, xsegment, ẋsegment)
+            # TODO: optimize case where a or b is root
+            # TODO: make it so that CollisionElements store transforms as Transformations.
             a_to_root = transform_to_root(mechanism_state, pair.a.bodyid, false) * pair.a.transform
             b_to_root = transform_to_root(mechanism_state, pair.b.bodyid, false) * pair.b.transform
-            separation, normal, closest_in_a, closest_in_b = detect_contact(cache, a_to_root, b_to_root)
+            separation, normal, closest_in_a, closest_in_b = detect_contact(cache, AffineMap(a_to_root), AffineMap(b_to_root))
             model = pair.model
             if separation < 0
-                collision_location = a_to_root * Point3D(a_to_root.from, closest_in_a)
-                @assert isapprox(collision_location, b_to_root * Point3D(b_to_root.from, closest_in_b); atol=1e-5)
+                @assert isapprox(closest_in_a, closest_in_b; atol=1e-5)
+                collision_location = Point3D(frame, closest_in_a)
                 relative_velocity = if pair.a.bodyid === BodyID(1)
                     twist_b = twist_wrt_world(mechanism_state, pair.b.bodyid, false)
                     -point_velocity(twist_b, collision_location)
