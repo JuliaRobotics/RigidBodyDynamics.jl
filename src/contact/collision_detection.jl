@@ -1,5 +1,14 @@
-# TODO: move this somewhere else
-AffineMap(tf::Transform3D) = AffineMap(rotation(tf), translation(tf))
+
+"""
+$(SIGNATURES)
+
+Return a suitable object to do collision checking for the given geometries.
+By default this returns an `EnhancedGJK.CollisionCache`.
+"""
+function collision_cache end
+
+collision_cache(a, b) = CollisionCache(a, b)
+reset!(cache::CollisionCache) = EnhancedGJK.reset!(cache)
 
 function extract_normal(result::GJKResult)
     # IMPORTANT: this only works when the closest face of the simplex corresponds
@@ -27,8 +36,8 @@ function extract_normal(result::GJKResult)
     end
 end
 
-@inline function detect_contact(cache::CollisionCache, pose_a::Transform3D, pose_b::Transform3D)
-    result = gjk!(cache, AffineMap(pose_a), AffineMap(pose_b))
+@inline function detect_contact(cache::CollisionCache, pose_a::Transformation, pose_b::Transformation)
+    result = gjk!(cache, pose_a, pose_b)
     separation = result.signed_distance
     if separation < 0
         # FIXME: normal computation currently relies on the fact that the closest
@@ -41,27 +50,57 @@ end
     else
         normal = nothing
     end
-    closest_in_a = result.closest_point_in_body.a
-    closest_in_b = result.closest_point_in_body.b
+    closest_in_a = pose_a(result.closest_point_in_body.a)
+    closest_in_b = pose_b(result.closest_point_in_body.b)
     separation, normal, closest_in_a, closest_in_b
 end
 
-# mutable struct HalfSpace3D{T}
-#     point::Point3D{SVector{3, T}}
-#     outward_normal::FreeVector3D{SVector{3, T}}
+struct HalfSpace{N, T}
+    outward_normal::SVector{N, T}
+    offset::T
 
-#     function HalfSpace3D(point::Point3D{SVector{3, T}}, outward_normal::FreeVector3D{SVector{3, T}}) where {T}
-#         @framecheck point.frame outward_normal.frame
-#         new{T}(point, normalize(outward_normal))
-#     end
-# end
+    function HalfSpace(outward_normal::SVector{N, T}, offset::T) where {N, T}
+        new{N, T}(normalize(outward_normal), offset)
+    end
+end
 
-# function HalfSpace3D(point::Point3D, outward_normal::FreeVector3D)
-#     T = promote_type(eltype(point), eltype(outward_normal))
-#     HalfSpace3D(convert(Point3D{SVector{3, T}}, point), convert(FreeVector3D{SVector{3, T}}, outward_normal))
-# end
+function HalfSpace(outward_normal::StaticVector{N}, offset) where {N}
+    T = promote_type(typeof(offset), eltype(outward_normal))
+    HalfSpace(SVector{N, T}(outward_normal), T(offset))
+end
 
-# # Base.eltype(::Type{HalfSpace3D{T}}) where {T} = T
-# separation(halfspace::HalfSpace3D, p::Point3D) = dot(p - halfspace.point, halfspace.outward_normal)
-# # point_inside(halfspace::HalfSpace3D, p::Point3D) = separation(halfspace, p) <= 0
-# detect_contact(halfspace::HalfSpace3D, p::Point3D) = separation(halfspace, p), halfspace.outward_normal
+function HalfSpace(outward_normal::StaticVector{N}, point::StaticVector{N}) where N
+    HalfSpace(outward_normal, point ⋅ outward_normal)
+end
+
+function (tf::AffineMap)(halfspace::HalfSpace)
+    linear = LinearMap(transform_deriv(tf, 0))
+    normal = linear(halfspace.outward_normal)
+    offset = halfspace.offset + normal ⋅ tf.translation
+    HalfSpace(normal, offset)
+end
+
+function (tf::Translation)(halfspace::HalfSpace)
+    normal = halfspace.outward_normal
+    offset = halfspace.offset + normal ⋅ tf.translation
+    HalfSpace(normal, offset)
+end
+
+collision_cache(a::GeometryTypes.Point{N}, b::HalfSpace{N}) where {N} = a => b
+collision_cache(a::HalfSpace{N}, b::GeometryTypes.Point{N}) where {N} = a => b
+
+reset!(::Pair{<:GeometryTypes.Point, <:HalfSpace}) = nothing
+reset!(::Pair{<:HalfSpace, <:GeometryTypes.Point}) = nothing
+
+@inline function detect_contact(geometries::Pair{<:GeometryTypes.Point, <:HalfSpace}, pose_a::Transformation, pose_b::Transformation)
+    point = pose_a(geometries[1])
+    halfspace = pose_b(geometries[2])
+    separation = point ⋅ halfspace.outward_normal - halfspace.offset
+    closest_in_halfspace = separation <= 0 ? point : point - halfspace.offset * halfspace.outward_normal
+    separation, halfspace.outward_normal, point, closest_in_halfspace
+end
+
+@inline function detect_contact(geometries::Pair{<:HalfSpace, <:GeometryTypes.Point}, pose_a::Transformation, pose_b::Transformation)
+    separation, inward_normal, point_in_b, point_in_a = detect_contact(Base.reverse(geometries), pose_b, pose_a)
+    separation, -inward_normal, point_in_a, point_in_b
+end

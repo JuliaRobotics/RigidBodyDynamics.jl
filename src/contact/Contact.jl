@@ -15,7 +15,8 @@ import CoordinateTransformations
 using RigidBodyDynamics: update_transforms!, update_twists_wrt_world!
 using RigidBodyDynamics: frame_definition
 using RigidBodyDynamics.CustomCollections: UnorderedPair
-using CoordinateTransformations: AffineMap
+using CoordinateTransformations: Transformation, AffineMap, LinearMap, Translation, IdentityTransformation
+using CoordinateTransformations: transform_deriv
 
 # base types
 export
@@ -26,9 +27,9 @@ export
     SoftContactState,
     SoftContactResult
 
-# # geometry
-# export
-#     HalfSpace3D
+# geometry
+export
+    HalfSpace
 
 # interface functions
 export
@@ -42,10 +43,13 @@ export
     hunt_crossley_hertz,
     ViscoelasticCoulombModel
 
+# TODO: move this somewhere else
+AffineMap(tf::Transform3D) = AffineMap(rotation(tf), translation(tf))
+
 include("collision_element.jl")
-include("collision_detection.jl")
 include("contact_force_model.jl")
 include("collidable_pair.jl")
+include("collision_detection.jl")
 include("contact_model.jl")
 include("soft_contact_state.jl")
 

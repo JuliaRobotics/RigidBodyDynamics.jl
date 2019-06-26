@@ -14,14 +14,3 @@ end
 #     PointGJKCollisionCache(CollisionCache(pair.a.geometry, pair.b.geometry))
 # end
 
-"""
-    $(SIGNATURES)
-
-Return a suitable object to do collision checking for a `CollidablePair`.
-
-By default, this returns an `EnhancedGJK.CollisionCache`.
-"""
-function collision_cache end
-
-collision_cache(pair::CollidablePair) = CollisionCache(pair.a.geometry, pair.b.geometry)
-reset!(cache::CollisionCache) = EnhancedGJK.reset!(cache)
