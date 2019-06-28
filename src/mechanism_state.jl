@@ -951,8 +951,8 @@ $(SIGNATURES)
 
 Return the homogeneous transform from `from` to `to`.
 """
-function relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D)
-    update_transforms!(state)
+function relative_transform(state::MechanismState, from::CartesianFrame3D, to::CartesianFrame3D, safe=true)
+    safe && update_transforms!(state)
     inv(transform_to_root(state, to, false)) * transform_to_root(state, from, false)
 end
 
@@ -962,8 +962,8 @@ $(SIGNATURES)
 Return the twist of `body` with respect to `base`, expressed in the
 `Mechanism`'s root frame.
 """
-function relative_twist(state::MechanismState, body::Union{<:RigidBody, BodyID}, base::Union{<:RigidBody, BodyID})
-    update_twists_wrt_world!(state)
+function relative_twist(state::MechanismState, body::Union{<:RigidBody, BodyID}, base::Union{<:RigidBody, BodyID}, safe=true)
+    safe && update_twists_wrt_world!(state)
     -twist_wrt_world(state, base, false) + twist_wrt_world(state, body, false)
 end
 
