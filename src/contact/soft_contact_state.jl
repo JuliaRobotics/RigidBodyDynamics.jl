@@ -98,17 +98,8 @@ function contact_dynamics!(contact_result::SoftContactResult, contact_state::Sof
             if separation < 0
                 @assert isapprox(closest_in_a, closest_in_b; atol=1e-5)
                 collision_location = Point3D(frame, closest_in_a)
-                relative_velocity = if pair.a.bodyid === BodyID(1)
-                    twist_b = twist_wrt_world(mechanism_state, pair.b.bodyid, false)
-                    -point_velocity(twist_b, collision_location)
-                elseif pair.b.bodyid === BodyID(1)
-                    twist_a = twist_wrt_world(mechanism_state, pair.a.bodyid, false)
-                    point_velocity(twist_a, collision_location)
-                else
-                    twist_a = twist_wrt_world(mechanism_state, pair.a.bodyid, false)
-                    twist_b = twist_wrt_world(mechanism_state, pair.b.bodyid, false)
-                    relative_velocity = point_velocity(twist_a, collision_location) - point_velocity(twist_b, collision_location)
-                end
+                twist = relative_twist(mechanism_state, pair.a.bodyid, pair.b.bodyid, false)
+                relative_velocity = point_velocity(twist, collision_location)
                 pair_state = devectorize(model, xsegment)
                 penetration = -separation
                 force, pair_state_deriv = soft_contact_dynamics(model, pair_state, penetration, relative_velocity.v, normal)
