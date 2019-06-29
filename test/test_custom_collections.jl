@@ -197,5 +197,18 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
         y5 = similar(y)
         map!(+, y5, y, y)
         @test Vector(y5) == Vector(y) + Vector(y)
+
+        z = similar(y)
+        rand!(z)
+        yvec = Vector(y)
+        zvec = Vector(z)
+
+        z .= muladd.(1e-3, y, z)
+        zvec .= muladd.(1e-3, yvec, zvec)
+        @test zvec == z
+        allocs = let y=y, z=z
+            @allocated z .= muladd.(1e-3, y, z)
+        end
+        @test allocs == 0
     end
 end
