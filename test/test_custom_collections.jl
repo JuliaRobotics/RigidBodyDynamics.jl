@@ -161,24 +161,44 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
         l = sum(length, vecs)
         x = zeros(l)
         y = CatVector(vecs)
+
         @test length(y) == l
+
         x .= y
         for i in eachindex(x)
             @test x[i] == y[i]
         end
+
         x .= 0
         @test x != y
         copyto!(x, y)
         for i in eachindex(x)
             @test x[i] == y[i]
         end
+
+        x .= 0
         for i in eachindex(y)
             x[i] = y[i]
         end
         @test x == y
+
         allocs = let x=x, vecs=vecs
             @allocated copyto!(x, RigidBodyDynamics.CatVector(vecs))
         end
         @test allocs == 0
+
+        y2 = similar(y)
+        @test eltype(y2) == eltype(y)
+        for i in eachindex(y.vecs)
+            @test length(y2.vecs[i]) == length(y.vecs[i])
+            @test y2.vecs[i] !== y.vecs[i]
+        end
+
+        y3 = similar(y, Int)
+        @test eltype(y3) == Int
+        for i in eachindex(y.vecs)
+            @test length(y3.vecs[i]) == length(y.vecs[i])
+            @test y3.vecs[i] !== y.vecs[i]
+        end
     end
 end
