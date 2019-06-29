@@ -6,34 +6,36 @@ end
 Base.eltype(vec::CatVector) = eltype(eltype(vec.vecs))
 
 # Note: getindex and setindex are pretty naive.
-Base.@propagate_inbounds function Base.getindex(vec::CatVector, i::Int)
-    @boundscheck checkbounds(vec, i)
-    I = 1
+Base.@propagate_inbounds function Base.getindex(vec::CatVector, index::Int)
+    @boundscheck checkbounds(vec, index)
+    i = 1
+    j = index
     @inbounds while true
-        subvec = vec.vecs[I]
+        subvec = vec.vecs[i]
         l = length(subvec)
-        if i <= l
-            return subvec[eachindex(subvec)[i]]
+        if j <= l
+            return subvec[eachindex(subvec)[j]]
         else
-            i -= l
-            I += 1
+            j -= l
+            i += 1
         end
     end
     error()
 end
 
-Base.@propagate_inbounds function Base.setindex!(vec::CatVector, val, i::Int)
-    @boundscheck checkbounds(vec, i)
-    I = 1
+Base.@propagate_inbounds function Base.setindex!(vec::CatVector, val, index::Int)
+    @boundscheck checkbounds(vec, index)
+    i = 1
+    j = index
     while true
-        subvec = vec.vecs[I]
+        subvec = vec.vecs[i]
         l = length(subvec)
-        if i <= l
-            subvec[eachindex(subvec)[i]] = val
+        if j <= l
+            subvec[eachindex(subvec)[j]] = val
             return val
         else
-            i -= l
-            I += 1
+            j -= l
+            i += 1
         end
     end
     error()
@@ -83,22 +85,18 @@ end
     return dest
 end
 
-Base.@propagate_inbounds catvec_broadcast_getindex(vec::CatVector, i::Int, j::Int, k::Int) = vec.vecs[i][j]
-Base.@propagate_inbounds catvec_broadcast_getindex(x, i::Int, j::Int, k::Int) = Broadcast._broadcast_getindex(x, i)
+Base.@propagate_inbounds catvec_broadcast_vec(x::CatVector, k::Int) = x.vecs[k]
+Base.@propagate_inbounds catvec_broadcast_vec(x::Number, k::Int) = x
 
 @inline function Base.copyto!(dest::CatVector, bc::Broadcast.Broadcasted{Nothing})
     flat = Broadcast.flatten(bc)
-    index = 1
-    dest_vecs = dest.vecs
-    @boundscheck check_cat_vectors_line_up(dest, bc.args...)
-    @inbounds for i in eachindex(dest_vecs)
-        vec = dest_vecs[i]
-        for j in eachindex(vec)
-            k = axes(flat)[1][index]
-            let f = flat.f, args = flat.args, i = i, j = j, k = k
-                vec[j] = Broadcast._broadcast_getindex_evalf(f, map(arg -> catvec_broadcast_getindex(arg, i, j, k), args)...)
-            end
-            index += 1
+    @boundscheck check_cat_vectors_line_up(dest, flat.args...)
+    @inbounds for i in eachindex(dest.vecs)
+        let i = i, f = flat.f, args = flat.args
+            dest′ = catvec_broadcast_vec(dest, i)
+            args′ = map(arg -> catvec_broadcast_vec(arg, i), args)
+            axes′ = (eachindex(dest′),)
+            copyto!(dest′, Broadcast.Broadcasted{Nothing}(f, args′, axes′))
         end
     end
     return dest
