@@ -52,3 +52,6 @@ Base.@propagate_inbounds function Base.copyto!(dest::AbstractVector, src::CatVec
     end
     return dest
 end
+
+Base.similar(vec::CatVector) = CatVector(map(similar, vec.vecs))
+Base.similar(vec::CatVector, ::Type{T}) where {T} = CatVector(map(x -> similar(x, T), vec.vecs))
