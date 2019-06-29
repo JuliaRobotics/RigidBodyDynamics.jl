@@ -153,4 +153,32 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
         dict = Dict(p1 => 3)
         @test dict[p2] == 3
     end
+
+    @testset "CatVector" begin
+        CatVector = RigidBodyDynamics.CatVector
+        Random.seed!(52)
+        vecs = ntuple(i -> rand(rand(0 : 5)), Val(10))
+        l = sum(length, vecs)
+        x = zeros(l)
+        y = CatVector(vecs)
+        @test length(y) == l
+        x .= y
+        for i in eachindex(x)
+            @test x[i] == y[i]
+        end
+        x .= 0
+        @test x != y
+        copyto!(x, y)
+        for i in eachindex(x)
+            @test x[i] == y[i]
+        end
+        for i in eachindex(y)
+            x[i] = y[i]
+        end
+        @test x == y
+        allocs = let x=x, vecs=vecs
+            @allocated copyto!(x, RigidBodyDynamics.CatVector(vecs))
+        end
+        @test allocs == 0
+    end
 end

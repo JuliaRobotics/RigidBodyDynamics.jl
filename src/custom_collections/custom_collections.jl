@@ -10,7 +10,8 @@ export
     CacheIndexDict,
     SegmentedVector,
     SegmentedBlockDiagonalMatrix,
-    UnorderedPair
+    UnorderedPair,
+    CatVector
 
 export
     foreach_with_extra_args,
@@ -34,5 +35,6 @@ include("IndexDict.jl")
 include("SegmentedVector.jl")
 include("SegmentedBlockDiagonalMatrix.jl")
 include("UnorderedPair.jl")
+include("CatVector.jl")
 
 end # module
