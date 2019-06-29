@@ -56,15 +56,16 @@ end
 Base.similar(vec::CatVector) = CatVector(map(similar, vec.vecs))
 Base.similar(vec::CatVector, ::Type{T}) where {T} = CatVector(map(x -> similar(x, T), vec.vecs))
 
-function check_cat_vectors_line_up(x::CatVector, ys::CatVector...)
-    for j in eachindex(ys)
-        y = ys[j]
-        length(x.vecs) == length(y.vecs) || throw(ArgumentError("Subvectors must line up"))
-        for i in eachindex(x.vecs)
-            length(x.vecs[i]) == length(y.vecs[i]) || throw(ArgumentError("Subvectors must line up"))
-        end
+@inline function check_cat_vectors_line_up(x::CatVector, y::CatVector)
+    length(x.vecs) == length(y.vecs) || throw(ArgumentError("Subvectors must line up"))
+    for i in eachindex(x.vecs)
+        length(x.vecs[i]) == length(y.vecs[i]) || throw(ArgumentError("Subvectors must line up"))
     end
+    nothing
 end
+
+@inline check_cat_vectors_line_up(x::CatVector, y) = nothing
+@inline check_cat_vectors_line_up(x::CatVector, y, tail...) = (check_cat_vectors_line_up(x, y); check_cat_vectors_line_up(x, tail...))
 
 @inline function Base.copyto!(dest::CatVector, src::CatVector)
     @boundscheck check_cat_vectors_line_up(dest, src)
@@ -82,3 +83,23 @@ end
     return dest
 end
 
+Base.@propagate_inbounds catvec_broadcast_getindex(vec::CatVector, i::Int, j::Int, k::Int) = vec.vecs[i][j]
+Base.@propagate_inbounds catvec_broadcast_getindex(x, i::Int, j::Int, k::Int) = Broadcast._broadcast_getindex(x, i)
+
+@inline function Base.copyto!(dest::CatVector, bc::Broadcast.Broadcasted{Nothing})
+    flat = Broadcast.flatten(bc)
+    index = 1
+    dest_vecs = dest.vecs
+    @boundscheck check_cat_vectors_line_up(dest, bc.args...)
+    @inbounds for i in eachindex(dest_vecs)
+        vec = dest_vecs[i]
+        for j in eachindex(vec)
+            k = axes(flat)[1][index]
+            let f = flat.f, args = flat.args, i = i, j = j, k = k
+                vec[j] = Broadcast._broadcast_getindex_evalf(f, map(arg -> catvec_broadcast_getindex(arg, i, j, k), args)...)
+            end
+            index += 1
+        end
+    end
+    return dest
+end
