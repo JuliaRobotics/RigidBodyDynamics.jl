@@ -200,5 +200,13 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
             @test length(y3.vecs[i]) == length(y.vecs[i])
             @test y3.vecs[i] !== y.vecs[i]
         end
+
+        y4 = similar(y)
+        copyto!(y4, y)
+        @test y4 == y
+
+        y5 = similar(y)
+        map!(+, y5, y, y)
+        @test Vector(y5) == Vector(y) + Vector(y)
     end
 end
