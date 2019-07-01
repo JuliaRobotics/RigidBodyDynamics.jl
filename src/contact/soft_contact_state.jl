@@ -117,3 +117,8 @@ function contact_dynamics!(contact_result::SoftContactResult, contact_state::Sof
     @inbounds foreach(handle_contact, pairs, caches, xsegments, ẋsegments)
     return contact_result
 end
+
+OdeIntegrators.has_configuration_velocity(::Type{<:Contact.SoftContactState}) = false
+OdeIntegrators.has_additional_state(::Type{<:Contact.SoftContactState}) = true
+OdeIntegrators.additional_state(state::Contact.SoftContactState) = state.x
+OdeIntegrators.set_additional_state!(state::Contact.SoftContactState, x::AbstractVector) = copyto!(state.x, x)

@@ -1,9 +1,18 @@
+OdeIntegrators.has_configuration_velocity(::Type{<:MechanismState}) = true
+OdeIntegrators.has_additional_state(::Type{<:MechanismState}) = false
 OdeIntegrators.configuration(state::MechanismState) = RigidBodyDynamics.configuration(state)
 OdeIntegrators.velocity(state::MechanismState) = RigidBodyDynamics.velocity(state)
 OdeIntegrators.set_configuration!(state::MechanismState, q) = RigidBodyDynamics.set_configuration!(state, q)
 OdeIntegrators.set_velocity!(state::MechanismState, v) = RigidBodyDynamics.set_velocity!(state, v)
 OdeIntegrators.global_coordinates!(state::MechanismState, q0, ϕ) = RigidBodyDynamics.global_coordinates!(state, q0, ϕ)
 OdeIntegrators.local_coordinates!(ϕ, ϕd, state::MechanismState, q0) = RigidBodyDynamics.local_coordinates!(ϕ, ϕd, state, q0)
+
+for f in (:has_configuration_velocity, :has_additional_state)
+    @eval @inline OdeIntegrators.$f(T::Type{Tuple{}}) = false
+    @eval @inline function OdeIntegrators.$f(T::Type{<:Tuple})
+        OdeIntegrators.$f(Base.tuple_type_head(T)) | OdeIntegrators.$f(Base.tuple_type_tail(T))
+    end
+end
 
 
 """

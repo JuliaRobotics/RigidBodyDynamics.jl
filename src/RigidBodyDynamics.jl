@@ -185,12 +185,14 @@ include("mechanism_state.jl")
 include("dynamics_result.jl")
 include("caches.jl")
 include("mechanism_algorithms.jl")
-include("simulate.jl")
+
+include(joinpath("contact", "Contact.jl"))
+import .Contact
 
 include(joinpath("urdf", "URDF.jl"))
 @reexport using .URDF
 
-include(joinpath("contact", "Contact.jl"))
+include("simulate.jl")
 
 # import these for MechanismGeometries compatibility. TODO: stop importing these after updating MechanismGeometries.
 import .URDF: parse_scalar, parse_vector, parse_pose

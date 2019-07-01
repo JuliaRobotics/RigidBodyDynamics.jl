@@ -9,6 +9,7 @@ using TypeSortedCollections
 using EnhancedGJK
 using DocStringExtensions
 
+import RigidBodyDynamics.OdeIntegrators
 import GeometryTypes
 import CoordinateTransformations
 

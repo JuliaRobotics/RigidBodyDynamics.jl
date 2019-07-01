@@ -139,6 +139,9 @@ function process(storage::ExpandingStorage, t, state)
     nothing
 end
 
+function has_configuration_velocity end
+function has_additional_state end
+
 function configuration end
 function velocity end
 function additional_state end
