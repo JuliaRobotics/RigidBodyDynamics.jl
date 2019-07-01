@@ -5,6 +5,10 @@ OdeIntegrators.set_velocity!(state::MechanismState, v) = RigidBodyDynamics.set_v
 OdeIntegrators.global_coordinates!(state::MechanismState, q0, ϕ) = RigidBodyDynamics.global_coordinates!(state, q0, ϕ)
 OdeIntegrators.local_coordinates!(ϕ, ϕd, state::MechanismState, q0) = RigidBodyDynamics.local_coordinates!(ϕ, ϕd, state, q0)
 
+# TODO: remove:
+OdeIntegrators.additional_state(state::MechanismState{X}) where {X} = zero(SVector{0, X})
+OdeIntegrators.set_additional_state!(state::MechanismState, s) = nothing
+
 
 """
 $(SIGNATURES)
