@@ -36,10 +36,10 @@ end</code></pre><pre><code class="language-none">momentum_vec (generic function 
   memory estimate:  35.66 KiB
   allocs estimate:  468
   --------------
-  minimum time:     40.179 μs (0.00% GC)
-  median time:      50.523 μs (0.00% GC)
-  mean time:        67.856 μs (20.92% GC)
-  maximum time:     9.340 ms (97.89% GC)
+  minimum time:     44.015 μs (0.00% GC)
+  median time:      51.902 μs (0.00% GC)
+  mean time:        70.454 μs (21.81% GC)
+  maximum time:     11.037 ms (98.42% GC)
   --------------
   samples:          10000
   evals/sample:     1</code></pre></div><p>That&#39;s not great. Note all the allocations. We can do better by making the following modifications:</p><ol><li>use an in-place version of the <code>jacobian</code> function, <code>ForwardDiff.jacobian!</code></li><li>reimplement our <code>momentum_vec</code> function to be in-place as well</li><li>don&#39;t create a new <code>MechanismState</code> every time</li></ol><p>The third point is especially important; creating a <code>MechanismState</code> is expensive!</p><p>Regarding the second point, we could also just stop converting momentum from a <code>StaticArrays.SVector</code> to a <code>Vector</code> to avoid allocations. However, the solution of making the function in-place also applies when the size of the output vector is not known statically (e.g., for <code>dynamics_bias!</code>).</p><p>To facillitate reuse of <code>MechanismState</code>s while keeping the code nice and generic, we can use a <code>StateCache</code> object. <code>StateCache</code> is a container that stores <code>MechanismState</code>s of various types (associated with one <code>Mechanism</code>), and will ease the process of using <code>ForwardDiff</code>. Creating one is easy:</p><div><pre><code class="language-julia">const statecache = StateCache(mechanism)</code></pre><pre><code class="language-none">StateCache{…}(…)</code></pre></div><p><code>MechanismState</code>s of a given type can be accessed as follows (note that if a <code>MechanismState</code> of a certain type is already available, it will be reused):</p><div><pre><code class="language-julia">float32state = statecache[Float32]
@@ -64,10 +64,10 @@ J = DiffResults.jacobian(result)
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     1.460 μs (0.00% GC)
-  median time:      1.601 μs (0.00% GC)
-  mean time:        1.668 μs (0.00% GC)
-  maximum time:     44.330 μs (0.00% GC)
+  minimum time:     1.645 μs (0.00% GC)
+  median time:      1.659 μs (0.00% GC)
+  mean time:        1.681 μs (0.00% GC)
+  maximum time:     6.620 μs (0.00% GC)
   --------------
   samples:          10000
   evals/sample:     10</code></pre></div><p>That&#39;s much better. Do note that the specialized algorithm is still faster:</p><div><pre><code class="language-julia">q = copy(configuration(float64state))
@@ -78,13 +78,13 @@ end</code></pre><pre><code class="language-none">BenchmarkTools.Trial:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     398.905 ns (0.00% GC)
-  median time:      449.637 ns (0.00% GC)
-  mean time:        458.183 ns (0.00% GC)
-  maximum time:     1.168 μs (0.00% GC)
+  minimum time:     437.480 ns (0.00% GC)
+  median time:      442.747 ns (0.00% GC)
+  mean time:        450.574 ns (0.00% GC)
+  maximum time:     7.342 μs (0.00% GC)
   --------------
   samples:          10000
-  evals/sample:     201</code></pre></div><h2><a class="nav-anchor" id="Time-derivatives-1" href="#Time-derivatives-1">Time derivatives</a></h2><p>We can also use ForwardDiff to compute time derivatives. Let&#39;s verify that energy is conserved for the double pendulum in the absence of nonconservative forces (like damping). That is, we expect that the time derivative of the pendulum&#39;s total energy is zero when its state evolves according to the passive dynamics.</p><p>Let&#39;s first compute the joint acceleration vector <span>$\dot{v}$</span> using the passive dynamics:</p><div><pre><code class="language-julia">dynamicsresult = DynamicsResult(mechanism)
+  evals/sample:     198</code></pre></div><h2><a class="nav-anchor" id="Time-derivatives-1" href="#Time-derivatives-1">Time derivatives</a></h2><p>We can also use ForwardDiff to compute time derivatives. Let&#39;s verify that energy is conserved for the double pendulum in the absence of nonconservative forces (like damping). That is, we expect that the time derivative of the pendulum&#39;s total energy is zero when its state evolves according to the passive dynamics.</p><p>Let&#39;s first compute the joint acceleration vector <span>$\dot{v}$</span> using the passive dynamics:</p><div><pre><code class="language-julia">dynamicsresult = DynamicsResult(mechanism)
 set_configuration!(float64state, q)
 set_velocity!(float64state, v)
 dynamics!(dynamicsresult, float64state)
