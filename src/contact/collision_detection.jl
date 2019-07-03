@@ -10,44 +10,42 @@ function collision_cache end
 collision_cache(a, b) = CollisionCache(a, b)
 reset!(cache::CollisionCache) = EnhancedGJK.reset!(cache)
 
-function extract_normal(result::GJKResult)
+function extract_penetration_and_normal(result::GJKResult)
     # IMPORTANT: this only works when the closest face of the simplex corresponds
     # to the closest face of the Minkowski sum
-    @inbounds begin
-        simplex = result.simplex
-        closest_face = nothing
-        closest_point = nothing
-        closest_distsq = nothing
-        for i in eachindex(result.simplex)
-            face = EnhancedGJK.simplex_face(simplex, i)
-            weights = EnhancedGJK.projection_weights(face)
-            closest_point_on_face = EnhancedGJK.linear_combination(weights, face)
-            distsq = dot(closest_point_on_face, closest_point_on_face)
-            if closest_face === nothing || distsq < closest_distsq
-                closest_face = face
-                closest_point = closest_point_on_face
-                closest_distsq = distsq
-            end
+    simplex = result.simplex
+    best_dist_squared = nothing
+    best_face = nothing
+    best_point = nothing
+    for i in eachindex(simplex)
+        face = simplex_face(simplex, i)
+        weights = projection_weights(face)
+        point = linear_combination(weights, face)
+        dist_squared = point ⋅ point
+        if best_dist_squared === nothing || dist_squared < best_dist_squared
+            best_dist_squared = dist_squared
+            best_face = face
+            best_point = point
         end
-        v1 = closest_face[2] - closest_face[1]
-        v2 = closest_face[3] - closest_face[1]
-        normal = normalize(v1 × v2)
-        return dot(closest_point, normal) < 0 ? normal : -normal
     end
+    normal = normalize(EnhancedGJK.normal(best_face))
+    best_point ⋅ normal < 0 || (normal = -normal)
+    sqrt(best_dist_squared), normal # TODO: just use best_point ⋅ normal as penetration?
 end
 
 @inline function detect_contact(cache::CollisionCache, pose_a::Transformation, pose_b::Transformation)
     result = gjk!(cache, pose_a, pose_b)
-    separation = result.signed_distance
-    if separation < 0
+    if result.in_contact
         # FIXME: normal computation currently relies on the fact that the closest
         # face of the simplex corresponds to the closest face of the Minkowski sum.
         # This will not be the case with large penetrations.
         # Should cache previous closest face to be accurate with large penetrations.
         # For now, check that penetration isn't too big.
-        @assert separation > -5e3
-        normal = extract_normal(result)
+        # @assert separation > -5e3
+        penetration, normal = extract_penetration_and_normal(result)
+        separation = -penetration
     else
+        separation = separation_distance(result)
         normal = nothing
     end
     closest_in_a = pose_a(result.closest_point_in_body.a)
