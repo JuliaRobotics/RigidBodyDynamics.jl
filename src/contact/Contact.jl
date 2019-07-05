@@ -46,6 +46,7 @@ export
 # TODO: move this somewhere else
 AffineMap(tf::Transform3D) = AffineMap(rotation(tf), translation(tf))
 
+include("halfspace.jl")
 include("collision_element.jl")
 include("contact_force_model.jl")
 include("collidable_pair.jl")

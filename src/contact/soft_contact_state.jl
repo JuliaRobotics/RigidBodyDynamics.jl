@@ -19,7 +19,7 @@ function SoftContactState{T}(model::ContactModel) where {T}
     end
     sorted_pairs = TypeSortedCollection(pairs)
     caches = TypeSortedCollection(
-        map(pair -> collision_cache(pair.a.geometry, pair.b.geometry), pairs),
+        map(pair -> collision_cache(T, pair.a.geometry, pair.b.geometry), pairs),
         TypeSortedCollections.indices(sorted_pairs)
     )
     ret = SoftContactState(x, xsegments, sorted_pairs, caches)
