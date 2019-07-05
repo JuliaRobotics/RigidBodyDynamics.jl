@@ -38,9 +38,19 @@ let
                 str = replace(str, "PKG_SETUP" =>
                 """
                 ```@setup $name
-                using Pkg
-                Pkg.activate("$(relpath(root, outputdir))")
-                Pkg.instantiate()
+                import Pkg
+                let
+                    original_stdout = stdout
+                    out_rd, out_wr = redirect_stdout()
+                    @async read(out_rd, String)
+                    try
+                        Pkg.activate("$(relpath(root, outputdir))")
+                        Pkg.instantiate()
+                    finally
+                        redirect_stdout(original_stdout)
+                        close(out_wr)
+                    end
+                end
                 ```
                 """)
                 return str
