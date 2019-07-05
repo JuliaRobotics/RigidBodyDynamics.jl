@@ -3,14 +3,26 @@
 $(SIGNATURES)
 
 Return a suitable object to do collision checking for the given geometries.
-By default this returns an `EnhancedGJK.CollisionCache`.
 """
 function collision_cache end
 
-collision_cache(a, b) = CollisionCache(a, b)
-reset!(cache::CollisionCache) = EnhancedGJK.reset!(cache)
+mutable struct DefaultCollisionCache{T, C<:EnhancedGJK.CollisionCache}
+    gjkcache::C
+    halfspace_in_b::Union{HalfSpace{3, T}, Nothing} # fixed in frame of body B; normal points outward from B
+end
 
-function extract_penetration_and_normal(result::GJKResult)
+DefaultCollisionCache{T}(gjkcache::C) where {T, C<:EnhancedGJK.CollisionCache} = DefaultCollisionCache{T, C}(gjkcache, nothing)
+DefaultCollisionCache{T}(a, b) where {T} = DefaultCollisionCache{T}(EnhancedGJK.CollisionCache(a, b))
+
+collision_cache(::Type{T}, a, b) where {T} = DefaultCollisionCache{T}(a, b)
+
+function reset!(cache::DefaultCollisionCache)
+    EnhancedGJK.reset!(cache.gjkcache)
+    cache.halfspace_in_b = nothing
+    return cache
+end
+
+function extract_halfspace(result::GJKResult, closest_in_b::SVector{3})
     # IMPORTANT: this only works when the closest face of the simplex corresponds
     # to the closest face of the Minkowski sum
     simplex = result.simplex
@@ -18,9 +30,9 @@ function extract_penetration_and_normal(result::GJKResult)
     best_face = nothing
     best_point = nothing
     for i in eachindex(simplex)
-        face = simplex_face(simplex, i)
-        weights = projection_weights(face)
-        point = linear_combination(weights, face)
+        face = EnhancedGJK.simplex_face(simplex, i)
+        weights = EnhancedGJK.projection_weights(face)
+        point = EnhancedGJK.linear_combination(weights, face)
         dist_squared = point ⋅ point
         if best_dist_squared === nothing || dist_squared < best_dist_squared
             best_dist_squared = dist_squared
@@ -28,64 +40,46 @@ function extract_penetration_and_normal(result::GJKResult)
             best_point = point
         end
     end
+    # @show typeof(best_face)
+    # error()
     normal = normalize(EnhancedGJK.normal(best_face))
-    best_point ⋅ normal < 0 || (normal = -normal)
-    sqrt(best_dist_squared), normal # TODO: just use best_point ⋅ normal as penetration?
+    signed_distance = best_point ⋅ normal
+    if signed_distance > 0
+        signed_distance = -signed_distance
+        normal = -normal
+    end
+    HalfSpace(normal, normal ⋅ closest_in_b - signed_distance)
 end
 
-@inline function detect_contact(cache::CollisionCache, pose_a::Transformation, pose_b::Transformation)
-    result = gjk!(cache, pose_a, pose_b)
-    if result.in_contact
-        # FIXME: normal computation currently relies on the fact that the closest
+@inline function detect_contact(cache::DefaultCollisionCache, pose_a::Transformation, pose_b::Transformation)
+    result = gjk!(cache.gjkcache, pose_a, pose_b)
+    closest_in_a = pose_a(result.closest_point_in_body.a)
+    closest_in_b = pose_b(result.closest_point_in_body.b)
+    if result.in_collision
+        # NOTE: normal computation currently relies on the fact that the closest
         # face of the simplex corresponds to the closest face of the Minkowski sum.
         # This will not be the case with large penetrations.
-        # Should cache previous closest face to be accurate with large penetrations.
-        # For now, check that penetration isn't too big.
-        # @assert separation > -5e3
-        penetration, normal = extract_penetration_and_normal(result)
-        separation = -penetration
+        # Caching the penetration halfspace from the previous result is meant to
+        # circumvent this.
+        if cache.halfspace_in_b === nothing
+            halfspace_in_world = extract_halfspace(result, closest_in_b)
+            cache.halfspace_in_b = inv(pose_b)(halfspace_in_world)
+        else
+            halfspace_in_world = pose_b(cache.halfspace_in_b)
+        end
+        separation = closest_in_b ⋅ halfspace_in_world.outward_normal - halfspace_in_world.offset
+        normal = halfspace_in_world.outward_normal
     else
+        cache.halfspace_in_b = nothing
         separation = separation_distance(result)
         normal = nothing
     end
-    closest_in_a = pose_a(result.closest_point_in_body.a)
-    closest_in_b = pose_b(result.closest_point_in_body.b)
     separation, normal, closest_in_a, closest_in_b
 end
 
-struct HalfSpace{N, T}
-    outward_normal::SVector{N, T}
-    offset::T
 
-    function HalfSpace(outward_normal::SVector{N, T}, offset::T) where {N, T}
-        new{N, T}(normalize(outward_normal), offset)
-    end
-end
-
-function HalfSpace(outward_normal::StaticVector{N}, offset) where {N}
-    T = promote_type(typeof(offset), eltype(outward_normal))
-    HalfSpace(SVector{N, T}(outward_normal), T(offset))
-end
-
-function HalfSpace(outward_normal::StaticVector{N}, point::StaticVector{N}) where N
-    HalfSpace(outward_normal, point ⋅ outward_normal)
-end
-
-function (tf::AffineMap)(halfspace::HalfSpace)
-    linear = LinearMap(transform_deriv(tf, 0))
-    normal = linear(halfspace.outward_normal)
-    offset = halfspace.offset + normal ⋅ tf.translation
-    HalfSpace(normal, offset)
-end
-
-function (tf::Translation)(halfspace::HalfSpace)
-    normal = halfspace.outward_normal
-    offset = halfspace.offset + normal ⋅ tf.translation
-    HalfSpace(normal, offset)
-end
-
-collision_cache(a::GeometryTypes.Point{N}, b::HalfSpace{N}) where {N} = a => b
-collision_cache(a::HalfSpace{N}, b::GeometryTypes.Point{N}) where {N} = a => b
+collision_cache(::Type{T}, a::GeometryTypes.Point{N, T}, b::HalfSpace{N, T}) where {T, N} = a => b
+collision_cache(::Type{T}, a::HalfSpace{N, T}, b::GeometryTypes.Point{N, T}) where {T, N} = a => b
 
 reset!(::Pair{<:GeometryTypes.Point, <:HalfSpace}) = nothing
 reset!(::Pair{<:HalfSpace, <:GeometryTypes.Point}) = nothing
