@@ -93,7 +93,7 @@ var documenterSearchIndex = {"docs": [
     "page": "1. Quickstart - double pendulum",
     "title": "1. Quickstart - double pendulum",
     "category": "section",
-    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().using Pkg\nPkg.activate(\"../../../../examples/1. Quickstart - double pendulum\")\nPkg.instantiate()"
+    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().import Pkg\nlet\n    original_stdout = stdout\n    out_rd, out_wr = redirect_stdout()\n    @async read(out_rd, String)\n    try\n        Pkg.activate(\"../../../../examples/1. Quickstart - double pendulum\")\n        Pkg.instantiate()\n    finally\n        redirect_stdout(original_stdout)\n        close(out_wr)\n    end\nend"
 },
 
 {
@@ -157,7 +157,7 @@ var documenterSearchIndex = {"docs": [
     "page": "2. Closed-loop simulation and visualization",
     "title": "2. Closed-loop simulation and visualization",
     "category": "section",
-    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().using Pkg\nPkg.activate(\"../../../../examples/2. Closed-loop simulation and visualization\")\nPkg.instantiate()Please note that RigidBodySim.jl now provides a more capable simulation environment."
+    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().import Pkg\nlet\n    original_stdout = stdout\n    out_rd, out_wr = redirect_stdout()\n    @async read(out_rd, String)\n    try\n        Pkg.activate(\"../../../../examples/2. Closed-loop simulation and visualization\")\n        Pkg.instantiate()\n    finally\n        redirect_stdout(original_stdout)\n        close(out_wr)\n    end\nendPlease note that RigidBodySim.jl now provides a more capable simulation environment."
 },
 
 {
@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "3. Four-bar linkage",
     "title": "3. Four-bar linkage",
     "category": "section",
-    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().using Pkg\nPkg.activate(\"../../../../examples/3. Four-bar linkage\")\nPkg.instantiate()This example is a (slightly modified) contribution by Aykut Satici."
+    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().import Pkg\nlet\n    original_stdout = stdout\n    out_rd, out_wr = redirect_stdout()\n    @async read(out_rd, String)\n    try\n        Pkg.activate(\"../../../../examples/3. Four-bar linkage\")\n        Pkg.instantiate()\n    finally\n        redirect_stdout(original_stdout)\n        close(out_wr)\n    end\nendThis example is a (slightly modified) contribution by Aykut Satici."
 },
 
 {
@@ -261,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "4. Jacobian IK and Control",
     "title": "4. Jacobian IK and Control",
     "category": "section",
-    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().using Pkg\nPkg.activate(\"../../../../examples/4. Jacobian IK and Control\")\nPkg.instantiate()In this notebook, we\'ll demonstrate an extremely simple approach for computing basic inverse kinematics (IK) and controlling the position of some point on our robot using the Jacobian transpose.For a brief technical introduction, see https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf or https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf"
+    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().import Pkg\nlet\n    original_stdout = stdout\n    out_rd, out_wr = redirect_stdout()\n    @async read(out_rd, String)\n    try\n        Pkg.activate(\"../../../../examples/4. Jacobian IK and Control\")\n        Pkg.instantiate()\n    finally\n        redirect_stdout(original_stdout)\n        close(out_wr)\n    end\nendIn this notebook, we\'ll demonstrate an extremely simple approach for computing basic inverse kinematics (IK) and controlling the position of some point on our robot using the Jacobian transpose.For a brief technical introduction, see https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf or https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf"
 },
 
 {
@@ -301,7 +301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "5. Derivatives and gradients using ForwardDiff",
     "title": "5. Derivatives and gradients using ForwardDiff",
     "category": "section",
-    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().using Pkg\nPkg.activate(\"../../../../examples/5. Derivatives and gradients using ForwardDiff\")\nPkg.instantiate()"
+    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().import Pkg\nlet\n    original_stdout = stdout\n    out_rd, out_wr = redirect_stdout()\n    @async read(out_rd, String)\n    try\n        Pkg.activate(\"../../../../examples/5. Derivatives and gradients using ForwardDiff\")\n        Pkg.instantiate()\n    finally\n        redirect_stdout(original_stdout)\n        close(out_wr)\n    end\nend"
 },
 
 {
@@ -349,7 +349,7 @@ var documenterSearchIndex = {"docs": [
     "page": "6. Symbolics using SymPy",
     "title": "6. Symbolics using SymPy",
     "category": "section",
-    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().using Pkg\nPkg.activate(\"../../../../examples/6. Symbolics using SymPy\")\nPkg.instantiate()"
+    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().import Pkg\nlet\n    original_stdout = stdout\n    out_rd, out_wr = redirect_stdout()\n    @async read(out_rd, String)\n    try\n        Pkg.activate(\"../../../../examples/6. Symbolics using SymPy\")\n        Pkg.instantiate()\n    finally\n        redirect_stdout(original_stdout)\n        close(out_wr)\n    end\nend"
 },
 
 {
@@ -405,7 +405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "7. Rigorous error bounds using IntervalArithmetic",
     "title": "7. Rigorous error bounds using IntervalArithmetic",
     "category": "section",
-    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().using Pkg\nPkg.activate(\"../../../../examples/7. Rigorous error bounds using IntervalArithmetic\")\nPkg.instantiate()"
+    "text": "This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the examples directory of the package. If the notebooks are missing, you may need to run using Pkg; Pkg.build().import Pkg\nlet\n    original_stdout = stdout\n    out_rd, out_wr = redirect_stdout()\n    @async read(out_rd, String)\n    try\n        Pkg.activate(\"../../../../examples/7. Rigorous error bounds using IntervalArithmetic\")\n        Pkg.instantiate()\n    finally\n        redirect_stdout(original_stdout)\n        close(out_wr)\n    end\nend"
 },
 
 {
@@ -1461,7 +1461,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_floating_tree_mechanism",
     "category": "method",
-    "text": "rand_floating_tree_mechanism(?, nonfloatingjointtypes)\n\n\nCreate a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
+    "text": "Create a random tree Mechanism, with a quaternion floating joint as the first joint (between the root body and the first non-root body).\n\n\n\n\n\n"
 },
 
 {
@@ -1477,7 +1477,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Mechanism",
     "title": "RigidBodyDynamics.rand_tree_mechanism",
     "category": "method",
-    "text": "Create a random tree Mechanism.\n\n\n\n\n\n"
+    "text": "rand_tree_mechanism(?, jointtypes)\n\n\nCreate a random tree Mechanism.\n\n\n\n\n\n"
 },
 
 {
@@ -1773,7 +1773,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
@@ -1781,7 +1781,7 @@ var documenterSearchIndex = {"docs": [
     "page": "MechanismState",
     "title": "RigidBodyDynamics.bias_acceleration",
     "category": "function",
-    "text": "bias_acceleration(state, joint)\nbias_acceleration(state, joint, safe)\n\n\nReturn the bias acceleration across the given joint, i.e. the spatial acceleration of frame_after(joint) with respect to frame_before(joint), expressed in the root frame of the mechanism when all joint accelerations are zero.\n\n\n\n\n\n"
+    "text": "bias_acceleration(state, body)\nbias_acceleration(state, body, safe)\n\n\nReturn the bias acceleration of the given body with respect to the world, i.e. the spatial acceleration of default_frame(body) with respect to the root frame of the mechanism, expressed in the root frame, when all joint accelerations are zero.\n\n\n\n\n\n"
 },
 
 {
