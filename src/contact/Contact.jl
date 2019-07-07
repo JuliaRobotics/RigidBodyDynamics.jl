@@ -44,7 +44,19 @@ export
     ViscoelasticCoulombModel
 
 # TODO: move this somewhere else
-AffineMap(tf::Transform3D) = AffineMap(rotation(tf), translation(tf))
+CoordinateTransformations.AffineMap(tf::Transform3D) = AffineMap(rotation(tf), translation(tf))
+
+function RigidBodyDynamics.Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, map::AffineMap)
+    Transform3D(from, to, map.linear, map.translation)
+end
+
+function RigidBodyDynamics.Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, map::LinearMap)
+    Transform3D(from, to, map.linear)
+end
+
+function RigidBodyDynamics.Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, map::Translation)
+    Transform3D(from, to, map.translation)
+end
 
 include("halfspace.jl")
 include("collision_element.jl")
