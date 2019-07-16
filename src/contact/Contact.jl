@@ -29,7 +29,8 @@ export
 
 # geometry
 export
-    HalfSpace
+    HalfSpace,
+    HRep
 
 # interface functions
 export
@@ -59,6 +60,7 @@ function RigidBodyDynamics.Transform3D(from::CartesianFrame3D, to::CartesianFram
 end
 
 include("halfspace.jl")
+include("hrep.jl")
 include("collision_element.jl")
 include("contact_force_model.jl")
 include("collidable_pair.jl")
