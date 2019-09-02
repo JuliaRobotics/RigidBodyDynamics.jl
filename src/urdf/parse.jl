@@ -37,6 +37,10 @@ function parse_inertia(::Type{T}, xml_inertia::XMLElement) where {T}
     @SMatrix [ixx ixy ixz; ixy iyy iyz; ixz iyz izz]
 end
 
+function parse_mesh(::Type{T}, xml_mesh::XMLElement) where {T}
+    scale = parse_vector(T, xml_mesh, "scale", "1 1 1")
+end
+
 function parse_pose(::Type{T}, xml_pose::Nothing) where {T}
     rot = one(RotMatrix3{T})
     trans = zero(SVector{3, T})
@@ -115,6 +119,17 @@ function parse_body(::Type{T}, xml_link::XMLElement, frame::CartesianFrame3D = C
     xml_inertial = find_element(xml_link, "inertial")
     inertia = xml_inertial == nothing ? zero(SpatialInertia{T}, frame) : parse_inertia(T, xml_inertial, frame)
     linkname = attribute(xml_link, "name") # TODO: make sure link name is unique
+
+    # println("Parsing $(linkname)")
+    xml_visual = find_element(xml_link, "visual")
+    if xml_visual != nothing
+        xml_geometry = find_element(xml_visual, "geometry")
+        xml_mesh = find_element(xml_geometry, "mesh")
+        scale = parse_mesh(T, xml_mesh)
+        println("xml_mesh $(xml_mesh)")
+        println("scale $(scale)")
+    end
+
     RigidBody(linkname, inertia)
 end
 
