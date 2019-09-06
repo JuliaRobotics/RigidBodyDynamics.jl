@@ -116,6 +116,17 @@
         joint_types = [QuaternionFloating{Float64}; [Revolute{Float64} for i = 1 : 10]; QuaternionSpherical{Float64}; Planar{Float64}; [Fixed{Float64} for i = 1 : 10]; [SinCosRevolute{Float64} for i = 1 : 5]]
         shuffle!(joint_types)
         mechanism = rand_tree_mechanism(Float64, joint_types...)
+        normal_model = RigidBodyDynamics.Contact.hunt_crossley_hertz()
+        tangential_model = RigidBodyDynamics.Contact.ViscoelasticCoulombModel(0.8, 20e3, 100.)
+        contact_model = RigidBodyDynamics.Contact.SoftContactModel(normal_model, tangential_model)
+        num_contact_points = 0
+        for body in bodies(mechanism)
+            for i in 1 : rand(1 : 3)
+                contact_point = ContactPoint(Point3D(default_frame(body), rand(), rand(), rand()), contact_model)
+                add_contact_point!(body, contact_point)
+                num_contact_points += 1
+            end
+        end
         state = MechanismState(mechanism)
         rand!(state)
         q = configuration(state)
@@ -123,6 +134,7 @@
         nonfixedjoints = collect(filter(j -> !(joint_type(j) isa Fixed), tree_joints(mechanism)))
 
         remove_fixed_tree_joints!(mechanism)
+        @test sum(body -> length(contact_points(body)), bodies(mechanism)) == num_contact_points
         @test tree_joints(mechanism) == nonfixedjoints
         state_no_fixed_joints = MechanismState(mechanism)
         set_configuration!(state_no_fixed_joints, q)
