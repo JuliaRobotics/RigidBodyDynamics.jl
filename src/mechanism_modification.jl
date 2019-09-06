@@ -242,6 +242,11 @@ function remove_fixed_tree_joints!(mechanism::Mechanism{T}) where T
             add_frame!(pred, tf)
         end
 
+        # Migrate contact points to parent body.
+        for point in contact_points(succ)
+            add_contact_point!(pred, point)
+        end
+
         # Add inertia to parent body.
         if has_defined_inertia(pred)
             inertia = spatial_inertia(succ)
