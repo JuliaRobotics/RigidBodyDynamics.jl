@@ -1,6 +1,6 @@
 name = "RigidBodyDynamics"
 uuid = "366cf18f-59d5-5db9-a4de-86a9f6786172"
-version = "2.1.0"
+version = "2.1.1"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
