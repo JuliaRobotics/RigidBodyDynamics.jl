@@ -32,17 +32,17 @@ end</code></pre><pre><code class="language-none">momentum_vec (generic function 
   0.0        0.0
   1.06794    0.628547</code></pre></div><p>At this point we note that the matrix <code>J</code> is simply the momentum matrix (in world frame) of the <code>Mechanism</code>. In this case, RigidBodyDynamics.jl has a specialized algorithm for computing this matrix, so let&#39;s verify the results:</p><div><pre><code class="language-julia">A = momentum_matrix(float64state)
 @test J ≈ Array(A) atol = 1e-12</code></pre><pre><code class="language-none">Test Passed</code></pre></div><p>Gradients with respect to <span>$q$</span> can be computed in similar fashion.</p><h2><a class="nav-anchor" id="Improving-performance-1" href="#Improving-performance-1">Improving performance</a></h2><p>Ignoring the fact that we have a specialized method available, let&#39;s look at the performance of using <code>ForwardDiff.jacobian</code>.</p><div><pre><code class="language-julia">using BenchmarkTools
-@benchmark ForwardDiff.jacobian($momentum_vec, $v)</code></pre><pre><code class="language-none">┌ Warning: Module JSON with build ID 66162450264 is missing from the cache.
+@benchmark ForwardDiff.jacobian($momentum_vec, $v)</code></pre><pre><code class="language-none">┌ Warning: Module JSON with build ID 80396935387 is missing from the cache.
 │ This may mean JSON [682c06a0-de6a-54ab-a142-c8b1cf79cde6] does not support precompilation but is imported by a module that does.
 └ @ Base loading.jl:947
 BenchmarkTools.Trial:
   memory estimate:  35.66 KiB
   allocs estimate:  468
   --------------
-  minimum time:     44.934 μs (0.00% GC)
-  median time:      54.931 μs (0.00% GC)
-  mean time:        73.893 μs (22.76% GC)
-  maximum time:     10.950 ms (97.20% GC)
+  minimum time:     71.405 μs (0.00% GC)
+  median time:      80.275 μs (0.00% GC)
+  mean time:        98.974 μs (15.73% GC)
+  maximum time:     11.162 ms (97.08% GC)
   --------------
   samples:          10000
   evals/sample:     1</code></pre></div><p>That&#39;s not great. Note all the allocations. We can do better by making the following modifications:</p><ol><li>use an in-place version of the <code>jacobian</code> function, <code>ForwardDiff.jacobian!</code></li><li>reimplement our <code>momentum_vec</code> function to be in-place as well</li><li>don&#39;t create a new <code>MechanismState</code> every time</li></ol><p>The third point is especially important; creating a <code>MechanismState</code> is expensive!</p><p>Regarding the second point, we could also just stop converting momentum from a <code>StaticArrays.SVector</code> to a <code>Vector</code> to avoid allocations. However, the solution of making the function in-place also applies when the size of the output vector is not known statically (e.g., for <code>dynamics_bias!</code>).</p><p>To facillitate reuse of <code>MechanismState</code>s while keeping the code nice and generic, we can use a <code>StateCache</code> object. <code>StateCache</code> is a container that stores <code>MechanismState</code>s of various types (associated with one <code>Mechanism</code>), and will ease the process of using <code>ForwardDiff</code>. Creating one is easy:</p><div><pre><code class="language-julia">const statecache = StateCache(mechanism)</code></pre><pre><code class="language-none">StateCache{…}(…)</code></pre></div><p><code>MechanismState</code>s of a given type can be accessed as follows (note that if a <code>MechanismState</code> of a certain type is already available, it will be reused):</p><div><pre><code class="language-julia">float32state = statecache[Float32]
@@ -67,10 +67,10 @@ J = DiffResults.jacobian(result)
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     1.707 μs (0.00% GC)
-  median time:      1.736 μs (0.00% GC)
-  mean time:        1.781 μs (0.00% GC)
-  maximum time:     10.008 μs (0.00% GC)
+  minimum time:     1.582 μs (0.00% GC)
+  median time:      1.603 μs (0.00% GC)
+  mean time:        1.639 μs (0.00% GC)
+  maximum time:     4.915 μs (0.00% GC)
   --------------
   samples:          10000
   evals/sample:     10</code></pre></div><p>That&#39;s much better. Do note that the specialized algorithm is still faster:</p><div><pre><code class="language-julia">q = copy(configuration(float64state))
@@ -81,13 +81,13 @@ end</code></pre><pre><code class="language-none">BenchmarkTools.Trial:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     450.203 ns (0.00% GC)
-  median time:      456.690 ns (0.00% GC)
-  mean time:        462.408 ns (0.00% GC)
-  maximum time:     984.726 ns (0.00% GC)
+  minimum time:     475.954 ns (0.00% GC)
+  median time:      484.375 ns (0.00% GC)
+  mean time:        491.944 ns (0.00% GC)
+  maximum time:     933.321 ns (0.00% GC)
   --------------
   samples:          10000
-  evals/sample:     197</code></pre></div><h2><a class="nav-anchor" id="Time-derivatives-1" href="#Time-derivatives-1">Time derivatives</a></h2><p>We can also use ForwardDiff to compute time derivatives. Let&#39;s verify that energy is conserved for the double pendulum in the absence of nonconservative forces (like damping). That is, we expect that the time derivative of the pendulum&#39;s total energy is zero when its state evolves according to the passive dynamics.</p><p>Let&#39;s first compute the joint acceleration vector <span>$\dot{v}$</span> using the passive dynamics:</p><div><pre><code class="language-julia">dynamicsresult = DynamicsResult(mechanism)
+  evals/sample:     196</code></pre></div><h2><a class="nav-anchor" id="Time-derivatives-1" href="#Time-derivatives-1">Time derivatives</a></h2><p>We can also use ForwardDiff to compute time derivatives. Let&#39;s verify that energy is conserved for the double pendulum in the absence of nonconservative forces (like damping). That is, we expect that the time derivative of the pendulum&#39;s total energy is zero when its state evolves according to the passive dynamics.</p><p>Let&#39;s first compute the joint acceleration vector <span>$\dot{v}$</span> using the passive dynamics:</p><div><pre><code class="language-julia">dynamicsresult = DynamicsResult(mechanism)
 set_configuration!(float64state, q)
 set_velocity!(float64state, v)
 dynamics!(dynamicsresult, float64state)
