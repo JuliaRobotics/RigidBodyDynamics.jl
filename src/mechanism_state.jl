@@ -964,7 +964,7 @@ function transform_to_root(state::MechanismState, frame::CartesianFrame3D, safe=
     tf
 end
 
-@propagate_inbounds function statesum(fun::F, state::MechanismState, itr, safe=true; init) where F
+@propagate_inbounds function statesum(fun::F, state::MechanismState, itr, init, safe=true) where F
     ret = init
     for x in itr
         ret += fun(state, x, safe)
@@ -976,27 +976,27 @@ end
     T = cache_eltype(state)
     update_twists_wrt_world!(state)
     update_spatial_inertias!(state)
-    statesum(momentum, state, body_itr, false, init=zero(Momentum{T}, root_frame(state.mechanism)))
+    statesum(momentum, state, body_itr, zero(Momentum{T}, root_frame(state.mechanism)), false)
 end
 
 @propagate_inbounds function momentum_rate_bias(state::MechanismState, body_itr)
     T = cache_eltype(state)
     update_bias_accelerations_wrt_world!(state)
     update_spatial_inertias!(state)
-    statesum(momentum_rate_bias, state, body_itr, false, init=zero(Wrench{T}, root_frame(state.mechanism)))
+    statesum(momentum_rate_bias, state, body_itr, zero(Wrench{T}, root_frame(state.mechanism)), false)
 end
 
 @propagate_inbounds function kinetic_energy(state::MechanismState, body_itr)
     T = cache_eltype(state)
     update_twists_wrt_world!(state)
     update_spatial_inertias!(state)
-    statesum(kinetic_energy, state, body_itr, false, init=zero(T))
+    statesum(kinetic_energy, state, body_itr, zero(T), false)
 end
 
 @propagate_inbounds function gravitational_potential_energy(state::MechanismState, body_itr)
     T = cache_eltype(state)
     update_transforms!(state)
-    statesum(gravitational_potential_energy, state, body_itr, false, init=zero(T))
+    statesum(gravitational_potential_energy, state, body_itr, zero(T), false)
 end
 
 for fun in (:momentum, :momentum_rate_bias, :kinetic_energy, :gravitational_potential_energy)

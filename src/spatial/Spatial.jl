@@ -49,6 +49,8 @@ using StaticArrays
 using Rotations
 using DocStringExtensions
 
+using Base: promote_eltype
+
 include("frame.jl")
 include("util.jl")
 include("transform3d.jl")

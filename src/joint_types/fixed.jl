@@ -15,32 +15,32 @@ num_velocities(::Type{<:Fixed}) = 0
 has_fixed_subspaces(jt::Fixed) = true
 isfloating(::Type{<:Fixed}) = false
 
-@inline function joint_transform(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function joint_transform(jt::Fixed, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector)
+    S = promote_eltype(jt, q)
     one(Transform3D{S}, frame_after, frame_before)
 end
 
-@inline function joint_twist(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function joint_twist(jt::Fixed, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector)
+    S = promote_eltype(jt, q, v)
     zero(Twist{S}, frame_after, frame_before, frame_after)
 end
 
-@inline function joint_spatial_acceleration(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
-    S = promote_type(T, X, XD)
+@inline function joint_spatial_acceleration(jt::Fixed, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector, vd::AbstractVector)
+    S = promote_eltype(jt, q, v, vd)
     zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
 end
 
-@inline function motion_subspace(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function motion_subspace(jt::Fixed, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector)
+    S = promote_eltype(jt, q)
     GeometricJacobian(frame_after, frame_before, frame_after, zero(SMatrix{3, 0, S}), zero(SMatrix{3, 0, S}))
 end
 
-@inline function constraint_wrench_subspace(jt::Fixed{T}, joint_transform::Transform3D{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function constraint_wrench_subspace(jt::Fixed, joint_transform::Transform3D)
+    S = promote_eltype(jt, joint_transform)
     angular = hcat(one(SMatrix{3, 3, S}), zero(SMatrix{3, 3, S}))
     linear = hcat(zero(SMatrix{3, 3, S}), one(SMatrix{3, 3, S}))
     WrenchMatrix(joint_transform.from, angular, linear)
@@ -49,9 +49,9 @@ end
 @inline zero_configuration!(q::AbstractVector, ::Fixed) = nothing
 @inline rand_configuration!(q::AbstractVector, ::Fixed) = nothing
 
-@inline function bias_acceleration(jt::Fixed{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function bias_acceleration(jt::Fixed, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector)
+    S = promote_eltype(jt, q, v)
     zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
 end
 

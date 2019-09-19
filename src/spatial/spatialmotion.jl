@@ -157,8 +157,9 @@ for MotionSpaceElement in (:Twist, :SpatialAcceleration)
     @eval begin
         # Construct with possibly eltype-heterogeneous inputs
         @inline function $MotionSpaceElement(body::CartesianFrame3D, base::CartesianFrame3D, frame::CartesianFrame3D,
-                angular::AbstractVector{T1}, linear::AbstractVector{T2}) where {T1, T2}
-            $MotionSpaceElement{promote_type(T1, T2)}(body, base, frame, angular, linear)
+                angular::AbstractVector, linear::AbstractVector)
+            T = promote_eltype(angular, linear)
+            $MotionSpaceElement{T}(body, base, frame, angular, linear)
         end
 
         # Construct given FreeVector3Ds

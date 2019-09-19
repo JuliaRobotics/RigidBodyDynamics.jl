@@ -17,7 +17,7 @@ end
 Base.eltype(::Type{Transform3D{T}}) where {T} = T
 
 @inline function Transform3D(from::CartesianFrame3D, to::CartesianFrame3D, rot::Rotation{3}, trans::SVector{3})
-    T = promote_type(eltype(typeof(rot)), eltype(typeof(trans)))
+    T = promote_eltype(rot, trans)
     R = convert(RotMatrix3{T}, rot)
     @inbounds mat = @SMatrix [R[1] R[4] R[7] trans[1];
                               R[2] R[5] R[8] trans[2];
