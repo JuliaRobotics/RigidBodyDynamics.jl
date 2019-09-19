@@ -27,7 +27,8 @@ isfloating(::Type{<:QuaternionSpherical}) = false
     Quat(q[1], q[2], q[3], q[4], normalize)
 end
 
-@propagate_inbounds function set_rotation!(q::AbstractVector, jt::QuaternionSpherical, rot::Rotation{3, T}) where {T}
+@propagate_inbounds function set_rotation!(q::AbstractVector, jt::QuaternionSpherical, rot::Rotation{3})
+    T = eltype(rot)
     quat = convert(Quat{T}, rot)
     q[1] = quat.w
     q[2] = quat.x
@@ -47,28 +48,29 @@ end
     Transform3D(frame_after, frame_before, quat)
 end
 
-@inline function motion_subspace(jt::QuaternionSpherical{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function motion_subspace(jt::QuaternionSpherical, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector)
+    S = promote_eltype(jt, q)
     angular = one(SMatrix{3, 3, S})
     linear = zero(SMatrix{3, 3, S})
     GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
 end
 
-@inline function constraint_wrench_subspace(jt::QuaternionSpherical{T}, joint_transform::Transform3D{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function constraint_wrench_subspace(jt::QuaternionSpherical, joint_transform::Transform3D)
+    S = promote_eltype(jt, joint_transform)
     angular = zero(SMatrix{3, 3, S})
     linear = one(SMatrix{3, 3, S})
     WrenchMatrix(joint_transform.from, angular, linear)
 end
 
-@inline function bias_acceleration(jt::QuaternionSpherical{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function bias_acceleration(jt::QuaternionSpherical, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector)
+    S = promote_eltype(jt, q, v)
     zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
 end
 
-@propagate_inbounds function configuration_derivative_to_velocity!(v::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, q̇::AbstractVector)
+@propagate_inbounds function configuration_derivative_to_velocity!(v::AbstractVector, jt::QuaternionSpherical,
+        q::AbstractVector, q̇::AbstractVector)
     quat = rotation(jt, q, false)
     quatdot = SVector(q̇[1], q̇[2], q̇[3], q̇[4])
     v .= angular_velocity_in_body(quat, quatdot)
@@ -82,7 +84,8 @@ end
     nothing
 end
 
-@propagate_inbounds function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::QuaternionSpherical, q::AbstractVector, v::AbstractVector)
+@propagate_inbounds function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::QuaternionSpherical,
+        q::AbstractVector, v::AbstractVector)
     quat = rotation(jt, q, false)
     q̇ .= quaternion_derivative(quat, v)
     nothing
@@ -110,17 +113,17 @@ end
     nothing
 end
 
-@propagate_inbounds function joint_twist(jt::QuaternionSpherical{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@propagate_inbounds function joint_twist(jt::QuaternionSpherical, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector)
+    S = promote_eltype(jt, q, v)
     angular = SVector{3, S}(v)
     linear = zero(SVector{3, S})
     Twist(frame_after, frame_before, frame_after, angular, linear)
 end
 
-@propagate_inbounds function joint_spatial_acceleration(jt::QuaternionSpherical{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
-    S = promote_type(T, X, XD)
+@propagate_inbounds function joint_spatial_acceleration(jt::QuaternionSpherical, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector, vd::AbstractVector)
+    S = promote_eltype(jt, q, v, vd)
     angular = SVector{3, S}(vd)
     linear = zero(SVector{3, S})
     SpatialAcceleration(frame_after, frame_before, frame_after, angular, linear)

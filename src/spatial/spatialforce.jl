@@ -114,8 +114,9 @@ end
 for ForceSpaceElement in (:Momentum, :Wrench)
     @eval begin
         # Construct with possibly eltype-heterogeneous inputs
-        @inline function $ForceSpaceElement(frame::CartesianFrame3D, angular::AbstractVector{T1}, linear::AbstractVector{T2}) where {T1, T2}
-            $ForceSpaceElement{promote_type(T1, T2)}(frame, angular, linear)
+        @inline function $ForceSpaceElement(frame::CartesianFrame3D, angular::AbstractVector, linear::AbstractVector)
+            T = promote_eltype(angular, linear)
+            $ForceSpaceElement{T}(frame, angular, linear)
         end
 
         """

@@ -227,7 +227,7 @@ end
 frame(halfspace::HalfSpace3D) = halfspace.point.frame
 
 function HalfSpace3D(point::Point3D, outward_normal::FreeVector3D)
-    T = promote_type(eltype(point), eltype(outward_normal))
+    T = promote_eltype(point, outward_normal)
     HalfSpace3D(convert(Point3D{SVector{3, T}}, point), convert(FreeVector3D{SVector{3, T}}, outward_normal))
 end
 

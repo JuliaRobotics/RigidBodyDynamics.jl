@@ -30,7 +30,8 @@ isfloating(::Type{<:SPQuatFloating}) = true
     SPQuat(q[1], q[2], q[3])
 end
 
-@propagate_inbounds function set_rotation!(q::AbstractVector, jt::SPQuatFloating, rot::Rotation{3, T}) where T
+@propagate_inbounds function set_rotation!(q::AbstractVector, jt::SPQuatFloating, rot::Rotation{3})
+    T = eltype(rot)
     spq = convert(SPQuat{T}, rot)
     q[1] = spq.x
     q[2] = spq.y
@@ -73,30 +74,32 @@ end
     v
 end
 
-@propagate_inbounds function joint_transform(jt::SPQuatFloating, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D, q::AbstractVector)
+@propagate_inbounds function joint_transform(jt::SPQuatFloating, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector)
     Transform3D(frame_after, frame_before, rotation(jt, q), translation(jt, q))
 end
 
-@inline function motion_subspace(jt::SPQuatFloating{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function motion_subspace(jt::SPQuatFloating, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector)
+    S = promote_eltype(jt, q)
     angular = hcat(one(SMatrix{3, 3, S}), zero(SMatrix{3, 3, S}))
     linear = hcat(zero(SMatrix{3, 3, S}), one(SMatrix{3, 3, S}))
     GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
 end
 
-@inline function constraint_wrench_subspace(jt::SPQuatFloating{T}, joint_transform::Transform3D{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function constraint_wrench_subspace(jt::SPQuatFloating, joint_transform::Transform3D)
+    S = promote_eltype(jt, joint_transform)
     WrenchMatrix(joint_transform.from, zero(SMatrix{3, 0, S}), zero(SMatrix{3, 0, S}))
 end
 
-@propagate_inbounds function bias_acceleration(jt::SPQuatFloating{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@propagate_inbounds function bias_acceleration(jt::SPQuatFloating, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector)
+    S = promote_eltype(jt, q, v)
     zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
 end
 
-@propagate_inbounds function configuration_derivative_to_velocity!(v::AbstractVector, jt::SPQuatFloating{T}, q::AbstractVector, q̇::AbstractVector) where {T}
+@propagate_inbounds function configuration_derivative_to_velocity!(v::AbstractVector, jt::SPQuatFloating,
+        q::AbstractVector, q̇::AbstractVector)
     spq = rotation(jt, q)
     spqdot = SVector(q̇[1], q̇[2], q̇[3])
     ω = angular_velocity_in_body(spq, spqdot)
@@ -107,7 +110,8 @@ end
     nothing
 end
 
-@propagate_inbounds function configuration_derivative_to_velocity_adjoint!(fq, jt::SPQuatFloating, q::AbstractVector, fv)
+@propagate_inbounds function configuration_derivative_to_velocity_adjoint!(fq, jt::SPQuatFloating,
+        q::AbstractVector, fv)
     spq = SPQuat(q[1], q[2], q[3])
     rot = velocity_jacobian(angular_velocity_in_body, spq)' * angular_velocity(jt, fv)
     trans = spq * linear_velocity(jt, fv)
@@ -116,7 +120,8 @@ end
     nothing
 end
 
-@propagate_inbounds function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::SPQuatFloating, q::AbstractVector, v::AbstractVector)
+@propagate_inbounds function velocity_to_configuration_derivative!(q̇::AbstractVector, jt::SPQuatFloating,
+        q::AbstractVector, v::AbstractVector)
     spq = rotation(jt, q)
     ω = angular_velocity(jt, v)
     linear = linear_velocity(jt, v)
@@ -127,7 +132,8 @@ end
     nothing
 end
 
-@propagate_inbounds function velocity_to_configuration_derivative_jacobian(jt::SPQuatFloating, q::AbstractVector)
+@propagate_inbounds function velocity_to_configuration_derivative_jacobian(jt::SPQuatFloating,
+        q::AbstractVector)
     spq = rotation(jt, q)
     vj = velocity_jacobian(spquat_derivative, spq)
     R = RotMatrix(spq)
@@ -141,7 +147,8 @@ end
          0     0     0      R[3] R[6] R[9]])
 end
 
-@propagate_inbounds function configuration_derivative_to_velocity_jacobian(jt::SPQuatFloating, q::AbstractVector)
+@propagate_inbounds function configuration_derivative_to_velocity_jacobian(jt::SPQuatFloating,
+        q::AbstractVector)
     spq = rotation(jt, q)
     vj = velocity_jacobian(angular_velocity_in_body, spq)
     R_inv = RotMatrix(inv(spq))
@@ -169,17 +176,17 @@ end
     nothing
 end
 
-@propagate_inbounds function joint_twist(jt::SPQuatFloating{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@propagate_inbounds function joint_twist(jt::SPQuatFloating, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector)
+    S = promote_eltype(jt, q, v)
     angular = convert(SVector{3, S}, angular_velocity(jt, v))
     linear = convert(SVector{3, S}, linear_velocity(jt, v))
     Twist(frame_after, frame_before, frame_after, angular, linear)
 end
 
-@propagate_inbounds function joint_spatial_acceleration(jt::SPQuatFloating{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
-    S = promote_type(T, X, XD)
+@propagate_inbounds function joint_spatial_acceleration(jt::SPQuatFloating, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector, vd::AbstractVector)
+    S = promote_eltype(jt, q, v, vd)
     angular = convert(SVector{3, S}, angular_velocity(jt, vd))
     linear = convert(SVector{3, S}, linear_velocity(jt, vd))
     SpatialAcceleration(frame_after, frame_before, frame_after, angular, linear)

@@ -101,29 +101,29 @@ end
     Twist(frame_after, frame_before, frame_after, angular, zero(angular))
 end
 
-@inline function bias_acceleration(jt::SinCosRevolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function bias_acceleration(jt::SinCosRevolute, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector)
+    S = promote_eltype(jt, q, v)
     zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
 end
 
-@propagate_inbounds function joint_spatial_acceleration(jt::SinCosRevolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
-    S = promote_type(T, X, XD)
+@propagate_inbounds function joint_spatial_acceleration(jt::SinCosRevolute, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector, vd::AbstractVector)
+    S = promote_eltype(jt, q, v, vd)
     angular = convert(SVector{3, S}, jt.axis * vd[1])
     SpatialAcceleration(frame_after, frame_before, frame_after, angular, zero(angular))
 end
 
-@inline function motion_subspace(jt::SinCosRevolute{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function motion_subspace(jt::SinCosRevolute, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector)
+    S = promote_eltype(jt, q)
     angular = SMatrix{3, 1, S}(jt.axis)
     linear = zero(SMatrix{3, 1, S})
     GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
 end
 
-@inline function constraint_wrench_subspace(jt::SinCosRevolute{T}, joint_transform::Transform3D{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function constraint_wrench_subspace(jt::SinCosRevolute, joint_transform::Transform3D)
+    S = promote_eltype(jt, joint_transform)
     R = convert(RotMatrix3{S}, jt.rotation_from_z_aligned)
     Rcols12 = R[:, SVector(1, 2)]
     angular = hcat(Rcols12, zero(SMatrix{3, 3, S}))

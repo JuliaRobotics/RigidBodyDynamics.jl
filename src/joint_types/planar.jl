@@ -38,7 +38,7 @@ struct Planar{T} <: JointType{T}
     end
 end
 
-Planar(x_axis::AbstractVector{X}, y_axis::AbstractVector{Y}) where {X, Y} = Planar{promote_type(X, Y)}(x_axis, y_axis)
+Planar(x_axis::AbstractVector, y_axis::AbstractVector) = Planar{promote_eltype(x_axis, y_axis)}(x_axis, y_axis)
 
 Base.show(io::IO, jt::Planar) = print(io, "Planar joint with x-axis $(jt.x_axis) and y-axis $(jt.y_axis)")
 
@@ -54,53 +54,55 @@ num_velocities(::Type{<:Planar}) = 3
 has_fixed_subspaces(jt::Planar) = true
 isfloating(::Type{<:Planar}) = false
 
-@propagate_inbounds function rand_configuration!(q::AbstractVector{T}, ::Planar) where {T}
+@propagate_inbounds function rand_configuration!(q::AbstractVector, ::Planar)
+    T = eltype(q)
     q[1] = rand() - T(0.5)
     q[2] = rand() - T(0.5)
     q[3] = randn()
     nothing
 end
 
-@propagate_inbounds function joint_transform(jt::Planar{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}) where {T, X}
+@propagate_inbounds function joint_transform(jt::Planar, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector)
     rot = RotMatrix(AngleAxis(q[3], jt.rot_axis[1], jt.rot_axis[2], jt.rot_axis[3], false))
     trans = jt.x_axis * q[1] + jt.y_axis * q[2]
     Transform3D(frame_after, frame_before, rot, trans)
 end
 
-@propagate_inbounds function joint_twist(jt::Planar{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
+@propagate_inbounds function joint_twist(jt::Planar, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector)
     angular = jt.rot_axis * v[3]
     linear = jt.x_axis * v[1] + jt.y_axis * v[2]
     Twist(frame_after, frame_before, frame_after, angular, linear)
 end
 
-@propagate_inbounds function joint_spatial_acceleration(jt::Planar{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}, vd::AbstractVector{XD}) where {T, X, XD}
-    S = promote_type(T, X, XD)
+@propagate_inbounds function joint_spatial_acceleration(jt::Planar, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector, vd::AbstractVector)
+    S = promote_eltype(jt, q, v, vd)
     angular = jt.rot_axis * vd[3]
     linear = jt.x_axis * vd[1] + jt.y_axis * vd[2]
     SpatialAcceleration{S}(frame_after, frame_before, frame_after, angular, linear)
 end
 
-@inline function motion_subspace(jt::Planar{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function motion_subspace(jt::Planar, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector)
+    S = promote_eltype(jt, q)
     angular = hcat(zero(SMatrix{3, 2, S}), jt.rot_axis)
     linear = hcat(jt.x_axis, jt.y_axis, zero(SVector{3, S}))
     GeometricJacobian(frame_after, frame_before, frame_after, angular, linear)
 end
 
-@inline function constraint_wrench_subspace(jt::Planar{T}, joint_transform::Transform3D{X}) where {T, X}
-    S = promote_type(T, X)
+@inline function constraint_wrench_subspace(jt::Planar, joint_transform::Transform3D)
+    S = promote_eltype(jt, joint_transform)
     angular = hcat(zero(SVector{3, S}), jt.x_axis, jt.y_axis)
     linear = hcat(jt.rot_axis, zero(SMatrix{3, 2, S}))
     WrenchMatrix(joint_transform.from, angular, linear)
 end
 
-@inline function bias_acceleration(jt::Planar{T}, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
-        q::AbstractVector{X}, v::AbstractVector{X}) where {T, X}
-    zero(SpatialAcceleration{promote_type(T, X)}, frame_after, frame_before, frame_after)
+@inline function bias_acceleration(jt::Planar, frame_after::CartesianFrame3D, frame_before::CartesianFrame3D,
+        q::AbstractVector, v::AbstractVector)
+    S = promote_eltype(jt, q, v)
+    zero(SpatialAcceleration{S}, frame_after, frame_before, frame_after)
 end
 
 @propagate_inbounds function joint_torque!(τ::AbstractVector, jt::Planar, q::AbstractVector, joint_wrench::Wrench)

@@ -9,7 +9,7 @@ using DocStringExtensions
 using Reexport
 
 using Base.Iterators: filter, flatten
-using Base: @propagate_inbounds
+using Base: @propagate_inbounds, promote_eltype
 
 # mechanism-related types
 export

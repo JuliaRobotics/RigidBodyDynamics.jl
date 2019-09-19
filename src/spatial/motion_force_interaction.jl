@@ -48,8 +48,9 @@ Construct a `SpatialInertia` by specifying:
 
 For more convenient construction of `SpatialInertia`s, consider using the keyword argument constructor instead.
 """
-@inline function SpatialInertia(frame::CartesianFrame3D, moment::AbstractMatrix{T1}, cross_part::AbstractVector{T2}, mass::T3) where {T1, T2, T3}
-    SpatialInertia{promote_type(T1, T2, T3)}(frame, moment, cross_part, mass)
+@inline function SpatialInertia(frame::CartesianFrame3D, moment::AbstractMatrix, cross_part::AbstractVector, mass)
+    T = promote_eltype(moment, cross_part, mass)
+    SpatialInertia{T}(frame, moment, cross_part, mass)
 end
 
 """
@@ -263,7 +264,8 @@ end
 @inline torque!(τ::AbstractVector, jac::GeometricJacobian, wrench::Wrench) = mul!(τ, transpose(jac), wrench)
 
 @inline function torque(jac::GeometricJacobian, wrench::Wrench)
-    τ = Vector{promote_type(eltype(jac), eltype(wrench))}(undef, size(jac, 2))
+    T = promote_eltype(jac, wrench)
+    τ = Vector{T}(undef, size(jac, 2))
     torque!(τ, jac, wrench)
     τ
 end
