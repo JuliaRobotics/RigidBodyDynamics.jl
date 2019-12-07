@@ -174,7 +174,7 @@ end
 @propagate_inbounds function rand_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
     set_rotation!(q, jt, rand(Quat{T}))
-    set_translation!(q, jt, rand(SVector{3, T}) - 0.5)
+    set_translation!(q, jt, rand(SVector{3, T}) .- 0.5)
     nothing
 end
 
