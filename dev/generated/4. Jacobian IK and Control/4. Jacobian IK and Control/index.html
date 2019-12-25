@@ -1,13 +1,10 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>4. Jacobian IK and Control · RigidBodyDynamics.jl</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link href="../../../assets/documenter.css" rel="stylesheet" type="text/css"/></head><body><nav class="toc"><h1>RigidBodyDynamics.jl</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../../../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../../../">Home</a></li><li><span class="toctext">Tutorials</span><ul><li><a class="toctext" href="../../1. Quickstart - double pendulum/1. Quickstart - double pendulum/">1. Quickstart - double pendulum</a></li><li><a class="toctext" href="../../2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/">2. Closed-loop simulation and visualization</a></li><li><a class="toctext" href="../../3. Four-bar linkage/3. Four-bar linkage/">3. Four-bar linkage</a></li><li class="current"><a class="toctext" href>4. Jacobian IK and Control</a><ul class="internal"><li><a class="toctext" href="#Setup-1">Setup</a></li><li><a class="toctext" href="#Inverse-Kinematics-1">Inverse Kinematics</a></li><li><a class="toctext" href="#Control-1">Control</a></li></ul></li><li><a class="toctext" href="../../5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/">5. Derivatives and gradients using ForwardDiff</a></li><li><a class="toctext" href="../../6. Symbolics using SymPy/6. Symbolics using SymPy/">6. Symbolics using SymPy</a></li><li><a class="toctext" href="../../7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/">7. Rigorous error bounds using IntervalArithmetic</a></li></ul></li><li><span class="toctext">Library</span><ul><li><a class="toctext" href="../../../spatial/">Spatial vector algebra</a></li><li><a class="toctext" href="../../../joints/">Joints</a></li><li><a class="toctext" href="../../../rigidbody/">Rigid bodies</a></li><li><a class="toctext" href="../../../mechanism/">Mechanism</a></li><li><a class="toctext" href="../../../mechanismstate/">MechanismState</a></li><li><a class="toctext" href="../../../algorithms/">Kinematics/dynamics algorithms</a></li><li><a class="toctext" href="../../../customcollections/">Custom collection types</a></li><li><a class="toctext" href="../../../caches/">Cache types</a></li><li><a class="toctext" href="../../../simulation/">Simulation</a></li><li><a class="toctext" href="../../../urdf/">URDF parsing and writing</a></li></ul></li><li><a class="toctext" href="../../../benchmarks/">Benchmarks</a></li></ul></nav><article id="docs"><header><nav><ul><li>Tutorials</li><li><a href>4. Jacobian IK and Control</a></li></ul><a class="edit-page" href="https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/4. Jacobian IK and Control/4. Jacobian IK and Control.jl"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>4. Jacobian IK and Control</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id=".-Jacobian-IK-and-Control-1" href="#.-Jacobian-IK-and-Control-1">4. Jacobian IK and Control</a></h1><p>This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the <code>examples</code> directory of the package. If the notebooks are missing, you may need to run <code>using Pkg; Pkg.build()</code>.</p><div></div><p>In this notebook, we&#39;ll demonstrate an extremely simple approach for computing basic inverse kinematics (IK) and controlling the position of some point on our robot using the Jacobian transpose.</p><p>For a brief technical introduction, see <a href="https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf">https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf</a> or <a href="https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf">https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf</a></p><h2><a class="nav-anchor" id="Setup-1" href="#Setup-1">Setup</a></h2><div><pre><code class="language-julia">using RigidBodyDynamics
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>4. Jacobian IK and Control · RigidBodyDynamics.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">RigidBodyDynamics.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../1. Quickstart - double pendulum/1. Quickstart - double pendulum/">1. Quickstart - double pendulum</a></li><li><a class="tocitem" href="../../2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/">2. Closed-loop simulation and visualization</a></li><li><a class="tocitem" href="../../3. Four-bar linkage/3. Four-bar linkage/">3. Four-bar linkage</a></li><li class="is-active"><a class="tocitem" href>4. Jacobian IK and Control</a><ul class="internal"><li><a class="tocitem" href="#Setup-1"><span>Setup</span></a></li><li><a class="tocitem" href="#Inverse-Kinematics-1"><span>Inverse Kinematics</span></a></li><li><a class="tocitem" href="#Control-1"><span>Control</span></a></li></ul></li><li><a class="tocitem" href="../../5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/">5. Derivatives and gradients using ForwardDiff</a></li><li><a class="tocitem" href="../../6. Symbolics using SymPy/6. Symbolics using SymPy/">6. Symbolics using SymPy</a></li><li><a class="tocitem" href="../../7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/">7. Rigorous error bounds using IntervalArithmetic</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../spatial/">Spatial vector algebra</a></li><li><a class="tocitem" href="../../../joints/">Joints</a></li><li><a class="tocitem" href="../../../rigidbody/">Rigid bodies</a></li><li><a class="tocitem" href="../../../mechanism/">Mechanism</a></li><li><a class="tocitem" href="../../../mechanismstate/">MechanismState</a></li><li><a class="tocitem" href="../../../algorithms/">Kinematics/dynamics algorithms</a></li><li><a class="tocitem" href="../../../customcollections/">Custom collection types</a></li><li><a class="tocitem" href="../../../caches/">Cache types</a></li><li><a class="tocitem" href="../../../simulation/">Simulation</a></li><li><a class="tocitem" href="../../../urdf/">URDF parsing and writing</a></li></ul></li><li><a class="tocitem" href="../../../benchmarks/">Benchmarks</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>4. Jacobian IK and Control</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>4. Jacobian IK and Control</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/4. Jacobian IK and Control/4. Jacobian IK and Control.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id=".-Jacobian-IK-and-Control-1"><a class="docs-heading-anchor" href="#.-Jacobian-IK-and-Control-1">4. Jacobian IK and Control</a><a class="docs-heading-anchor-permalink" href="#.-Jacobian-IK-and-Control-1" title="Permalink"></a></h1><p>This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the <code>examples</code> directory of the package. If the notebooks are missing, you may need to run <code>using Pkg; Pkg.build()</code>.</p><p>In this notebook, we&#39;ll demonstrate an extremely simple approach for computing basic inverse kinematics (IK) and controlling the position of some point on our robot using the Jacobian transpose.</p><p>For a brief technical introduction, see <a href="https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf">https://groups.csail.mit.edu/drl/journal_club/papers/033005/buss-2004.pdf</a> or <a href="https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf">https://homes.cs.washington.edu/~todorov/courses/cseP590/06_JacobianMethods.pdf</a></p><h2 id="Setup-1"><a class="docs-heading-anchor" href="#Setup-1">Setup</a><a class="docs-heading-anchor-permalink" href="#Setup-1" title="Permalink"></a></h2><pre><code class="language-julia">using RigidBodyDynamics
 using StaticArrays
 using MeshCatMechanisms, Blink</code></pre><pre><code class="language-none">  Updating registry at `~/.julia/registries/General`
   Updating git-repo `https://github.com/JuliaRegistries/General.git`
-[?25l[2K[?25h┌ Warning: Module JSExpr with build ID 167538325929 is missing from the cache.
-│ This may mean JSExpr [97c1335a-c9c5-57fe-bc5d-ec35cebe8660] does not support precompilation but is imported by a module that does.
-└ @ Base loading.jl:947
-WARNING: could not import Base.quit into AtomShell</code></pre></div><p>Fix the random seed, so we get repeatable results</p><div><pre><code class="language-julia">using Random
-Random.seed!(42);</code></pre></div><p>First we&#39;ll load our double pendulum robot from URDF:</p><div><pre><code class="language-julia">srcdir = dirname(pathof(RigidBodyDynamics))
+[?25l[2K[?25h</code></pre><p>Fix the random seed, so we get repeatable results</p><pre><code class="language-julia">using Random
+Random.seed!(42);</code></pre><p>First we&#39;ll load our double pendulum robot from URDF:</p><pre><code class="language-julia">srcdir = dirname(pathof(RigidBodyDynamics))
 urdf = joinpath(srcdir, &quot;..&quot;, &quot;test&quot;, &quot;urdf&quot;, &quot;Acrobot.urdf&quot;)
 mechanism = parse_urdf(urdf)
 state = MechanismState(mechanism)
@@ -15,12 +12,12 @@ mechanism</code></pre><pre><code class="language-none">Spanning tree:
 Vertex: world (root)
   Vertex: upper_link, Edge: shoulder
     Vertex: lower_link, Edge: elbow
-No non-tree joints.</code></pre></div><p>Now we choose a point on the robot to control. We&#39;ll pick the end of the second link, which is located 2m from the origin of the <code>lower_link</code> body:</p><div><pre><code class="language-julia">body = findbody(mechanism, &quot;lower_link&quot;)
-point = Point3D(default_frame(body), 0., 0, -2)</code></pre><pre><code class="language-none">Point3D in &quot;after_elbow&quot;: [0.0, 0.0, -2.0]</code></pre></div><p>Let&#39;s visualize the mechanism and its attached point. For visualization, we&#39;ll use <a href="https://github.com/JuliaRobotics/MeshCatMechanisms.jl">MeshCatMechanisms.jl</a> with <a href="https://github.com/JunoLab/Blink.jl">Blink.jl</a>.</p><div><pre><code class="language-julia"># Create the visualizer
+No non-tree joints.</code></pre><p>Now we choose a point on the robot to control. We&#39;ll pick the end of the second link, which is located 2m from the origin of the <code>lower_link</code> body:</p><pre><code class="language-julia">body = findbody(mechanism, &quot;lower_link&quot;)
+point = Point3D(default_frame(body), 0., 0, -2)</code></pre><pre><code class="language-none">Point3D in &quot;after_elbow&quot;: [0.0, 0.0, -2.0]</code></pre><p>Let&#39;s visualize the mechanism and its attached point. For visualization, we&#39;ll use <a href="https://github.com/JuliaRobotics/MeshCatMechanisms.jl">MeshCatMechanisms.jl</a> with <a href="https://github.com/JunoLab/Blink.jl">Blink.jl</a>.</p><pre><code class="language-julia"># Create the visualizer
 vis = MechanismVisualizer(mechanism, URDFVisuals(urdf))
 
 # Render our target point attached to the robot as a sphere with radius 0.07
-setelement!(vis, point, 0.07)</code></pre><pre><code class="language-none">MeshCat Visualizer with path /meshcat/world/upper_link/lower_link/after_elbow/&lt;element&gt;</code></pre></div><p>Open the visualizer in a new Blink window:</p><div><pre><code class="language-julia"># open(vis, Window());</code></pre></div><p>Create a <code>MechanismVisualizer</code>:</p><div><pre><code class="language-julia">mvis = MechanismVisualizer(mechanism, URDFVisuals(urdf));</code></pre></div><h2><a class="nav-anchor" id="Inverse-Kinematics-1" href="#Inverse-Kinematics-1">Inverse Kinematics</a></h2><p>First, let&#39;s use the point jacobian to solve a simple inverse kinematics problem. Given a target location <code>desired</code> expressed in world frame, we want to find the joint angles <code>q</code> such that the <code>point</code> attached to the robot is at the desired location.</p><p>To do that, we&#39;ll iteratively update <code>q</code> by applying:</p><p>\begin{align} \Delta q = \alpha \, J_p^\top \, \Delta p \end{align}</p><p>where <span>$\alpha$</span> is our step size (equivalent to a learning rate in gradient descent) and <span>$\Delta p$</span> is the error in the position of our target point.</p><div><pre><code class="language-julia">function jacobian_transpose_ik!(state::MechanismState,
+setelement!(vis, point, 0.07)</code></pre><pre><code class="language-none">MeshCat Visualizer with path /meshcat/world/upper_link/lower_link/after_elbow/&lt;element&gt;</code></pre><p>Open the visualizer in a new Blink window:</p><pre><code class="language-julia"># open(vis, Window());</code></pre><p>Create a <code>MechanismVisualizer</code>:</p><pre><code class="language-julia">mvis = MechanismVisualizer(mechanism, URDFVisuals(urdf));</code></pre><h2 id="Inverse-Kinematics-1"><a class="docs-heading-anchor" href="#Inverse-Kinematics-1">Inverse Kinematics</a><a class="docs-heading-anchor-permalink" href="#Inverse-Kinematics-1" title="Permalink"></a></h2><p>First, let&#39;s use the point jacobian to solve a simple inverse kinematics problem. Given a target location <code>desired</code> expressed in world frame, we want to find the joint angles <code>q</code> such that the <code>point</code> attached to the robot is at the desired location.</p><p>To do that, we&#39;ll iteratively update <code>q</code> by applying:</p><p>\begin{align} \Delta q = \alpha \, J_p^\top \, \Delta p \end{align}</p><p>where <span>$\alpha$</span> is our step size (equivalent to a learning rate in gradient descent) and <span>$\Delta p$</span> is the error in the position of our target point.</p><pre><code class="language-julia">function jacobian_transpose_ik!(state::MechanismState,
                                body::RigidBody,
                                point::Point3D,
                                desired::Point3D;
@@ -48,15 +45,20 @@ setelement!(vis, point, 0.07)</code></pre><pre><code class="language-none">MeshC
         set_configuration!(state, q)
     end
     state
-end</code></pre><pre><code class="language-none">jacobian_transpose_ik! (generic function with 1 method)</code></pre></div><p>To use our IK method, we just have to set our current state and choose a desired location for the tip of the robot&#39;s arm:</p><div><pre><code class="language-julia">rand!(state)
-set_configuration!(vis, configuration(state))</code></pre></div><p>Choose a desired location. We&#39;ll move the tip of the arm to [0.5, 0, 2]</p><div><pre><code class="language-julia">desired_tip_location = Point3D(root_frame(mechanism), 0.5, 0, 2)</code></pre><pre><code class="language-none">Point3D in &quot;world&quot;: [0.5, 0.0, 2.0]</code></pre></div><p>Run the IK, updating <code>state</code> in place</p><div><pre><code class="language-julia">jacobian_transpose_ik!(state, body, point, desired_tip_location)
-set_configuration!(vis, configuration(state))</code></pre></div><p>We asked for our point to be close to [0.5, 0, 2], but since the arm cannot move in the y direction at all we end up near [0.5, 0.25, 2] instead</p><div><pre><code class="language-julia">transform(state, point, root_frame(mechanism))</code></pre><pre><code class="language-none">Point3D in &quot;world&quot;: [0.500012, 0.25, 2.00236]</code></pre></div><p>We can try varying the target and watching the IK solution change:</p><div><pre><code class="language-julia">qs = typeof(configuration(state))[]</code></pre><pre><code class="language-none">0-element Array{SegmentedVector{JointID,Float64,Base.OneTo{JointID},Array{Float64,1}},1}</code></pre></div><p>Vary the desired x position from -1 to 1</p><div><pre><code class="language-julia">for x in range(-1, stop=1, length=100)
+end</code></pre><pre><code class="language-none">jacobian_transpose_ik! (generic function with 1 method)</code></pre><p>To use our IK method, we just have to set our current state and choose a desired location for the tip of the robot&#39;s arm:</p><pre><code class="language-julia">rand!(state)
+set_configuration!(vis, configuration(state))</code></pre><p>Choose a desired location. We&#39;ll move the tip of the arm to [0.5, 0, 2]</p><pre><code class="language-julia">desired_tip_location = Point3D(root_frame(mechanism), 0.5, 0, 2)</code></pre><pre><code class="language-none">Point3D in &quot;world&quot;: [0.5, 0.0, 2.0]</code></pre><p>Run the IK, updating <code>state</code> in place</p><pre><code class="language-julia">jacobian_transpose_ik!(state, body, point, desired_tip_location)
+set_configuration!(vis, configuration(state))</code></pre><p>We asked for our point to be close to [0.5, 0, 2], but since the arm cannot move in the y direction at all we end up near [0.5, 0.25, 2] instead</p><pre><code class="language-julia">transform(state, point, root_frame(mechanism))</code></pre><pre><code class="language-none">Point3D in &quot;world&quot;: [0.500012, 0.25, 2.00236]</code></pre><p>We can try varying the target and watching the IK solution change:</p><pre><code class="language-julia">qs = typeof(configuration(state))[]</code></pre><pre><code class="language-none">0-element Array{SegmentedVector{JointID,Float64,Base.OneTo{JointID},Array{Float64,1}},1}</code></pre><p>Vary the desired x position from -1 to 1</p><pre><code class="language-julia">for x in range(-1, stop=1, length=100)
     desired = Point3D(root_frame(mechanism), x, 0, 2)
     jacobian_transpose_ik!(state, body, point, desired)
     push!(qs, copy(configuration(state)))
 end
 ts = collect(range(0, stop=1, length=length(qs)))
-setanimation!(vis, ts, qs)</code></pre></div><h2><a class="nav-anchor" id="Control-1" href="#Control-1">Control</a></h2><p>Now let&#39;s use the same principle to generate torques and actually control the robot. To make things more interesting, let&#39;s get the end of the robot&#39;s arm to trace out a circle.</p><div><pre><code class="language-julia">circle_origin = SVector(0., 0.25, 2)
+setanimation!(vis, ts, qs)</code></pre><pre><code class="language-none">┌ Warning: atframe(f::Function, anim::Animation, vis::Visualizer, frame::Integer) is deprecated.
+│ Please use atframe(g, anim, frame) instead, where g is similar to f but takes
+│ no arguments and should call methods on vis.
+│ See also the updated animation example notebook.
+│   caller = #setanimation!#4(::Int64, ::Bool, ::Int64, ::Function, ::MeshCatMechanisms.MechanismVisualizer{MechanismState{Float64,Float64,Float64,TypeSortedCollections.TypeSortedCollection{Tuple{Array{Joint{Float64,Revolute{Float64}},1}},1}},MeshCat.Visualizer}, ::Array{Float64,1}, ::Array{SegmentedVector{JointID,Float64,Base.OneTo{JointID},Array{Float64,1}},1}) at animate.jl:47
+└ @ MeshCatMechanisms ~/.julia/packages/MeshCatMechanisms/L2mYm/src/animate.jl:47</code></pre><h2 id="Control-1"><a class="docs-heading-anchor" href="#Control-1">Control</a><a class="docs-heading-anchor-permalink" href="#Control-1" title="Permalink"></a></h2><p>Now let&#39;s use the same principle to generate torques and actually control the robot. To make things more interesting, let&#39;s get the end of the robot&#39;s arm to trace out a circle.</p><pre><code class="language-julia">circle_origin = SVector(0., 0.25, 2)
 radius = 0.5
 ω = 1.0  # radians per second at which the point should move in its circle
 
@@ -67,7 +69,7 @@ using GeometryTypes: Point
 θ = repeat(range(0, stop=2π, length=100), inner=(2,))[2:end]
 cx, cy, cz = circle_origin
 geometry = PointCloud(Point.(cx .+ radius .* sin.(θ), cy, cz .+ 0.5 .* cos.(θ)))
-setobject!(vis[:circle], LineSegments(geometry, LineBasicMaterial()))</code></pre><pre><code class="language-none">MeshCat Visualizer with path /meshcat/circle</code></pre></div><p>This function will take in the parameters of the circle and the target point and return a function we can use as the controller. By wrapping the construction of the controller in this way, we avoid any issues with accessing non-const global variables.</p><div><pre><code class="language-julia">function make_circle_controller(state::MechanismState,
+setobject!(vis[:circle], LineSegments(geometry, LineBasicMaterial()))</code></pre><pre><code class="language-none">MeshCat Visualizer with path /meshcat/circle</code></pre><p>This function will take in the parameters of the circle and the target point and return a function we can use as the controller. By wrapping the construction of the controller in this way, we avoid any issues with accessing non-const global variables.</p><pre><code class="language-julia">function make_circle_controller(state::MechanismState,
                                 body::RigidBody,
                                 point::Point3D,
                                 circle_origin::AbstractVector,
@@ -92,7 +94,12 @@ setobject!(vis[:circle], LineSegments(geometry, LineBasicMaterial()))</code></pr
     end
 end
 controller! = make_circle_controller(state, body, point, circle_origin, radius, ω)
-ts, qs, vs = simulate(state, 10, controller!);</code></pre></div><p>Animate the resulting trajectory:</p><div><pre><code class="language-julia">setanimation!(vis, ts, qs)</code></pre></div><p>Now we can plot the behavior of the controller. The initial state is quite far from the target, so there&#39;s some significant overshoot early in the trajectory, but the controller eventually settles into tracking the desired circular path. This controller isn&#39;t very well-tuned, and we could certainly do better with a more advanced approach, but this is still a nice demonstration of a very simple control policy.</p><div><pre><code class="language-julia">using Plots; gr()
+ts, qs, vs = simulate(state, 10, controller!);</code></pre><p>Animate the resulting trajectory:</p><pre><code class="language-julia">setanimation!(vis, ts, qs)</code></pre><pre><code class="language-none">┌ Warning: atframe(f::Function, anim::Animation, vis::Visualizer, frame::Integer) is deprecated.
+│ Please use atframe(g, anim, frame) instead, where g is similar to f but takes
+│ no arguments and should call methods on vis.
+│ See also the updated animation example notebook.
+│   caller = #setanimation!#4(::Int64, ::Bool, ::Int64, ::Function, ::MeshCatMechanisms.MechanismVisualizer{MechanismState{Float64,Float64,Float64,TypeSortedCollections.TypeSortedCollection{Tuple{Array{Joint{Float64,Revolute{Float64}},1}},1}},MeshCat.Visualizer}, ::Array{Float64,1}, ::Array{SegmentedVector{JointID,Float64,Base.OneTo{JointID},Array{Float64,1}},1}) at animate.jl:47
+└ @ MeshCatMechanisms ~/.julia/packages/MeshCatMechanisms/L2mYm/src/animate.jl:47</code></pre><p>Now we can plot the behavior of the controller. The initial state is quite far from the target, so there&#39;s some significant overshoot early in the trajectory, but the controller eventually settles into tracking the desired circular path. This controller isn&#39;t very well-tuned, and we could certainly do better with a more advanced approach, but this is still a nice demonstration of a very simple control policy.</p><pre><code class="language-julia">using Plots; gr()
 
 xs = Float64[]
 zs = Float64[]
@@ -108,123 +115,123 @@ end
 plot(xs, zs, xlim=(-1, 1), ylim=(1, 3), aspect_ratio=:equal, legend=nothing)</code></pre><?xml version="1.0" encoding="utf-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="600" height="400" viewBox="0 0 2400 1600">
 <defs>
-  <clipPath id="clip9600">
+  <clipPath id="clip5100">
     <rect x="0" y="0" width="2400" height="1600"/>
   </clipPath>
 </defs>
-<polygon clip-path="url(#clip9600)" points="
-0,1600 2400,1600 2400,0 0,0 
+<path clip-path="url(#clip5100)" d="
+M0 1600 L2400 1600 L2400 0 L0 0  Z
   " fill="#ffffff" fill-rule="evenodd" fill-opacity="1"/>
 <defs>
-  <clipPath id="clip9601">
+  <clipPath id="clip5101">
     <rect x="480" y="0" width="1681" height="1600"/>
   </clipPath>
 </defs>
-<polygon clip-path="url(#clip9600)" points="
-482.992,1521.01 1956.76,1521.01 1956.76,47.2441 482.992,47.2441 
+<path clip-path="url(#clip5100)" d="
+M482.992 1521.01 L1956.76 1521.01 L1956.76 47.2441 L482.992 47.2441  Z
   " fill="#ffffff" fill-rule="evenodd" fill-opacity="1"/>
 <defs>
-  <clipPath id="clip9602">
+  <clipPath id="clip5102">
     <rect x="482" y="47" width="1475" height="1475"/>
   </clipPath>
 </defs>
-<polyline clip-path="url(#clip9602)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
   482.992,1521.01 482.992,47.2441 
   "/>
-<polyline clip-path="url(#clip9602)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
   851.433,1521.01 851.433,47.2441 
   "/>
-<polyline clip-path="url(#clip9602)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
   1219.87,1521.01 1219.87,47.2441 
   "/>
-<polyline clip-path="url(#clip9602)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
   1588.31,1521.01 1588.31,47.2441 
   "/>
-<polyline clip-path="url(#clip9602)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
   1956.76,1521.01 1956.76,47.2441 
   "/>
-<polyline clip-path="url(#clip9602)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
   482.992,1521.01 1956.76,1521.01 
   "/>
-<polyline clip-path="url(#clip9602)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
   482.992,1152.57 1956.76,1152.57 
   "/>
-<polyline clip-path="url(#clip9602)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
   482.992,784.126 1956.76,784.126 
   "/>
-<polyline clip-path="url(#clip9602)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
   482.992,415.685 1956.76,415.685 
   "/>
-<polyline clip-path="url(#clip9602)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#000000; stroke-width:2; stroke-opacity:0.1; fill:none" points="
   482.992,47.2441 1956.76,47.2441 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
   482.992,1521.01 1956.76,1521.01 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
   482.992,1521.01 482.992,47.2441 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  482.992,1521.01 482.992,1498.9 
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,1521.01 482.992,1503.32 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  851.433,1521.01 851.433,1498.9 
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  851.433,1521.01 851.433,1503.32 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  1219.87,1521.01 1219.87,1498.9 
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  1219.87,1521.01 1219.87,1503.32 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  1588.31,1521.01 1588.31,1498.9 
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  1588.31,1521.01 1588.31,1503.32 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  1956.76,1521.01 1956.76,1498.9 
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  1956.76,1521.01 1956.76,1503.32 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  482.992,1521.01 505.099,1521.01 
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,1521.01 500.677,1521.01 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  482.992,1152.57 505.099,1152.57 
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,1152.57 500.677,1152.57 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  482.992,784.126 505.099,784.126 
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,784.126 500.677,784.126 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  482.992,415.685 505.099,415.685 
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,415.685 500.677,415.685 
   "/>
-<polyline clip-path="url(#clip9600)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
-  482.992,47.2441 505.099,47.2441 
+<polyline clip-path="url(#clip5100)" style="stroke:#000000; stroke-width:4; stroke-opacity:1; fill:none" points="
+  482.992,47.2441 500.677,47.2441 
   "/>
-<g clip-path="url(#clip9600)">
+<g clip-path="url(#clip5100)">
 <text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:middle;" transform="rotate(0, 482.992, 1575.01)" x="482.992" y="1575.01">-1.0</text>
 </g>
-<g clip-path="url(#clip9600)">
+<g clip-path="url(#clip5100)">
 <text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:middle;" transform="rotate(0, 851.433, 1575.01)" x="851.433" y="1575.01">-0.5</text>
 </g>
-<g clip-path="url(#clip9600)">
+<g clip-path="url(#clip5100)">
 <text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:middle;" transform="rotate(0, 1219.87, 1575.01)" x="1219.87" y="1575.01">0.0</text>
 </g>
-<g clip-path="url(#clip9600)">
+<g clip-path="url(#clip5100)">
 <text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:middle;" transform="rotate(0, 1588.31, 1575.01)" x="1588.31" y="1575.01">0.5</text>
 </g>
-<g clip-path="url(#clip9600)">
+<g clip-path="url(#clip5100)">
 <text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:middle;" transform="rotate(0, 1956.76, 1575.01)" x="1956.76" y="1575.01">1.0</text>
 </g>
-<g clip-path="url(#clip9600)">
+<g clip-path="url(#clip5100)">
 <text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:end;" transform="rotate(0, 458.992, 1538.51)" x="458.992" y="1538.51">1.0</text>
 </g>
-<g clip-path="url(#clip9600)">
+<g clip-path="url(#clip5100)">
 <text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:end;" transform="rotate(0, 458.992, 1170.07)" x="458.992" y="1170.07">1.5</text>
 </g>
-<g clip-path="url(#clip9600)">
+<g clip-path="url(#clip5100)">
 <text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:end;" transform="rotate(0, 458.992, 801.626)" x="458.992" y="801.626">2.0</text>
 </g>
-<g clip-path="url(#clip9600)">
+<g clip-path="url(#clip5100)">
 <text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:end;" transform="rotate(0, 458.992, 433.185)" x="458.992" y="433.185">2.5</text>
 </g>
-<g clip-path="url(#clip9600)">
+<g clip-path="url(#clip5100)">
 <text style="fill:#000000; fill-opacity:1; font-family:Arial,Helvetica Neue,Helvetica,sans-serif; font-size:48px; text-anchor:end;" transform="rotate(0, 458.992, 64.7441)" x="458.992" y="64.7441">3.0</text>
 </g>
-<polyline clip-path="url(#clip9602)" style="stroke:#009af9; stroke-width:4; stroke-opacity:1; fill:none" points="
+<polyline clip-path="url(#clip5102)" style="stroke:#009af9; stroke-width:4; stroke-opacity:1; fill:none" points="
   1956.75,784.156 1914.07,774.149 1767.99,745.939 1563.76,729.019 1351.95,738.935 1174.06,768.426 1052.74,797.689 993.43,809.501 991.54,797.431 1037.52,765.779 
   1118.07,724.892 1216.3,685.322 1313.58,653.476 1393.1,630.457 1443.46,613.957 1460.52,601.201 1447.06,590.793 1411.07,582.692 1363.25,577.097 1314.46,573.469 
   1273.6,570.416 1246.49,566.314 1235.54,560.075 1240.03,551.561 1256.91,541.476 1281.6,530.925 1308.97,520.927 1334.27,512.116 1353.93,504.708 1365.94,498.631 
@@ -328,4 +335,4 @@ plot(xs, zs, xlim=(-1, 1), ylim=(1, 3), aspect_ratio=:equal, legend=nothing)</co
   1054.05,1154.53 
   "/>
 </svg>
-</div><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p><footer><hr/><a class="previous" href="../../3. Four-bar linkage/3. Four-bar linkage/"><span class="direction">Previous</span><span class="title">3. Four-bar linkage</span></a><a class="next" href="../../5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/"><span class="direction">Next</span><span class="title">5. Derivatives and gradients using ForwardDiff</span></a></footer></article></body></html>
+<hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../3. Four-bar linkage/3. Four-bar linkage/">« 3. Four-bar linkage</a><a class="docs-footer-nextpage" href="../../5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/">5. Derivatives and gradients using ForwardDiff »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 25 December 2019 23:22">Wednesday 25 December 2019</span>. Using Julia version 1.1.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
