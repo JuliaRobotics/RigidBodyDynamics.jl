@@ -142,4 +142,15 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
             @test_throws DimensionMismatch rand(size(A, 2) + 1, 20) * M
         end
     end
+
+    @testset "UnorderedPair" begin
+        UnorderedPair = RigidBodyDynamics.CustomCollections.UnorderedPair
+        p1 = UnorderedPair(1, 2)
+        p2 = UnorderedPair(2, 1)
+        @test p1 == p2
+        @test hash(p1) == hash(p2)
+        @test p1 != UnorderedPair(3, 1)
+        dict = Dict(p1 => 3)
+        @test dict[p2] == 3
+    end
 end
