@@ -44,7 +44,7 @@
     #     attach!(mechanism, world, body, floatingjoint)
 
     #     com = center_of_mass(spatial_inertia(body))
-    #     model = SoftContactModel(hunt_crossley_hertz(; α = 0.), ViscoelasticCoulombModel(0.5, 1e3, 1e3))
+    #     model = ContactForceModel(hunt_crossley_hertz(; α = 0.), ViscoelasticCoulombModel(0.5, 1e3, 1e3))
     #     contactpoint = ContactPoint(com, model)
     #     add_contact_point!(body, contactpoint)
 
@@ -110,7 +110,7 @@
     #     for μ in (μcrit + 1e-2, μcrit - 1e-2)
     #         frictionmodel = ViscoelasticCoulombModel(μ, 50e3, 1e4)
     #         m, b = deepcopy((mechanism, body))
-    #         add_contact_point!(b, ContactPoint(contactlocation, SoftContactModel(normalmodel, frictionmodel)))
+    #         add_contact_point!(b, ContactPoint(contactlocation, ContactForceModel(normalmodel, frictionmodel)))
     #         state = MechanismState(m)
     #         simulate(state, 1., Δt = 1e-3) # settle into steady state
     #         x1 = transform(state, contactlocation, worldframe)
