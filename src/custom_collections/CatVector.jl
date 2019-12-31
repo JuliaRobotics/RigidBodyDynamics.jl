@@ -3,11 +3,11 @@ struct CatVector{T, N, V<:AbstractVector{T}} <: AbstractVector{T}
 end
 
 @inline Base.size(vec::CatVector) = (mapreduce(length, +, vec.vecs; init=0),)
-Base.eltype(vec::CatVector) = eltype(eltype(vec.vecs))
 
-# Note: getindex and setindex are pretty naive.
+# Note: getindex and setindex are pretty naive. Consider precomputing map from
+# index to vector upon CatVector construction.
 Base.@propagate_inbounds function Base.getindex(vec::CatVector, index::Int)
-    @boundscheck checkbounds(vec, index)
+    @boundscheck index >= 1 || throw(BoundsError(vec, index))
     i = 1
     j = index
     @inbounds while true
@@ -20,11 +20,11 @@ Base.@propagate_inbounds function Base.getindex(vec::CatVector, index::Int)
             i += 1
         end
     end
-    error()
+    throw(BoundsError(vec, index))
 end
 
 Base.@propagate_inbounds function Base.setindex!(vec::CatVector, val, index::Int)
-    @boundscheck checkbounds(vec, index)
+    @boundscheck index >= 1 || throw(BoundsError(vec, index))
     i = 1
     j = index
     while true
@@ -38,7 +38,7 @@ Base.@propagate_inbounds function Base.setindex!(vec::CatVector, val, index::Int
             i += 1
         end
     end
-    error()
+    throw(BoundsError(vec, index))
 end
 
 Base.@propagate_inbounds function Base.copyto!(dest::AbstractVector{T}, src::CatVector{T}) where {T}
@@ -58,20 +58,24 @@ end
 Base.similar(vec::CatVector) = CatVector(map(similar, vec.vecs))
 Base.similar(vec::CatVector, ::Type{T}) where {T} = CatVector(map(x -> similar(x, T), vec.vecs))
 
+@noinline cat_vectors_line_up_error() = throw(ArgumentError("Subvectors must line up"))
+
 @inline function check_cat_vectors_line_up(x::CatVector, y::CatVector)
-    length(x.vecs) == length(y.vecs) || throw(ArgumentError("Subvectors must line up"))
+    length(x.vecs) == length(y.vecs) || cat_vectors_line_up_error()
     for i in eachindex(x.vecs)
-        length(x.vecs[i]) == length(y.vecs[i]) || throw(ArgumentError("Subvectors must line up"))
+        length(x.vecs[i]) == length(y.vecs[i]) || cat_vectors_line_up_error()
     end
     nothing
 end
 
 @inline check_cat_vectors_line_up(x::CatVector, y) = nothing
-@inline check_cat_vectors_line_up(x::CatVector, y, tail...) = (check_cat_vectors_line_up(x, y); check_cat_vectors_line_up(x, tail...))
+@inline function check_cat_vectors_line_up(x::CatVector, y, tail...)
+    check_cat_vectors_line_up(x, y)
+    check_cat_vectors_line_up(x, tail...)
+end
 
-@inline function Base.copyto!(dest::CatVector, src::CatVector)
-    @boundscheck check_cat_vectors_line_up(dest, src)
-    @inbounds for i in eachindex(dest.vecs)
+@propagate_inbounds function Base.copyto!(dest::CatVector, src::CatVector)
+    for i in eachindex(dest.vecs)
         copyto!(dest.vecs[i], src.vecs[i])
     end
     return dest
