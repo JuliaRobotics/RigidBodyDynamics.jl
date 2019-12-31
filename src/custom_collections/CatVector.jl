@@ -1,3 +1,9 @@
+"""
+$(TYPEDEF)
+
+An `AbstractVector` subtype that acts as a lazy concatenation of a number
+of subvectors.
+"""
 struct CatVector{T, N, V<:AbstractVector{T}} <: AbstractVector{T}
     vecs::NTuple{N, V}
 end
