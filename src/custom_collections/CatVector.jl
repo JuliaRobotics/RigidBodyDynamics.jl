@@ -95,18 +95,22 @@ end
     return dest
 end
 
-Base.@propagate_inbounds catvec_broadcast_vec(x::CatVector, k::Int) = x.vecs[k]
-Base.@propagate_inbounds catvec_broadcast_vec(x::Number, k::Int) = x
+Base.@propagate_inbounds catvec_broadcast_vec(arg::CatVector, range::UnitRange, k::Int) = arg.vecs[k]
+Base.@propagate_inbounds catvec_broadcast_vec(arg::AbstractVector, range::UnitRange, k::Int) = view(arg, range)
+Base.@propagate_inbounds catvec_broadcast_vec(arg::Number, range::UnitRange, k::Int) = arg
 
 @inline function Base.copyto!(dest::CatVector, bc::Broadcast.Broadcasted{Nothing})
     flat = Broadcast.flatten(bc)
     @boundscheck check_cat_vectors_line_up(dest, flat.args...)
+    offset = 1
     @inbounds for i in eachindex(dest.vecs)
         let i = i, f = flat.f, args = flat.args
-            dest′ = catvec_broadcast_vec(dest, i)
-            args′ = map(arg -> catvec_broadcast_vec(arg, i), args)
+            dest′ = dest.vecs[i]
+            range = offset : offset + length(dest′) - 1
+            args′ = map(arg -> catvec_broadcast_vec(arg, range, i), args)
             axes′ = (eachindex(dest′),)
             copyto!(dest′, Broadcast.Broadcasted{Nothing}(f, args′, axes′))
+            offset = last(range) + 1
         end
     end
     return dest

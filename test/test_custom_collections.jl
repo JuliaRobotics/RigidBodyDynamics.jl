@@ -175,12 +175,12 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
         for i in eachindex(x)
             @test x[i] == y[i]
         end
-
-        x .= 0
-        for i in eachindex(y)
-            x[i] = y[i]
-        end
         @test x == y
+
+        y .= 0
+        rand!(x)
+        y .= x .+ y .+ 1
+        @test x .+ 1 == y
 
         allocs = let x=x, vecs=vecs
             @allocated copyto!(x, RigidBodyDynamics.CatVector(vecs))
