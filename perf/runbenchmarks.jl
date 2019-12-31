@@ -3,6 +3,7 @@ Pkg.activate(@__DIR__)
 Pkg.instantiate()
 
 using RigidBodyDynamics
+using RigidBodyDynamics.OdeIntegrators
 using Random
 using Profile
 using BenchmarkTools
@@ -107,6 +108,26 @@ function create_benchmark_suite()
         setdirty!($state)
         center_of_mass($state)
     end, setup = rand!($state), evals = 10)
+
+    let
+        Δt = 1e-4
+        final_time = 0.1
+        tableau = runge_kutta_4(ScalarType)
+        storage = RingBufferStorage{ScalarType}(state, ceil(Int64, final_time / Δt * 1.001)) # very rough overestimate of number of time steps
+        passive_dynamics! = let result=result # https://github.com/JuliaLang/julia/issues/15276
+            function (v̇::AbstractArray, ṡ::AbstractArray, t, state)
+                dynamics!(result, state)
+                copyto!(v̇, result.v̇)
+                copyto!(ṡ, result.ṡ)
+                nothing
+            end
+        end
+        integrator = MuntheKaasIntegrator(state, passive_dynamics!, tableau, storage)
+        suite["simulate tree"] = @benchmarkable(begin
+            integrate($integrator, $final_time, $Δt)
+        end, setup = rand!($state), evals = 10)
+
+    end
 
     mcmechanism = maximal_coordinates(mechanism)
     mcstate = MechanismState{ScalarType}(mcmechanism)
