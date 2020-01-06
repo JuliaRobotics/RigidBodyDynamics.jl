@@ -4,6 +4,8 @@ using LinearAlgebra
 using RigidBodyDynamics.Spatial
 using StaticArrays
 
+using Base: promote_eltype
+
 # base types
 export SoftContactModel,
     SoftContactState,
