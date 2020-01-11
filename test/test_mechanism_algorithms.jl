@@ -118,6 +118,14 @@ end
                 @test RigidBodyDynamics.velocity_index_to_joint_id(x, i) == JointID(joint)
             end
         end
+
+        rand!(x)
+        q = configuration(x)
+        @test q != qcopy
+        for joint in tree_joints(mechanism)
+            q[joint] .= qcopy[joint]
+        end
+        @test q == qcopy
     end
 
     @testset "copyto! / Vector" begin

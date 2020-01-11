@@ -11,8 +11,8 @@ const JointCacheDict{V} = CacheIndexDict{JointID, Base.OneTo{JointID}, V}
 
 
 ## SegmentedVector method overloads
-@propagate_inbounds Base.getindex(v::SegmentedVector{JointID}, id::JointID) = v.segments[id]
 @propagate_inbounds Base.getindex(v::SegmentedVector{JointID}, joint::Joint) = v[JointID(joint)]
+@propagate_inbounds Base.view(v::SegmentedVector{JointID}, joint::Joint) = Base.view(v, JointID(joint))
 function SegmentedVector(parent::AbstractVector{T}, joints::AbstractVector{<:Joint}, viewlengthfun) where T
     SegmentedVector{JointID, T, Base.OneTo{JointID}}(parent, joints, viewlengthfun)
 end
