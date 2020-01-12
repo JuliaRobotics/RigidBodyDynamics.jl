@@ -98,8 +98,10 @@ end
 
 Base.size(v::SegmentedVector) = size(v.parent)
 @propagate_inbounds Base.getindex(v::SegmentedVector, i::Int) = v.parent[i]
+@propagate_inbounds Base.getindex(v::SegmentedVector{K}, key::K) where {K} = v.segments[key] # TODO: deprecate in favor of view?
 @propagate_inbounds Base.setindex!(v::SegmentedVector, value, i::Int) = v.parent[i] = value
 Base.dataids(x::SegmentedVector) = Base.dataids(x.parent)
+@propagate_inbounds Base.view(v::SegmentedVector{K}, key::K) where {K} = v.segments[key]
 
 Base.parent(v::SegmentedVector) = v.parent
 segments(v::SegmentedVector) = v.segments
