@@ -1,12 +1,12 @@
 module OdeIntegrators
 
 using LinearAlgebra
-using RigidBodyDynamics
 using StaticArrays
 using DocStringExtensions
 using LoopThrottle
 
-export runge_kutta_4,
+export
+    runge_kutta_4,
     MuntheKaasIntegrator,
     ButcherTableau,
     OdeResultsSink,
@@ -138,6 +138,17 @@ function process(storage::ExpandingStorage, t, state)
     push!(storage.vs, v)
     nothing
 end
+
+function configuration end
+function velocity end
+function additional_state end
+
+function set_configuration! end
+function set_velocity! end
+function set_additional_state! end
+
+function global_coordinates! end
+function local_coordinates! end
 
 mutable struct MuntheKaasStageCache{N, T, Q<:AbstractVector, V<:AbstractVector, S<:AbstractVector}
     q0::Q # global coordinates

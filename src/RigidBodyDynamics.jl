@@ -164,14 +164,14 @@ export
 include(joinpath("custom_collections", "custom_collections.jl"))
 include(joinpath("graphs", "Graphs.jl"))
 include(joinpath("spatial", "Spatial.jl"))
-include("contact.jl")
+include("ode_integrators.jl")
 include("pdcontrol.jl")
 
 @reexport using .Spatial
 using .CustomCollections
-using .Contact
 using .Graphs
 using .PDControl
+using .OdeIntegrators
 
 import .Spatial: rotation, translation, transform, center_of_mass, newton_euler, kinetic_energy
 
@@ -185,11 +185,12 @@ include("mechanism_state.jl")
 include("dynamics_result.jl")
 include("caches.jl")
 include("mechanism_algorithms.jl")
-include("ode_integrators.jl")
 include("simulate.jl")
 
 include(joinpath("urdf", "URDF.jl"))
 @reexport using .URDF
+
+include(joinpath("contact", "Contact.jl"))
 
 # import these for MechanismGeometries compatibility. TODO: stop importing these after updating MechanismGeometries.
 import .URDF: parse_scalar, parse_vector, parse_pose

@@ -493,8 +493,11 @@ function dynamics_bias!(
     torques
 end
 
-function dynamics_bias!(result::DynamicsResult, state::MechanismState)
-    dynamics_bias!(result.dynamicsbias, result.accelerations, result.jointwrenches, state, result.totalwrenches)
+function dynamics_bias!(
+        result::DynamicsResult,
+        state::MechanismState{X},
+        externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}()) where {X}
+    dynamics_bias!(result.dynamicsbias, result.accelerations, result.jointwrenches, state, externalwrenches)
 end
 
 """
@@ -677,50 +680,50 @@ function constraint_bias!(result::DynamicsResult, state::MechanismState{X};
     constraint_bias!(result.constraintbias, state; stabilization_gains=stabilization_gains)
 end
 
-function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M, C}) where {X, M, C, T}
-    update_transforms!(state)
-    update_twists_wrt_world!(state)
-    mechanism = state.mechanism
-    root = root_body(mechanism)
-    frame = default_frame(root)
-    for body in bodies(mechanism)
-        bodyid = BodyID(body)
-        wrench = zero(Wrench{T}, frame)
-        points = contact_points(body)
-        if !isempty(points)
-            # TODO: AABB
-            body_to_root = transform_to_root(state, bodyid, false)
-            twist = twist_wrt_world(state, bodyid, false)
-            states_for_body = contact_states(state, bodyid)
-            state_derivs_for_body = contact_state_derivatives(result, bodyid)
-            for i = 1 : length(points)
-                @inbounds c = points[i]
-                point = body_to_root * location(c)
-                velocity = point_velocity(twist, point)
-                states_for_point = states_for_body[i]
-                state_derivs_for_point = state_derivs_for_body[i]
-                for j = 1 : length(mechanism.environment.halfspaces)
-                    primitive = mechanism.environment.halfspaces[j]
-                    contact_state = states_for_point[j]
-                    contact_state_deriv = state_derivs_for_point[j]
-                    model = contact_model(c)
-                    # TODO: would be good to move this to Contact module
-                    # arguments: model, state, state_deriv, point, velocity, primitive
-                    if point_inside(primitive, point)
-                        separation, normal = Contact.detect_contact(primitive, point)
-                        force = Contact.contact_dynamics!(contact_state_deriv, contact_state,
-                            model, -separation, velocity, normal)
-                        wrench += Wrench(point, force)
-                    else
-                        Contact.reset!(contact_state)
-                        Contact.zero!(contact_state_deriv)
-                    end
-                end
-            end
-        end
-        set_contact_wrench!(result, body, wrench)
-    end
-end
+# function contact_dynamics!(result::DynamicsResult{T, M}, state::MechanismState{X, M, C}) where {X, M, C, T}
+#     update_transforms!(state)
+#     update_twists_wrt_world!(state)
+#     mechanism = state.mechanism
+#     root = root_body(mechanism)
+#     frame = default_frame(root)
+#     for body in bodies(mechanism)
+#         bodyid = BodyID(body)
+#         wrench = zero(Wrench{T}, frame)
+#         points = contact_points(body)
+#         if !isempty(points)
+#             # TODO: AABB
+#             body_to_root = transform_to_root(state, bodyid, false)
+#             twist = twist_wrt_world(state, bodyid, false)
+#             states_for_body = contact_states(state, bodyid)
+#             state_derivs_for_body = contact_state_derivatives(result, bodyid)
+#             for i = 1 : length(points)
+#                 @inbounds c = points[i]
+#                 point = body_to_root * location(c)
+#                 velocity = point_velocity(twist, point)
+#                 states_for_point = states_for_body[i]
+#                 state_derivs_for_point = state_derivs_for_body[i]
+#                 for j = 1 : length(mechanism.environment.halfspaces)
+#                     primitive = mechanism.environment.halfspaces[j]
+#                     contact_state = states_for_point[j]
+#                     contact_state_deriv = state_derivs_for_point[j]
+#                     model = contact_model(c)
+#                     # TODO: would be good to move this to Contact module
+#                     # arguments: model, state, state_deriv, point, velocity, primitive
+#                     if point_inside(primitive, point)
+#                         separation, normal = Contact.detect_contact(primitive, point)
+#                         force = Contact.contact_dynamics!(contact_state_deriv, contact_state,
+#                             model, -separation, velocity, normal)
+#                         wrench += Wrench(point, force)
+#                     else
+#                         Contact.reset!(contact_state)
+#                         Contact.zero!(contact_state_deriv)
+#                     end
+#                 end
+#             end
+#         end
+#         set_contact_wrench!(result, body, wrench)
+#     end
+# end
 
 function dynamics_solve!(result::DynamicsResult, τ::AbstractVector)
     # version for general scalar types
@@ -847,13 +850,7 @@ function dynamics!(result::DynamicsResult, state::MechanismState{X},
         externalwrenches::AbstractDict{BodyID, <:Wrench} = NullDict{BodyID, Wrench{X}}();
         stabilization_gains=default_constraint_stabilization_gains(X)) where X
     configuration_derivative!(result.q̇, state)
-    contact_dynamics!(result, state)
-    for jointid in state.treejointids
-        bodyid = successorid(jointid, state)
-        contactwrench = result.contactwrenches[bodyid]
-        result.totalwrenches[bodyid] = haskey(externalwrenches, bodyid) ? externalwrenches[bodyid] + contactwrench : contactwrench
-    end
-    dynamics_bias!(result, state)
+    dynamics_bias!(result, state, externalwrenches)
     mass_matrix!(result, state)
     if has_loops(state.mechanism)
         constraint_jacobian!(result, state)
