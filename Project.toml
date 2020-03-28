@@ -17,7 +17,7 @@ UnsafeArrays = "c4a57d5a-5b31-53a6-b365-19f8c011fbd6"
 
 [compat]
 DocStringExtensions = "0.4.1, 0.5, 0.6, 0.7, 0.8"
-LightXML = "0.8"
+LightXML = "0.8, 0.9"
 LoopThrottle = "0.1"
 Reexport = "0.2"
 Rotations = "0.12.1, 0.13"
