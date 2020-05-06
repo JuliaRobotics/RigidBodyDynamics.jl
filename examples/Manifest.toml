@@ -16,16 +16,16 @@ deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[JSON]]
-deps = ["Dates", "Distributed", "Mmap", "Sockets", "Test", "Unicode"]
-git-tree-sha1 = "1f7a25b53ec67f5e9422f1f551ee216503f4a0fa"
+deps = ["Dates", "Mmap", "Parsers", "Unicode"]
+git-tree-sha1 = "b34d7cef7b337321e97d22242c3c2b91f476748e"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-version = "0.20.0"
+version = "0.21.0"
 
 [[Literate]]
-deps = ["Base64", "JSON", "REPL", "Test"]
-git-tree-sha1 = "021e2e3106713e22a7f3769ebf9f2f4469670444"
+deps = ["Base64", "JSON", "REPL"]
+git-tree-sha1 = "7345603884151a5ef894fb85949a8a4faeae8e10"
 uuid = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
-version = "1.1.0"
+version = "2.4.0"
 
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -36,6 +36,12 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
+
+[[Parsers]]
+deps = ["Dates", "Test"]
+git-tree-sha1 = "f8f5d2d4b4b07342e5811d2b6428e45524e241df"
+uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
+version = "1.0.2"
 
 [[Printf]]
 deps = ["Unicode"]
