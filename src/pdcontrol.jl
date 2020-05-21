@@ -33,8 +33,8 @@ struct PDGains{K, D} <: AbstractPDGains
 end
 
 pd(gains::PDGains, e, ė) = -gains.k * e - gains.d * ė
-pd(gains::PDGains, e::RodriguesVec, ė::AbstractVector) = pd(gains, SVector(e.sx, e.sy, e.sz), ė)
-pd(gains::PDGains, e::Rotation{3}, ė::AbstractVector) = pd(gains, RodriguesVec(e), ė)
+pd(gains::PDGains, e::RotationVec, ė::AbstractVector) = pd(gains, SVector(e.sx, e.sy, e.sz), ė)
+pd(gains::PDGains, e::Rotation{3}, ė::AbstractVector) = pd(gains, RotationVec(e), ė)
 
 rotategain(gain::Number, R::Rotation) = gain
 rotategain(gain::AbstractMatrix, R::Rotation) = R * gain * R'
@@ -99,7 +99,7 @@ function pd(gains::SE3PDGains, e::Transform3D, ė::Twist, ::SE3PDMethod{:Double
 
     R = rotation(e)
     p = translation(e)
-    ψ = RodriguesVec(R)
+    ψ = RotationVec(R)
 
     ang = pd(angular(gains), FreeVector3D(bodyframe, ψ.sx, ψ.sy, ψ.sz), FreeVector3D(bodyframe, angular(ė)))
     lin = pd(linear(gains), FreeVector3D(bodyframe, R' * p), FreeVector3D(bodyframe, linear(ė)))

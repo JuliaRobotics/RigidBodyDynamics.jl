@@ -23,9 +23,9 @@ version = "0.21.0"
 
 [[Literate]]
 deps = ["Base64", "JSON", "REPL"]
-git-tree-sha1 = "82a49cc6c1a38980c537edef7f9998a1843b441d"
+git-tree-sha1 = "422133037d6dc5df9f9b97c2cb81fcd9e35ddffe"
 uuid = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
-version = "2.3.0"
+version = "2.5.0"
 
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -39,9 +39,9 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[Parsers]]
 deps = ["Dates", "Test"]
-git-tree-sha1 = "d6d82d5bdbb75048e574cd2d2c89dfbf2c74250c"
+git-tree-sha1 = "f0abb338b4d00306500056a3fd44c221b8473ef2"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "1.0.0"
+version = "1.0.4"
 
 [[Printf]]
 deps = ["Unicode"]
