@@ -888,7 +888,7 @@ end
         for joint_k = tree_joints(state_orig.mechanism)
             joint_type_k = joint_type(joint_k)
             if isa(joint_type_k, SPQuatFloating)
-                RigidBodyDynamics.set_rotation!(state_orig.q[joint_k], joint_type_k, MRP(UnitQuaternion(-0.5, randn(), randn(), randn())))
+                RigidBodyDynamics.set_rotation!(state_orig.q[joint_k], joint_type_k, ModifiedRodriguesParam(UnitQuaternion(-0.5, randn(), randn(), randn())))
             end
         end
         setdirty!(state_orig)
