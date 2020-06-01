@@ -1,7 +1,8 @@
 """
 $(TYPEDEF)
 
-A floating joint type that uses an 'SPQuat' ( representation for orientation.
+A floating joint type that uses a modified Rodrigues parameter (`Rotations.MRP`,
+previously known as `Rotations.SPQuat`) representation for orientation.
 
 Floating joints are 6-degree-of-freedom joints that are in a sense degenerate,
 as they impose no constraints on the relative motion between two bodies.
