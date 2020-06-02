@@ -1,7 +1,8 @@
 """
 $(TYPEDEF)
 
-A floating joint type that uses a SPQuat representation for orientation.
+A floating joint type that uses a modified Rodrigues parameter (`Rotations.MRP`,
+previously known as `Rotations.SPQuat`) representation for orientation.
 
 Floating joints are 6-degree-of-freedom joints that are in a sense degenerate,
 as they impose no constraints on the relative motion between two bodies.
@@ -27,12 +28,12 @@ has_fixed_subspaces(jt::SPQuatFloating) = true
 isfloating(::Type{<:SPQuatFloating}) = true
 
 @propagate_inbounds function rotation(jt::SPQuatFloating, q::AbstractVector)
-    SPQuat(q[1], q[2], q[3])
+    ModifiedRodriguesParam(q[1], q[2], q[3])
 end
 
 @propagate_inbounds function set_rotation!(q::AbstractVector, jt::SPQuatFloating, rot::Rotation{3})
     T = eltype(rot)
-    spq = convert(SPQuat{T}, rot)
+    spq = convert(ModifiedRodriguesParam{T}, rot)
     q[1] = spq.x
     q[2] = spq.y
     q[3] = spq.z
@@ -112,7 +113,7 @@ end
 
 @propagate_inbounds function configuration_derivative_to_velocity_adjoint!(fq, jt::SPQuatFloating,
         q::AbstractVector, fv)
-    spq = SPQuat(q[1], q[2], q[3])
+    spq = ModifiedRodriguesParam(q[1], q[2], q[3])
     rot = velocity_jacobian(angular_velocity_in_body, spq)' * angular_velocity(jt, fv)
     trans = spq * linear_velocity(jt, fv)
     set_rotation!(fq, jt, rot)
@@ -164,14 +165,14 @@ end
 
 @propagate_inbounds function zero_configuration!(q::AbstractVector, jt::SPQuatFloating)
     T = eltype(q)
-    set_rotation!(q, jt, one(SPQuat{T}))
+    set_rotation!(q, jt, one(ModifiedRodriguesParam{T}))
     set_translation!(q, jt, zero(SVector{3, T}))
     nothing
 end
 
 @propagate_inbounds function rand_configuration!(q::AbstractVector, jt::SPQuatFloating)
     T = eltype(q)
-    set_rotation!(q, jt, rand(SPQuat{T}))
+    set_rotation!(q, jt, rand(ModifiedRodriguesParam{T}))
     set_translation!(q, jt, rand(SVector{3, T}) .- 0.5)
     nothing
 end

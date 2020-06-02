@@ -161,6 +161,9 @@ export
     BodyID,
     segments
 
+# Type aliases
+const ModifiedRodriguesParam = Rotations.MRP
+
 include(joinpath("custom_collections", "custom_collections.jl"))
 include(joinpath("graphs", "Graphs.jl"))
 include(joinpath("spatial", "Spatial.jl"))

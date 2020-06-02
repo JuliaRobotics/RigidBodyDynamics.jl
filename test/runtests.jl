@@ -13,6 +13,8 @@ import Base.Iterators: filter
 import ForwardDiff
 import LightXML
 
+using RigidBodyDynamics: ModifiedRodriguesParam
+
 include("test_exports.jl")
 include("test_graph.jl")
 include("test_custom_collections.jl")

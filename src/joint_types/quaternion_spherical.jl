@@ -24,12 +24,12 @@ has_fixed_subspaces(jt::QuaternionSpherical) = true
 isfloating(::Type{<:QuaternionSpherical}) = false
 
 @propagate_inbounds function rotation(jt::QuaternionSpherical, q::AbstractVector, normalize::Bool = true)
-    Quat(q[1], q[2], q[3], q[4], normalize)
+    UnitQuaternion(q[1], q[2], q[3], q[4], normalize)
 end
 
 @propagate_inbounds function set_rotation!(q::AbstractVector, jt::QuaternionSpherical, rot::Rotation{3})
     T = eltype(rot)
-    quat = convert(Quat{T}, rot)
+    quat = convert(UnitQuaternion{T}, rot)
     q[1] = quat.w
     q[2] = quat.x
     q[3] = quat.y
@@ -79,7 +79,7 @@ end
 
 @propagate_inbounds function configuration_derivative_to_velocity_adjoint!(fq, jt::QuaternionSpherical, q::AbstractVector, fv)
     quatnorm = sqrt(q[1]^2 + q[2]^2 + q[3]^2 + q[4]^2) # TODO: make this nicer
-    quat = Quat(q[1] / quatnorm, q[2] / quatnorm, q[3] / quatnorm, q[4] / quatnorm, false)
+    quat = UnitQuaternion(q[1] / quatnorm, q[2] / quatnorm, q[3] / quatnorm, q[4] / quatnorm, false)
     fq .= (velocity_jacobian(angular_velocity_in_body, quat)' * fv) ./ quatnorm
     nothing
 end
@@ -103,13 +103,13 @@ end
 
 @propagate_inbounds function zero_configuration!(q::AbstractVector, jt::QuaternionSpherical)
     T = eltype(q)
-    set_rotation!(q, jt, one(Quat{T}))
+    set_rotation!(q, jt, one(UnitQuaternion{T}))
     nothing
 end
 
 @propagate_inbounds function rand_configuration!(q::AbstractVector, jt::QuaternionSpherical)
     T = eltype(q)
-    set_rotation!(q, jt, rand(Quat{T}))
+    set_rotation!(q, jt, rand(UnitQuaternion{T}))
     nothing
 end
 
@@ -138,7 +138,7 @@ end
 @propagate_inbounds function local_coordinates!(ϕ::AbstractVector, ϕ̇::AbstractVector,
         jt::QuaternionSpherical, q0::AbstractVector, q::AbstractVector, v::AbstractVector)
     quat = inv(rotation(jt, q0, false)) * rotation(jt, q, false)
-    rv = RodriguesVec(quat)
+    rv = RotationVec(quat)
     ϕstatic = SVector(rv.sx, rv.sy, rv.sz)
     ϕ .= ϕstatic
     ϕ̇ .= rotation_vector_rate(ϕstatic, v)
@@ -147,7 +147,7 @@ end
 
 @propagate_inbounds function global_coordinates!(q::AbstractVector, jt::QuaternionSpherical, q0::AbstractVector, ϕ::AbstractVector)
     quat0 = rotation(jt, q0, false)
-    quat = quat0 * Quat(RodriguesVec(ϕ[1], ϕ[2], ϕ[3]))
+    quat = quat0 * UnitQuaternion(RotationVec(ϕ[1], ϕ[2], ϕ[3]))
     set_rotation!(q, jt, quat)
     nothing
 end

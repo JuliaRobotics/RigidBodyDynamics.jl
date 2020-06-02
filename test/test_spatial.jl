@@ -16,13 +16,13 @@ end
         rotation_vector_rate = RigidBodyDynamics.Spatial.rotation_vector_rate
         for ϕ in (rand(SVector{3}), zero(SVector{3})) # exponential coordinates (rotation vector)
             ω = rand(SVector{3}) # angular velocity in body frame
-            R = RotMatrix(RodriguesVec(ϕ...))
+            R = RotMatrix(RotationVec(ϕ...))
             Ṙ = R * hat(ω)
             ϕ̇ = rotation_vector_rate(ϕ, ω)
             Θ = norm(ϕ)
             if Θ > eps(Θ)
                 ϕ_autodiff = ForwardDiff.Dual.(ϕ, ϕ̇)
-                R_autodiff = RotMatrix(RodriguesVec(ϕ_autodiff...))
+                R_autodiff = RotMatrix(RotationVec(ϕ_autodiff...))
                 Ṙ_from_autodiff = map(x -> ForwardDiff.partials(x)[1], R_autodiff)
                 @test isapprox(Ṙ_from_autodiff, Ṙ)
             else
@@ -298,12 +298,12 @@ end
         end
     end
 
-    @testset "RodriguesVec linearization" begin
+    @testset "RotationVec linearization" begin
         Random.seed!(75)
         ϵ = 1e-3
         for i = 1 : 100
             e = RotMatrix(AngleAxis(ϵ, randn(), randn(), randn()))
-            rv = RodriguesVec(e)
+            rv = RotationVec(e)
             rv_lin = linearized_rodrigues_vec(e)
             lin_error = AngleAxis(rv \ rv_lin)
             @test rotation_angle(lin_error) ≈ 0 atol = 1e-8
