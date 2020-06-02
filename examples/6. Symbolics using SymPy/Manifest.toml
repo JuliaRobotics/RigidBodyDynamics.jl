@@ -5,15 +5,15 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[BinDeps]]
 deps = ["Libdl", "Pkg", "SHA", "URIParser", "Unicode"]
-git-tree-sha1 = "66158ad56b4bf6cc8413b37d0b7bc52402682764"
+git-tree-sha1 = "46cf2c1668ad07aba5a9d331bdeea994a1f13856"
 uuid = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
-version = "1.0.0"
+version = "1.0.1"
 
 [[BinaryProvider]]
-deps = ["Libdl", "SHA"]
-git-tree-sha1 = "5b08ed6036d9d3f0ee6369410b830f8873d4024c"
+deps = ["Libdl", "Logging", "SHA"]
+git-tree-sha1 = "ecdec412a9abc8db54c0efc5548c64dfce072058"
 uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
-version = "0.5.8"
+version = "0.5.10"
 
 [[Conda]]
 deps = ["JSON", "VersionParsing"]
@@ -85,9 +85,9 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[Parsers]]
 deps = ["Dates", "Test"]
-git-tree-sha1 = "d6d82d5bdbb75048e574cd2d2c89dfbf2c74250c"
+git-tree-sha1 = "f0abb338b4d00306500056a3fd44c221b8473ef2"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "1.0.0"
+version = "1.0.4"
 
 [[Pkg]]
 deps = ["Dates", "LibGit2", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
@@ -112,9 +112,9 @@ deps = ["Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[RecipesBase]]
-git-tree-sha1 = "7bdce29bc9b2f5660a6e5e64d64d91ec941f6aa2"
+git-tree-sha1 = "54f8ceb165a0f6d083f0d12cb4996f5367c6edbc"
 uuid = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
-version = "0.7.0"
+version = "1.0.1"
 
 [[Reexport]]
 deps = ["Pkg"]
@@ -130,9 +130,9 @@ version = "2.2.0"
 
 [[Rotations]]
 deps = ["LinearAlgebra", "StaticArrays", "Statistics"]
-git-tree-sha1 = "d5f83867093db7319a9366d55f29280ecae9bcda"
+git-tree-sha1 = "445b72242dbdecba9bfc42034daafdd901bbf6a9"
 uuid = "6038ab10-8711-5258-84ad-4b1120ba62dc"
-version = "0.13.0"
+version = "1.0.1"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -155,9 +155,9 @@ version = "0.8.0"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "5a3bcb6233adabde68ebc97be66e95dcb787424c"
+git-tree-sha1 = "5c06c0aeb81bef54aed4b3f446847905eb6cbda0"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "0.12.1"
+version = "0.12.3"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -165,9 +165,9 @@ uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[SymPy]]
 deps = ["LinearAlgebra", "PyCall", "RecipesBase", "SpecialFunctions"]
-git-tree-sha1 = "80c5fa117b3cd0881b6ceedf5839b624bafdffb9"
+git-tree-sha1 = "8f953aeb26efb236f438672b6e4007836dfb9bac"
 uuid = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
-version = "1.0.18"
+version = "1.0.25"
 
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
@@ -179,10 +179,10 @@ uuid = "94a5cd58-49a0-5741-bd07-fa4f4be8babf"
 version = "1.1.0"
 
 [[URIParser]]
-deps = ["Test", "Unicode"]
-git-tree-sha1 = "6ddf8244220dfda2f17539fa8c9de20d6c575b69"
+deps = ["Unicode"]
+git-tree-sha1 = "53a9f49546b8d2dd2e688d216421d050c9a31d0d"
 uuid = "30578b45-9adc-5946-b283-645ec420af67"
-version = "0.4.0"
+version = "0.4.1"
 
 [[UUIDs]]
 deps = ["Random", "SHA"]
@@ -192,9 +192,9 @@ uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[UnsafeArrays]]
-git-tree-sha1 = "1de6ef280110c7ad3c5d2f7a31a360b57a1bde21"
+git-tree-sha1 = "9740b414f85ec2fa9135066f81b1fb14212befd6"
 uuid = "c4a57d5a-5b31-53a6-b365-19f8c011fbd6"
-version = "1.0.0"
+version = "1.0.1"
 
 [[VersionParsing]]
 git-tree-sha1 = "80229be1f670524750d905f8fc8148e5a8c4537f"
