@@ -375,7 +375,12 @@ end
                 end
                 point_jacobian!(J_point, x, p, point)
                 let x = x
-                    @test @allocated(point_jacobian!(J_point, x, p, point)) == 0
+                    if VERSION < v"1.5-"
+                        @test @allocated(point_jacobian!(J_point, x, p, point)) == 0
+                    else
+                        # https://github.com/JuliaRobotics/RigidBodyDynamics.jl/issues/590
+                        @test_broken @allocated(point_jacobian!(J_point, x, p, point)) == 0
+                    end
                 end
                 J = geometric_jacobian(x, p)
                 T = Twist(J, velocity(x))
