@@ -184,7 +184,7 @@ end
     end
 
     @testset "mul! with transpose(mat)" begin
-        Random.seed!(69)
+        Random.seed!(699)
         mat = WrenchMatrix(f1, rand(SMatrix{3, 4}), rand(SMatrix{3, 4}))
         vec = rand(SpatialAcceleration{Float64}, f2, f3, f1)
         k = fill(NaN, size(mat, 2))
@@ -193,7 +193,6 @@ end
         @show size(mat)
         @show mat 
         @info "vec"
-        @show typeof(vec)
         @show size(vec)
         @show vec
         mul!(k, transpose(mat), vec)
