@@ -193,7 +193,6 @@ end
         @show size(mat)
         @show mat 
         @info "vec"
-        @show size(vec)
         @show vec
         mul!(k, transpose(mat), vec)
         @test isapprox(k, angular(mat)' * angular(vec) + linear(mat)' * linear(vec), atol = 1e-14)
