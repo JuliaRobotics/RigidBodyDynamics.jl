@@ -19,11 +19,6 @@ jobs:
           - windows-latest
         arch:
           - x64
-      env:
-        JULIA_NUM_THREADS: 2
-        PYTHON: ""
-
-
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
@@ -34,6 +29,8 @@ jobs:
         env:
           cache-name: cache-artifacts
           CI: true
+          JULIA_NUM_THREADS: 2
+          PYTHON: ""
         with:
           path: ~/.julia/artifacts
           key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
@@ -60,8 +57,8 @@ jobs:
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()'
-      - run: julia --project=docs docs/make.jl
         env:
           PYTHON: ""
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+      - run: julia --project=docs docs/make.jl
