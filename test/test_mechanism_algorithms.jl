@@ -374,8 +374,7 @@ end
                     @test_throws ArgumentError point_jacobian!(J_point, x, p, transform(x, point, default_frame(base)))
                 end
                 point_jacobian!(J_point, x, p, point)
-                allocs = @allocated(point_jacobian!(J_point, x, p, point)) == 0
-                @test allocs == 0
+                @test(@ballocated(point_jacobian!($J_point, $x, $p, $point)) == 0)
                 J = geometric_jacobian(x, p)
                 T = Twist(J, velocity(x))
                 point_in_world = transform(x, point, root_frame(mechanism))
