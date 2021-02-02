@@ -15,7 +15,7 @@ Pkg.activate(@__DIR__) # hide
 Pkg.instantiate() # hide
 using RigidBodyDynamics
 using StaticArrays
-using MeshCatMechanisms, Blink
+using MeshCat, MeshCatMechanisms, Blink
 
 # Fix the random seed, so we get repeatable results
 using Random
@@ -125,7 +125,7 @@ for x in range(-1, stop=1, length=100)
     push!(qs, copy(configuration(state)))
 end
 ts = collect(range(0, stop=1, length=length(qs)))
-setanimation!(vis, ts, qs)
+setanimation!(vis, Animation(vis, ts, qs))
 
 
 # ## Control
@@ -136,7 +136,6 @@ circle_origin = SVector(0., 0.25, 2)
 radius = 0.5
 ω = 1.0  # radians per second at which the point should move in its circle
 
-using MeshCat
 using GeometryTypes: Point
 
 ## Draw the circle in the viewer
@@ -181,11 +180,12 @@ ts, qs, vs = simulate(state, 10, controller!);
 
 # Animate the resulting trajectory:
 
-setanimation!(vis, ts, qs)
+setanimation!(vis, Animation(vis, ts, qs))
 
 # Now we can plot the behavior of the controller. The initial state is quite far from the target, so there's some significant overshoot early in the trajectory, but the controller eventually settles into tracking the desired circular path. This controller isn't very well-tuned, and we could certainly do better with a more advanced approach, but this is still a nice demonstration of a very simple control policy.
 
-using Plots; gr()
+using Plots: gr, plot
+gr()
 
 xs = Float64[]
 zs = Float64[]
