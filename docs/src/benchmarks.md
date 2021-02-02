@@ -9,7 +9,7 @@ Run `perf/runbenchmarks.jl` to see benchmark results for the Atlas robot (v5). R
 3. Do inverse dynamics.
 4. Do forward dynamics.
 
-Note that results on Travis builds are **not at all** representative because of code coverage. Results on a reasonably fast machine at commit [32a2ccb](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/tree/32a2ccbdf0e432bfdde77e24feabc2b641a3565a):
+Note that results on CI builds are **not at all** representative because of code coverage. Results on a reasonably fast machine at commit [32a2ccb](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/tree/32a2ccbdf0e432bfdde77e24feabc2b641a3565a):
 
 Output of `versioninfo()`:
 
