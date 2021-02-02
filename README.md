@@ -1,6 +1,6 @@
 # RigidBodyDynamics.jl
 
-[![Build Status](https://travis-ci.org/JuliaRobotics/RigidBodyDynamics.jl.svg?branch=master)](https://travis-ci.org/JuliaRobotics/RigidBodyDynamics.jl)
+[![Build Status](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/workflows/CI/badge.svg)](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/actions?query=workflow%3ACI)
 [![codecov.io](https://codecov.io/github/JuliaRobotics/RigidBodyDynamics.jl/coverage.svg?branch=master)](https://codecov.io/github/JuliaRobotics/RigidBodyDynamics.jl?branch=master)
 [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://JuliaRobotics.github.io/RigidBodyDynamics.jl/dev)
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaRobotics.github.io/RigidBodyDynamics.jl/stable)
