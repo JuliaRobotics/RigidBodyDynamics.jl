@@ -690,7 +690,7 @@ end
         q̇ = configuration_derivative(x)
         v = velocity(x)
         v̇ = similar(velocity(x))
-        rand(v̇)
+        rand!(v̇)
 
         # momentum computed two ways
         @test isapprox(Momentum(momentum_matrix(x), v), momentum(x))
