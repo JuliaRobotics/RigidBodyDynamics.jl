@@ -106,11 +106,6 @@ set_velocity!(state, shoulder, 1.)
 set_velocity!(state, elbow, 2.);
 
 
-# **Important**: a `MechanismState` contains cache variables that depend on the configurations and velocities of the joints. These need to be invalidated when the configurations and velocities are changed. To do this, call
-
-setdirty!(state)
-
-
 # The joint configurations and velocities are stored as `Vector`s (denoted $q$ and $v$ respectively in this package) inside the `MechanismState` object:
 
 q = configuration(state)

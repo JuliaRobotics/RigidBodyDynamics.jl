@@ -134,9 +134,6 @@ set_velocity!(state, joint1, 0.5)
 set_velocity!(state, joint2, -0.47295)
 set_velocity!(state, joint3, 0.341)
 
-## Invalidate the cache variables
-setdirty!(state)
-
 # Next, we'll do a 3-second simulation:
 
 ts, qs, vs = simulate(state, 3., Δt = 1e-2);
