@@ -14,6 +14,7 @@ import ForwardDiff
 import LightXML
 
 using RigidBodyDynamics: ModifiedRodriguesParam
+using BenchmarkTools: @ballocated
 
 include("test_exports.jl")
 include("test_graph.jl")
