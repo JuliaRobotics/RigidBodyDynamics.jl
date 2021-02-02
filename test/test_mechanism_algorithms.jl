@@ -374,14 +374,8 @@ end
                     @test_throws ArgumentError point_jacobian!(J_point, x, p, transform(x, point, default_frame(base)))
                 end
                 point_jacobian!(J_point, x, p, point)
-                let x = x
-                    if VERSION < v"1.5-"
-                        @test @allocated(point_jacobian!(J_point, x, p, point)) == 0
-                    else
-                        # https://github.com/JuliaRobotics/RigidBodyDynamics.jl/issues/590
-                        @test_broken @allocated(point_jacobian!(J_point, x, p, point)) == 0
-                    end
-                end
+                allocs = @allocated(point_jacobian!(J_point, x, p, point)) == 0
+                @test allocs == 0
                 J = geometric_jacobian(x, p)
                 T = Twist(J, velocity(x))
                 point_in_world = transform(x, point, root_frame(mechanism))
