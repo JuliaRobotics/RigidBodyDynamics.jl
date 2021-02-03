@@ -9,20 +9,22 @@ Run `perf/runbenchmarks.jl` to see benchmark results for the Atlas robot (v5). R
 3. Do inverse dynamics.
 4. Do forward dynamics.
 
-Note that results on CI builds are **not at all** representative because of code coverage. Results on a reasonably fast machine at commit [32a2ccb](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/tree/32a2ccbdf0e432bfdde77e24feabc2b641a3565a):
+Note that results on CI builds are **not at all** representative because of code coverage. Results on a reasonably fast laptop at commit [870bea6](https://github.com/JuliaRobotics/RigidBodyDynamics.jl/commit/870bea668d5b11ce0555fa0552592d2c3cb15c54):
 
 Output of `versioninfo()`:
 
 ```
-Julia Version 1.1.0
-Commit 80516ca202 (2019-01-21 21:24 UTC)
+Julia Version 1.5.3
+Commit 788b2c77c1 (2020-11-09 13:37 UTC)
 Platform Info:
-  OS: Linux (x86_64-pc-linux-gnu)
-  CPU: Intel(R) Core(TM) i7-6950X CPU @ 3.00GHz
+  OS: macOS (x86_64-apple-darwin18.7.0)
+  CPU: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-6.0.1 (ORCJIT, broadwell)
+  LLVM: libLLVM-9.0.1 (ORCJIT, skylake)
 ```
+
+Note that this is a different machine than the one that was used for earlier benchmarks.
 
 Mass matrix:
 
@@ -30,10 +32,10 @@ Mass matrix:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     5.379 μs (0.00% GC)
-  median time:      5.795 μs (0.00% GC)
-  mean time:        5.770 μs (0.00% GC)
-  maximum time:     9.258 μs (0.00% GC)
+  minimum time:     4.415 μs (0.00% GC)
+  median time:      4.579 μs (0.00% GC)
+  mean time:        4.916 μs (0.00% GC)
+  maximum time:     19.794 μs (0.00% GC)
 ```
 
 Mass matrix and Jacobian from left hand to right foot:
@@ -42,10 +44,10 @@ Mass matrix and Jacobian from left hand to right foot:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     5.754 μs (0.00% GC)
-  median time:      5.856 μs (0.00% GC)
-  mean time:        5.940 μs (0.00% GC)
-  maximum time:     10.100 μs (0.00% GC)
+  minimum time:     4.860 μs (0.00% GC)
+  median time:      4.982 μs (0.00% GC)
+  mean time:        5.399 μs (0.00% GC)
+  maximum time:     24.712 μs (0.00% GC)
 ```
 
 Note the low additional cost of computing a Jacobian when the mass matrix is already computed. This is because RigidBodyDynamics.jl caches intermediate computation results.
@@ -56,10 +58,10 @@ Inverse dynamics:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     5.623 μs (0.00% GC)
-  median time:      5.727 μs (0.00% GC)
-  mean time:        5.886 μs (0.00% GC)
-  maximum time:     9.637 μs (0.00% GC)
+  minimum time:     4.256 μs (0.00% GC)
+  median time:      4.541 μs (0.00% GC)
+  mean time:        4.831 μs (0.00% GC)
+  maximum time:     21.625 μs (0.00% GC)
 ```
 
 Forward dynamics:
@@ -68,8 +70,8 @@ Forward dynamics:
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     17.721 μs (0.00% GC)
-  median time:      18.862 μs (0.00% GC)
-  mean time:        18.755 μs (0.00% GC)
-  maximum time:     24.910 μs (0.00% GC)
+  minimum time:     13.600 μs (0.00% GC)
+  median time:      14.419 μs (0.00% GC)
+  mean time:        16.071 μs (0.00% GC)
+  maximum time:     55.328 μs (0.00% GC)
 ```
