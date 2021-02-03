@@ -160,18 +160,19 @@ Transform the `SpatialInertia` to a different frame.
 @inline function transform(inertia::SpatialInertia, t::Transform3D)
     @framecheck(t.from, inertia.frame)
     J = inertia.moment
+    mc = inertia.cross_part
     m = inertia.mass
-    c = inertia.cross_part
     R = rotation(t)
     p = translation(t)
-    cnew = R * c
-    Jnew = hat_squared(cnew)
-    cnew += m * p
-    Jnew -= hat_squared(cnew)
-    minv = m > 0 ? inv(m) : zero(m)
-    Jnew *= minv
-    Jnew += R * J * R'
-    SpatialInertia(t.to, Jnew, cnew, convert(eltype(Jnew), m))
+
+    Rmc = R * mc
+    mp = m * p
+    mcnew = Rmc + mp
+    X = Rmc * transpose(p)
+    Y = X + transpose(X) + mp * transpose(p)
+    Jnew = R * J * transpose(R) - Y + tr(Y) * I
+
+    SpatialInertia(t.to, Jnew, mcnew, m)
 end
 
 function Random.rand(::Type{<:SpatialInertia{T}}, frame::CartesianFrame3D) where {T}
