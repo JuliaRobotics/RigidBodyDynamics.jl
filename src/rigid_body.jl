@@ -2,6 +2,25 @@
 
 """
 $(TYPEDEF)
+A struct to store link collision information
+
+A 'CollisionGeom' has one of 3 basic shape types (cylinder, sphere, box)
+represented as a string. length and radius are Float64 values defining the 
+geometry of shape. transform describes the transformation from the link frame
+to the collision element. 
+"""
+struct CollisionGeom{T}
+    shape::String
+    length::Float64
+    radius::Float64
+    transform::Transform3D{T}
+    function CollisionGeom(shape::String, length::Float64,radius::Float64,transform::Transform3D{T}) where {T}
+        new{T}(shape,length,radius,transform)
+    end    
+end
+
+"""
+$(TYPEDEF)
 
 A non-deformable body.
 
