@@ -184,8 +184,8 @@ setanimation!(vis, Animation(vis, ts, qs))
 
 # Now we can plot the behavior of the controller. The initial state is quite far from the target, so there's some significant overshoot early in the trajectory, but the controller eventually settles into tracking the desired circular path. This controller isn't very well-tuned, and we could certainly do better with a more advanced approach, but this is still a nice demonstration of a very simple control policy.
 
-using Plots: gr, plot
-gr()
+using Plots: pyplot, plot
+pyplot()
 
 xs = Float64[]
 zs = Float64[]
