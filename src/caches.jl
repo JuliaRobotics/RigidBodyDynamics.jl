@@ -107,3 +107,28 @@ end
 @inline function makevalue(c::SegmentedVectorCache{K, KeyRange}, ::Type{T}) where {K, T, KeyRange}
     SegmentedVector{K, T, KeyRange}(Vector{T}(undef, c.length), c.ranges)
 end
+
+"""
+$(TYPEDEF)
+
+A container that manages the creation and storage of `BodyDict{Wrench{T}}`.
+Similar to [`StateCache`](@ref).
+"""
+struct WrenchesCache{M} <: AbstractTypeDict
+    mechanism::Mechanism{M}
+    keys::Vector{UInt}
+    values::Vector  # Can also be `Any`
+end
+
+Base.show(io::IO, ::WrenchesCache{M}) where {M} = print(io, "WrenchesCache{$M}(…)")
+
+WrenchesCache(mechanism::Mechanism{M}) where {M} = WrenchesCache{M}(mechanism, [], [])
+
+@inline function valuetype(::Type{WrenchesCache{M}}, ::Type{T}) where {M,T}
+    BodyDict{Wrench{T}}
+end
+
+@inline function makevalue(c::WrenchesCache, ::Type{T}) where {T}
+    rootframe = root_frame(c.mechanism)
+    BodyDict{Wrench{T}}(b => zero(Wrench{T}, rootframe) for b in bodies(c.mechanism))
+end
