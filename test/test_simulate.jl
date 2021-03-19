@@ -225,4 +225,28 @@
         energy20 = gravitational_potential_energy(state) + kinetic_energy(state)
         @test energy20 ≈ energy15 atol=1e-5 # stabilization doesn't significantly affect energy after converging
     end
+
+    @testset "Ball joint pendulum" begin
+        # Issue #617
+        translation = [0.3, 0, 0]
+
+        world = RigidBody{Float64}("world")
+        pendulum = Mechanism(world; gravity=[0., 0., -9.81])
+
+        center_of_mass = [0, 0, 0.2]
+        q0 = [cos(pi/8), sin(pi/8), 0.0, 0.0]
+
+        joint1 = Joint("joint1", QuaternionSpherical{Float64}())
+        inertia1 = SpatialInertia(frame_after(joint1), com=center_of_mass, moment_about_com=diagm([1.,1.,1.]), mass=1.)
+        link1 = RigidBody("link1", inertia1)
+        before_joint1_to_world = Transform3D(frame_before(joint1), default_frame(world), one(RotMatrix{3}), SVector{3}(translation))
+        attach!(pendulum, world, link1, joint1, joint_pose=before_joint1_to_world)
+
+        state = MechanismState(pendulum)
+
+        set_configuration!(state, joint1, q0)
+        ts, qs, vs = simulate(state, 1., Δt=0.001)
+        @test all(all(!isnan, q) for q in qs)
+        @test all(all(!isnan, v) for v in vs)
+    end
 end
