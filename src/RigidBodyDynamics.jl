@@ -87,7 +87,8 @@ export
     replace_joint!,
     maximal_coordinates,
     submechanism,
-    remove_fixed_tree_joints!
+    remove_fixed_tree_joints!,
+    remove_subtree!
 
 # contact-related functionality
 export # note: contact-related functionality may be changed significantly in the future

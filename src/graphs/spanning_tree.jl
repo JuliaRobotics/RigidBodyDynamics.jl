@@ -82,7 +82,9 @@ function SpanningTree(g::DirectedGraph{V, E}, root::V, flipped_edge_map::Union{A
     SpanningTree(g, root, tree_edges)
 end
 
-# adds an edge and vertex to both the tree and the underlying graph
+"""
+Add an edge and vertex to both the tree and the underlying graph.
+"""
 function add_edge!(tree::SpanningTree{V, E}, source::V, target::V, edge::E) where {V, E}
     @assert target ∉ vertices(tree)
     add_edge!(tree.graph, source, target, edge)
@@ -96,6 +98,9 @@ function add_edge!(tree::SpanningTree{V, E}, source::V, target::V, edge::E) wher
     tree
 end
 
+"""
+Replace an edge in both the tree and the underlying graph.
+"""
 function replace_edge!(tree::SpanningTree{V, E}, old_edge::E, new_edge::E) where {V, E}
     @assert old_edge ∈ edges(tree)
     src = source(old_edge, tree)
@@ -144,4 +149,22 @@ function lowest_common_ancestor(v1::V, v2::V, tree::SpanningTree{V, E}) where {V
         end
     end
     v1
+end
+
+"""
+Return a list of vertices in the subtree rooted at `subtree_root`, including `subtree_root` itself.
+The list is guaranteed to be topologically sorted.
+"""
+function subtree_vertices(subtree_root::V, tree::SpanningTree{V, E}) where {V, E}
+    @assert subtree_root ∈ vertices(tree)
+    frontier = [subtree_root]
+    subtree_vertices = V[]
+    while !isempty(frontier)
+        parent = pop!(frontier)
+        push!(subtree_vertices, parent)
+        for child in out_neighbors(parent, tree)
+            push!(frontier, child)
+        end
+    end
+    return subtree_vertices
 end

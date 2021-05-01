@@ -39,6 +39,7 @@ export
     tree_index,
     ancestors,
     lowest_common_ancestor,
+    subtree_vertices,
     direction,
     directions
 

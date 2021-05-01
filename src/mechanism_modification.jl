@@ -153,6 +153,41 @@ function submechanism(mechanism::Mechanism{T}, submechanismroot::RigidBody{T};
 end
 
 """
+Remove all bodies in the subtree rooted at `subtree_root`, including `subtree_root` itself,
+as well as all joints connected to these bodies.
+
+The ordering of the joints that remain in the mechanism is retained.
+"""
+function remove_subtree!(mechanism::Mechanism{T}, subtree_root::RigidBody{T}) where {T}
+    @assert subtree_root != root_body(mechanism)
+    tree = mechanism.tree
+    graph = mechanism.graph
+    bodies_to_remove = subtree_vertices(subtree_root, tree)
+    new_tree_joints = copy(edges(tree))
+    for body in bodies_to_remove
+        # Remove the tree joint from our new ordered list of joints.
+        tree_joint = edge_to_parent(body, tree)
+        deleteat!(new_tree_joints, findfirst(isequal(tree_joint), new_tree_joints))
+    end
+    for body in bodies_to_remove
+        # Remove all edges to and from the vertex in the graph.
+        for joint in copy(in_edges(body, graph))
+            remove_edge!(graph, joint)
+        end
+        for joint in copy(out_edges(body, graph))
+            remove_edge!(graph, joint)
+        end
+
+        # Remove the vertex itself.
+        remove_vertex!(graph, body)
+    end
+    # Construct a new spanning tree with the new list of tree joints.
+    mechanism.tree = SpanningTree(graph, root_body(mechanism), new_tree_joints)
+    canonicalize_graph!(mechanism)
+    mechanism
+end
+
+"""
 $(SIGNATURES)
 
 Reconstruct the mechanism's spanning tree.
