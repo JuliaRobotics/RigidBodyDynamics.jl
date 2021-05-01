@@ -357,4 +357,55 @@
             showerror(devnull, e)
         end
     end
+
+    @testset "remove_subtree! - tree mechanism" begin
+        mechanism = parse_urdf(joinpath(@__DIR__, "urdf", "atlas.urdf"), floating=true)
+        @test_throws AssertionError remove_subtree!(mechanism, root_body(mechanism))
+
+        original_joints = copy(joints(mechanism))
+
+        # Behead.
+        num_bodies = length(bodies(mechanism))
+        num_joints = length(joints(mechanism))
+        head = findbody(mechanism, "head")
+        neck_joint = joint_to_parent(head, mechanism)
+        remove_subtree!(mechanism, head)
+        @test length(bodies(mechanism)) == num_bodies - 1
+        @test length(joints(mechanism)) == num_joints - 1
+        @test head ∉ bodies(mechanism)
+        @test neck_joint ∉ joints(mechanism)
+
+        # Lop off an arm.
+        num_bodies = length(bodies(mechanism))
+        num_joints = length(joints(mechanism))
+        r_clav = findbody(mechanism, "r_clav")
+        r_hand = findbody(mechanism, "r_hand")
+        r_arm = path(mechanism, r_clav, r_hand)
+        arm_joints = collect(r_arm)
+        arm_bodies = [r_clav; map(joint -> successor(joint, mechanism), arm_joints)]
+        remove_subtree!(mechanism, r_clav)
+        @test length(joints(mechanism)) == num_joints - length(arm_joints) - 1
+        @test length(bodies(mechanism)) == num_bodies - length(arm_bodies)
+        @test isempty(intersect(arm_joints, joints(mechanism)))
+        @test isempty(intersect(arm_bodies, bodies(mechanism)))
+        @test issorted(joints(mechanism), by=joint ->findfirst(isequal(joint), original_joints))
+    end
+
+    @testset "remove_subtree! - maximal coordinates" begin
+        original = parse_urdf(joinpath(@__DIR__, "urdf", "atlas.urdf"), floating=true)
+        mechanism = maximal_coordinates(original)
+        num_bodies = length(bodies(mechanism))
+        num_joints = length(joints(mechanism))
+        @test_throws AssertionError remove_subtree!(mechanism, findbody(original, "head")) # body not in tree
+        head = findbody(mechanism, "head")
+        head_joints = copy(in_joints(head, mechanism))
+        @test length(head_joints) == 2 # floating joint + neck loop joint
+        remove_subtree!(mechanism, head)
+        @test length(joints(mechanism)) == num_joints - length(head_joints)
+        @test length(bodies(mechanism)) == num_bodies - 1
+        for joint in head_joints
+            @test joint ∉ joints(mechanism)
+        end
+        @test head ∉ bodies(mechanism)
+    end
 end # mechanism modification

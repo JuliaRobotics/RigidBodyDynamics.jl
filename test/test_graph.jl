@@ -326,6 +326,25 @@ Graphs.flip_direction(edge::Edge{Int32}) = Edge(-edge.data)
         end
     end
 
+    @testset "subtree_vertices" begin
+        graph = DirectedGraph{Vertex{Int64}, Edge{Int32}}()
+        root = Vertex(0)
+        add_vertex!(graph, root)
+        tree = SpanningTree(graph, root)
+        for i = 1 : 30
+            parent = vertices(tree)[rand(1 : num_vertices(graph))]
+            child = Vertex(i)
+            edge = Edge(Int32(i + 3))
+            add_edge!(tree, parent, child, edge)
+        end
+        for subtree_root in vertices(tree)
+            subtree = subtree_vertices(subtree_root, tree)
+            for vertex in vertices(tree)
+                @test (vertex ∈ subtree) == (subtree_root ∈ ancestors(vertex, tree))
+            end
+        end
+    end
+
     @testset "reindex!" begin
         Random.seed!(15)
         graph = DirectedGraph{Vertex{Int64}, Edge{Float64}}()
