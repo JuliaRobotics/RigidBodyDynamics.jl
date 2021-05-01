@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>3. Four-bar linkage · RigidBodyDynamics.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">RigidBodyDynamics.jl</span></div><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../1. Quickstart - double pendulum/1. Quickstart - double pendulum/">1. Quickstart - double pendulum</a></li><li><a class="tocitem" href="../../2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/">2. Closed-loop simulation and visualization</a></li><li class="is-active"><a class="tocitem" href>3. Four-bar linkage</a><ul class="internal"><li><a class="tocitem" href="#Setup"><span>Setup</span></a></li><li><a class="tocitem" href="#Model-definition"><span>Model definition</span></a></li><li><a class="tocitem" href="#Simulation"><span>Simulation</span></a></li><li><a class="tocitem" href="#Visualization"><span>Visualization</span></a></li></ul></li><li><a class="tocitem" href="../../4. Jacobian IK and Control/4. Jacobian IK and Control/">4. Jacobian IK and Control</a></li><li><a class="tocitem" href="../../5. Derivatives and gradients using ForwardDiff/5. Derivatives and gradients using ForwardDiff/">5. Derivatives and gradients using ForwardDiff</a></li><li><a class="tocitem" href="../../6. Symbolics using SymPy/6. Symbolics using SymPy/">6. Symbolics using SymPy</a></li><li><a class="tocitem" href="../../7. Rigorous error bounds using IntervalArithmetic/7. Rigorous error bounds using IntervalArithmetic/">7. Rigorous error bounds using IntervalArithmetic</a></li></ul></li><li><span class="tocitem">Library</span><ul><li><a class="tocitem" href="../../../spatial/">Spatial vector algebra</a></li><li><a class="tocitem" href="../../../joints/">Joints</a></li><li><a class="tocitem" href="../../../rigidbody/">Rigid bodies</a></li><li><a class="tocitem" href="../../../mechanism/">Mechanism</a></li><li><a class="tocitem" href="../../../mechanismstate/">MechanismState</a></li><li><a class="tocitem" href="../../../algorithms/">Kinematics/dynamics algorithms</a></li><li><a class="tocitem" href="../../../customcollections/">Custom collection types</a></li><li><a class="tocitem" href="../../../caches/">Cache types</a></li><li><a class="tocitem" href="../../../simulation/">Simulation</a></li><li><a class="tocitem" href="../../../urdf/">URDF parsing and writing</a></li></ul></li><li><a class="tocitem" href="../../../benchmarks/">Benchmarks</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>3. Four-bar linkage</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>3. Four-bar linkage</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaRobotics/RigidBodyDynamics.jl/blob/master/examples/3. Four-bar linkage/3. Four-bar linkage.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id=".-Four-bar-linkage"><a class="docs-heading-anchor" href="#.-Four-bar-linkage">3. Four-bar linkage</a><a id=".-Four-bar-linkage-1"></a><a class="docs-heading-anchor-permalink" href="#.-Four-bar-linkage" title="Permalink"></a></h1><p>This example is also available as a Jupyter notebook that can be run locally The notebook can be found in the <code>examples</code> directory of the package. If the notebooks are missing, you may need to run <code>using Pkg; Pkg.build()</code>.</p><p>This example is a (slightly modified) contribution by <a href="https://github.com/symplectomorphism">Aykut Satici</a>.</p><h2 id="Setup"><a class="docs-heading-anchor" href="#Setup">Setup</a><a id="Setup-1"></a><a class="docs-heading-anchor-permalink" href="#Setup" title="Permalink"></a></h2><pre><code class="language-julia">using LinearAlgebra
+using RigidBodyDynamics
+using StaticArrays</code></pre><pre class="documenter-example-output"> Activating environment at `~/work/RigidBodyDynamics.jl/RigidBodyDynamics.jl/examples/3. Four-bar linkage/Project.toml`</pre><h2 id="Model-definition"><a class="docs-heading-anchor" href="#Model-definition">Model definition</a><a id="Model-definition-1"></a><a class="docs-heading-anchor-permalink" href="#Model-definition" title="Permalink"></a></h2><p>We&#39;re going to create a <a href="https://en.wikipedia.org/wiki/Four-bar_linkage">four-bar linkage</a> that looks like this: <img src="../fourbar.jpg" alt="fourbar"/></p><p>We&#39;ll &#39;cut&#39; the mechanism at joint 4: joints 1, 2, and 3 will be part of the spanning tree of the mechanism, but joint 4 will be a &#39;loop joint&#39; (see e.g. Featherstone&#39;s &#39;Rigid Body Dynamics Algorithms&#39;), for which the dynamics will be enforced using Lagrange multipliers.</p><p>First, we&#39;ll define some relevant constants:</p><pre><code class="language-julia"># gravitational acceleration
+g = -9.81
+
+# link lengths
+l_0 = 1.10
+l_1 = 0.5
+l_2 = 1.20
+l_3 = 0.75
+
+# link masses
+m_1 = 0.5
+m_2 = 1.0
+m_3 = 0.75
+
+# link center of mass offsets from the preceding joint axes
+c_1 = 0.25
+c_2 = 0.60
+c_3 = 0.375
+
+# moments of inertia about the center of mass of each link
+I_1 = 0.333
+I_2 = 0.537
+I_3 = 0.4
+
+# Rotation axis: negative y-axis
+axis = SVector(0., -1., 0.);</code></pre><p>Construct the world rigid body and create a new mechanism:</p><pre><code class="language-julia">world = RigidBody{Float64}(&quot;world&quot;)
+fourbar = Mechanism(world; gravity = SVector(0., 0., g))</code></pre><pre class="documenter-example-output">Spanning tree:
+Vertex: world (root)
+No non-tree joints.</pre><p>Next, we&#39;ll construct the spanning tree of the mechanism, consisting of bodies 1, 2, and 3 connected by joints 1, 2, and 3. Note the use of the <code>moment_about_com</code> keyword (as opposed to <code>moment</code>):</p><p>Link 1 and joint 1:</p><pre><code class="language-julia">joint1 = Joint(&quot;joint1&quot;, Revolute(axis))
+inertia1 = SpatialInertia(frame_after(joint1),
+    com=SVector(c_1, 0, 0),
+    moment_about_com=I_1*axis*transpose(axis),
+    mass=m_1)
+link1 = RigidBody(inertia1)
+before_joint1_to_world = one(Transform3D,
+    frame_before(joint1), default_frame(world))
+attach!(fourbar, world, link1, joint1,
+    joint_pose = before_joint1_to_world)</code></pre><pre class="documenter-example-output">Spanning tree:
+Vertex: world (root)
+  Vertex: after_joint1, Edge: joint1
+No non-tree joints.</pre><p>Link 2 and joint 2:</p><pre><code class="language-julia">joint2 = Joint(&quot;joint2&quot;, Revolute(axis))
+inertia2 = SpatialInertia(frame_after(joint2),
+    com=SVector(c_2, 0, 0),
+    moment_about_com=I_2*axis*transpose(axis),
+    mass=m_2)
+link2 = RigidBody(inertia2)
+before_joint2_to_after_joint1 = Transform3D(
+    frame_before(joint2), frame_after(joint1), SVector(l_1, 0., 0.))
+attach!(fourbar, link1, link2, joint2,
+    joint_pose = before_joint2_to_after_joint1)</code></pre><pre class="documenter-example-output">Spanning tree:
+Vertex: world (root)
+  Vertex: after_joint1, Edge: joint1
+    Vertex: after_joint2, Edge: joint2
+No non-tree joints.</pre><p>Link 3 and joint 3:</p><pre><code class="language-julia">joint3 = Joint(&quot;joint3&quot;, Revolute(axis))
+inertia3 = SpatialInertia(frame_after(joint3),
+    com=SVector(l_0, 0., 0.),
+    moment_about_com=I_3*axis*transpose(axis),
+    mass=m_3)
+link3 = RigidBody(inertia3)
+before_joint3_to_world = Transform3D(
+    frame_before(joint3), default_frame(world), SVector(l_0, 0., 0.))
+attach!(fourbar, world, link3, joint3, joint_pose = before_joint3_to_world)</code></pre><pre class="documenter-example-output">Spanning tree:
+Vertex: world (root)
+  Vertex: after_joint1, Edge: joint1
+    Vertex: after_joint2, Edge: joint2
+  Vertex: after_joint3, Edge: joint3
+No non-tree joints.</pre><p>Finally, we&#39;ll add joint 4 in almost the same way we did the other joints, with the following exceptions:</p><ol><li>both <code>link2</code> and <code>link3</code> are already part of the <code>Mechanism</code>, so the <code>attach!</code> function will figure out that <code>joint4</code> will be a loop joint.</li><li>instead of using the default (identity) for the argument that specifies the transform from the successor of joint 4 (i.e., link 3) to the frame directly after</li></ol><p>joint 4, we&#39;ll specify a transform that incorporates the <span>$l_3$</span> offset.</p><pre><code class="language-julia"># joint between link2 and link3
+joint4 = Joint(&quot;joint4&quot;, Revolute(axis))
+before_joint4_to_joint2 = Transform3D(
+    frame_before(joint4), frame_after(joint2), SVector(l_2, 0., 0.))
+joint3_to_after_joint4 = Transform3D(
+    frame_after(joint3), frame_after(joint4), SVector(-l_3, 0., 0.))
+attach!(fourbar, link2, link3, joint4,
+    joint_pose = before_joint4_to_joint2, successor_pose = joint3_to_after_joint4)</code></pre><pre class="documenter-example-output">Spanning tree:
+Vertex: world (root)
+  Vertex: after_joint1, Edge: joint1
+    Vertex: after_joint2, Edge: joint2
+  Vertex: after_joint3, Edge: joint3
+Non-tree joints:
+joint4, predecessor: after_joint2, successor: after_joint3</pre><p>Note the additional non-tree joint in the printed <code>Mechanism</code> summary.</p><h2 id="Simulation"><a class="docs-heading-anchor" href="#Simulation">Simulation</a><a id="Simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Simulation" title="Permalink"></a></h2><p>As usual, we&#39;ll now construct a <code>MechanismState</code> and <code>DynamicsResult</code> for the four-bar <code>Mechanism</code>. We&#39;ll set some initial conditions for a simulation, which were solved for a priori using a nonlinear program (not shown here).</p><pre><code class="language-julia">state = MechanismState(fourbar)
+result = DynamicsResult(fourbar);
+
+set_configuration!(state, joint1, 1.6707963267948966) # θ
+set_configuration!(state, joint2, -1.4591054166649482) # γ
+set_configuration!(state, joint3, 1.5397303602625536) # ϕ
+
+set_velocity!(state, joint1, 0.5)
+set_velocity!(state, joint2, -0.47295)
+set_velocity!(state, joint3, 0.341)</code></pre><p>Next, we&#39;ll do a 3-second simulation:</p><pre><code class="language-julia">ts, qs, vs = simulate(state, 3., Δt = 1e-2);</code></pre><h2 id="Visualization"><a class="docs-heading-anchor" href="#Visualization">Visualization</a><a id="Visualization-1"></a><a class="docs-heading-anchor-permalink" href="#Visualization" title="Permalink"></a></h2><p>For visualization, we&#39;ll use <a href="https://github.com/JuliaRobotics/MeshCatMechanisms.jl"><code>MeshCatMechanisms</code></a>, an external package based on RigidBodyDynamics.jl.</p><pre><code class="language-julia">using MeshCatMechanisms</code></pre><p>Create a <code>MechanismVisualizer</code> for the four-bar linkage and open it in a new browser tab (see <a href="https://github.com/rdeits/MeshCat.jl"><code>MeshCat.jl</code></a> for other options):</p><pre><code class="language-julia">mvis = MechanismVisualizer(fourbar, Skeleton(inertias=false));</code></pre><pre class="documenter-example-output">┌ Info: MeshCat server started. You can open the visualizer by visiting the following URL in your browser:
+└ http://localhost:8701</pre><pre><code class="language-julia"># open(mvis)</code></pre><p>And animate:</p><pre><code class="language-julia">MeshCatMechanisms.animate(mvis, ts, qs; realtimerate = 1.);</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../2. Closed-loop simulation and visualization/2. Closed-loop simulation and visualization/">« 2. Closed-loop simulation and visualization</a><a class="docs-footer-nextpage" href="../../4. Jacobian IK and Control/4. Jacobian IK and Control/">4. Jacobian IK and Control »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Saturday 1 May 2021 15:13">Saturday 1 May 2021</span>. Using Julia version 1.5.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
