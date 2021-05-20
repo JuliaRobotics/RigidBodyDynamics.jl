@@ -75,7 +75,7 @@ LinearAlgebra.cross(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.f
 LinearAlgebra.dot(v1::FreeVector3D, v2::FreeVector3D) = begin @framecheck(v1.frame, v2.frame); v1.v ⋅ v2.v end
 Base.:*(t::Transform3D, vector::FreeVector3D) = begin @framecheck(t.from, vector.frame); FreeVector3D(t.to, rotation(t) * vector.v) end
 Base.:\(t::Transform3D, point::FreeVector3D) = begin @framecheck point.frame t.to; FreeVector3D(t.from, rotation(t) \ point.v) end
-LinearAlgebra.norm(v::FreeVector3D) = norm(v.v)
+LinearAlgebra.norm(v::FreeVector3D) = LinearAlgebra.generic_norm2(v.v)
 LinearAlgebra.normalize(v::FreeVector3D, p = 2) = FreeVector3D(v.frame, normalize(v.v, p))
 
 # Mixed Point3D and FreeVector3D
