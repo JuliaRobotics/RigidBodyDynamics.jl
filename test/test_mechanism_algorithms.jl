@@ -906,7 +906,7 @@ end
                 rot_orig = rotation(joint_type_k, q_orig)
                 rot_prin = rotation(joint_type_k, q_prin)
                 @test isapprox(rot_orig, rot_prin)
-                @test rot_prin.w > 0
+                @test rot_prin.q.s > 0
             else
                 @test q_orig == q_prin
             end
