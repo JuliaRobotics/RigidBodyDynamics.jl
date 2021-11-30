@@ -34,10 +34,10 @@ end
 @propagate_inbounds function set_rotation!(q::AbstractVector, jt::QuaternionFloating, rot::Rotation{3})
     T = eltype(rot)
     quat = convert(QuatRotation{T}, rot)
-    q[1] = quat.w
-    q[2] = quat.x
-    q[3] = quat.y
-    q[4] = quat.z
+    q[1] = quat.q.s
+    q[2] = quat.q.v1
+    q[3] = quat.q.v2
+    q[4] = quat.q.v3
     nothing
 end
 

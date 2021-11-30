@@ -126,10 +126,10 @@ function angular_velocity_in_body end
 
 @inline function velocity_jacobian(::typeof(quaternion_derivative), q::QuatRotation)
     (@SMatrix [
-        -q.x -q.y -q.z;
-        q.w -q.z  q.y;
-        q.z  q.w -q.x;
-        -q.y  q.x  q.w]) / 2
+        -q.q.v1 -q.q.v2 -q.q.v3;
+         q.q.s  -q.q.v3  q.q.v2;
+         q.q.v3  q.q.s  -q.q.v1;
+        -q.q.v2  q.q.v1  q.q.s ]) / 2
 end
 
 @inline function velocity_jacobian(::typeof(spquat_derivative), q::ModifiedRodriguesParam)
@@ -141,9 +141,9 @@ end
 
 @inline function velocity_jacobian(::typeof(angular_velocity_in_body), q::QuatRotation)
     2 * @SMatrix [
-    -q.x  q.w  q.z -q.y;
-    -q.y -q.z  q.w  q.x;
-    -q.z  q.y -q.x  q.w]
+    -q.q.v1  q.q.s   q.q.v3 -q.q.v2;
+    -q.q.v2 -q.q.v3  q.q.s   q.q.v1;
+    -q.q.v3  q.q.v2 -q.q.v1  q.q.s ]
 end
 
 @inline function velocity_jacobian(::typeof(angular_velocity_in_body), q::ModifiedRodriguesParam)
