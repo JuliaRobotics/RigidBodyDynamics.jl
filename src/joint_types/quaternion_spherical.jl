@@ -30,10 +30,11 @@ end
 @propagate_inbounds function set_rotation!(q::AbstractVector, jt::QuaternionSpherical, rot::Rotation{3})
     T = eltype(rot)
     quat = convert(QuatRotation{T}, rot)
-    q[1] = quat.q.s
-    q[2] = quat.q.v1
-    q[3] = quat.q.v2
-    q[4] = quat.q.v3
+    w, x, y, z = Rotations.params(quat)
+    q[1] = w
+    q[2] = x
+    q[3] = y
+    q[4] = z
     nothing
 end
 
