@@ -905,8 +905,9 @@ end
             elseif joint_type_k isa QuaternionFloating || joint_type_k isa QuaternionSpherical
                 rot_orig = rotation(joint_type_k, q_orig)
                 rot_prin = rotation(joint_type_k, q_prin)
+                w, x, y, z = Rotations.params(rot_prin)
                 @test isapprox(rot_orig, rot_prin)
-                @test rot_prin.q.s > 0
+                @test w > 0
             else
                 @test q_orig == q_prin
             end
