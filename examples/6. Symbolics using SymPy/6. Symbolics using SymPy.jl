@@ -21,9 +21,9 @@ using SymPy
 # * Center of mass locations (w.r.t. preceding joint axis): $c_1, c_2$
 # * Gravitational acceleration: $g$
 
-inertias = @syms m_1 m_2 I_1 I_2 positive = true
-lengths = @syms l_1 l_2 c_1 c_2 real = true
-gravitational_acceleration = @syms g real = true
+inertias = @vars m_1 m_2 I_1 I_2 positive = true
+lengths = @vars l_1 l_2 c_1 c_2 real = true
+gravitational_acceleration = @vars g real = true
 params = [inertias..., lengths..., gravitational_acceleration...]
 transpose(params)
 

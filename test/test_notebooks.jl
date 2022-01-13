@@ -3,7 +3,7 @@ let
     notebookdir = joinpath(@__DIR__, "..", "examples")
     excludedirs = [".ipynb_checkpoints"]
     excludefiles = String[]
-    # push!(excludefiles, "6. Symbolics using SymPy.ipynb") # Manifest used for 1.1 doesn't work for 1.0.
+    push!(excludefiles, "6. Symbolics using SymPy.ipynb") # Manifest used for 1.1 doesn't work for 1.0.
     # push!(excludefiles, "7. Rigorous error bounds using IntervalArithmetic.ipynb") # Manifest used for 1.1 doesn't work for 1.0.
     for (root, dir, files) in walkdir(notebookdir)
         basename(root) in excludedirs && continue
