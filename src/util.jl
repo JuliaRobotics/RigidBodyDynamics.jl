@@ -44,7 +44,7 @@ end
 ## VectorSegment: type of a view of a vector
 const VectorSegment{T} = SubArray{T,1,Array{T, 1},Tuple{UnitRange{Int64}},true} # TODO: a bit too specific
 
-quatnorm(quat::UnitQuaternion) = sqrt(quat.w^2 + quat.x^2 + quat.y^2 + quat.z^2)
+quatnorm(quat::QuatRotation) = sqrt(quat.w^2 + quat.x^2 + quat.y^2 + quat.z^2)
 
 
 ## Modification count stuff
