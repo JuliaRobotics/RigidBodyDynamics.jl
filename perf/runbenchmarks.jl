@@ -7,10 +7,6 @@ using RigidBodyDynamics.OdeIntegrators
 using Random
 using Profile
 using BenchmarkTools
-using LinearAlgebra
-
-# Due to https://github.com/JuliaRobotics/RigidBodyDynamics.jl/issues/500:
-BLAS.set_num_threads(1)
 
 const ScalarType = Float64
 # const ScalarType = Float32
