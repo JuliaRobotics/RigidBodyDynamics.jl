@@ -34,7 +34,7 @@ let
                 """)
                 return str
             end
-            stripped_name = replace(name, r"\s;" => "")
+            stripped_name = replace(name, r"\s" => "", ';'=>"")
             postprocess = function(str)
                 str = replace(str, "PKG_SETUP" =>
                 """
