@@ -35,8 +35,9 @@ if VERSION >= v"1.9"
     # Attempting to do so on a version of Julia older than the one used to
     # create those manifests can cause errors in `Pkg.instantiate()`.
     include("test_notebooks.jl")
+
+    @testset "benchmarks" begin
+        @test begin include("../perf/runbenchmarks.jl"); true end
+    end
 end
 
-@testset "benchmarks" begin
-    @test begin include("../perf/runbenchmarks.jl"); true end
-end
