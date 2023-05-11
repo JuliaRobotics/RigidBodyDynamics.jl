@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.8.5"
+julia_version = "1.9.0"
 manifest_format = "2.0"
 project_hash = "51eb3237a3e48045ad4ce63e3c6e9262bc86ff71"
 
@@ -86,7 +86,7 @@ uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
-version = "1.0.0"
+version = "1.0.3"
 
 [[deps.Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"

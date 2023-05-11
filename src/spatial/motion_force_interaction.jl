@@ -111,7 +111,7 @@ StaticArrays.SMatrix(inertia::SpatialInertia) = SMatrix{6, 6}(inertia)
 StaticArrays.SArray(inertia::SpatialInertia) = SMatrix(inertia)
 Base.convert(::Type{A}, inertia::SpatialInertia) where {A<:SArray} = A(inertia)
 
-function Base.convert(::Type{Matrix}, inertia::SpatialInertia) where {T<:Matrix}
+function Base.convert(::Type{Matrix}, inertia::SpatialInertia)
     Base.depwarn("This convert method is deprecated. Please use `$T(SMatrix(inertia))` instead or
     reconsider whether conversion to Matrix is necessary.", :convert)
     T(SMatrix(inertia))
