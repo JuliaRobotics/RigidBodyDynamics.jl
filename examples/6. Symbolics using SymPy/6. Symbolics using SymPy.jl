@@ -9,6 +9,11 @@
 using Pkg # hide
 Pkg.activate(@__DIR__) # hide
 Pkg.instantiate() # hide
+
+# Force PyCall.jl to use Conda rather than system Python # hide
+ENV["PYTHON"] = "" # hide
+Pkg.build("PyCall") # hide
+
 using RigidBodyDynamics
 using StaticArrays
 using SymPy
