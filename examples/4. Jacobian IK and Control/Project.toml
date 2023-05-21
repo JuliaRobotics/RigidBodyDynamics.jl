@@ -1,5 +1,5 @@
 [deps]
-Blink = "ad839575-38b3-5650-b840-f874b8c74a25"
+Electron = "a1bb12fb-d4d1-54b4-b10a-ee7951ef7ad3"
 GeometryTypes = "4d00f742-c7ba-57c2-abde-4428a4b178cb"
 MeshCat = "283c5d60-a78f-5afe-a0af-af636b173e11"
 MeshCatMechanisms = "6ad125db-dd91-5488-b820-c1df6aab299d"
