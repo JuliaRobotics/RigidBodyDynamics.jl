@@ -34,10 +34,11 @@ let
                 """)
                 return str
             end
+            stripped_name = replace(name, r"[\s;]" => "")
             postprocess = function(str)
                 str = replace(str, "PKG_SETUP" =>
                 """
-                ```@setup $name
+                ```@setup $stripped_name
                 import Pkg
                 let
                     original_stdout = stdout

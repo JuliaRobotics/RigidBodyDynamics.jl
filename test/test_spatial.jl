@@ -70,7 +70,10 @@ end
         @test isapprox(SMatrix(I1), Ad(inv(H21))' * SMatrix(I2) * Ad(inv(H21)); atol = 1e-12)
         @test isapprox(I2, transform(I1, inv(H21)))
         @test isapprox(SMatrix(I2) + SMatrix(I3), SMatrix(I2 + I3); atol = 1e-12)
-        @inferred transform(zero(SpatialInertia{Float32}, f1), one(Transform3D, f1))
+        if VERSION >= v"1.8"
+            # Inferred as `SpatialInertia{Any}` on Julia 1.6 and 1.7
+            @inferred transform(zero(SpatialInertia{Float32}, f1), one(Transform3D, f1))
+        end
         @test I2 + zero(I2) == I2
 
         # Test that the constructor works with dynamic arrays (which are

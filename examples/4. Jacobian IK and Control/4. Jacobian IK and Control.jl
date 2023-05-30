@@ -15,7 +15,8 @@ Pkg.activate(@__DIR__) # hide
 Pkg.instantiate() # hide
 using RigidBodyDynamics
 using StaticArrays
-using MeshCat, MeshCatMechanisms, Blink
+using MeshCat, MeshCatMechanisms
+using Electron: Application
 
 # Fix the random seed, so we get repeatable results
 using Random
@@ -36,7 +37,7 @@ body = findbody(mechanism, "lower_link")
 point = Point3D(default_frame(body), 0., 0, -2)
 
 
-# Let's visualize the mechanism and its attached point. For visualization, we'll use [MeshCatMechanisms.jl](https://github.com/JuliaRobotics/MeshCatMechanisms.jl) with [Blink.jl](https://github.com/JunoLab/Blink.jl).
+# Let's visualize the mechanism and its attached point. For visualization, we'll use [MeshCatMechanisms.jl](https://github.com/JuliaRobotics/MeshCatMechanisms.jl) with [Electron.jl](https://github.com/davidanthoff/Electron.jl).
 
 ## Create the visualizer
 vis = MechanismVisualizer(mechanism, URDFVisuals(urdf))
@@ -44,14 +45,10 @@ vis = MechanismVisualizer(mechanism, URDFVisuals(urdf))
 ## Render our target point attached to the robot as a sphere with radius 0.07
 setelement!(vis, point, 0.07)
 
-# Open the visualizer in a new Blink window:
+# Open the visualizer in a new Electron window:
 #nb ##NBSKIP
-#nb open(vis, Window())
-#md ## open(vis, Window());
-
-# Create a `MechanismVisualizer`:
-
-mvis = MechanismVisualizer(mechanism, URDFVisuals(urdf));
+#nb open(vis, Application());
+#md ## open(vis, Application());
 
 # ## Inverse Kinematics
 
@@ -184,8 +181,7 @@ setanimation!(vis, Animation(vis, ts, qs))
 
 # Now we can plot the behavior of the controller. The initial state is quite far from the target, so there's some significant overshoot early in the trajectory, but the controller eventually settles into tracking the desired circular path. This controller isn't very well-tuned, and we could certainly do better with a more advanced approach, but this is still a nice demonstration of a very simple control policy.
 
-using Plots: pyplot, plot
-pyplot()
+using Plots: plot
 
 xs = Float64[]
 zs = Float64[]

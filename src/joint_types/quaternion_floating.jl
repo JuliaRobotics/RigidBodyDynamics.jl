@@ -27,17 +27,18 @@ has_fixed_subspaces(jt::QuaternionFloating) = true
 isfloating(::Type{<:QuaternionFloating}) = true
 
 @propagate_inbounds function rotation(jt::QuaternionFloating, q::AbstractVector, normalize::Bool = true)
-    quat = UnitQuaternion(q[1], q[2], q[3], q[4], normalize)
+    quat = QuatRotation(q[1], q[2], q[3], q[4], normalize)
     quat
 end
 
 @propagate_inbounds function set_rotation!(q::AbstractVector, jt::QuaternionFloating, rot::Rotation{3})
     T = eltype(rot)
-    quat = convert(UnitQuaternion{T}, rot)
-    q[1] = quat.w
-    q[2] = quat.x
-    q[3] = quat.y
-    q[4] = quat.z
+    quat = convert(QuatRotation{T}, rot)
+    w, x, y, z = Rotations.params(quat)
+    q[1] = w
+    q[2] = x
+    q[3] = y
+    q[4] = z
     nothing
 end
 
@@ -114,7 +115,7 @@ end
 
 @propagate_inbounds function configuration_derivative_to_velocity_adjoint!(fq, jt::QuaternionFloating, q::AbstractVector, fv)
     quatnorm = sqrt(q[1]^2 + q[2]^2 + q[3]^2 + q[4]^2) # TODO: make this nicer
-    quat = UnitQuaternion(q[1] / quatnorm, q[2] / quatnorm, q[3] / quatnorm, q[4] / quatnorm, false)
+    quat = QuatRotation(q[1] / quatnorm, q[2] / quatnorm, q[3] / quatnorm, q[4] / quatnorm, false)
     rot = (velocity_jacobian(angular_velocity_in_body, quat)' * angular_velocity(jt, fv)) ./ quatnorm
     trans = quat * linear_velocity(jt, fv)
     set_rotation!(fq, jt, rot)
@@ -166,14 +167,14 @@ end
 
 @propagate_inbounds function zero_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
-    set_rotation!(q, jt, one(UnitQuaternion{T}))
+    set_rotation!(q, jt, one(QuatRotation{T}))
     set_translation!(q, jt, zero(SVector{3, T}))
     nothing
 end
 
 @propagate_inbounds function rand_configuration!(q::AbstractVector, jt::QuaternionFloating)
     T = eltype(q)
-    set_rotation!(q, jt, rand(UnitQuaternion{T}))
+    set_rotation!(q, jt, rand(QuatRotation{T}))
     set_translation!(q, jt, rand(SVector{3, T}) .- 0.5)
     nothing
 end

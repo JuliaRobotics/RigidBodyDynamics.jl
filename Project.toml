@@ -1,6 +1,6 @@
 name = "RigidBodyDynamics"
 uuid = "366cf18f-59d5-5db9-a4de-86a9f6786172"
-version = "2.3.2"
+version = "2.4.0"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
@@ -16,15 +16,15 @@ TypeSortedCollections = "94a5cd58-49a0-5741-bd07-fa4f4be8babf"
 UnsafeArrays = "c4a57d5a-5b31-53a6-b365-19f8c011fbd6"
 
 [compat]
-DocStringExtensions = "0.4.1, 0.5, 0.6, 0.7, 0.8"
+DocStringExtensions = "0.4.1, 0.5, 0.6, 0.7, 0.8, 0.9"
 LightXML = "0.8, 0.9"
 LoopThrottle = "0.1"
 Reexport = "0.2, 1.0"
-Rotations = "1"
+Rotations = "1.1 - 1.2"
 StaticArrays = "0.8, 0.9, 0.10, 0.11, 0.12, 1"
 TypeSortedCollections = "1"
 UnsafeArrays = "1"
-julia = "1.3"
+julia = "1.6"
 
 [extras]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
