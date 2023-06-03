@@ -153,4 +153,73 @@ Base.axes(m::NonOneBasedMatrix) = ((1:m.m) .- 2, (1:m.n) .+ 1)
         dict = Dict(p1 => 3)
         @test dict[p2] == 3
     end
+
+    @testset "CatVector" begin
+        CatVector = RigidBodyDynamics.CatVector
+        Random.seed!(52)
+        vecs = ntuple(i -> rand(rand(0 : 5)), Val(10))
+        l = sum(length, vecs)
+        x = zeros(l)
+        y = CatVector(vecs)
+
+        @test length(y) == l
+
+        x .= y
+        for i in eachindex(x)
+            @test x[i] == y[i]
+        end
+
+        x .= 0
+        @test x != y
+        copyto!(x, y)
+        for i in eachindex(x)
+            @test x[i] == y[i]
+        end
+        @test x == y
+
+        y .= 0
+        rand!(x)
+        y .= x .+ y .+ 1
+        @test x .+ 1 == y
+
+        allocs = let x=x, vecs=vecs
+            @allocated copyto!(x, RigidBodyDynamics.CatVector(vecs))
+        end
+        @test allocs == 0
+
+        y2 = similar(y)
+        @test eltype(y2) == eltype(y)
+        for i in eachindex(y.vecs)
+            @test length(y2.vecs[i]) == length(y.vecs[i])
+            @test y2.vecs[i] !== y.vecs[i]
+        end
+
+        y3 = similar(y, Int)
+        @test eltype(y3) == Int
+        for i in eachindex(y.vecs)
+            @test length(y3.vecs[i]) == length(y.vecs[i])
+            @test y3.vecs[i] !== y.vecs[i]
+        end
+
+        y4 = similar(y)
+        copyto!(y4, y)
+        @test y4 == y
+
+        y5 = similar(y)
+        map!(+, y5, y, y)
+        @test Vector(y5) == Vector(y) + Vector(y)
+
+        z = similar(y)
+        rand!(z)
+        yvec = Vector(y)
+        zvec = Vector(z)
+
+        z .= muladd.(1e-3, y, z)
+        zvec .= muladd.(1e-3, yvec, zvec)
+        @test zvec == z
+        allocs = let y=y, z=z
+            @allocated z .= muladd.(1e-3, y, z)
+        end
+        @test allocs == 0
+    end
 end
