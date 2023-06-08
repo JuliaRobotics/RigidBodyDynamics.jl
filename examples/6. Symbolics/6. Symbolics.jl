@@ -64,15 +64,17 @@ x = MechanismState(double_pendulum);
 
 # Set the joint configuration vector of the MechanismState to a new vector of symbolic variables
 q = configuration(x)
-for i in eachindex(q)
-    q[i] = symbols("q_$i", real=true)
-end
+# for i in eachindex(q)
+#     q[i] = symbols("q_$i")
+# end
+q = @variables q[1:2]
 
 # Set the joint velocity vector of the MechanismState to a new vector of symbolic variables
 v = velocity(x)
-for i in eachindex(v)
-    v[i] = symbols("v_$i", real=true)
-end
+# for i in eachindex(v)
+#     v[i] = symbols("v_$i", real=true)
+# end
+v = @variables v[1:2]
 
 
 # ## Compute dynamical quantities in symbolic form
