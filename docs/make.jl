@@ -11,8 +11,8 @@ let
     exampledir = joinpath(@__DIR__, "..", "examples")
     excludedirs = String[]
     excludefiles = String[]
-    if VERSION < v"1.1.0"
-        push!(excludefiles, "Symbolic double pendulum.jl")
+    if VERSION >= v"1.9.0"
+        push!(excludefiles, "6. Symbolics.jl")
     end
     for subdir in readdir(exampledir)
         subdir in excludedirs && continue
