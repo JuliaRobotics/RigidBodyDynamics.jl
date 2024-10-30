@@ -10,9 +10,10 @@ You can also generate Jupyter notebooks and run them locally by performing the f
 1. [install RigidBodyDynamics.jl](http://www.juliarobotics.org/RigidBodyDynamics.jl/stable/#Installation-1)
 2. [install IJulia](https://github.com/JuliaLang/IJulia.jl) (`add` it to the default project)
 3. in the Julia REPL, run
-   ```
-   using Pkg
-   Pkg.build("RigidBodyDynamics")
-   using IJulia, RigidBodyDynamics
-   notebook(dir=joinpath(dirname(pathof(RigidBodyDynamics)), "..", "examples"))
+   ```julia
+   using RigidBodyDynamics
+   exampledir = joinpath(dirname(pathof(RigidBodyDynamics)), "..", "examples")
+   include(joinpath(exampledir, "build.jl"))
+   using IJulia
+   notebook(dir=exampledir)
    ```
