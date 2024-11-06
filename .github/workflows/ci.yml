@@ -18,7 +18,6 @@ jobs:
       matrix:
         version:
           - 'lts'
-          - '1.6'
           - '1.9'  # Temporary for notebooks
           - '1.11'
         os:
