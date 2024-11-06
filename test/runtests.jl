@@ -30,7 +30,7 @@ include("test_simulate.jl")
 include("test_mechanism_modification.jl")
 include("test_pd_control.jl")
 
-if VERSION >= v"1.9"
+if v"1.9" <= VERSION < v"1.10"
     # The notebook tests rely on instantiating specific project manifests.
     # Attempting to do so on a version of Julia older than the one used to
     # create those manifests can cause errors in `Pkg.instantiate()`.
@@ -40,4 +40,3 @@ if VERSION >= v"1.9"
         @test begin include("../perf/runbenchmarks.jl"); true end
     end
 end
-

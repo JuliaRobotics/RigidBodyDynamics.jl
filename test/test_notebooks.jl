@@ -4,7 +4,7 @@ let
     excludedirs = [".ipynb_checkpoints"]
     excludefiles = String[]
     push!(excludefiles, "6. Symbolics.ipynb")  # Disabled until https://github.com/JuliaGeometry/Quaternions.jl/issues/123 is solved.
-    # push!(excludefiles, "7. Rigorous error bounds using IntervalArithmetic.ipynb") # Manifest used for 1.1 doesn't work for 1.0.
+    push!(excludefiles, "7. Rigorous error bounds using IntervalArithmetic.ipynb") # Manifest used for 1.1 doesn't work for 1.0.
     for (root, dir, files) in walkdir(notebookdir)
         basename(root) in excludedirs && continue
         for file in files
