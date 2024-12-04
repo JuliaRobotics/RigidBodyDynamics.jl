@@ -1,4 +1,4 @@
-# MechanismState
+# Mechanism State
 
 ## Index
 

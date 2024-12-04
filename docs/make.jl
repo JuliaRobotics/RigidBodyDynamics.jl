@@ -11,8 +11,8 @@ let
     exampledir = joinpath(@__DIR__, "..", "examples")
     excludedirs = String[]
     excludefiles = String[]
-    if VERSION < v"1.1.0"
-        push!(excludefiles, "Symbolic double pendulum.jl")
+    if VERSION >= v"1.6"
+        push!(excludefiles, "7. Rigorous error bounds using IntervalArithmetic.jl")
     end
     for subdir in readdir(exampledir)
         subdir in excludedirs && continue
@@ -66,30 +66,33 @@ end
 
 makedocs(
     modules = [RigidBodyDynamics, RigidBodyDynamics.OdeIntegrators],
-    root = @__DIR__,
+    format = Documenter.HTML(),
     checkdocs = :exports,
-    sitename ="RigidBodyDynamics.jl",
+    sitename = "RigidBodyDynamics.jl",
     authors = "Twan Koolen and contributors.",
     pages = [
         "Home" => "index.md",
         "Tutorials" => tutorialpages,
         "Library" => [
-            "Spatial vector algebra" => "spatial.md",
+            "Spatial Vector Algebra" => "spatial.md",
             "Joints" => "joints.md",
-            "Rigid bodies" => "rigidbody.md",
+            "Rigid Bodies" => "rigidbody.md",
             "Mechanism" => "mechanism.md",
-            "MechanismState" => "mechanismstate.md",
-            "Kinematics/dynamics algorithms" => "algorithms.md",
-            "Custom collection types" => "customcollections.md",
-            "Cache types" => "caches.md",
+            "Mechanism State" => "mechanismstate.md",
+            "Kinematics/Dynamics Algorithms" => "algorithms.md",
+            "Custom Collection Types" => "customcollections.md",
+            "Cache Types" => "caches.md",
             "Simulation" => "simulation.md",
-            "URDF parsing and writing" => "urdf.md",
+            "URDF Parsing and Writing" => "urdf.md",
         ],
         "Benchmarks" => "benchmarks.md",
-      ],
-    format = Documenter.HTML(prettyurls = parse(Bool, get(ENV, "CI", "false")))
+    ],
+    warnonly = Documenter.except(),
+    repo = Remotes.GitHub("JuliaRobotics", "RigidBodyDynamics.jl"),
 )
 
 deploydocs(
-    repo = "github.com/JuliaRobotics/RigidBodyDynamics.jl.git"
+    repo="github.com/JuliaRobotics/RigidBodyDynamics.jl",
+    devbranch="master",
+    push_preview=true,
 )

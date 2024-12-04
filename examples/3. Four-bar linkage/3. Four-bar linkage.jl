@@ -149,12 +149,7 @@ using MeshCatMechanisms
 # (see [`MeshCat.jl`](https://github.com/rdeits/MeshCat.jl) for other options):
 
 mvis = MechanismVisualizer(fourbar, Skeleton(inertias=false));
-
-#-
-
-#nb ##NBSKIP
-#nb open(mvis)
-#md ## open(mvis)
+## open(mvis)
 
 # And animate:
 MeshCatMechanisms.animate(mvis, ts, qs; realtimerate = 1.);

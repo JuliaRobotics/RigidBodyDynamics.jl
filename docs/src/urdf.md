@@ -1,4 +1,4 @@
-# URDF parsing and writing
+# URDF Parsing and Writing
 
 ```@docs
 default_urdf_joint_types

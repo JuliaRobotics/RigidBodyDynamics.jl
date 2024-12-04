@@ -1,4 +1,4 @@
-# Spatial vector algebra
+# Spatial Vector Algebra
 
 ## Index
 

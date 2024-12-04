@@ -60,12 +60,7 @@ using MeshCatMechanisms
 # (see [`MeshCat.jl`](https://github.com/rdeits/MeshCat.jl) for other options):
 
 mvis = MechanismVisualizer(mechanism, URDFVisuals(urdf));
-
-#-
-
-#nb ##NBSKIP
-#nb open(mvis)
-#md ## open(mvis)
+## open(mvis)
 
 
 # And animate:

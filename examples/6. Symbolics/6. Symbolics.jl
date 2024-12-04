@@ -6,10 +6,18 @@
 
 # ## Setup
 
+using Quaternions
 using RigidBodyDynamics
 using StaticArrays
 using Symbolics
 
+#-
+
+## Type piracy needed in order to make Symbolics.jl types interact well with Quaternions.jl.
+## This should be avoided — see https://docs.julialang.org/en/v1/manual/style-guide/#avoid-type-piracy.
+function Base.:/(q::Quaternions.Quaternion, x::Symbolics.Num)
+    return Quaternions.Quaternion(q.s / x.val, q.v1 / x.val, q.v2 / x.val, q.v3 / x.val)
+end
 
 # ## Create symbolic parameters
 # * Masses: $m_1, m_2$
@@ -18,9 +26,9 @@ using Symbolics
 # * Center of mass locations (w.r.t. preceding joint axis): $c_1, c_2$
 # * Gravitational acceleration: $g$
 
-inertias = @variables m_1 m_2 I_1 I_2 positive = true
-lengths = @variables l_1 l_2 c_1 c_2 real = true
-gravitational_acceleration = @variables g real = true
+inertias = @variables m₁ m₂ I₁ I₂
+lengths = @variables l₁ l₂ c₁ c₂
+gravitational_acceleration = @variables g
 params = [inertias..., lengths..., gravitational_acceleration...]
 transpose(params)
 
@@ -35,9 +43,9 @@ world = root_body(double_pendulum) # the fixed 'world' rigid body
 
 # Attach the first (upper) link to the world via a revolute joint named 'shoulder'
 inertia1 = SpatialInertia(CartesianFrame3D("upper_link"),
-    moment=I_1 * axis * transpose(axis),
-    com=SVector(zero(T), zero(T), c_1),
-    mass=m_1)
+    moment=I₁ * axis * transpose(axis),
+    com=SVector(zero(T), zero(T), c₁),
+    mass=m₁)
 body1 = RigidBody(inertia1)
 joint1 = Joint("shoulder", Revolute(axis))
 joint1_to_world = one(Transform3D{T}, frame_before(joint1), default_frame(world));
@@ -46,13 +54,13 @@ attach!(double_pendulum, world, body1, joint1,
 
 # Attach the second (lower) link to the world via a revolute joint named 'elbow'
 inertia2 = SpatialInertia(CartesianFrame3D("lower_link"),
-    moment=I_2 * axis * transpose(axis),
-    com=SVector(zero(T), zero(T), c_2),
-    mass=m_2)
+    moment=I₂ * axis * transpose(axis),
+    com=SVector(zero(T), zero(T), c₂),
+    mass=m₂)
 body2 = RigidBody(inertia2)
 joint2 = Joint("elbow", Revolute(axis))
 joint2_to_body1 = Transform3D(
-    frame_before(joint2), default_frame(body1), SVector(zero(T), zero(T), l_1))
+    frame_before(joint2), default_frame(body1), SVector(zero(T), zero(T), l₁))
 attach!(double_pendulum, body1, body2, joint2,
     joint_pose=joint2_to_body1)
 
@@ -64,26 +72,29 @@ x = MechanismState(double_pendulum);
 
 # Set the joint configuration vector of the MechanismState to a new vector of symbolic variables
 q = configuration(x)
-for i in eachindex(q)
-    q[i] = symbols("q_$i", real=true)
-end
+q .= Symbolics.variables(:q, 1:length(q))
 
 # Set the joint velocity vector of the MechanismState to a new vector of symbolic variables
 v = velocity(x)
-for i in eachindex(v)
-    v[i] = symbols("v_$i", real=true)
-end
+v .= Symbolics.variables(:v, 1:length(q))
 
 
 # ## Compute dynamical quantities in symbolic form
 
 # Mass matrix
-simplify.(mass_matrix(x))
+simplify.(mass_matrix(x), expand=true)
 
 
 # Kinetic energy
-simplify(kinetic_energy(x))
+simplify(kinetic_energy(x), expand=true)
 
 
 # Potential energy
-simplify(gravitational_potential_energy(x))
+try
+    ## This throws `ERROR: TypeError: non-boolean (Num) used in boolean context` because
+    ## of `m > 0 || return zero(cache_eltype(state))` in `gravitational_potential_energy`.
+    ## See https://docs.sciml.ai/Symbolics/stable/manual/faq/ for more details.
+    simplify(gravitational_potential_energy(x), expand=true)
+catch e
+    e
+end

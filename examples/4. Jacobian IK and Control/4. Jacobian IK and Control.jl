@@ -41,14 +41,13 @@ point = Point3D(default_frame(body), 0., 0, -2)
 
 ## Create the visualizer
 vis = MechanismVisualizer(mechanism, URDFVisuals(urdf))
+## open(vis, Application()); # Open the visualizer in a new Electron window
 
-## Render our target point attached to the robot as a sphere with radius 0.07
+#-
+
+# Render our target point attached to the robot as a sphere with radius 0.07.
 setelement!(vis, point, 0.07)
 
-# Open the visualizer in a new Electron window:
-#nb ##NBSKIP
-#nb open(vis, Application());
-#md ## open(vis, Application());
 
 # ## Inverse Kinematics
 

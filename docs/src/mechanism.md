@@ -1,4 +1,4 @@
-# Mechanisms
+# Mechanism
 
 ## Index
 
@@ -15,7 +15,7 @@ Mechanism
 
 ## [Creating and modifying `Mechanism`s](@id mechanism_create)
 
-See also [URDF parsing and writing](@ref) for URDF file format support.
+See also [URDF Parsing and Writing](@ref) for URDF file format support.
 
 ```@docs
 Mechanism(root_body; gravity)

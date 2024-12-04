@@ -6,4 +6,5 @@ RigidBodyDynamics = "366cf18f-59d5-5db9-a4de-86a9f6786172"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
-MeshCat = "0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16"
+MeshCat = "0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 1"
+MeshCatMechanisms = "0.8, 0.9"

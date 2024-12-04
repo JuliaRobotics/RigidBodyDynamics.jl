@@ -18,7 +18,6 @@ jobs:
       matrix:
         version:
           - 'lts'
-          - '1.9'  # Temporary for notebooks
           - '1.11'
         os:
           - ubuntu-latest
@@ -41,18 +40,8 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: actions/cache@v3
-        env:
-          cache-name: cache-artifacts
-          CI: true
-        with:
-          path: ~/.julia/artifacts
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-test-${{ env.cache-name }}-
-            ${{ runner.os }}-test-
-            ${{ runner.os }}-
-      - uses: julia-actions/julia-buildpkg@latest
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
           prefix: ${{ matrix.prefix }}
@@ -60,22 +49,3 @@ jobs:
       - uses: codecov/codecov-action@v2
         with:
           file: lcov.info
-
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
-        with:
-          version: '1.6'
-      - run: |
-          julia --project=docs -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()
-            include("docs/make.jl")'
-        env:
-          PYTHON: ""
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}

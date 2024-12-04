@@ -1,4 +1,4 @@
-# Algorithms
+# Kinematics/Dynamics Algorithms
 
 ## Index
 

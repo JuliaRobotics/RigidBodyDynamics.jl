@@ -1,4 +1,4 @@
-# Custom collection types
+# Custom Collection Types
 
 ## Index
 

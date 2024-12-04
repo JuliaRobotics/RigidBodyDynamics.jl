@@ -1,4 +1,4 @@
-# Rigid bodies
+# Rigid Bodies
 
 ## Index
 

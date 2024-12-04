@@ -19,9 +19,9 @@ Pkg.instantiate() # hide
 using IntervalArithmetic
 
 
-# IntervalArithmetic.jl provides the `Interval` type, which stores an upper and a lower bound:
+# IntervalArithmetic.jl provides the `interval` type, which stores an upper and a lower bound:
 
-i = Interval(1.0, 2.0)
+i = interval(1.0, 2.0)
 
 #-
 
@@ -37,10 +37,10 @@ i + i
 sin(i)
 
 
-# Note that the bounds computed by IntervalArithmetic.jl take floating point error into account. Also note that a given real number, once converted to (approximated by) a floating-point number may not be equal to the original real number. To rigorously construct an `Interval` that contains a given real number as an input, IntervalArithmetic.jl provides the `@interval` macro:
+# Note that the bounds computed by IntervalArithmetic.jl take floating point error into account. Also note that a given real number, once converted to (approximated by) a floating-point number may not be equal to the original real number. To rigorously construct an `interval` that contains a given real number as an input, IntervalArithmetic.jl provides the `@interval` macro:
 
 i = @interval(2.9)
-i.lo === i.hi
+i.bareinterval.lo === i.bareinterval.hi
 
 #-
 
@@ -49,8 +49,8 @@ dump(i)
 
 # Compare this to
 
-i = Interval(2.9)
-i.lo === i.hi
+i = interval(2.9)
+i.bareinterval.lo === i.bareinterval.hi
 
 #-
 
@@ -65,7 +65,7 @@ i = @interval(2.6) - @interval(0.7) - @interval(1.9)
 # showing that the true result, `0`, is indeed in the guaranteed interval, and indeed:
 
 using Test
-@test (2.6 - 0.7 - 1.9) ∈ i
+@test in_interval(2.6 - 0.7 - 1.9, i)
 
 
 # ## Accuracy of RigidBodyDynamics.jl's `mass_matrix`
@@ -75,7 +75,7 @@ using Test
 using RigidBodyDynamics
 
 
-# We'll create a `Mechanism` by parsing the Acrobot URDF, passing in `Interval{Float64}` as the type used to store the parameters (inertias, link lengths, etc.) of the mechanism. Note that the parameters parsed from the URDF are treated as floating point numbers (i.e., like `Interval(2.9)` instead of `@interval(2.9)` above).
+# We'll create a `Mechanism` by parsing the Acrobot URDF, passing in `Interval{Float64}` as the type used to store the parameters (inertias, link lengths, etc.) of the mechanism. Note that the parameters parsed from the URDF are treated as floating point numbers (i.e., like `interval(2.9)` instead of `@interval(2.9)` above).
 
 const T = Interval{Float64}
 srcdir = dirname(pathof(RigidBodyDynamics))
@@ -98,7 +98,7 @@ M = mass_matrix(state)
 
 # Woah, those bounds look pretty big. RigidBodyDynamics.jl must not be very accurate! Actually, things aren't so bad; the issue is just that IntervalArithmetic.jl isn't kidding when it comes to guaranteed bounds, and that includes printing the numbers in shortened form. Here are the lengths of the intervals:
 
-err = map(x -> x.hi - x.lo, M)
+err = map(x -> x.bareinterval.hi - x.bareinterval.lo, M)
 
 #-
 
