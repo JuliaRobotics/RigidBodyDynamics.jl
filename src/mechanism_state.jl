@@ -605,7 +605,7 @@ end
 $(SIGNATURES)
 Return the joint twist for the given joint, i.e. the twist of
 `frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
-root frame of the mechanism.
+`frame_after(joint)`.
 """
 @propagate_inbounds function twist(state::MechanismState, joint::Union{<:Joint, JointID}, safe=true)
     safe && update_joint_twists!(state)
@@ -617,7 +617,7 @@ $(SIGNATURES)
 
 Return the bias acceleration across the given joint, i.e. the spatial acceleration
 of `frame_after(joint)` with respect to `frame_before(joint)`, expressed in the
-root frame of the mechanism when all joint accelerations are zero.
+`frame_after(joint)` when all joint accelerations are zero.
 """
 @propagate_inbounds function bias_acceleration(state::MechanismState, joint::Union{<:Joint, JointID}, safe=true)
     safe && update_joint_bias_accelerations!(state)
