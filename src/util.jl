@@ -121,8 +121,8 @@ macro indextype(ID)
         Base.Integer(i::$ID) = i.value
         Base.Int(i::$ID) = i.value
         Base.convert(::Type{$ID}, i::Integer) = $ID(i)
-        Base.promote_type(::Type{Int}, ::Type{$ID}) = $ID
-        Base.promote_type(::Type{$ID}, ::Type{Int}) = $ID
+        Base.promote_rule(::Type{Int}, ::Type{$ID}) = $ID
+        Base.promote_rule(::Type{$ID}, ::Type{Int}) = $ID
         Base.:<(x::$ID, y::$ID) = x.value < y.value
         Base.:<=(x::$ID, y::$ID) = x.value <= y.value
         Base.:-(x::$ID, y::$ID) = x.value - y.value
